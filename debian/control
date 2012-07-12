@@ -1,0 +1,24 @@
+Source: setbfree
+Section: sound
+Priority: optional
+Maintainer: Robin Gareus <robin@gareus.org>
+Build-Depends: debhelper (>= 8),
+ libasound2-dev,
+ libjack-dev | libjack-jackd2-dev,
+ liblo-dev,
+ libsndfile1-dev,
+ libzita-convolver-dev (>=3.1.0-2),
+ lv2-dev (>=1.0.0~dfsg2-2),
+ tcl-dev,
+ tk-dev
+Homepage: https://setbfree.org
+Standards-Version: 3.9.2
+
+Package: setbfree
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: setBfree DSP tonewheel organ
+ setBfree is a MIDI-controlled, software synthesizer designed to imitate
+ the sound and properties of the electromechanical organs and sound
+ modification devices that brought world-wide fame to the names and
+ products of Laurens Hammond and Don Leslie.

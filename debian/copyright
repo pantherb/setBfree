@@ -1,0 +1,66 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: setbfree
+Maintainer: Robin Gareus <robin@gareus.org>
+Upstream-Contact: Robin Gareus <robin@gareus.org>
+Source: git://github.com/x42/setbfree.git
+
+Files: *
+Copyright:
+  2003-2004 Fredrik Kilander <fk@dsv.su.se>
+  2008-2012 Robin Gareus <robin@gareus.org>
+  2012 Will Panther <pantherb@setbfree.org>
+License: GPL-2+
+
+Files: vb3kb/*
+  1997-2000 by Takashi Iwai
+  2012 Robin Gareus <robin@gareus.org>
+License: GPL-2+
+
+Files: b_whirl/*
+  2003-2004 Fredrik Kilander <fk@dsv.su.se>
+  2008-2012 Robin Gareus <robin@gareus.org>
+  2010 Ken Restivo <ken@restivo.org>
+  2012 Will Panther <pantherb@setbfree.org>
+License: GPL-2+
+
+Files: b_conv/*
+  2012 Robin Gareus <robin@gareus.org>
+License: GPL-2+
+
+Files: b_conv/ir/ir_leslie-*.wav
+  2009 Ken Restivo <ken@restivo.org>
+  2012 Robin Gareus <robin@gareus.org>
+License: CC-BY-SA-3.0
+
+Files: debian/*
+  2012 Robin Gareus <robin@gareus.org>
+License: GPL-2+
+
+License: GPL-2
+ This package is free software; you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation; either version 2 of the License, or
+ (at your option) any later version.
+ .
+ This package is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+ .
+ You should have received a copy of the GNU General Public License
+ along with this package; if not, write to the Free Software
+ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+X-Comment: On Debian systems, the complete text of the GNU General
+ Public License can be found in `/usr/share/common-licenses/GPL-2'.
+
+License: CC-BY-SA-3.0
+ The work is provided under the terms of this creative commons public license.
+ The work is protected by copyright and/or other applicable law. Any use of
+ the work other than as authorized under this license or copyright law is
+ prohibited.
+
+ By exercising any rights to the work provided here, you accept and agree to
+ be bound by the terms of this license. To the extent this license may be
+ considered to be a contract, the licensor grants you the rights contained
+ here in consideration of your acceptance of such terms and conditions.
+X-comment: http://creativecommons.org/licenses/by-sa/3.0/us/

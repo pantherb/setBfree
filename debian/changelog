@@ -1,0 +1,5 @@
+setbfree (0.5.0-1) unstable; urgency=low
+
+  * initial version of setBfree
+
+ -- Robin Gareus <robin@gareus.org>  Thu, 14 Jun 2012 16:37:05 +0200

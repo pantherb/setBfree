@@ -1,0 +1,16 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	$(MAKE) ENABLE_CONVOLUTION=yes PREFIX=/usr OPTIMIZATIONS=-O2 LDFLAGS=-Wl,--as-needed
+
+override_dh_auto_install:
+	$(MAKE) install ENABLE_CONVOLUTION=yes DESTDIR=$(CURDIR)/debian/setbfree PREFIX=/usr
+	install -d $(CURDIR)/debian/setbfree/usr/share/applications
+	install -m 644 $(CURDIR)/debian/setbfree.desktop \
+		$(CURDIR)/debian/setbfree/usr/share/applications/
+	install -d $(CURDIR)/debian/setbfree/usr/share/pixmaps/
+	install -m 644 $(CURDIR)/doc/setBfree.png \
+		$(CURDIR)/debian/setbfree/usr/share/pixmaps/
