@@ -401,7 +401,7 @@ static void Usage (int configdoc) {
   "%s jack.out.left=\"system:playback_7\" jack.out.left=\"system:playback_8\"\n", name);
   printf (
   "\n"
-  "Report bugs to <robin@gareus.org> or <pantherb@setbfree.org>.\n"
+  "Report bugs at <http://github.com/pantherb/setBfree/issues>.\n"
   "Website and manual: <http://setbfree.org>\n"
   );
 }
