@@ -34,7 +34,7 @@ While this works now in its first beta release, we are using this as a starting
 point for building a high quality emulator players familiar with the great
 Hammond organs of the past will enjoy. There will be two major milestones to
 reach this goal. The first is to clean up its first beta functionality
-including improving and cleaning up the current code, and adding a slicker gui
+including improving and cleaning up the current code, and adding a slicker GUI
 interface. For the second milestone, we will modify much of the code to make
 the organ more dynamic. A user will be able to adjust to taste from the 'like a
 bird' quality of chill players to the knocking, screaming organ sounds of
@@ -47,6 +47,29 @@ Usage
 Run `setBfree -h` for a quick overview. `setBfree --help` will output a
 lengthy list of available options and properties than can be modified.
 
+`setBfree` is the synthesizer engine. It responds to MIDI messages (JACK-MIDI
+or ALSA-sequencer) and outputs audio to JACK and runs from the command-line.
+The GUI `vb3kb` is a standalone application that simply sends MIDI messages to
+setBfree. `setBfree-start` is a shell-script that launches both and connects
+the GUI to the synth.
+
+Examples:
+
+	setBfree midi.driver="alsa" midi.port="129" jack.connect="jack_rack:in_"
+	setBfree jack.out.left="system:playback_7" jack.out.left="system:playback_8"
+	setBfree-start midi.driver="alsa"
+
+
+Getting started - standalone app
+--------------------------------
+
+To be continued..
+
+
+Getting started - LV2 plugins
+-----------------------------
+
+To be continued..
 
 Summary of Changes since Beatrix
 --------------------------------
