@@ -474,9 +474,9 @@ static int envReleaseModel = ENV_LINEAR;
 static float envAttackClickLevel  = 0.50;
 static float envReleaseClickLevel = 0.25;
 /** Minimum random length (in samples) of attack key click noise burst. */
-static int envAtkClkMinLength =  16;  //  8 @ 22050
+static int envAtkClkMinLength = -1;  //  8 @ 22050
 /** Maximum random length (in samples) of attack key click noise burst. */
-static int envAtkClkMaxLength = 80;   // 40 @ 22050
+static int envAtkClkMaxLength = -1;   // 40 @ 22050
 
 /**
  * There is one oscillator struct for each frequency.
@@ -3294,6 +3294,20 @@ void initToneGenerator () {
     memset((void*)&oscillators[i], sizeof(struct _oscillator), 0);
   for (i=0; i< 128; ++i) {
     eqvAtt[i]=0.0; eqvSet[i]='\0';
+  }
+
+  if (envAtkClkMinLength<0) {
+    envAtkClkMinLength = floor(SampleRateD * 8.0 / 22050.0);
+  }
+  if (envAtkClkMaxLength<0) {
+    envAtkClkMaxLength = ceil(SampleRateD * 40.0 / 22050.0);
+  }
+
+  if (envAtkClkMinLength > BUFFER_SIZE_SAMPLES) {
+    envAtkClkMinLength = BUFFER_SIZE_SAMPLES;
+  }
+  if (envAtkClkMaxLength > BUFFER_SIZE_SAMPLES) {
+    envAtkClkMaxLength = BUFFER_SIZE_SAMPLES;
   }
 
   applyDefaultConfiguration ();

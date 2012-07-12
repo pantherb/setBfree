@@ -12,7 +12,7 @@ X startup-script: launch simple-GUI and connect things
 - Fix broken Inglisch documentation (generated man-pages, built-in doc)
 + clean out remaining (unused) hardcoded setMIDIControllerFunction in ./b_overdrive/overmaker.c
 - check assert() -> must quit (NDEBUG must not be defined!) -- convert assert -> exit 
-- envAtkClkM* - key-click , multiply by samplerate
+X envAtkClkM* - key-click , multiply by samplerate
 + built-in documentation: annotate available config-options
 X leslie: allow to bypass completely (horn speaker filter/emulation)
 - leslie: get Coefficients from JoS
