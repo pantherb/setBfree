@@ -7,6 +7,7 @@ PRODUCTDIR=$TARGET/setBfree.app
 
 make clean
 make \
+	ENABLE_CONVOLUTION=yes \
 	OPTIMIZATIONS="-O3 -arch ppc -arch i386 -arch x86_64" \
 	TCLFILE="../Resources/vb3kb.tcl" \
 	IRPATH="../Resources/ir" \
@@ -27,7 +28,7 @@ cp -v pgm/default.pgm $PRODUCTDIR/Contents/Resources
 cp -v doc/setBfree.icns $PRODUCTDIR/Contents/Resources
 cp -v doc/dmgbg.png $TARGET/dmgbg.png
 
-cp -av b3_conv/ir $PRODUCTDIR/Contents/Resources/
+cp -av b_conv/ir $PRODUCTDIR/Contents/Resources/
 
 
 # install shared libraries
