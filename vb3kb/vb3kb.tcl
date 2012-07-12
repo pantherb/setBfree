@@ -444,19 +444,19 @@ proc PanelCreate {{pw ""}} {
     checkbutton $w.viblonoff  -indicatoron 0 -pady 4 -text "Vibrato (L)," -command "togglevibl"
     checkbutton $w.vibuonoff  -indicatoron 0 -pady 4 -text "Vibrato (U):" -command "togglevibu"
 
-    menubutton $w.percmode -relief raised -width 5 -menu $w.percmode.m
+    menubutton $w.percmode -relief raised -width 8 -menu $w.percmode.m
     menu $w.percmode.m -tearoff 0
     $w.percmode.m add radio -label "soft" -variable gpercmode -value 34 -command [list menupgm $w.percmode "soft" gpercmode]
     $w.percmode.m add radio -label "norm" -variable gpercmode -value 35 -command [list menupgm $w.percmode "norm" gpercmode]
     $w.percmode.m add radio -label "fast" -variable gpercmode -value 36 -command [list menupgm $w.percmode "fast" gpercmode]
     $w.percmode.m add radio -label "slow" -variable gpercmode -value 37 -command [list menupgm $w.percmode "slow" gpercmode]
 
-    menubutton $w.percharm -relief raised -width 5 -menu $w.percharm.m
+    menubutton $w.percharm -relief raised -width 6 -menu $w.percharm.m
     menu $w.percharm.m -tearoff 0
     $w.percharm.m add radio -label "2nd" -variable gpercharm -value 38 -command [list menupgm $w.percharm "2nd" gpercharm]
     $w.percharm.m add radio -label "3rd" -variable gpercharm -value 39 -command [list menupgm $w.percharm "3rd" gpercharm]
 
-    menubutton $w.vibrate -relief raised -width 3 -menu $w.vibrate.m
+    menubutton $w.vibrate -relief raised -width 5 -menu $w.vibrate.m
     menu $w.vibrate.m -tearoff 0
     $w.vibrate.m add radio -label "v1" -variable gvibrate -value 42 -command [list menupgm $w.vibrate "v1" gvibrate]
     $w.vibrate.m add radio -label "v2" -variable gvibrate -value 43 -command [list menupgm $w.vibrate "v2" gvibrate]
@@ -468,7 +468,7 @@ proc PanelCreate {{pw ""}} {
     set w $pw.ctrl.c2
     frame $w
 
-    menubutton $w.leslie -relief raised -width 9 -menu $w.leslie.m
+    menubutton $w.leslie -relief raised -width 12 -menu $w.leslie.m
     menu $w.leslie.m -tearoff 0
     $w.leslie.m add radio -label "Leslie off"  -variable gleslie -value 52 -command [list menupgm $w.leslie "Leslie off" gleslie]
     $w.leslie.m add radio -label "Leslie slow" -variable gleslie -value 53 -command [list menupgm $w.leslie "Leslie slow" gleslie]
@@ -478,7 +478,7 @@ proc PanelCreate {{pw ""}} {
     checkbutton $w.overdrive  -indicatoron 0 -pady 4 -text "Overdrive:" -command "togglexov"
     checkbutton $w.convolution  -indicatoron 0 -pady 4 -text "SpeakerSimulation" -command "toggleconv"
 
-    menubutton $w.reverb -relief raised -width 9 -menu $w.reverb.m
+    menubutton $w.reverb -relief raised -width 12 -menu $w.reverb.m
     menu $w.reverb.m -tearoff 0
     $w.reverb.m add radio -label "Reverb off" -variable greverb -value 27 -command [list menupgm $w.reverb "Reverb off" greverb]
     $w.reverb.m add radio -label "Reverb 16%" -variable greverb -value 28 -command [list menupgm $w.reverb "Reverb 16%" greverb]
@@ -488,7 +488,7 @@ proc PanelCreate {{pw ""}} {
 
     scale $w.dist -orient horizontal -from 0 -to 127 -showvalue false -command "setDistChacater"
 
-    menubutton $pw.tp.pctrl -relief raised -width 3 -menu $pw.tp.pctrl.m
+    menubutton $pw.tp.pctrl -relief raised -width 7 -menu $pw.tp.pctrl.m
     menu $pw.tp.pctrl.m -tearoff 0
     global ctrlval programpresets
     foreach i $programpresets {
