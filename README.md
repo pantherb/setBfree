@@ -73,12 +73,16 @@ Install the dependencies and simply call `make` followed by `sudo make install`.
 
 
 If zita-convolver and libsndfile1-dev are available you can use
-   make clean
-   make ENABLE_CONVOLUTION=yes
+
+	make clean
+	make ENABLE_CONVOLUTION=yes
+
 to enable a built-in convolution reverb.
 
 
 The Makefile understands PREFIX and DESTDIR variables:
-   make clean
-   make ENABLE_CONVOLUTION=yes PREFIX=/usr
-   make install ENABLE_CONVOLUTION=yes PREFIX=/usr DESTDIR=mypackage/setbfree/
+
+	make clean
+	make ENABLE_CONVOLUTION=yes PREFIX=/usr
+	make install ENABLE_CONVOLUTION=yes PREFIX=/usr DESTDIR=mypackage/setbfree/
+
