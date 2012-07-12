@@ -13,21 +13,27 @@ CFLAGS = $(OPTIMIZATIONS) -Wall
 CFLAGS+=-DVKB_TCLFILE=\"$(TCLFILE)\"
 CFLAGS+=-DVERSION="\"$(VERSION)\""
 
-ifeq ($(shell test -f /usr/lib/tclConfig.sh -a /usr/lib/tkConfig.sh && echo yes), yes)
-  TCLTKPREFIX=/usr
-endif
-ifeq ($(shell test -f /usr/local/lib/tclConfig.sh -a /usr/local/lib/tkConfig.sh && echo yes), yes)
-  TCLTKPREFIX=/usr/local
-endif
+TCLPREFIX=/usr /usr/local
+TCLLIBDIR=lib64 lib
+
+$(foreach tprefix,$(TCLPREFIX), \
+  $(foreach tlibdir,$(TCLLIBDIR), \
+    $(if $(shell test -f $(tprefix)/$(tlibdir)/tclConfig.sh -a $(tprefix)/$(tlibdir)/tkConfig.sh && echo yes), \
+		  $(eval TCLTKPREFIX=$(tprefix))\
+		  $(eval TCLTKLIBDIR=$(tlibdir))\
+		)\
+  )\
+)
+
 ifeq ($(TCLTKPREFIX),)
   # TODO make GUI optional...
   $(error "TCL/TK is required - install tk-dev and tcl-dev")
 endif
 
-CFLAGS+=-I$(TCLTKPREFIX)/include/tcl`. $(TCLTKPREFIX)/lib/tclConfig.sh && echo \$$TCL_VERSION`
-LOADLIBES+=-ltcl`. $(TCLTKPREFIX)/lib/tclConfig.sh && echo \$$TCL_VERSION`
-LOADLIBES+=-ltk`. $(TCLTKPREFIX)/lib/tkConfig.sh && echo \$$TK_VERSION`
-LOADLIBES+=`. $(TCLTKPREFIX)/lib/tkConfig.sh && echo $$TK_LIBS`
+CFLAGS+=-I$(TCLTKPREFIX)/include/tcl`. $(TCLTKPREFIX)/tclConfig.sh && echo \$$TCL_VERSION`
+LOADLIBES+=-ltcl`. $(TCLTKPREFIX)/$(TCLTKLIBDIR)/tclConfig.sh && echo \$$TCL_VERSION`
+LOADLIBES+=-ltk`. $(TCLTKPREFIX)/$(TCLTKLIBDIR)/tkConfig.sh && echo \$$TK_VERSION`
+LOADLIBES+=`. $(TCLTKPREFIX)/$(TCLTKLIBDIR)/tkConfig.sh && echo $$TK_LIBS`
 
 ifeq ($(shell pkg-config --exists alsa && echo yes), yes)
   CFLAGS+=-DHAVE_ASEQ `pkg-config --cflags alsa`

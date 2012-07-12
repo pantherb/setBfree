@@ -64,7 +64,7 @@ ifeq ($(shell pkg-config --exists sndfile \
   HEADERS+=../b_conv/convolution.h
   BXCC=$(CXX)
 else
-  $(info "compliling w/o ZITA Convolution Reverb -- needs libzita-convolver3 and libsndfile")
+  $(info "compiling w/o ZITA Convolution Reverb -- needs libzita-convolver3 and libsndfile")
 endif
 
 all: setBfree
