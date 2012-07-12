@@ -8,6 +8,9 @@ sound and properties of the electromechanical organs and sound modification
 devices that brought world-wide fame to the names and products of Laurens
 Hammond and Don Leslie.
 
+*   http://setbfree.org
+*   https://github.com/pantherb/setBfree
+
 Quick-start
 -----------
 
