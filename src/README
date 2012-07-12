@@ -1,0 +1,321 @@
+14-jun-2012/RG
+This file needs updating for v0.5
+
+###############################################################################
+### README vor v0.4.1 ###
+
+28-nov-2004/FK
+10-sep-2004/FK
+21-jul-2004/FK
+
+The information in this file may be useful to you if you have
+experience from an earlier version of Beatrix.
+
+
+Version 0.4.1
+
+This version presents the third rewrite of the tonegenerator, introducing:
+
+    - extensive and open crosstalk modelling
+    - lower manual
+    - pedals
+    - separate control of vibrato depth and upper/lower manual vibrato
+    - equal-tempered, 60 Hz, or 50 Hz gear train tuning
+    - user-configurable MIDI controller assignments
+    - upper manual split in 2 or 3 regions
+    
+Some earlier signal routing inaccuracies are also addressed: percussion
+no longer passes through the vibrato scanner. However, the tonegenerator
+rewrite introduced another inaccuracy: the pedal signals should probably
+be mixed with the lower manual signals before the vibrato routing decision
+for the lower manual. Instead, Beatrix never routes pedals through
+the vibrato (which is not a great loss if you ask me).
+
+MIDI controllers can be freely assigned via configuration (see the
+file default.cfg).
+
+The upper manual can be split in two or three parts, to enable
+multi-manual performances from a single keyboard.
+
+Seven transpose parameters (split pedals, lower and upper manuals,
+global transpose and non-split pedals, lower and upper manuals).
+
+
+Incompatibilities to earlier versions:
+
+  The programme vocabulary has been changed and extended (see the file
+  default.pgm for details):
+
+    The noteshift configuration parameter has been replaced by several
+    transposition parameters: trssplitpedals, trssplitlower,
+    trssplitupper, transpose, transposeupper, transposelower and
+    transposepedals.
+
+    To control keyboard split, two new programme parameters are
+    introduced, keysplitlower and keysplitupper. 
+
+    The syntax and semantics of the vibrato programme parameter has
+    changed. As from version 0.4.1, the vibrato programme no longer
+    accepts the value 'off', only the vibrato knob settings of 'v1',
+    'c1' etc. Instead, two new manual routing parameters are
+    introduced, vibratoupper and vibratolower. They take the arguments
+    'on' or 'off' and routes the upper or lower manual through the
+    vibrato effect.
+
+    Drawbars can be set for upper and lower manuals and pedals by the
+    parameters drawbarsupper, drawbarslower and drawbarspedals. The
+    old parameter name  drawbars  is now a synonym for  drawbarsupper.
+    Pedal drawbars in this version are 'wired' with nine drawbars,
+    with no foldback and no tapering (all signals are at their
+    reference level).
+
+  Several new configuration parameters are introduced to modify the
+  behaviour of the default crosstalk model. See the file default.cfg
+  for details.
+
+  The instrument now responds to three MIDI channels. These are
+  selected in the configuration. The previous configuration parameter
+  midi.swell.channel  has been replaced by three new parameters:
+  midi.upper.channel, midi.lower.channel and midi.pedals.channel.
+
+
+Things that will be addressed in later versions:
+
+  - A terminal-based user interface.
+  - More amplifier and loudspeaker models
+  - Noise, crackle, mains hum and 'angel choir'
+
+-fk
+
+
+### OLD README ###
+
+28-nov-2004/FK
+10-oct-2004/FK
+
+[Additional information can be found in the files
+   READMEv041.txt
+   default.cfg
+   default.pgm]
+
+
+
+This is what you generally need to start playing on Beatrix:
+
+Computer:
+
+- A PIII personal computer running Linux at 400 MHz or more. 
+    [This is just a rough guideline; you may get acceptable
+    performance on lesser systems.]
+
+- A soundcard with 22050 Hz, 16-bit stereo outputs (most have).
+
+- MIDI in (via soundcard, USB, serial port, PCCARD or any other means
+  of connection).
+
+- The OSS sound/MIDI libraries (usually included in Linux distributions)
+
+
+Connected to the computer:
+
+- A MIDI source, like a MIDI keyboard, synthesizer or sequencer. It
+  should have a modulation wheel (for volume control) and be able to
+  send program change messages. 61 keys is also good, since that
+  matches the popular models of the original instruments. Turning off
+  aftertouch might be a good idea. Note on/off velocity is not
+  needed. A sustain pedal is convenient for toggling speeds in the
+  rotary FX.
+
+- Some kind of stereo sound amplification. Headphones are ok, but the
+  rotary effect sounds better through loudspeakers placed a few meters
+  apart.
+
+
+  Notes:
+
+- Since there is no other command source than MIDI, the ability to send
+  MIDI program change messages is important. For real-time playing, the
+  ability to send MIDI continuous controllers greatly helps. See the file
+  default.cfg for the controller numbers (and how to change them to match
+  your equipment).
+
+- If you are recording, try a mono-mix, a half-way L-R pan, and a full pan
+  and listen to the results. They are different and may suit your needs
+  differently.
+
+- I play Beatrix from my laptop, using the ordinary headphone socket 
+  connected to an old stereo amplifier. When I first connected it, there
+  was a lot of stutter and hum from the switched power-supply. I discovered,
+  that it was possible to completely eliminate this by inserting a 1:1
+  stereo audio transformer between the headphone socket and the amplifier.
+  The transformer is actually a car accessory, and conveniently enough
+  comes mounted with RCA plugs and wires. The cost was approx. 20 Euros.
+
+
+Installation
+
+Extract the tar-file in a directory of your choice:
+
+	zcat file.tar.gz | tar xf -
+
+Then make that your current directory while running beatrix ('cd' to it).
+
+
+Compiling
+
+There is a statically linked version in the distribution named
+sbeatrix. It may work as is on your system. If you want to compile a
+shared library version, you need gcc and make. Issue the command:
+
+	make beatrix
+
+
+Setting up
+
+There are three things to set up,
+
+  the MIDI input device,
+
+  the MIDI input channels, and
+
+  the audio output device. 
+
+These values are set by configuration parameters which can be given on
+the command line, or written to a configuration file in which case the
+file default.cfg is the natural place.
+
+The file default.cfg should be edited with a text editor. The file is
+initally all comments. When you have updated a parameter, make sure
+that the line is uncommented by deleting any '#'-characters at the
+start of the line.
+
+You must restart beatrix in order for it to reread the configuration.
+
+
+- MIDI input device
+
+  On my system, MIDI input is read from /dev/midi00. To change this,
+  set the configuration parameter:
+
+  midi.device=/dev/midi00
+
+
+- MIDI input channels
+
+  In my setup MIDI input is read from channel 1 (the first
+  channel). The configuration parameters are:
+
+  midi.upper.channel=1
+  midi.lower.channel=2
+  midi.pedals.channel=3
+
+
+- Audio output device
+
+  On my system, sampled audio is written to /dev/dsp. To change this,
+  set the configuration parameters:
+
+  main.audiodevice=/dev/dsp
+
+
+  Hints
+
+  I usually use the system utility aumix to increase the signal
+  strength from the audio port, especially when running the signal
+  through an external amplifier.
+
+
+  MIDI input can be quickly tested by opening a shell and doing:
+
+  cat -v /dev/midi00
+
+  If your MIDI keyboard has a pitch bend or modulation wheel, rolling
+  one of them around a bit generates plenty of MIDI data which should
+  be seen as several lines of characters arriving in rapid succession.
+  Key aftertouch also works for testing, but Beatrix has no use for it
+  so unless you need it elsewhere, consider turning it off.
+
+
+  Beatrix does not need to run as root. On my Debian installation the
+  user must be a member of the  audio  group to be allowed write access
+  to /dev/dsp.
+
+
+Running
+
+Open a text-based shell, cd to the beatrix directory and do:
+
+       ./beatrix
+
+or for the statically linked version:
+
+       ./sbeatrix
+
+Commandline options are few:
+
+        beatrix [-p programmefile] [-c] [config-option ...]
+
+  -p programmefile      This option reads the given programme file after
+			having read default.pgm. The option can be
+			given several times. Programme slots defined
+			in a file overwrite existing slots.
+
+  -c                    This flag prevents the program from reading
+                        the default configuration file default.cfg.
+
+  config-option         A list of configuration options that normally
+                        would be in a configuration file. Mostly
+                        useful for testing and for reading alternative
+                        configuration files.
+
+For example, to run with the configurations in file osc-middy.cfg, use:
+
+./beatrix -p popular.pgm config.read=osc-middy.cfg
+
+
+Concluding remarks:
+
+  There are several ways to control the workings of Beatrix, and in
+  several places there are multiple ways to affect a particular
+  parameter.
+
+  First, the configuration parameters determine what kind of
+  instrument you have. By selecting a particular configuration you
+  determine what its properties should be, and just as with real
+  instruments, these properties remain unchanged while you play.
+  There is no generic technical or dogmatic reason that says Beatrix
+  MUST be this way, it is simply they way it was developed.
+
+  Second, a number of parameters can be changed from the programme
+  feature. This has two purposes; it is convenient to be able to set
+  the instrument into a defined state with a single command, and it
+  may be the only way to control it for many users (at least until a
+  computer user interface exists).
+
+  Finally, the use of MIDI control messages enables hands-on runtime
+  control of the performance parameters. For me, this is the most
+  convenient form of playing, because I can have the relevant controls
+  in front of me, close to the playing keys.
+
+
+  Some caveats to watch out for:
+
+    - Although I have worked to prevent it, it is still possible in
+      certain situations to get digital clipping within Beatrix. This
+      may happen on full volume, full distortion and all drawbars
+      out. Percussion on top of that will certainly add to the
+      fun. It sounds ugly and is not nice to your loudspeakers. Lower
+      the volume (mod wheel) a bit until it disappears.
+
+    - The filters in the rotary horn and drum simulation are quite
+      capable of stunning amplification and feedback if driven too
+      far. The filter parameters can also be adjusted in realtime with
+      the proper MIDI controllers. If you do not know the
+      mappings of *your* MIDI controller;
+
+        * Experiment on low listening levels
+      
+        * As you modify an uncertain controller, watch the bottom line
+          of output on the terminal where Beatrix runs. Parameter
+          updates to the filters are reflected there in
+          real-time. Watch out for high Q and gain levels!

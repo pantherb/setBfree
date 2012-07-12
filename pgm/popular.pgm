@@ -1,0 +1,41 @@
+#
+# some popular registrations
+#
+2  {name="Fredriks tfn 1", drawbars=75-8757-200}
+3  {name="Fredriks tfn 2", drawbars=75-8016-200}
+4  {name="Fredriks tfn 3", drawbars=70-3713-153}
+5  {name="Standard B",             drawbars=88-8000-000}
+6  {name="Standard B mid whistle", drawbars=88-8000-004}
+7  {name="Gospel",                 drawbars=88-8000-008}
+8  {name="Blues 1", drawbars=88-8800-000}
+9  {name="Blues 2", drawbars=88-5324-588}
+10 {name="Rod Argent", drawbars="88 0000 000"}
+11 {
+    name="Brian Auger", 
+    drawbars="88 8110 000",
+    vibrato=c3,
+    perc=on,
+    percharm=3rd
+   }
+12 {name="Jesse Crawford",  drawbars="80 0800 000"}
+13 {name="Joey DeFranco 1", drawbars="88 8400 080"}
+14 {name="Joey DeFranco 2", drawbars="83 8000 000"}
+15 {name="Booker T Jones",  drawbars="88 8630 000"}
+16 {name="Green Onions",    drawbars="80 8800 008"}
+17 {name="Procul Harum",    drawbars="80 0808 000"}
+18 {
+    name="AWSOP",           
+    drawbars="68 0808 000",
+    perc=on,
+    percvol=soft,
+    percspeed=fast
+   }
+19 {name="Steve Winwood",   drawbars="84 8848 448"}
+20 {name="Lenny Dee 1",     drawbars="80 8080 808"}
+21 {name="Lenny Dee 2",     drawbars="66 7076 606"}
+# For testing
+22 {name="Silence", drawbars="00 0000 000"}
+23 {name="8' solo", drawbars="00 8000 000"}
+24 {name="Errol G. 1", drawbars="80 0008 888"}
+25 {name="Errol G. 2", drawbars="80 0006 666"}
+26 {name="Errol G. 3", drawbars="80 0004 444"}

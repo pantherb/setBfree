@@ -1,0 +1,479 @@
+# 28-nov-2004/FK Version 0.4.1
+#
+# The default programme (this file) contains instrument controls and some
+# standard presets.
+#
+# Programmes are used while playing and are invoked by sending a MIDI program
+# change message. Programme files are read when setBfree starts and this file
+# is always loaded first (when present). To supply your own programmes you may:
+#   * edit this file, or
+#   * use the -p <file> commandline switch
+# In general, later programme definitions completely replace earlier
+# ones. However, a sequence of two or more programme definitions all
+# referring to the the same programme number will merge.
+#
+# Static properties of the instrument are set in *.cfg-files.
+#
+# Look at the end of this file for a description of syntax and parameters.
+# ------------------------------------------------------------------------
+# This first entry is mostly an example to show that it is possible to have
+# multiple parameters in the same programme.
+#
+1 {name="Jazz 1 all",
+   drawbars="888 0000 000",
+   perc=on,
+   percvol=soft,
+   percspeed=fast,
+   percharm=3rd,
+   vibrato=c3,
+   vibratoupper=on,
+   overdrive=on,
+   rotary=chorale}
+2 {name="Jazz 2", drawbars="668 0000 008"}
+3 {name="Jazz 3", drawbars="638 8000 000"}
+
+#
+# Control programs - Each of these programmes control a single parameter.
+#
+27 {name="Reverb  0",        reverbmix=0.0}
+28 {name="Reverb 16",        reverbmix=0.16}
+29 {name="Reverb 25",        reverbmix=0.25}
+30 {name="Reverb 33",        reverbmix=0.33}
+31 {name="Reverb 50",        reverbmix=0.50}
+32 {name="Percussion OFF",   perc=off}
+33 {name="Percussion ON",    perc=on}
+34 {name="Percussion SOFT",  percvol=soft}
+35 {name="Percussion NORMAL",percvol=normal}
+36 {name="Percussion FAST",  percspeed=fast}
+37 {name="Percussion SLOW",  percspeed=slow}
+38 {name="P.Harmonic 2nd",   percharm=2nd}
+39 {name="P.Harmonic 3rd",   percharm=3rd}
+40 {name="Overdrive OFF",    overdrive=off}
+41 {name="Overdrive ON",     overdrive=on}
+42 {name="Vibrato V1",       vibrato=v1}
+43 {name="Vibrato V2",       vibrato=v2}
+44 {name="Vibrato V3",       vibrato=v3}
+45 {name="Vibrato C1",       vibrato=c1}
+46 {name="Vibrato C2",       vibrato=c2}
+47 {name="Vibrato C3",       vibrato=c3}
+48 {name="Vib lower on",     vibratolower=on}
+49 {name="Vib lower off",    vibratolower=off}
+50 {name="Vib upper on",     vibratoupper=on}
+51 {name="Vib upper off",    vibratoupper=off}
+
+52 {name="Rotary STOP",      rotaryspeed=stop}
+53 {name="Rotary SLOW",      rotaryspeed=chorale}
+54 {name="Rotary FAST",      rotaryspeed=tremolo}
+
+#
+# Having two random programs on adjacent program numbers makes sense
+# if you have a MIDI controller that allows you to step incrementally
+# through the program numbers. That way you can re-randomize by simply
+# alternating between the up/increment and down/decrement buttons.
+#
+
+55 {name="Random",           drawbars=random}
+56 {name="Random",           drawbars=random}
+
+#
+# These programs demonstrate split and an associated transpose.
+#
+57 {name="Lowr/Upr Split",   keysplitlower=58}
+58 {name="Pd/Lw/Up Split",   
+      keysplitpedals=48,
+      trssplitpedals=-12,
+      keysplitlower=66}
+59 {name="Pdal/Upr Split",   keysplitpedals=54, trssplitpedals=-12}
+60 {name="No split",         keysplitpedals=0,  keysplitlower=0}
+
+61 {name="Brassy pedals",   drawbarspedals="88 8444 221"}
+62 {name="Hollow pedals",   drawbarspedals="80 6300 000"}
+63 {name="Cute pedals",     drawbarspedals="64 8260 002"}
+
+#
+# The entries below represent 'presets', pre-configured registrations
+# in the original instruments that were wired into an internal patch-panel
+# and selected from two octaves of reverse-colored manual keys.
+#
+
+#
+# Standard Voices 'Lower Manual' (Hammond A-102)
+#
+64 {name="L:Cello",               drawbarslower="00 4545 440"}
+65 {name="L:Flute & String",      drawbarslower="00 4432 220"}
+66 {name="L:Clarinet",            drawbarslower="00 7373 430"}
+67 {name="L:Salicional",          drawbarslower="00 4544 222"}
+68 {name="L:Great no reeds",      drawbarslower="00 6644 322"}
+69 {name="L:Open Diaposon",       drawbarslower="00 5642 200"}
+70 {name="L:Full Great",          drawbarslower="00 6845 433"}
+71 {name="L:Tibia Clausa",        drawbarslower="00 8030 000"}
+72 {name="L:Full Great with 16'", drawbarslower="42 7866 244"}
+#
+# Theatrical Voices 'Lower Manual' (Hammond A-102)
+#
+73 {name="L:Cello 8'",          drawbarslower="00 4545 440"}
+74 {name="L:Dulciana 8'",       drawbarslower="00 5432 000"}
+75 {name="L:Vibraharp 8'",      drawbarslower="00 4800 000"}
+76 {name="L:Vox 8' & Tibia 4'", drawbarslower="00 3800 460"}
+77 {name="L:String Accomp. 8'", drawbarslower="00 6554 322"}
+78 {name="L:Open Diapason 8'",  drawbarslower="00 5642 200"}
+79 {name="L:Full Accomp. 16'",  drawbarslower="43 5434 334"}
+80 {name="L:Tibia 8'",          drawbarslower="00 8030 000"}
+81 {name="L:Bombarde 16'",      drawbarslower="84 7767 666"}
+#
+# Standard Voices 'Upper Manual' (Hammond A-102)
+#
+82 {name="U:Stopped Flute",  drawbars="00 5320 000"}
+83 {name="U:Dulciana",       drawbars="00 4432 000"}
+84 {name="U:French Horn",    drawbars="00 8740 000"}
+85 {name="U:Salicional",     drawbars="00 4544 222"}
+86 {name="U:Flutes 8'&4'",   drawbars="00 5403 000"}
+87 {name="U:Oboe Horn",      drawbars="00 4675 300"}
+88 {name="U:Swell Diapason", drawbars="00 5644 320"}
+89 {name="U:Trumpet",        drawbars="00 6876 540"}
+90 {name="U:Full Swell",     drawbars="32 7645 222"}
+#
+# Theatrical Voices 'Upper Manual' (Hammond A-102)
+#
+91 {name="U:French Horn 8'",         drawbars="00 8740 000"}
+92 {name="U:Tibias 8'&4'",           drawbars="00 8408 004"}
+93 {name="U:Clarinet 8'",            drawbars="00 8080 840"}
+94 {name="U:Novel Solo 8'",          drawbars="08 8800 880"}
+95 {name="U:Theatre Solo 16'",       drawbars="60 8088 000"}
+96 {name="U:Oboe Horn 8'",           drawbars="00 4685 300"}
+97 {name="U:Full Tibias 16'",        drawbars="60 8807 006"}
+98 {name="U:Trumpet 8'",             drawbars="00 6888 654"}
+99 {name="U:Full Theatre Brass 16'", drawbars="76 8878 667"}
+#
+# You can have up to program number 127.
+# Currently, MIDI program change is only recognized on the MIDI channel
+# assigned to the upper manual. That is set in default.cfg.
+#
+# ----------------------------------------------------------------
+# Control programme syntax
+# ----------------------------------------------------------------
+# 
+# A control programme file contains a sequence of:
+#
+#   <program-number> '{' <assignment> [',' <assignment>] ... '}'
+#
+# A comment begins with the hash ('#') character and extends to the end
+# of the line.
+#
+# <program-number> is an integer in the range 0-127 (see Notes at the end).
+#
+# <assignment> is defined as:
+#
+#   <property> '=' <parameter>
+#
+# where <property> is a specific symbol, like 'name' or 'rotary', and
+# parameter is a string. If the string contains internal spaces it must
+# be quoted using double quotes.
+#
+# When a programme is selected only those properties present in the programme
+# have their values set. Properties not mentioned in the program retain their
+# current values.
+#
+# Below follows a list of properties and allowed values:
+#
+# name = <string>
+#   Gives a name to the program. When the program is selected the name
+#   is displayed on the feedback line on the terminal. If the name has
+#   internal spaces it must be surrounded by double quotes.
+#
+# drawbarsupper  = <registration>
+#   Sets the drawbars for the upper manual.
+#
+# drawbars       = <registration>
+#   Sets the drawbars for the upper manual (deprecated).
+#
+# drawbarslower  = <registration>
+#   Sets the drawbars for the lower manual.
+#
+# drawbarspedals = <registration>
+#   Sets the drawbars for the pedals.
+#
+#   The registration should be a sequence of exactly 9 digits, each selected
+#   from the set {'0', '1', '2', '3', '4', '5', '6', '7', '8'}. The digits
+#   may be arranged in groups by separating them with dash ('-'), underscore
+#   ('_') or space characters. If space is used as the group separator, the
+#   registration string must be surrounded by double quotes. For example,
+#   these are all equivalent:
+#
+#     drawbars=888-0404-00
+#     drawbars=888_0404_00
+#     drawbars="888 0404 00"
+#     drawbars=888040400
+#     drawbars=8-8-8_0-4-0-4_0-0
+#
+#   The registration controls the mixture of fundamentals and harmonics
+#   in the tone generated by each played key. Numbering the digits from
+#   left to right, the first digit is 1 and the last 9. The correspondence
+#   between the digit sequence and the drawbars (of the original instrument)
+#   is as follows:
+#
+#      Digit    Length    Partial         Fq  Colour
+#      ---------------------------------------------
+#      Digit 1  16'      (subfundamental, x1, brown)
+#      Digit 2   5 1/3'  (harmonic,      ~x3, brown)
+#      Digit 3   8'      (fundamental,    x2, white)
+#
+#      Digit 4   4'      (harmonic,       x4, white)
+#      Digit 5   2 2/3'  (harmonic,      ~x6, black)
+#      Digit 6   2'      (harmonic,       x8, white)
+#      Digit 7   1 3/5'  (harmonic,     ~x10, black)
+#
+#      Digit 8   1 1/3'  (harmonic,     ~x12, black)
+#      Digit 9   1'      (harmonic,      x16, white)
+#
+#   The length is a reference to pipe organs and basically tells the organist
+#   the partial's octave. The 8' length is usually considered to be the
+#   fundamental note. The frequency multiplier is exact for pure octaves,
+#   but since the harmonics are taken from a set of oscillators tuned in
+#   the tempered scale (or its gear-box approximation), the other
+#   harmonics (x3, x6, x10 and x12) differ slightly from their integer
+#   multiples of the fundamental note's frequency. The colour refers to the
+#   customary colouring of the drawbar handles. The digit grouping pattern
+#
+#      nnn-nnnn-nn
+#
+#   is often encountered in written registrations.
+#
+#  [The parameter emulates one of several sets of coloured sliders on the
+#   original instrument. Each slider controls one partial and has 9 numbered
+#   positions. Inspired by the stops on pipe organs, the sliders are pulled
+#   out of the instrument towards the organist to achieve higher volume.
+#   Hence the phrase 'pull out the stops' which when applied to a pipe
+#   organ, literally has it going at 'full blast'.
+#
+#   In addition, the pedals often have less than nine drawbars.]
+#   
+#
+# vibrato = v1 | v2 | v3 | c1 | c2 | c3
+#   The vibrato mechanism (when present in the original instruments) creates
+#   an oscillating pitch shift (in addition to a host of other subtle
+#   side-effects, like filtering and amplitude modulation). The oscillation
+#   rate is fixed somewhere in the region of 7-10 Hz. The v1, v2 and v3
+#   settings selects different levels of vibrato, v1 being the least amount
+#   of modulation and v3 the most. The c1, c2 and c3 settings do the same,
+#   but adds unprocessed signal to the output, creating a chorus effect.
+#   As of version 0.4.1 this parameter only controls the setting of the effect.
+#   It does not apply the effect. See vibratoupper and vibratolower for that.
+#
+#   [On the original instrument the setting is choosen by means of a rotary
+#    selection knob, turned to one of the seven positions. The mechanism
+#    beneath this knob is a marvel in itself...]
+#
+#
+# vibratoupper = on | off
+#   Controls if the upper manual output is routed through the vibrato/chorus
+#   effect.
+#
+#
+# vibratolower = on | off
+#   Controls if the lower manual output is routed through the vibrato/chorus
+#   effect.
+#
+#
+# perc = on | off
+#   The percussion mechanism (when present in the original instruments) takes
+#   the signal from the second or third harmonic and amplifies it separately
+#   from the drawbar registration. The amplification has a percussive
+#   (bell-like) envelope and the signal decays in 0.5 - 4 seconds.
+#   When percussion is enabled the 9th bus-bar (digit 9 in the registration)
+#   becomes part of the trigger mechanism and does not deliver sound.
+#   Also, the overall output volume is lowered slightly to leave some head-
+#   room for the percussive signal.
+#   The percussion is single-triggered, meaning that once a key has been
+#   pressed down, percussion can not trigger again until all keys has been
+#   released. This imposes some extra difficulty on rapid passages, but also
+#   gives the organist an opportunity to modulate the performance.
+#   Percussion is only present in the upper manual and the percussive signal
+#   is not routed through the vibrato/chorus effect
+#
+#   [On the original instrument, this parameter is controlled by a tablet
+#    switch, set to either ON or OFF. When percussion is on, the 9th (1') bus
+#    is switched from carrying sound to triggering the percussion effect.]
+#
+#
+# percvol = normal | high | hi
+# percvol = soft   | low  | lo
+#   Selects the strength of the percussion signal between two alternate levels.
+#
+#   [On the original instrument, this parameter is controlled by a tablet
+#    switch, set to either NORMAL or SOFT. The lowered volume in the NORMAL
+#    position is also a property of the original.]
+#
+#
+# percspeed = fast | high | hi
+# percspeed = slow | low  | lo
+#   Selects the rate of decay of the percussion signal. Fast decay is usually
+#   around 0.25 - 1 second, slow decay 2 - 4 seconds.
+#
+#   [On the original instrument, this parameter is controlled by a tablet
+#    switch, set to either FAST or SLOW.]
+#
+#
+# percharm = second | 2nd | low  | lo
+# percharm = third  | 3rd | high | hi
+#   Selects the percussion signal from either the second or third harmonic
+#   (digit 4 or digit 5 in the registration).
+#
+#   [On the original instrument, this parameter is controlled by a tablet
+#    switch, set to either SECOND or THIRD.]
+#
+#
+# overdrive = on  | off
+#   When enabled, the signal is routed through an effect that provides
+#   some of the characteristics of a tube amplifier.
+#
+#
+# rotaryspeed = tremolo | fast | high | hi
+# rotaryspeed = chorale | slow | low  | lo
+# rotaryspeed = stopped | stop | zero | break
+#   Selects the speed of the rotary speaker effect. By default, a MIDI
+#   sustain pedal message toggles between the slow and fast speeds.
+#
+#
+# reverbmix = <n>
+#   Where <n> is a real number in the range 0 - 1.
+#   Controls the amount of reverb mixed into the signal. A value of 0 gives
+#   a completely dry sound, a value of 1 takes all signal from the output
+#   of the reverb effect. Pleasant settings can usually be found around 0.25,
+#   but that is of course a matter of taste.
+#
+#   [On the original instruments reverb was not always present, just as
+#    some models required external amplification. When present, however, the
+#    amount of reverb could be controlled continuously. As a piece of trivia,
+#    the spring-reverb technology common in guitar amplifiers was another
+#    electromechanical invention by the Hammond company.]
+#
+#
+# keysplitpedals = <n>
+# keysplitlower = <n>
+#   Where <n> is an integer MIDI note number in the range 0 - 127.
+#
+#   These two parameters are used to remap notes on the MIDI channel assigned
+#   to the upper manual, so that they fall on pedals and/or the lower manual.
+#   This makes it possible to play on two or three manuals from a single
+#   MIDI keyboard.
+#
+#   The MIDI note number given as argument to the parameters is the highest
+#   (last, rightmost) note in the region referred to by the parameter, plus
+#   one. Or, the lowest (first, leftmost) note in the next region.
+#
+#   A value of 0 (zero) disables the region.
+#
+#   The default MIDI implementation maps note numbers thus:
+#
+#   MIDI note number      Key
+#   ----------------      ------------
+#                 24      Lowest C on pedals
+#                 55      Highest G on pedals
+# 
+#                 36      Lowest C on manuals
+#                 96      Highest C on manuals
+#
+#   The same information expressed differently:
+#
+#           [36    ][48    ][60    ][72    ][84    ][96]   Upper manual
+#           [36    ][48    ][60    ][72    ][84    ][96]   Lower manual
+#   [24    ][36    ][48 55 ]                               Pedals
+#
+#   With some sample splitpoints:
+#
+#   keysplitpedals=48, keysplitlower=0
+#
+#                   [48    ][60    ][72    ][84    ][96]   Upper manual
+#   [24    ][36    ]                                       Pedals
+#
+#   keysplitpedals=48, keysplitlower=60
+#
+#                           [60    ][72    ][84    ][96]   Upper manual
+#                   [48    ]                               Lower manual
+#   [24    ][36    ]                                       Pedals
+#
+#   keysplitpedals=0, keysplitlower=60
+#
+#                           [60    ][72    ][84    ][96]   Upper manual
+#           [36    ][48    ]                               Lower manual
+#
+#   Remember, all this happens on the same MIDI channel, and only on the
+#   one assigned to the upper manual.
+#
+#   Middle C on most MIDI keyboards sends note number 60.
+#
+#   [The original instruments has two manuals, upper and lower, with
+#    61 playing keys or less (depending on the model).]
+#
+#
+# trssplitpedals=<n>
+# trssplitlower=<n>
+# trssplitupper=<n>
+#   Where <n> is an integer in the range -127 -- 127.
+#
+#   These three parameters transposes the regions reached by a keyboard split
+#   on the MIDI channel addressed to the upper manual. The recommended use is
+#   to apply values from the set -24, -12, 0 (turn off), 12, 24 to map the
+#   regions reached by a split to the desired octave. These values are ONLY
+#   applied when a keyboard split is active, but are retained between split
+#   activations.
+#
+#
+# transpose=<n>
+#   Where <n> is an integer in the range -127 -- 127.
+#
+#   This parameter transposes ALL notes (including split) by its argument.
+#   The recommended use is to apply small values e.g. ... -3, -2, -1, 0 (off),
+#   1, 2, 3, ... to shift the instrument from a difficult to a familiar key.
+#   For example, if the song must be performed in Eb (which means a lot black
+#   keys) you could use transpose=3 and play in C, or, transpose=-1 and play
+#   in E.
+#
+#   The disadvantages of using a mechanized transpose like this are:
+#     * The highest or lowest notes may become unreachable. If you plan to
+#       use transpose, rehearse the piece with it first.
+#     * It is far too easy to forget to disable the transpose and start
+#       the next song in the wrong key.
+#
+#
+# transposeupper=<n>
+# transposelower=<n>
+# transposepedals=<n>
+#    Where <n> is an integer in the range -127 -- 127.
+#
+# These parameters separately transpose the upper, lower and pedal manuals.
+# This is for situations where separate MIDI controllers are used for the
+# manuals and they cannot by themselves reach the desired ranges.
+# Recommended values are positive and negative multiples of 12,
+# ie ... -24, -12, 0 (off), 12, 24 ...
+#
+
+# NOTES:
+#
+# The parameter value keyword 'on' has the following synonyms:
+#   yes   true   enabled
+#
+# The parameter value keyword 'off' has the following synonyms:
+#   no   none   false   disabled
+#
+# Program numbers:
+#
+# The program number refers to the value part of a MIDI program
+# change message. Some MIDI controllers (e.g. synthesizers) display program
+# numbers differently, for example like 1-128, and not all are capable of
+# sending all program numbers.
+#
+# Percussion:
+#
+# The volume drop, single triggering and loss of the 9th drawbar are all
+# features of the original instrument. Regarded by some as misfeatures
+# that can easily be compensated for in an emulator, I have chosen initially
+# to keep them, mostly because they impact on playing decisions more than they
+# influence sound. Even so, the 9th can easily be restored, but the volume
+# drop is most welcome in the digital domain. Multiple triggering would
+# simply be weird and fairly complicated given the current architecture.
+# 
+# The controllable aspects of percussion are found in the configuration
+# group of parameters   osc.perc.*   (see default.cfg).
+#

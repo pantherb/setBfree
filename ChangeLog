@@ -1,0 +1,15 @@
+2012-07-04 
+Robin Gareus <robin@gareus.org>, Will Panther <pantherb@setbfree.org>
+
+* imported upstream v0.4.1
+* reorganized and modernized source-tree
+* updated the synth-engine to use float (no longer limited to 16bit/samples)
+* reworked engine to allow arbitrary sample-rates.
+* removed OSS audio/midi interface code
+* made synth-engine and plugins realtime-safe.
+* added JACK-audio, JACK-MIDI and ALSA-Sequencer support
+* separated overdrive, whirl and reverb into standalone modules
+* exposed effects and main synth as LV2 plugin
+* standardized commandline options, help-text, added manual pages.
+* added optional convolution reverb and leslie cabinet emulator
+* added simple GUI for testing based on vkeybd

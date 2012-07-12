@@ -1,0 +1,148 @@
+MIDI controllers
+
+0    bank select
+1    modulation wheel
+2    breath control
+3    undefined                           P02.02 ctl_biased
+4    foot controller
+5    portamento time
+6    data entry
+7    channel volume
+
+8    balance
+9    undefined                           P02.04 ctl_biased_fb
+10   pan
+11   expression controller
+12   effect control 1
+13   effect control 2
+14   undefined                           P02.05 ctl_biased_fb2
+15   undefined                           P02.07 ctl_biased_gfb
+
+16   general purpose controller #1
+17   general purpose controller #2
+18   general purpose controller #3
+19   general purpose controller #4
+20   undefined                           P02.03 ctl_sagtoBias
+21   undefined                           P02.01 setInputGain
+22   undefined                           P02.08 setOutputGain
+23   undefined				 P02.13 setDrumFilterType
+
+24   undefined                           P02.14 setDrumFilterFrequency
+25   undefined                           P02.15 setDrumFilterQ
+26   undefined                           P02.16 setDrumFilterGain
+27   undefined                           P03.01 setHornFilterType
+28   undefined                           P03.02 setHornFilterFrequency
+29   undefined                           P03.03 setHornFilterQ
+30   undefined                           P03.04 setHornFilterGain
+31   undefined                           P02.06 setCleanMix
+
+32-63   Least significant 7 bits of controllers 0-31
+
+64   damper pedal on/off (sustain)  (1)
+65   portamento on/off              (1)
+66   sostenuto on/off               (1)
+67   soft pedal on/off              (1)
+68   legato footswitch              (1)
+69   hold 2                         (1)
+70   sound controller 1                  P01.01 swell drawbar 16
+71   sound controller 2 (resonance)      P01.02 swell drawbar  5 1/3
+
+72   sound controller 3 (release time)   P01.03 swell drawbar  8
+73   sound controller 4 (attack time)    P01.04 swell drawbar  4
+74   sound controller 5 (cutoff)         P01.05 swell drawbar  2 2/3
+75   sound controller 6 (decay time)     P01.06 swell drawbar  2
+76   sound controller 7 (vibrato rate)   P01.07 swell drawbar  1 3/5
+77   sound controller 8 (vibrato depth)  P01.08 swell drawbar  1 1/3
+78   sound controller 9 (vibrato delay)  P01.09 swell drawbar  1
+79   sound controller 10
+
+80   general purpose controller #5       P01.10 percussion off/norm/soft/off
+81   general purpose controller #6       P01.11 percussion fast/slow
+82   general purpose controller #7       P01.12 percussion 3rd/2nd
+83   general purpose controller #8       P01.13 vibr. off/v1/c1/v2/c2/v3/c3/off
+84   portamento control
+85   undefined                           P03.05 setHornFilter2Type
+86   undefined                           P03.06 setHornFilter2Frequency
+87   undefined                           P03.07 setHornFilter2Q
+
+88   undefined                           P03.08 setHornFilter2Gain
+89   undefined                           P03.09 setComb0Feedback
+90   undefined                           P03.10 setComb0Delay
+91   effects 1 depth (reverb send level) P01.16 rotary stop/slow/fast/stop
+92   effects 2 depth (tremolo depth)     (P01.14 overdrive off/drive)
+93   effects 3 depth (chorus send level) P01.15 overdrive fat
+94   effects 4 depth (celeste depth)
+95   effects 5 depth (phaser depth)
+
+96   data entry +1 (increment)
+97   data entry -1 (decrement)
+98   non-registered parameter number LSB
+99   non-registered parameter number MSB
+100  registered parameter number MSB (2)
+101  registered parameter number LSB (2)
+102  undefined                           P03.11 setComb1Feedback
+103  undefined                           P03.12 setComb1Delay
+
+104  undefined
+105  undefined
+106  undefined
+107  undefined
+108  undefined
+109  undefined
+110  undefined
+111  undefined
+
+112  undefined
+113  undefined
+114  undefined
+115  undefined
+116  undefined
+117  undefined
+118  undefined
+119  undefined
+
+120  all sound off
+121  reset all controllers
+122  local controller on/off
+123  all notes off
+124  omni mode off and all notes off
+125  omni mode on and all notes off
+126  monophonic mode
+127  polyphonic mode
+
+
+-------------------------------------------------------------
+(1) Binary controller.
+    I have several sources of documentation for these and few
+    of them agree on the interpretation of the data byte.
+
+    An old Internet text I once found states that
+
+                 "0=OFF, 127=ON with 1-126 undefined"
+
+    The "MIDI and Sound Book for the Atari ST" by Enders and Klemme is
+    so full of factual errors that I hesitate to mention it; in any event
+    they claim that
+
+                          "0=ON and 127=OFF"
+
+    The Radium MIDI controller's users guide by M-AUDIO states that the
+    interpretation is
+
+                          "<63=off; >64=on"
+
+    which can only be read as the values 0-62 mean OFF and
+    65-127 mean ON. This leaves 63 and 64 undefined. Assuming a typo
+    we can speculate that they really mean 0-63=OFF and 64-127=ON.
+
+    The Roland Sound Canvas Owner's Manual states that the canvas
+    will interpret
+
+                         0-63=OFF, 64-127=ON
+
+   So that is 1.5 votes for the bit 0x40, 0=OFF, 1=ON.
+
+(2) The Radmium MIDI controller's users guid by M-AUDIO states this
+    to be "register parameter" but that appears unlikely when compared
+    to controllers 98 and 99 that are called "non-registered parameter".
+

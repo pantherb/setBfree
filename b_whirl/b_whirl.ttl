@@ -1,0 +1,79 @@
+@prefix doap: <http://usefulinc.com/ns/doap#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix pg: <http://lv2plug.in/ns/ext/port-groups#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rg: <http://gareus.org/oss/lv2/> .
+
+rg:bwhirl-in a pg:Group ;
+   a pg:MonoGroup ;
+   :symbol "in" .
+  
+rg:bwhirl-out a pg:Group ;
+   a pg:StereoGroup ;
+   :symbol "out" ;
+   pg:source rg:bwhirl-in .
+
+<http://gareus.org/>
+	a foaf:Person ;
+	foaf:name "Robin Gareus" ;
+	foaf:mbox <mailto:robin@gareus.org> ;
+	rdfs:seeAlso <http://gareus.org/> .
+
+<http://gareus.org/oss/lv2/b_whirl>
+	a lv2:Plugin ,
+		lv2:B_Whirl ;
+	doap:maintainer <http://gareus.org/> ;
+	doap:name "B Organ Whirl Speaker";
+	doap:license <http://opensource.org/licenses/gpl-2.0> ;
+	lv2:optionalFeature lv2:hardRTCapable ;
+	lv2:port
+	[
+		a lv2:AudioPort ,
+			lv2:InputPort ;
+		lv2:index 0 ;
+		lv2:symbol "in" ;
+		lv2:name "In" ;
+	  pg:inGroup rg:bwhirl-in ;
+	  pg:role pg:centerChannel ;
+	],	
+	[
+		a lv2:AudioPort ,
+			lv2:OutputPort ;
+		lv2:index 1 ;
+		lv2:symbol "outl" ;
+		lv2:name "Left output" ;
+    pg:inGroup rg:bwhirl-out ;
+    pg:role pg:leftChannel ;
+	],
+	[
+		a lv2:AudioPort ,
+			lv2:OutputPort ;
+		lv2:index 2 ;
+		lv2:symbol "outl" ;
+		lv2:name "Right output" ;
+    pg:inGroup rg:bwhirl-out ;
+    pg:role pg:rightChannel ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 3 ;
+		lv2:symbol "rt_speed" ;
+		lv2:name "Rotary Type (horn, drum speed off/slow/fast)";
+		lv2:default 4 ;
+		lv2:minimum 0 ;
+		lv2:maximum 8 ;
+		lv2:portProperty lv2:enumeration ;
+		lv2:scalePoint [ rdfs:label "stop, stop"; rdf:value 0 ] ;
+		lv2:scalePoint [ rdfs:label "stop, slow"; rdf:value 1 ] ;
+		lv2:scalePoint [ rdfs:label "stop, fast"; rdf:value 2 ] ;
+		lv2:scalePoint [ rdfs:label "slow, stop"; rdf:value 3 ] ;
+		lv2:scalePoint [ rdfs:label "slow, slow"; rdf:value 4 ] ;
+		lv2:scalePoint [ rdfs:label "slow, fast"; rdf:value 5 ] ;
+		lv2:scalePoint [ rdfs:label "fast, stop"; rdf:value 6 ] ;
+		lv2:scalePoint [ rdfs:label "fast, slow"; rdf:value 7 ] ;
+		lv2:scalePoint [ rdfs:label "fast, fast"; rdf:value 8 ] ;
+	]
+	.

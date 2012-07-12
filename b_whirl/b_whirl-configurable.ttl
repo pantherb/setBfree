@@ -1,0 +1,179 @@
+@prefix doap: <http://usefulinc.com/ns/doap#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix pg: <http://lv2plug.in/ns/ext/port-groups#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rg: <http://gareus.org/oss/lv2/> .
+
+rg:bwhirl-in a pg:Group ;
+   a pg:MonoGroup ;
+   :symbol "in" .
+  
+rg:bwhirl-out a pg:Group ;
+   a pg:StereoGroup ;
+   :symbol "out" ;
+   pg:source rg:bwhirl-in .
+
+<http://gareus.org/>
+	a foaf:Person ;
+	foaf:name "Robin Gareus" ;
+	foaf:mbox <mailto:robin@gareus.org> ;
+	rdfs:seeAlso <http://gareus.org/> .
+
+<http://gareus.org/oss/lv2/b_whirlExt>
+	a lv2:Plugin ,
+		lv2:B_WhirlExt ;
+	doap:maintainer <http://gareus.org/> ;
+	doap:name "B Organ Whirl Speaker Extended Version";
+	doap:license <http://opensource.org/licenses/gpl-2.0> ;
+	lv2:optionalFeature lv2:hardRTCapable ;
+	lv2:port
+	[
+		a lv2:AudioPort ,
+			lv2:InputPort ;
+		lv2:index 0 ;
+		lv2:symbol "in" ;
+		lv2:name "In" ;
+	  pg:inGroup rg:bwhirl-in ;
+	  pg:role pg:centerChannel ;
+	],	
+	[
+		a lv2:AudioPort ,
+			lv2:OutputPort ;
+		lv2:index 1 ;
+		lv2:symbol "outl" ;
+		lv2:name "Left output" ;
+    pg:inGroup rg:bwhirl-out ;
+    pg:role pg:leftChannel ;
+	],
+	[
+		a lv2:AudioPort ,
+			lv2:OutputPort ;
+		lv2:index 2 ;
+		lv2:symbol "outl" ;
+		lv2:name "Right output" ;
+    pg:inGroup rg:bwhirl-out ;
+    pg:role pg:rightChannel ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 3 ;
+		lv2:symbol "rt_speed" ;
+		lv2:name "Rotary Type (horn, drum speed off/slow/fast)";
+		lv2:default 4 ;
+		lv2:minimum 0 ;
+		lv2:maximum 8 ;
+		lv2:portProperty lv2:enumeration ;
+		lv2:scalePoint [ rdfs:label "stop, stop"; rdf:value 0 ] ;
+		lv2:scalePoint [ rdfs:label "stop, slow"; rdf:value 1 ] ;
+		lv2:scalePoint [ rdfs:label "stop, fast"; rdf:value 2 ] ;
+		lv2:scalePoint [ rdfs:label "slow, stop"; rdf:value 3 ] ;
+		lv2:scalePoint [ rdfs:label "slow, slow"; rdf:value 4 ] ;
+		lv2:scalePoint [ rdfs:label "slow, fast"; rdf:value 5 ] ;
+		lv2:scalePoint [ rdfs:label "fast, stop"; rdf:value 6 ] ;
+		lv2:scalePoint [ rdfs:label "fast, slow"; rdf:value 7 ] ;
+		lv2:scalePoint [ rdfs:label "fast, fast"; rdf:value 8 ] ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 4 ;
+		lv2:symbol "filtatype" ;
+		lv2:name "Filter Type:";
+		lv2:default 0;
+		lv2:minimum 0 ;
+		lv2:maximum 8 ;
+		lv2:portProperty lv2:enumeration ;
+		lv2:scalePoint [ rdfs:label "LPF low-pass"; rdf:value 0 ] ;
+		lv2:scalePoint [ rdfs:label "HPF high-pass"; rdf:value 1 ] ;
+		lv2:scalePoint [ rdfs:label "BF0 band-pass 0"; rdf:value 2 ] ;
+		lv2:scalePoint [ rdfs:label "BF1 band-pass 1"; rdf:value 3 ] ;
+		lv2:scalePoint [ rdfs:label "NOT notch"; rdf:value 4 ] ;
+		lv2:scalePoint [ rdfs:label "APF all-pass"; rdf:value 5 ] ;
+		lv2:scalePoint [ rdfs:label "PEQ peaking eq"; rdf:value 6 ] ;
+		lv2:scalePoint [ rdfs:label "LSH low shelf"; rdf:value 7 ] ;
+		lv2:scalePoint [ rdfs:label "HSH high shelf"; rdf:value 8 ] ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 5 ;
+		lv2:symbol "filtafreq" ;
+		lv2:name "Filter Frequency";
+		lv2:default 4500.0 ;
+		lv2:minimum 250 ;
+		lv2:maximum 8000.0 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 6 ;
+		lv2:symbol "filtaq" ;
+		lv2:name "Filter Quality";
+		lv2:default 2.7456 ;
+		lv2:minimum 0.01 ;
+		lv2:maximum 6.0 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 7 ;
+		lv2:symbol "filtagain" ;
+		lv2:name "Filter Gain";
+		lv2:default -30.0 ;
+		lv2:minimum -48.0 ;
+		lv2:maximum  48.0 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 8 ;
+		lv2:symbol "filtbtype" ;
+		lv2:name "Filter2 Type:";
+		lv2:default 0;
+		lv2:minimum 7 ;
+		lv2:maximum 8 ;
+		lv2:portProperty lv2:enumeration ;
+		lv2:scalePoint [ rdfs:label "LPF low-pass"; rdf:value 0 ] ;
+		lv2:scalePoint [ rdfs:label "HPF high-pass"; rdf:value 1 ] ;
+		lv2:scalePoint [ rdfs:label "BF0 band-pass 0"; rdf:value 2 ] ;
+		lv2:scalePoint [ rdfs:label "BF1 band-pass 1"; rdf:value 3 ] ;
+		lv2:scalePoint [ rdfs:label "NOT notch"; rdf:value 4 ] ;
+		lv2:scalePoint [ rdfs:label "APF all-pass"; rdf:value 5 ] ;
+		lv2:scalePoint [ rdfs:label "PEQ peaking eq"; rdf:value 6 ] ;
+		lv2:scalePoint [ rdfs:label "LSH low shelf"; rdf:value 7 ] ;
+		lv2:scalePoint [ rdfs:label "HSH high shelf"; rdf:value 8 ] ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 9 ;
+		lv2:symbol "filtbfreq" ;
+		lv2:name "Filter2 Frequency";
+		lv2:default 300.0 ;
+		lv2:minimum 250 ;
+		lv2:maximum 8000.0 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 10 ;
+		lv2:symbol "filtbq" ;
+		lv2:name "Filter2 Quality";
+		lv2:default 1.0 ;
+		lv2:minimum 0.01 ;
+		lv2:maximum 6.0 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 11 ;
+		lv2:symbol "filtbgain" ;
+		lv2:name "Filter2 Gain";
+		lv2:default -30.0 ;
+		lv2:minimum -48.0 ;
+		lv2:maximum  48.0 ;
+	]
+	.

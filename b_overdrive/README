@@ -1,0 +1,84 @@
+Overdrive.txt
+27-sep-2003/FK
+
+Conceptually, the overdrive FX consists of:
+
+Interpolation section
+    - upsampler (zero injector)
+    - a pre-emphasis filter
+    - interpolation filter (anti-aliasing filter)
+
+Transfer section
+    - transfer function
+
+Decimation section
+    - decimation filter (anti-aliasing filter)
+    - de-emphasis filter
+    - downsampler
+
+The interpolation and decimation sections can be integrated.
+
+
+S-rate samples: ...   x-9 x-8 x-7 x-6 x-5 x-4 x-3 x-2 x-1 x0
+
+After zero-injection
+0  0  0 x-3  0  0  0 x-2  0  0  0 x-1  0  0  0 x0
+
+Assume a FIR of 13 weights (which is much to small) for interpolation
+
+       0  0  0 x-3  0  0  0 x-2  0  0  0 x-1  0  0  0 x0
+y0=            w12           w8           w4          w0
+y1=            w11           w7           w3
+y2=            w10           w6           w2
+y3=             w9           w5           w1
+
+or
+
+y0 = (w12 * x[-3]) + (w8 * x[-2]) + (w4 *x[-1]) + (w0 * x[0])
+y1 = (w11 * x[-3]) + (w7 * x[-2]) + (w3 *x[-1])
+y2 = (w10 * x[-3]) + (w6 * x[-2]) + (w2 *x[-1])
+y3 = ( w9 * x[-3]) + (w5 * x[-2]) + (w1 *x[-1])
+
+y4 = (w12 * x[-4]) + (w8 * x[-3]) + (w4 *x[-2]) + (w0 * x[-1])
+y5 = (w11 * x[-4]) + (w7 * x[-3]) + (w3 *x[-2])
+y6 = (w10 * x[-4]) + (w6 * x[-3]) + (w2 *x[-2])
+y7 = ( w9 * x[-4]) + (w5 * x[-3]) + (w1 *x[-2])
+
+Generalise this to interpolation rate R=4.
+
+For each input sample x[i], generate R output samples:
+y[i+0], y[i+1], ..., y[i+r]
+where r = R-1.
+
+y[i+0] = (w[0R-0] * x[i]) + (w[1R-0] * x[i-1]) + (w[2R-0] * x[i-2]) ... 
+y[i+1] = (w[0R-1] * x[i]) + (w[1R-1] * x[i-1]) + (w[2R-1] * x[i-2]) ...
+y[i+2] = (w[0R-2] * x[i]) + (w[1R-2] * x[i-1]) + (w[2R-2] * x[i-2]) ...
+...
+y[i+r] = (w[0R-r] * x[i]) + (w[1R-r] * x[i-1]) + (w[2R-r] * x[i-2]) ...
+
+where w[] indices that are undefined are zero and therefore can be eliminated
+from the expression.
+
+These outputs are passed through the transfer section yielding:
+
+z0 = t(y0)
+z1 = t(y1)
+...
+z7 = t(y7)
+
+Decimation then
+
+      ... z7  z6  z5  z4  z3  z2  z1  z0
+v0 = w0*z0 + w1*z1 + w2*z2 + w3*z3 + w4*z4 + ... + wn*zn
+v1 = w0*z4 + w1*z5 + w2*z6 + w3*z7 + w4*z8 + ... + wn*z(n+4)
+
+Generalizes to system output
+
+v[i+0] = w[0] * z[i-0-0R] + w[1] * z[i-1-0R] + ... + w[n] * z[i-n-0R]
+v[i+1] = w[0] * z[i-0-1R] + w[1] * z[i-1-1R] + ... + w[n] * z[i-n-1R]
+
+Simply skip R samples before convolving the next output sample.
+
+------------------------
+Why can we not insert the zeros after the transfer function?
+Because the harmonics will be present as aliases.
