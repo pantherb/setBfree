@@ -27,7 +27,7 @@ if test $ERROR != 0; then
 fi
 
 lintian -i --pedantic ${TMPDIR}/setbfree_${DEBRELEASE}_*.changes \
-	| tee /tmp/jrec.issues
+	| tee /tmp/setbfree.issues
 
 echo
 ls ${TMPDIR}/setbfree_${DEBRELEASE}_*.changes
