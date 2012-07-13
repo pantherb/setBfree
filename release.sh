@@ -15,13 +15,13 @@ fi
 echo "commit pending changes.."
 git commit -a 
 
-echo "Update version number -- edit Makefile debian/changelog"
+echo "Update version number -- edit Makefile ChangeLog debian/changelog"
 echo -n "launch editor ? [Y/n]"
 read -n1 a
 echo
 
 if test "$a" != "n" -a "$a" != "N"; then
-	${EDITOR} Makefile debian/changelog
+	${EDITOR} Makefile debian/changelog ChangeLog
 fi
 
 eval `grep "VERSION=" Makefile`
@@ -42,7 +42,7 @@ make doc
 make dist
 
 echo "creating git-commit of updated doc & version number"
-git commit -m "finalize changelog" Makefile debian/changelog doc/*.1
+git commit -m "finalize changelog" Makefile ChangeLog debian/changelog doc/*.1
 
 git tag "v${VERSION}" || (echo -n "version tagging failed. - press Enter to continue, CTRL-C to stop."; read; ) 
 
@@ -51,9 +51,9 @@ read -n1 a
 echo
 
 if test "$a" != "n" -a "$a" != "N"; then
-	git push origin
+	git push origin || exit 1
 	#git push --tags ## would push ALL existing tags,
-	git push origin "refs/tags/v${VERSION}:refs/tags/v${VERSION}"
+	git push origin "refs/tags/v${VERSION}:refs/tags/v${VERSION}" || exit 1
 fi
 
 ls -l "setbfree-${VERSION}.tar.gz"
