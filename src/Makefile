@@ -70,7 +70,7 @@ endif
 all: setBfree
 
 setBfree: $(OBJS) $(HEADERS)
-	$(BXCC) -o $(@) $(OBJS) $(LOADLIBES) $(CFLAGS)
+	$(BXCC) -o $(@) $(OBJS) $(LOADLIBES) $(CFLAGS) $(LDFLAGS)
 
 programd: program.c pgmParser.c program.h pgmParser.h main.h
 	$(CC) -Wall -o $(@) -DPRG_MAIN program.c pgmParser.c $(INCLUDEPATHS)
