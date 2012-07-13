@@ -1,8 +1,10 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
-Upstream-Name: setbfree
+Upstream-Name: setBfree
 Maintainer: Robin Gareus <robin@gareus.org>
-Upstream-Contact: Robin Gareus <robin@gareus.org>
-Source: git://github.com/x42/setbfree.git
+Upstream-Contact: 
+  Robin Gareus <robin@gareus.org>
+	Will Panther <pantherb@setbfree.org>
+Source: git://github.com/pantherb/setBfree.git
 
 Files: *
 Copyright:
@@ -36,7 +38,7 @@ Files: debian/*
   2012 Robin Gareus <robin@gareus.org>
 License: GPL-2+
 
-License: GPL-2
+License: GPL-2+
  This package is free software; you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation; either version 2 of the License, or
