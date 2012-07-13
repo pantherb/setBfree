@@ -1,4 +1,10 @@
-2012-07-04 
+2012-07-13 (unreleased)
+* fixed keyclick duration
+* updates for OSX
+* URLs to new site, github issue-tracker
+* patch from Julius O. Smith to build on Fedora-64bit
+
+2012-07-11 (v0.5.0)
 Robin Gareus <robin@gareus.org>, Will Panther <pantherb@setbfree.org>
 
 * imported upstream v0.4.1
