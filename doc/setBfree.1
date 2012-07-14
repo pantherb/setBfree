@@ -404,36 +404,54 @@ I* (0)
 horn and drum speed. 0:stopped, 1:slow, 2:fast
 .TP
 whirl.horn.slowrpm
-D  (40.0)
+D  (48.0)
+.IP
+RPM
 .TP
 whirl.horn.fastrpm
 D  (400.0)
-.TP
-whirl.horn.accelleration
-D  (2.0)
 .IP
-revolutions per sec.
+RPM
 .TP
-whirl.horn.decelleration
-D  (2.6)
+whirl.horn.acceleration
+D  (350.0)
 .IP
-revolutions per sec.
+RPM/sec
+.TP
+whirl.horn.deceleration
+D  (448.0)
+.IP
+RPM/sec
+.TP
+whirl.horn.breakpos
+D* (0)
+.IP
+horn stop position 0: free, 0.0\-1.0 clockwise position where to stop. 1.0:front\-center
 .TP
 whirl.drum.slowrpm
-D  (30.0)
+D  (40.0)
+.IP
+RPM
 .TP
 whirl.drum.fastrpm
-D  (330.0)
-.TP
-whirl.drum.accelleration
-D  (0.7)
+D  (342.0)
 .IP
-revolutions per sec.
+RPM
 .TP
-whirl.drum.decelleration
-D  (0.6)
+whirl.drum.acceleration
+D  (120.0)
 .IP
-revolutions per sec.
+RPM/sec
+.TP
+whirl.drum.deceleration
+D  (102.0)
+.IP
+RPM/sec
+.TP
+whirl.drum.breakpos
+D* (0)
+.IP
+drum stop position 0: free, 0.0\-1.0 clockwise position where to stop. 1.0:front\-center
 .TP
 whirl.horn.radius
 D  (19.2)
@@ -452,9 +470,13 @@ distance from mic to origin in centimeters.
 .TP
 whirl.horn.level
 D  (0.7)
+.IP
+horn wet\-signal volume
 .TP
 whirl.horn.leak
 D  (0.15)
+.IP
+horh dry\-signal leak
 .TP
 whirl.drum.filter.type
 I* (8)
