@@ -25,7 +25,7 @@ if test -d "$curdir/../b_conv/ir";then
 	export BXIRFILE="$curdir/../b_conv/ir/ir_leslie-%04d.wav"
 fi
 
-$SBF $@ &
+$SBF "$@" &
 
 RV=$?
 PID=$!
