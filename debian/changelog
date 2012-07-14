@@ -1,5 +1,5 @@
-setbfree (0.5.1-1) unstable; urgency=low
+setbfree (0.5.2-1) unstable; urgency=low
 
   * dummy entry -- this is not an official debian package
 
- -- Robin Gareus <robin@gareus.org>  Fri, 13 Jul 2012 16:21:53 +0200
+ -- Robin Gareus <robin@gareus.org>  Sat, 14 Jul 2012 23:52:09 +0200

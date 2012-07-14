@@ -1,7 +1,7 @@
 PREFIX ?= /usr/local
 OPTIMIZATIONS?=-msse -msse2 -mfpmath=sse -ffast-math -fomit-frame-pointer -O3 -fno-finite-math-only
 ENABLE_CONVOLUTION ?= no ## set to 'yes' to enable convolution for speaker cabinet emulation - requires IR files.
-VERSION=0.5.1
+VERSION=0.5.2
 
 export PREFIX
 export VERSION

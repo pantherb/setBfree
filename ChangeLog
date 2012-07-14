@@ -1,4 +1,12 @@
-2012-07-13 (v0.5.1)
+2012-07-14 (v0.5.2)  Robin Gareus <robin@gareus.org>
+* build-system: use LDFLAGS if present
+* remove hardcoded default program - it is [re-]generated during build
+* start-script fix passing args with space
+* leslie: allow to set stop positions.
+* leslie: allow to change leslie acceleration/deceleration
+* fixes various typos
+
+2012-07-13 (v0.5.1)  Robin Gareus <robin@gareus.org>
 * fixed keyclick duration
 * updates for OSX
 * URLs to new site, github issue-tracker
