@@ -3,11 +3,17 @@
 setBfree-start \- wrapper-script to start setBfree and vb3kb
 .SH SYNOPSIS
 .B setBfree-start
+[\fIOPTIONS\fR]
 .SH DESCRIPTION
 setBfree-start \fB\-\-\fR DSP tonewheel Organ startup script
+.PP
+Startup script to launch setBfree, vb3kb and connect them.
+All options are passed through to setBfree.
 .SH "SEE ALSO"
 .B setBfree(1)
 .B vb3kb(1)
+.SH ENVIRONMENT
+VKOPTS commandline parameters to pass to vb3kb
 .SH COPYRIGHT
 Copyright \(co 2012 Robin Gareus
 .PP

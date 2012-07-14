@@ -55,12 +55,9 @@ else
 	fi
 fi
 
-VKOPTS=
 if test -n "$AM"; then
-	VKOPTS="--driver=alsa --port=$AM"
+	VKOPTS="$VKOPTS --driver=alsa --port=$AM"
 fi
-
-echo $VKOPTS
 
 if test -n "$VKDIR"; then
 	export VB3KBTCL="$VKDIR/vb3kb.tcl"
