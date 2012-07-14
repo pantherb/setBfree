@@ -575,8 +575,8 @@ proc AdvancedCreate {{pw ""}} {
   #}
   #$w.ccparam configure -text $ccparam
 
-  scale $w.ccparam -orient horizontal -from 0 -to 127 -showvalue true -width 10 -length 127 -command "setCCparam"
-  scale $w.ccvalue -orient horizontal -from 0 -to 127 -showvalue true -width 10 -length 127 -command "sendCC"
+  scale $w.ccparam -orient horizontal -from 0 -to 127 -showvalue true -width 10 -length 164 -command "setCCparam"
+  scale $w.ccvalue -orient horizontal -from 0 -to 127 -showvalue true -width 10 -length 164 -command "sendCC"
 
 
   pack $w.ccchannel $w.ccparam $w.ccvalue -fill x -side left
