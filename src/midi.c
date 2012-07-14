@@ -129,6 +129,9 @@ char * ccFuncNames[] = {
   "whirl.drum.filter.q",
   "whirl.drum.filter.gain",
 
+  "whirl.horn.breakpos",
+  "whirl.drum.breakpos",
+
   "overdrive.character",
   "overdrive.inputgain",
   "overdrive.outputgain",

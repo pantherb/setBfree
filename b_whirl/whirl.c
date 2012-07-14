@@ -73,6 +73,8 @@ extern double SampleRateD;
 #define BUF_MASK_SAMPLES (BUF_SIZE_SAMPLES - 1)
 
 static int bypass = 0;
+static double hnBreakPos = 0; /* where to stop horn - 0: free, 1.0: front-center, ]0..1] clockwise circle */
+static double drBreakPos = 0; /* where to stop drum */
 
 /*
  * Forward (clockwise) displacement table for writing positions.
@@ -852,6 +854,14 @@ void fsetHornFilterBGain (float v) {
   UPDATE_B_FILTER;
 }
 
+void setHornBreakPosition (unsigned char uc) {
+  hnBreakPos = (double)uc/127.0;
+}
+
+void setDrumBreakPosition (unsigned char uc) {
+  drBreakPos = (double)uc/127.0;
+}
+
 /*
  * This function initialises this module. It is run after whirlConfig.
  */
@@ -886,6 +896,8 @@ void initWhirl () {
   useMIDIControlFunction ("whirl.horn.filter.b.hz",   setHornFilterBFrequency);
   useMIDIControlFunction ("whirl.horn.filter.b.q",    setHornFilterBQ);
   useMIDIControlFunction ("whirl.horn.filter.b.gain", setHornFilterBGain);
+  useMIDIControlFunction ("whirl.horn.breakpos", setHornBreakPosition);
+  useMIDIControlFunction ("whirl.drum.breakpos", setDrumBreakPosition);
 }
 
 /*
@@ -991,6 +1003,12 @@ int whirlConfig (ConfigContext * cfg) {
   else if (getConfigParameter_ir ("whirl.bypass", cfg, &k, 0, 1) == 1) {
     bypass = k;
   }
+  else if (getConfigParameter_dr ("whirl.horn.breakpos", cfg, &d, 0, 1.0) == 1) {
+    hnBreakPos = (double) d;
+  }
+  else if (getConfigParameter_dr ("whirl.drum.breakpos", cfg, &d, 0, 1.0) == 1) {
+    drBreakPos = (double) d;
+  }
 
   else {
     rtn = 0;
@@ -1009,6 +1027,8 @@ static const ConfigDoc doc[] = {
   {"whirl.drum.fastrpm", CFG_DOUBLE, "330.0", ""},
   {"whirl.drum.accelleration", CFG_DOUBLE, "0.7", "revolutions per sec."},
   {"whirl.drum.decelleration", CFG_DOUBLE, "0.6", "revolutions per sec."},
+  {"whirl.horn.breakpos", CFG_DOUBLE, "0", "horn stop position 0: free, 0.0-1.0 clockwise position where to stop. 1.0:front-center"},
+  {"whirl.drum.breakpos", CFG_DOUBLE, "0", "drum stop position 0: free, 0.0-1.0 clockwise position where to stop. 1.0:front-center"},
   {"whirl.horn.radius", CFG_DOUBLE, "19.2", "in centimeter."},
   {"whirl.drum.radius", CFG_DOUBLE, "22.0", "in centimeter."},
   {"whirl.mic.distance", CFG_DOUBLE, "42.0", "distance from mic to origin in centimeters."},
@@ -1099,14 +1119,27 @@ void whirlProc2 (const float * inbuffer,
     }
   }
 
-#if 1 // break -- don't stop anywhere..
-  if (!hornAcDc && hornTarget==0 && hornAngle!=0) {
-    hornAngle = (hornAngle + (DISPLC_MASK/200)) & DISPLC_MASK;
-    if (hornAngle < (DISPLC_MASK/180)) hornAngle=0;
+#if 1
+  /* break position -- don't stop anywhere..
+     the original Leslie can not do this, sometimes the horn is aimed at the back of
+     the cabinet when it comes to a halt, which results in a less than desirable sound.
+
+     continue to slowly move the horn and drum to the center position after it actually
+     came to a stop.
+   */
+  if (hnBreakPos>0) {
+    const int targetPos= (hnBreakPos>=1.0)? 0 : (hnBreakPos * DISPLC_MASK);
+    if (!hornAcDc && hornIncrUI==0 && hornAngle!=targetPos) {
+      hornAngle = (hornAngle + (DISPLC_MASK/200)) & DISPLC_MASK;
+      if ((hornAngle-targetPos) < (DISPLC_MASK/180)) hornAngle=targetPos;
+    }
   }
-  if (!drumAcDc && drumTarget==0 && drumAngle!=0) {
-    drumAngle = (drumAngle + (DISPLC_MASK/200)) & DISPLC_MASK;
-    if (drumAngle < (DISPLC_MASK/180)) drumAngle=0;
+  if (drBreakPos>0) {
+    const int targetPos= (drBreakPos>=1.0)? 0 : (drBreakPos * DISPLC_MASK);
+    if (!drumAcDc && drumIncrUI==0 && drumAngle!=targetPos) {
+      drumAngle = (drumAngle + (DISPLC_MASK/200)) & DISPLC_MASK;
+      if ((drumAngle-targetPos) < (DISPLC_MASK/180)) drumAngle=targetPos;
+  }
   }
 #endif
 
