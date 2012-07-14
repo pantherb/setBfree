@@ -132,10 +132,8 @@ static int drumAngle = 0;
 
 
 /* Added to angle. */
-#define HI_SLOW 0.08
-#define HI_FAST 0.58
-#define LO_SLOW 0.06
-#define LO_FAST 0.40
+#define HI_OFFSET 0.08
+#define LO_OFFSET 0.06
 static int hornFixedOff = 0;
 static int drumFixedOff = 0;
 
@@ -833,6 +831,22 @@ void setDrumBreakPosition (unsigned char uc) {
   drBreakPos = (double)uc/127.0;
 }
 
+void setHornAcceleration (unsigned char uc) {
+  hornAcc = 10.0 + (double)uc*3.4;
+}
+
+void setHornDeceleration (unsigned char uc) {
+  hornDec = 8.0 + (double)uc*4.4;
+}
+
+void setDrumAcceleration (unsigned char uc) {
+  drumAcc = 10.0 + (double)uc*1.75;
+}
+
+void setDrumDeceleration (unsigned char uc) {
+  drumDec = 2.0 + (double)uc*1.6;
+}
+
 /*
  * This function initialises this module. It is run after whirlConfig.
  */
@@ -850,8 +864,8 @@ void initWhirl () {
    * in upstream, those were always
    * zero after the first leslie-tempo switch!
    */
-  hornFixedOff = fixptd(HI_SLOW);
-  drumFixedOff = fixptd(LO_SLOW);
+  hornFixedOff = fixptd(HI_OFFSET);
+  drumFixedOff = fixptd(LO_OFFSET);
 
   leakage = leakLevel * hornLevel;
 
@@ -867,8 +881,14 @@ void initWhirl () {
   useMIDIControlFunction ("whirl.horn.filter.b.hz",   setHornFilterBFrequency);
   useMIDIControlFunction ("whirl.horn.filter.b.q",    setHornFilterBQ);
   useMIDIControlFunction ("whirl.horn.filter.b.gain", setHornFilterBGain);
+
   useMIDIControlFunction ("whirl.horn.breakpos", setHornBreakPosition);
   useMIDIControlFunction ("whirl.drum.breakpos", setDrumBreakPosition);
+
+  useMIDIControlFunction ("whirl.horn.acceleration", setHornAcceleration);
+  useMIDIControlFunction ("whirl.horn.deceleration", setHornDeceleration);
+  useMIDIControlFunction ("whirl.drum.acceleration", setDrumAcceleration);
+  useMIDIControlFunction ("whirl.drum.deceleration", setDrumDeceleration);
 }
 
 /*
@@ -1118,7 +1138,7 @@ void whirlProc2 (const float * inbuffer,
   char const * const acdc[3]= {"<","#",">"};
   static int fgh=0;
   if ((fgh++ % (int)(SampleRateD/128/5) ) ==0) {
-    printf ("H:%.3f D:%.3f | HS:%.2f DS:%.2f [Hz]| HT:%.2f DT:%.2f [Hz]| HA:%.4f%s DA:%.4f%s [Hz/s]\n",
+    printf ("H:%.3f D:%.3f | HS:%.2f DS:%.2f [Hz]| HT:%.2f DT:%.2f [Hz]| HA:%.5f%s DA:%.5f%s [Hz/s]\n",
 	(double)hornAngle/DISPLC_MASK, (double)drumAngle/DISPLC_MASK,
 	SampleRateD*(double)hornIncrUI/DISPLC_MASK, SampleRateD*(double)drumIncrUI/DISPLC_MASK,
 	SampleRateD*(double)hornTarget/DISPLC_MASK, SampleRateD*(double)drumTarget/DISPLC_MASK,

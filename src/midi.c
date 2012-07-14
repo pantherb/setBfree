@@ -132,6 +132,11 @@ char * ccFuncNames[] = {
   "whirl.horn.breakpos",
   "whirl.drum.breakpos",
 
+  "whirl.horn.acceleration",
+  "whirl.horn.deceleration",
+  "whirl.drum.acceleration",
+  "whirl.drum.deceleration",
+
   "overdrive.character",
   "overdrive.inputgain",
   "overdrive.outputgain",
