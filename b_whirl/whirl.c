@@ -162,14 +162,14 @@ static int revSelect = 0;
 static int hornAcDc = 0;
 static int drumAcDc = 0;
 
-static int hornIncrUI = 0;
-static int drumIncrUI = 0;
+static int hornIncrUI = 0; ///< current speed - unit: DISPLC_SIZE read increments
+static int drumIncrUI = 0; ///< current speed - unit: DISPLC_SIZE read increments
 
-static int hornAII = 0;
-static int drumAII = 0;
+static double hornAII = 0; ///< current horn acceleration / deceleration
+static double drumAII = 0; ///< current drum acceleration / deceleration
 
-static int hornTarget = 0;
-static int drumTarget = 0;
+static int hornTarget = 0; ///< target speed - unit: DISPLC_SIZE read increments
+static int drumTarget = 0; ///< target speed - unit: DISPLC_SIZE read increments
 
 static int hornAIIAcc;
 static int hornAIIDec;
@@ -193,7 +193,7 @@ static float hornSpacing[6] = {
 static float hornRadiusCm = 19.2; /* 17.0; 25-nov-04 */
 static float drumRadiusCm = 22.0;
 
-static float airSpeed = 340.0;	/* Meters per second */
+static const float airSpeed = 340.0;	/* Meters per second */
 
 static float micDistCm = 42.0;	/* From mic to origin */
 
