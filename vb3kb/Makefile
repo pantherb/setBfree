@@ -30,7 +30,7 @@ ifeq ($(TCLTKPREFIX),)
   $(error "TCL/TK is required - install tk-dev and tcl-dev")
 endif
 
-CFLAGS+=-I$(TCLTKPREFIX)/include/tcl`. $(TCLTKPREFIX)/tclConfig.sh && echo \$$TCL_VERSION`
+CFLAGS+=-I$(TCLTKPREFIX)/include/tcl`. $(TCLTKPREFIX)/$(TCLTKLIBDIR)/tclConfig.sh && echo \$$TCL_VERSION`
 LOADLIBES+=-ltcl`. $(TCLTKPREFIX)/$(TCLTKLIBDIR)/tclConfig.sh && echo \$$TCL_VERSION`
 LOADLIBES+=-ltk`. $(TCLTKPREFIX)/$(TCLTKLIBDIR)/tkConfig.sh && echo \$$TK_VERSION`
 LOADLIBES+=`. $(TCLTKPREFIX)/$(TCLTKLIBDIR)/tkConfig.sh && echo $$TK_LIBS`
