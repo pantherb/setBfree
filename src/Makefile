@@ -69,7 +69,7 @@ endif
 
 all: setBfree
 
-setBfree: $(OBJS) $(HEADERS)
+setBfree: $(HEADERS) $(OBJS)
 	$(BXCC) -o $(@) $(OBJS) $(LOADLIBES) $(CFLAGS) $(LDFLAGS)
 
 programd: program.c pgmParser.c program.h pgmParser.h main.h
@@ -81,6 +81,8 @@ configd: cfgParser.c main.h
 defaultpgm.h: programd ../pgm/default.pgm
 	$(info re-generating default program include-file)
 	./programd ../pgm/default.pgm > defaultpgm.h
+
+program.o: defaultpgm.h
 
 # override .o in parent dirs -- needed for parallel builds
 
