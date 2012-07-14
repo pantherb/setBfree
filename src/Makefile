@@ -105,7 +105,7 @@ defaultpgm.h: programd ../pgm/default.pgm
 	+$(MAKE) -C ../b_conv convolution.o
 
 clean:
-	rm -f *.o core *.log *~ setBfree configd programd
+	rm -f *.o core *.log *~ setBfree configd programd defaultpgm.h
 
 install: setBfree
 	install -d $(DESTDIR)$(bindir)

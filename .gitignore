@@ -18,6 +18,7 @@ b_synth/manifest.ttl
 src/setBfree
 src/configd
 src/programd
+src/defaultpgm.h
 vb3kb/vb3kb
 
 doc/html
