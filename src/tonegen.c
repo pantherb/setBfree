@@ -2932,7 +2932,7 @@ int oscConfig (ConfigContext * cfg) {
 static const ConfigDoc doc[] = {
   {"osc.tuning", CFG_DOUBLE, "440.0", "range: [220..880]"},
   {"osc.temperament", CFG_TEXT, "\"gear60\"", "one of: \"equal\", \"gear60\", \"gear50\""},
-  {"osc.x-precision", CFG_DOUBLE, "0.001", ""},
+  {"osc.x-precision", CFG_DOUBLE, "0.001", "set wave precision. Maximum allowed error when calulating wave buffer-length for a given frequency (ideal #of samples - discrete #of samples)"},
   {"osc.perc.fast", CFG_DOUBLE, "1.0", "Fast Decay (seconds)"},
   {"osc.perc.slow", CFG_DOUBLE, "4.0", "Slow Decay (seconds)"},
   {"osc.perc.normal", CFG_DOUBLE, "1.0", "Sets the percussion starting gain of the envelope for normal volume; range [0..1]"},
@@ -2955,7 +2955,7 @@ static const ConfigDoc doc[] = {
   {"osc.harmonic.<h>", CFG_DOUBLE, "-", "speficy level of given harmonic number."},
   {"osc.harmonic.w<w>.f<h>", CFG_DOUBLE, "-", "w: number of wheel [0..91], h: harmonic number"},
   {"osc.terminal.t<t>.w<w>", CFG_DOUBLE, "-", "t,w: wheel-number [0..91]"},
-  {"osc.taper.k<key>.b<bus>.t<wheel>", CFG_DOUBLE, "-", ""},
+  {"osc.taper.k<key>.b<bus>.t<wheel>", CFG_DOUBLE, "-", "customize tapering model. Specify level of [key, drawbar, tonewheel]."},
   {"osc.crosstalk.k<key>", CFG_TEXT, "-", "value colon-separated: \"<int:bus>:<int:wheel>:<double:level>\""},
   {"osc.compartment-crosstalk", CFG_DOUBLE, "0.01", "crosstalk between tonewheels in the same compartment. The value refers to the amount of rogue signal picked up; range: [0..1]"},
   {"osc.transformer-crosstalk", CFG_DOUBLE, "0", "crosstalk between transformers on the top of the tg; range: [0..1]"},

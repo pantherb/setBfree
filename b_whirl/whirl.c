@@ -228,6 +228,7 @@ static float hbF = 300.0;
 static float hbQ =   1.0; /* 2.0; 25-nov-04 */
 static float hbG = -30.0; /* -60.0; 25-nov-04 */ /* negative gain */
 
+#ifdef HORN_COMB_FILTER
 #define COMB_SIZE ((unsigned int) (1 << 10))
 #define COMB_MASK (COMB_SIZE - 1)
 
@@ -246,6 +247,12 @@ static float * cb1wp;
 static float * cb1rp;
 static float * cb1bp;
 static float * cb1es;
+#else /* allow to parse config files which include these values */
+static float cb0fb = 0;
+static int   cb0dl = 0;
+static float cb1fb = 0;
+static int   cb1dl = 0;
+#endif
 
 static float hornLevel = 0.7;
 static float leakLevel = 0.15;
@@ -492,6 +499,7 @@ static void initTables () {
   setIIRFilter (hafw, haT, haF, haQ, haG);
   setIIRFilter (hbfw, hbT, hbF, hbQ, hbG);
 
+#ifdef HORN_COMB_FILTER
   cb0rp = &(comb0[COMB_SIZE - cb0dl]);
   cb0wp = &(comb0[0]);
   cb0bp = &(comb0[0]);
@@ -501,6 +509,7 @@ static void initTables () {
   cb1wp = &(comb1[0]);
   cb1bp = &(comb1[0]);
   cb1es = &(comb1[COMB_SIZE]);
+#endif
 
   /* Horn angle-dependent impulse response coefficents. */
   /* These were derived from 'Doppler simulation and the leslie',
@@ -1010,13 +1019,13 @@ int whirlConfig (ConfigContext * cfg) {
 static const ConfigDoc doc[] = {
   {"whirl.bypass", CFG_INT, "0", "if set to 1, completely bypass leslie emulation"},
   {"rotary.speed-preset", CFG_INT, "0", "horn and drum speed. 0:stopped, 1:slow, 2:fast"},
-  {"whirl.horn.slowrpm", CFG_DOUBLE, "48.0", "RPM"},
-  {"whirl.horn.fastrpm", CFG_DOUBLE, "400.0", "RPM"},
+  {"whirl.horn.slowrpm", CFG_DOUBLE, "48.0", "target RPM for slow (aka choral) horn speed"},
+  {"whirl.horn.fastrpm", CFG_DOUBLE, "400.0", "target RPM for fast (aka tremolo) horn speed"},
   {"whirl.horn.acceleration", CFG_DOUBLE, "350.0", "RPM/sec"},
   {"whirl.horn.deceleration", CFG_DOUBLE, "448.0", "RPM/sec"},
   {"whirl.horn.breakpos", CFG_DOUBLE, "0", "horn stop position 0: free, 0.0-1.0 clockwise position where to stop. 1.0:front-center"},
-  {"whirl.drum.slowrpm", CFG_DOUBLE, "40.0", "RPM"},
-  {"whirl.drum.fastrpm", CFG_DOUBLE, "342.0", "RPM"},
+  {"whirl.drum.slowrpm", CFG_DOUBLE, "40.0", "target RPM for slow (aka choral) drum speed."},
+  {"whirl.drum.fastrpm", CFG_DOUBLE, "342.0", "target RPM for fast (aka tremolo) drum speed."},
   {"whirl.drum.acceleration", CFG_DOUBLE, "120.0", "RPM/sec"},
   {"whirl.drum.deceleration", CFG_DOUBLE, "102.0", "RPM/sec"},
   {"whirl.drum.breakpos", CFG_DOUBLE, "0", "drum stop position 0: free, 0.0-1.0 clockwise position where to stop. 1.0:front-center"},
@@ -1025,22 +1034,24 @@ static const ConfigDoc doc[] = {
   {"whirl.mic.distance", CFG_DOUBLE, "42.0", "distance from mic to origin in centimeters."},
   {"whirl.horn.level", CFG_DOUBLE, "0.7", "horn wet-signal volume"},
   {"whirl.horn.leak", CFG_DOUBLE, "0.15", "horh dry-signal leak"},
-  {"whirl.drum.filter.type", CFG_INT, "8", "Filter type: 0-8. see \"Filter types\" below "},
-  {"whirl.drum.filter.q", CFG_DOUBLE, "1.6016", ""},
-  {"whirl.drum.filter.hz", CFG_DOUBLE, "811.9695", ""},
-  {"whirl.drum.filter.gain", CFG_DOUBLE, "-38.9291", ""},
-  {"whirl.horn.filter.a.type", CFG_INT, "0", ""},
+  {"whirl.drum.filter.type", CFG_INT, "8", "Filter type: 0-8. see \"Filter types\" below. This filter separates the signal to be sent to the drum-speaker. It should be a high-shelf filter with negative gain."},
+  {"whirl.drum.filter.q", CFG_DOUBLE, "1.6016", "Filter Quality, bandwidth; range: [0.2..3.0]"},
+  {"whirl.drum.filter.hz", CFG_DOUBLE, "811.9695", "Filter frequency."},
+  {"whirl.drum.filter.gain", CFG_DOUBLE, "-38.9291", "Filter gain [-48.0..48.0]"},
+  {"whirl.horn.filter.a.type", CFG_INT, "0", "Filter type: 0-8. see \"Filter types\" below. This is the first of two filters to shape the signal to be sent to the horn-speaker; by default a low-pass filter with negative gain to cut off high freqencies."},
   {"whirl.horn.filter.a.hz", CFG_DOUBLE, "4500", "Filter frequency; range: [250..8000]"},
   {"whirl.horn.filter.a.q", CFG_DOUBLE, "2.7456", "Filter Quality; range: [0.01..6.0]"},
   {"whirl.horn.filter.a.gain", CFG_DOUBLE, "-30.0", "range: [-48.0..48.0]"},
-  {"whirl.horn.filter.b.type", CFG_INT, "7", ""},
-  {"whirl.horn.filter.b.hz", CFG_DOUBLE, "300.0", ""},
-  {"whirl.horn.filter.b.q", CFG_DOUBLE, "1.0", ""},
-  {"whirl.horn.filter.b.gain", CFG_DOUBLE, "-30.0", ""},
+  {"whirl.horn.filter.b.type", CFG_INT, "7", "Filter type: 0-8. see \"Filter types\" below. This is the second of two filters to shape the signal to be sent to the horn-speaker; by default a low-shelf filter with negative gain to remove frequencies which are sent to the drum."},
+  {"whirl.horn.filter.b.hz", CFG_DOUBLE, "300.0", "Filter frequency; range: [250..8000]"},
+  {"whirl.horn.filter.b.q", CFG_DOUBLE, "1.0", "Filter Quality, bandwidth; range: [0.2..3.0]"},
+  {"whirl.horn.filter.b.gain", CFG_DOUBLE, "-30.0", "Filter gain [-48.0..48.0]"},
+#if 0 // comb-filter is disabled
   {"whirl.horn.comb.a.feedback", CFG_DOUBLE, "-0.55", ""},
   {"whirl.horn.comb.a.delay", CFG_INT, "38", ""},
   {"whirl.horn.comb.b.feedback", CFG_DOUBLE, "-0.3508", ""},
   {"whirl.horn.comb.b.delay", CFG_DOUBLE, "120", ""},
+#endif
   {NULL}
 };
 
@@ -1237,11 +1248,12 @@ void whirlProc2 (const float * inbuffer,
 
     leak = x * leakage;
 
-#if 0 /* only causes hiss-noise - in particular on 'E-4,F-4' ~660Hz
-       * no audible benefit to leslie effect
-       */
-      COMB(cb0wp, cb0rp, cb0bp, cb0es, cb0fb, x);
-      COMB(cb1wp, cb1rp, cb1bp, cb1es, cb1fb, x);
+#ifdef HORN_COMB_FILTER
+    /* only causes hiss-noise - in particular on 'E-4,F-4' ~660Hz
+     * no audible benefit to leslie effect so far, needs tweaking
+     */
+    COMB(cb0wp, cb0rp, cb0bp, cb0es, cb0fb, x);
+    COMB(cb1wp, cb1rp, cb1bp, cb1es, cb1fb, x);
 #endif
 
     /* 2) now do doppler shift for the horn -- FM

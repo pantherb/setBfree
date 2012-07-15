@@ -36,8 +36,10 @@
 #define _S (char*)
 
 #ifndef DFLT_IR_FILE
-#define DFLT_IR_FILE _S (IRPATH "/ir_leslie-%04d.wav")
+#define DFLT_IR_FILE IRPATH "/ir_leslie-%04d.wav"
 #endif
+
+#define DFLT_IR_STRING _S(DFLT_IR_FILE)
 
 #define PRINT_WARNINGS
 #define AUDIO_CHANNELS 2 // see src/main.c
@@ -137,10 +139,10 @@ int convolutionConfig (ConfigContext * cfg) {
 
 static const ConfigDoc doc[] = {
   {_S"convolution.mix", CFG_DOUBLE,   _S"1.0",  _S"Note: modifies dry/wet. [0..1]"},
-  {_S"convolution.ir.file", CFG_TEXT, DFLT_IR_FILE,     _S"convolution sample filename"},
-  {_S"convolution.ir.channel.<int>", CFG_INT, _S"1",    _S""},
-  {_S"convolution.ir.gain.<int>",    CFG_DOUBLE, _S"0.04", _S""},
-  {_S"convolution.ir.delay.<int>",   CFG_INT,   _S"0",    _S""},
+  {_S"convolution.ir.file", CFG_TEXT, _S("\"" DFLT_IR_FILE "\""),     _S"convolution sample filename"},
+  {_S"convolution.ir.channel.<int>", CFG_INT, _S"-",    _S"<int> 1:Left, 2:Right; value: channel-number in IR file to use, default: 1->1, 2->2"},
+  {_S"convolution.ir.gain.<int>",    CFG_DOUBLE, _S"0.5", _S"gain-factor to apply to IR data on load. <int> 1:left-channel, 2:right-channel."},
+  {_S"convolution.ir.delay.<int>",   CFG_INT,   _S"0",    _S"delay IR in audio-samples."},
   {NULL}
 };
 
@@ -198,9 +200,9 @@ void initConvolution (
   }
 
   if (!ir_fn) {
-    const size_t len=strlen(DFLT_IR_FILE)+6;
+    const size_t len=strlen(DFLT_IR_STRING)+6;
     ir_fn=(char*) malloc(len);
-    snprintf(ir_fn, len, DFLT_IR_FILE, SampleRateI);
+    snprintf(ir_fn, len, DFLT_IR_STRING, SampleRateI);
     ir_fn[len-1] = '\0';
   }
 

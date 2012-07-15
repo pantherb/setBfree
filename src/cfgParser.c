@@ -186,11 +186,19 @@ extern const char * filterTypeNames [10]; //defined in b3_whirl/eqcomp.c
  */
 void dumpConfigDoc () {
   printf(
-      "Parameters:\n"
-      "  List of available property-value pairs. The type identifiers are:\n"
-      "  'T': Text, 'I': integer, 'F': float, 'D': double-precision float.\n"
+      "Instrument Properties:\n"
+      "  Below is a list of available property-value pairs and their default\n"
+      "  values. The default value is omitted \"(-)\" for properties which\n"
+      "  contain an array of values.\n"
+      "  \n"
+      "  The type identifiers are:\n"
+      "  'S': text-string, 'I': integer, 'F': float, 'D': double-precision float.\n"
+      "  \n"
       "  Properties marked with an asterisk (*), are available as MIDI CC\n"
-      "  functions. When used as CC, the range 0-127 is mapped to the values.\n"
+      "  functions. When used as CC, the values 0-127 (MIDI data) is mapped\n"
+      "  to a range of values appropriate to the function.\n"
+      "  In config-files or on the command-line you must you the type as\n"
+      "  specified e.g. \"osc.temperament=gear60 osc.wiring-crosstalk=0.2\"\n"
       "\n"
       );
 
@@ -215,21 +223,23 @@ void dumpConfigDoc () {
  
   printf(
   "Additional MIDI Control-Command Functions:\n"
-  " Note: the range is always 0..127 (MIDI value) and mapped to the available values.\n"
+  " These properties can not be modified directly, but are meant to be mapped\n"
+  " to MIDI-controllers (see \"General Information\" above)\n"
+  " e.g. \"midi.controller.upper.70=upper.drawbar16\".\n"
   );
 
   printf(
   "  {upper|lower|pedal}.drawbar<NUM>           I* (-)\n"
-  "    where <NUM> is [16, 513, 8, 4, 223, 2, 135 , 113, 1]\n"
-  "    Set drawbar overtone volume [0..8].\n"
-  "    The range is inversely mapped to the position of the drawbar, so that fader-like controllers work in reverse, like real drawbars. Also note that the controller values are quantized into 0, ... 8 to correspond to the nine discrete positions of the original drawbar system:\n"
+  "    where <NUM> is one of [16, 513, 8, 4, 223, 2, 135 , 113, 1].\n"
+  "    Set MIDI-Controller IDs to adjust given drawbar. --\n"
+  "    The range is inversely mapped to the position of the drawbar, so that fader-like controllers work in reverse, like real drawbars. Note that the MIDI controller values are quantized into 0 ... 8 to correspond to the nine discrete positions of the original drawbar system:\n"
   "    0:8 (loudest), 1-15:7, 16-31:6,  32-47:5, 48-63:4, 64-79:3, 80-92:2, 96-110:1, 111-127:0(off)\n"
   "  rotary.speed-preset                        I* (-)\n"
   "    set horn and drum speed; 0-stop, 1:slow, 2:fast\n"
   "  rotary.speed-toggle                        I* (-)\n"
   "    toggle rotary.speed-preset between 1/2\n"
   "  rotary.speed-select                        I* (-)\n"
-  "    low-level access function 0..8:  3^2 combinations) [stop/slow/fast]^[horn|drum]\n"
+  "    low-level access function 0..8 (3^2 combinations) [stop/slow/fast]^[horn|drum]\n"
   "  swellpedal1                                D* (0.7)\n"
   "    set swell pedal gain\n"
   "  swellpedal2                                D* (0.7)\n"

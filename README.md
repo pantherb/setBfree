@@ -99,7 +99,7 @@ Internal Signal Flow
 	     |        +--------------------------*-----> Audio-Out Right
 	     \--------/ Drum L/R
 
-Render diagram with http://ditaa.org/ 
+Render diagram with http://ditaa.org/
 A pre-rendered image is available in the doc/ folder.
 
 Each of the stages - except the synth-engine itself - can be bypassed. The
@@ -119,6 +119,9 @@ triggered via MIDI just as the standalone JACK application. The
 cabinet-emulation is not included in the LV2-synth, it depends on
 impulse-response files which are not shipped with the plugin.
 
+The Vibrato and Chorus effects are built-into the synth-engine itself as are
+key-click and percussion modes. They are too much linked with the tone
+generation itself to be broken-out.
 
 Summary of Changes since Beatrix
 --------------------------------

@@ -118,11 +118,13 @@ char * ccFuncNames[] = {
   "whirl.horn.filter.b.q",
   "whirl.horn.filter.b.gain",
 
-  "whirl.comb.a.feedback",
-  "whirl.comb.a.delay",
+#ifdef HORN_COMB_FILTER // disabled in b_whirl/whirl.c
+  "whirl.horn.comb.a.feedback",
+  "whirl.horn.comb.a.delay",
 
-  "whirl.comb.b.feedback",
-  "whirl.comb.b.delay",
+  "whirl.horn.comb.b.feedback",
+  "whirl.horn.comb.b.delay",
+#endif
 
   "whirl.drum.filter.type",
   "whirl.drum.filter.hz",
@@ -612,15 +614,17 @@ void midiPrimeControllerMapping () {
   loadCCMap ("whirl.horn.filter.b.q",    87, ctrlUseA, NULL, NULL);
   loadCCMap ("whirl.horn.filter.b.gain", 88, ctrlUseA, NULL, NULL);
 
-  loadCCMap ("whirl.comb.a.feedback", 89, ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.comb.a.delay",    90, ctrlUseA, NULL, NULL);
+#ifdef HORN_COMB_FILTER // disabled in b_whirl/whirl.c
+  loadCCMap ("whirl.horn.comb.a.feedback", 89, ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.horn.comb.a.delay",    90, ctrlUseA, NULL, NULL);
+
+  loadCCMap ("whirl.horn.comb.b.feedback", 102, ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.horn.comb.b.delay",    103, ctrlUseA, NULL, NULL);
+#endif
 
   loadCCMap ("rotary.speed-preset",   91, ctrlUseA, NULL, NULL);
 
   loadCCMap ("overdrive.character",   93, ctrlUseA, NULL, NULL);
-
-  loadCCMap ("whirl.comb.b.feedback", 102, ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.comb.b.delay",    103, ctrlUseA, NULL, NULL);
 
   loadCCMap ("convolution.mix", 94, ctrlUseA, NULL, NULL);
 }
@@ -759,16 +763,16 @@ static const ConfigDoc doc[] = {
   {"midi.upper.channel", CFG_INT, "1", "The MIDI channel to use for the upper-manual. range: [1..16]"},
   {"midi.lower.channel", CFG_INT, "2", "The MIDI channel to use for the lower manual. range: [1..16]"},
   {"midi.pedals.channel", CFG_INT,"3", "The MIDI channel to use for the pedals. range: [1..16]"},
-  {"midi.transpose", CFG_INT, "0", ""},
-  {"midi.upper.transpose", CFG_INT, "0", ""},
-  {"midi.lower.transpose", CFG_INT, "0", ""},
-  {"midi.pedals.transpose", CFG_INT, "0", ""},
-  {"midi.pedals.transpose.split", CFG_INT, "0", ""},
-  {"midi.lower.transpose.split", CFG_INT, "0", ""},
-  {"midi.upper.transpose.split", CFG_INT, "0", ""},
-  {"midi.controller.upper.<cc>", CFG_TEXT, "-", "Speficy function-name to bind to MIDI control-command. <cc> is an integer 0..127. Defaults are in midiPrimeControllerMapping() and can be listed using the '-d' commandline option."},
-  {"midi.controller.lower.<cc>", CFG_TEXT, "-", "see midi.controller.upper"},
-  {"midi.controller.pedals.<cc>", CFG_TEXT, "-", "see midi.controller.upper"},
+  {"midi.controller.upper.<cc>", CFG_TEXT, "\"-\"", "Speficy a function-name to bind to the given MIDI control-command. <cc> is an integer 0..127. Defaults are in midiPrimeControllerMapping() and can be listed using the '-d' commandline option. See general information."},
+  {"midi.controller.lower.<cc>", CFG_TEXT, "\"-\"", "see midi.controller.upper"},
+  {"midi.controller.pedals.<cc>", CFG_TEXT, "\"-\"", "see midi.controller.upper"},
+  {"midi.transpose", CFG_INT, "0", "global transpose (noteshift) in semitones."},
+  {"midi.upper.transpose", CFG_INT, "0", "shift/transpose MIDI-notes on upper-manual in semitones"},
+  {"midi.lower.transpose", CFG_INT, "0", "shift/transpose MIDI-notes on lower-manual in semitones"},
+  {"midi.pedals.transpose", CFG_INT, "0", "shift/transpose MIDI-notes on pedals in semitones"},
+  {"midi.upper.transpose.split", CFG_INT, "0", "noteshift for upper manual in split mode"},
+  {"midi.lower.transpose.split", CFG_INT, "0", "noteshift for lower manual in split mode"},
+  {"midi.pedals.transpose.split", CFG_INT, "0", "noteshift for lower manual in split mode"},
   {NULL}
 };
 
@@ -825,6 +829,8 @@ void process_midi_event(const struct bmidi_event_t *ev) {
       installProgram(ev->control_value);
       break;
     case CONTROL_CHANGE:
+      // TODO params 122-127 are reserved - skip them.
+      // ev->buffer[1] - 0x00 and 0x20 are used for BANK select -- skip
 #if 0 // DEBUG
       {
 	unsigned char * ctrlUse = NULL;
@@ -938,7 +944,6 @@ void process_seq_event(const snd_seq_event_t *ev) {
       break;
     case SND_SEQ_EVENT_PGMCHANGE:
       bev.type=PROGRAM_CHANGE;
-      bev.channel=ev->data.note.channel;
       bev.control_value=ev->data.control.value;
       break;
     case SND_SEQ_EVENT_CONTROLLER:
@@ -1003,7 +1008,6 @@ void parse_jack_midi_event(jack_midi_event_t *ev) {
       bev.velocity=ev->buffer[2]&0x7f;
       break;
     case 0xB0:
-      // TODO params 122-127 are reserved - skip them.
       bev.type=CONTROL_CHANGE;
       bev.control_param=ev->buffer[1]&0x7f;
       bev.control_value=ev->buffer[2]&0x7f;

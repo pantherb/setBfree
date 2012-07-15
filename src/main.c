@@ -362,27 +362,35 @@ static void Usage (int configdoc) {
   if (configdoc) {
     printf (
   "General Information:\n"
-  "  The configuration is made up of two parts: program and config.\n"
+  "  The configuration consists of two parts: program (pgm) and config (cfg).\n"
+  "  \n"
   "  The static configuration of the properties of the instrument is defined in\n"
   "  a .cfg file. There is no need to specify a config-file, as all configurable\n"
   "  parameters have built-in default values. They can be overridden on startup\n"
   "  using 'property=value' pairs or by loading a specific .cfg file.\n"
   "  As the name /static/ implies, the properties can only be set on application\n"
   "  start. Yet many of the properties merely define the initial value of\n"
-  "  settings which can later be modified during playback.\n"
+  "  settings which can later be modified during playback. The ones which can be\n"
+  "  dynamically modified are marked with an asterisk (*)\n"
   "  \n"
   "  Properties are modified by sending MIDI Control-Commands (CC) to the synth.\n"
-  "  The mapping of CC commands to an action can be modified my setting the\n"
+  "  The mapping of CCs to function can be modified by setting the\n"
   "  \"midi.controller.{upper|lower|pedal}.<CC>=<function>\" property.\n"
-  "  function-names are equivalent to property-names.\n"
+  "  Function-names are equivalent to property-names.\n"
+  "  e.g. \"midi.controller.upper.22=overdrive.outputgain\"\n"
+  "  assigns the overdrive-gain to MIDI-CC 22 on MIDI-channel 1 (upper)\n"
   "  \n"
   "  The program basically defines 'shortcuts'. Loading a program is usually\n"
   "  equivalent to sending a series of CC. Programs are commonly used to define\n"
   "  instruments (e.g. draw-bar settings to mimic a flute) or provide scale-\n"
   "  points (e.g. reverb=64).  There are a few special commands which are\n"
-  "  only available by recalling a program (e.g. randomize settings).\n"
+  "  only available by recalling a program (randomize settings, split-manuals,\n"
+  "  enable overdrive).\n"
+  "  \n"
   "  Programs are defined in a .pgm file and are fixed after starting\n"
-  "  the application.\n"
+  "  the application. They are activated by sending MIDI-program-change\n"
+  "  messages (also known as 'presets') MIDI-banks are ignored. So at most\n"
+  "  127 programs can be specified.\n"
   "\n"
   );
     printf ("Default config: \"%s\"\nDefault program: \"%s\"\n\n",
@@ -420,9 +428,9 @@ static void PrintVersion () {
 }
 
 static const ConfigDoc doc[] = {
-  {"midi.driver", CFG_TEXT, "jack", "The midi driver to use, 'jack' or 'alsa'"},
+  {"midi.driver", CFG_TEXT, "\"jack\"", "The midi driver to use, 'jack' or 'alsa'"},
   {"midi.port", CFG_TEXT, "\"\"", "The midi port(s) to auto-connect to. With alsa it's a single port-name or number, jack accepts regular expressions."},
-  {"jack.connect", CFG_TEXT, "system:playback_", "Auto connect both audio-ports to a given regular-expression. This setting is ignored if either of jack.out.[left|right] is specified."},
+  {"jack.connect", CFG_TEXT, "\"system:playback_\"", "Auto connect both audio-ports to a given regular-expression. This setting is ignored if either of jack.out.{left|right} is specified."},
   {"jack.out.left", CFG_TEXT, "\"\"", "Connect left-output to this jack-port (exact name)"},
   {"jack.out.right", CFG_TEXT, "\"\"", "Connect right-output to this jack-port (exact name)"},
   {NULL}

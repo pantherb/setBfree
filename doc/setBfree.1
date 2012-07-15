@@ -44,39 +44,55 @@ Randomize initial preset (whacky but true)
 Print version information
 .SS "General Information:"
 .IP
-The configuration is made up of two parts: program and config.
+The configuration consists of two parts: program (pgm) and config (cfg).
+.IP
 The static configuration of the properties of the instrument is defined in
 a .cfg file. There is no need to specify a config\-file, as all configurable
 parameters have built\-in default values. They can be overridden on startup
 using 'property=value' pairs or by loading a specific .cfg file.
 As the name /static/ implies, the properties can only be set on application
 start. Yet many of the properties merely define the initial value of
-settings which can later be modified during playback.
+settings which can later be modified during playback. The ones which can be
+dynamically modified are marked with an asterisk (*)
 .IP
 Properties are modified by sending MIDI Control\-Commands (CC) to the synth.
-The mapping of CC commands to an action can be modified my setting the
+The mapping of CCs to function can be modified by setting the
 "midi.controller.{upper|lower|pedal}.<CC>=<function>" property.
-function\-names are equivalent to property\-names.
+Function\-names are equivalent to property\-names.
+e.g. "midi.controller.upper.22=overdrive.outputgain"
+assigns the overdrive\-gain to MIDI\-CC 22 on MIDI\-channel 1 (upper)
 .IP
 The program basically defines 'shortcuts'. Loading a program is usually
 equivalent to sending a series of CC. Programs are commonly used to define
 instruments (e.g. draw\-bar settings to mimic a flute) or provide scalepoints (e.g. reverb=64).  There are a few special commands which are
-only available by recalling a program (e.g. randomize settings).
+only available by recalling a program (randomize settings, split\-manuals,
+enable overdrive).
+.IP
 Programs are defined in a .pgm file and are fixed after starting
-the application.
+the application. They are activated by sending MIDI\-program\-change
+messages (also known as 'presets') MIDI\-banks are ignored. So at most
+127 programs can be specified.
 .PP
 Default config: "/usr/share/setBfree/cfg/default.cfg"
 Default program: "/usr/share/setBfree/pgm/default.pgm"
-.SS "Parameters:"
+.SS "Instrument Properties:"
 .IP
-List of available property\-value pairs. The type identifiers are:
-\&'T': Text, 'I': integer, 'F': float, 'D': double\-precision float.
+Below is a list of available property\-value pairs and their default
+values. The default value is omitted "(\-)" for properties which
+contain an array of values.
+.IP
+The type identifiers are:
+\&'S': text\-string, 'I': integer, 'F': float, 'D': double\-precision float.
+.IP
 Properties marked with an asterisk (*), are available as MIDI CC
-functions. When used as CC, the range 0\-127 is mapped to the values.
+functions. When used as CC, the values 0\-127 (MIDI data) is mapped
+to a range of values appropriate to the function.
+In config\-files or on the command\-line you must you the type as
+specified e.g. "osc.temperament=gear60 osc.wiring\-crosstalk=0.2"
 .SS "Parameters for 'Main':"
 .TP
 midi.driver
-S  (jack)
+S  ("jack")
 .IP
 The midi driver to use, 'jack' or 'alsa'
 .TP
@@ -86,9 +102,9 @@ S  ("")
 The midi port(s) to auto\-connect to. With alsa it's a single port\-name or number, jack accepts regular expressions.
 .TP
 jack.connect
-S  (system:playback_)
+S  ("system:playback_")
 .IP
-Auto connect both audio\-ports to a given regular\-expression. This setting is ignored if either of jack.out.[left|right] is specified.
+Auto connect both audio\-ports to a given regular\-expression. This setting is ignored if either of jack.out.{left|right} is specified.
 .TP
 jack.out.left
 S  ("")
@@ -116,41 +132,55 @@ I  (3)
 .IP
 The MIDI channel to use for the pedals. range: [1..16]
 .TP
-midi.transpose
-I  (0)
-.TP
-midi.upper.transpose
-I  (0)
-.TP
-midi.lower.transpose
-I  (0)
-.TP
-midi.pedals.transpose
-I  (0)
-.TP
-midi.pedals.transpose.split
-I  (0)
-.TP
-midi.lower.transpose.split
-I  (0)
-.TP
-midi.upper.transpose.split
-I  (0)
-.TP
 midi.controller.upper.<cc>
-S  (\-)
+S  ("\-")
 .IP
-Speficy function\-name to bind to MIDI control\-command. <cc> is an integer 0..127. Defaults are in midiPrimeControllerMapping() and can be listed using the '\-d' commandline option.
+Speficy a function\-name to bind to the given MIDI control\-command. <cc> is an integer 0..127. Defaults are in midiPrimeControllerMapping() and can be listed using the '\-d' commandline option. See general information.
 .TP
 midi.controller.lower.<cc>
-S  (\-)
+S  ("\-")
 .IP
 see midi.controller.upper
 .TP
 midi.controller.pedals.<cc>
-S  (\-)
+S  ("\-")
 .IP
 see midi.controller.upper
+.TP
+midi.transpose
+I  (0)
+.IP
+global transpose (noteshift) in semitones.
+.TP
+midi.upper.transpose
+I  (0)
+.IP
+shift/transpose MIDI\-notes on upper\-manual in semitones
+.TP
+midi.lower.transpose
+I  (0)
+.IP
+shift/transpose MIDI\-notes on lower\-manual in semitones
+.TP
+midi.pedals.transpose
+I  (0)
+.IP
+shift/transpose MIDI\-notes on pedals in semitones
+.TP
+midi.upper.transpose.split
+I  (0)
+.IP
+noteshift for upper manual in split mode
+.TP
+midi.lower.transpose.split
+I  (0)
+.IP
+noteshift for lower manual in split mode
+.TP
+midi.pedals.transpose.split
+I  (0)
+.IP
+noteshift for lower manual in split mode
 .SS "Parameters for 'MIDI Program Parser':"
 .TP
 pgm.controller.offset
@@ -171,6 +201,8 @@ one of: "equal", "gear60", "gear50"
 .TP
 osc.x\-precision
 D  (0.001)
+.IP
+set wave precision. Maximum allowed error when calulating wave buffer\-length for a given frequency (ideal #of samples \- discrete #of samples)
 .TP
 osc.perc.fast
 D  (1.0)
@@ -264,6 +296,8 @@ t,w: wheel\-number [0..91]
 .TP
 osc.taper.k<key>.b<bus>.t<wheel>
 D  (\-)
+.IP
+customize tapering model. Specify level of [key, drawbar, tonewheel].
 .TP
 osc.crosstalk.k<key>
 S  (\-)
@@ -380,7 +414,7 @@ Abstraction to set xov.ctl_biased_fb and xov.ctl_biased_fb2
 xov.ctl_biased_fb
 F* (0.5821)
 .IP
-This parameter behaves somewhat like an analogue tone control for bass mounted before the overdrive stage. Unity is somewhere around he value 0.6, lesser values takes away bass and lowers the volume while higher values gives more bass and more signal into the overdrive. Must be less than 1.0.
+This parameter behaves somewhat like an analogue tone control for bass mounted before the overdrive stage. Unity is somewhere around the value 0.6, lesser values takes away bass and lowers the volume while higher values gives more bass and more signal into the overdrive. Must be less than 1.0.
 .TP
 xov.ctl_biased_fb2
 F* (0.999)
@@ -406,12 +440,12 @@ horn and drum speed. 0:stopped, 1:slow, 2:fast
 whirl.horn.slowrpm
 D  (48.0)
 .IP
-RPM
+target RPM for slow (aka choral) horn speed
 .TP
 whirl.horn.fastrpm
 D  (400.0)
 .IP
-RPM
+target RPM for fast (aka tremolo) horn speed
 .TP
 whirl.horn.acceleration
 D* (350.0)
@@ -431,12 +465,12 @@ horn stop position 0: free, 0.0\-1.0 clockwise position where to stop. 1.0:front
 whirl.drum.slowrpm
 D  (40.0)
 .IP
-RPM
+target RPM for slow (aka choral) drum speed.
 .TP
 whirl.drum.fastrpm
 D  (342.0)
 .IP
-RPM
+target RPM for fast (aka tremolo) drum speed.
 .TP
 whirl.drum.acceleration
 D* (120.0)
@@ -481,19 +515,27 @@ horh dry\-signal leak
 whirl.drum.filter.type
 I* (8)
 .IP
-Filter type: 0\-8. see "Filter types" below
+Filter type: 0\-8. see "Filter types" below. This filter separates the signal to be sent to the drum\-speaker. It should be a high\-shelf filter with negative gain.
 .TP
 whirl.drum.filter.q
 D* (1.6016)
+.IP
+Filter Quality, bandwidth; range: [0.2..3.0]
 .TP
 whirl.drum.filter.hz
 D* (811.9695)
+.IP
+Filter frequency.
 .TP
 whirl.drum.filter.gain
 D* (\fB\-38\fR.9291)
+.IP
+Filter gain [\-48.0..48.0]
 .TP
 whirl.horn.filter.a.type
 I* (0)
+.IP
+Filter type: 0\-8. see "Filter types" below. This is the first of two filters to shape the signal to be sent to the horn\-speaker; by default a low\-pass filter with negative gain to cut off high freqencies.
 .TP
 whirl.horn.filter.a.hz
 D* (4500)
@@ -512,27 +554,23 @@ range: [\-48.0..48.0]
 .TP
 whirl.horn.filter.b.type
 I* (7)
+.IP
+Filter type: 0\-8. see "Filter types" below. This is the second of two filters to shape the signal to be sent to the horn\-speaker; by default a low\-shelf filter with negative gain to remove frequencies which are sent to the drum.
 .TP
 whirl.horn.filter.b.hz
 D* (300.0)
+.IP
+Filter frequency; range: [250..8000]
 .TP
 whirl.horn.filter.b.q
 D* (1.0)
+.IP
+Filter Quality, bandwidth; range: [0.2..3.0]
 .TP
 whirl.horn.filter.b.gain
 D* (\fB\-30\fR.0)
-.TP
-whirl.horn.comb.a.feedback
-D  (\fB\-0\fR.55)
-.TP
-whirl.horn.comb.a.delay
-I  (38)
-.TP
-whirl.horn.comb.b.feedback
-D  (\fB\-0\fR.3508)
-.TP
-whirl.horn.comb.b.delay
-D  (120)
+.IP
+Filter gain [\-48.0..48.0]
 .SS "Parameters for 'Reverb Effect':"
 .TP
 reverb.wet
@@ -567,18 +605,24 @@ D* (1.0)
 Note: modifies dry/wet. [0..1]
 .TP
 convolution.ir.file
-S  (/usr/share/setBfree/ir/ir_leslie\-%04d.wav)
+S  ("/usr/share/setBfree/ir/ir_leslie\-%04d.wav")
 .IP
 convolution sample filename
 .TP
 convolution.ir.channel.<int>
-I  (1)
+I  (\-)
+.IP
+<int> 1:Left, 2:Right; value: channel\-number in IR file to use, default: 1\->1, 2\->2
 .TP
 convolution.ir.gain.<int>
-D  (0.04)
+D  (0.5)
+.IP
+gain\-factor to apply to IR data on load. <int> 1:left\-channel, 2:right\-channel.
 .TP
 convolution.ir.delay.<int>
 I  (0)
+.IP
+delay IR in audio\-samples.
 .SS "Filter Types (for Leslie):"
 .TP
 0
@@ -611,14 +655,16 @@ HSH high shelf
 Note that the gain parameter does not apply to type 0 Low\-Pass\-Filters.
 .SS "Additional MIDI Control-Command Functions:"
 .IP
-Note: the range is always 0..127 (MIDI value) and mapped to the available values.
+These properties can not be modified directly, but are meant to be mapped
+to MIDI\-controllers (see "General Information" above)
+e.g. "midi.controller.upper.70=upper.drawbar16".
 .TP
 {upper|lower|pedal}.drawbar<NUM>
 I* (\-)
 .IP
-where <NUM> is [16, 513, 8, 4, 223, 2, 135 , 113, 1]
-Set drawbar overtone volume [0..8].
-The range is inversely mapped to the position of the drawbar, so that fader\-like controllers work in reverse, like real drawbars. Also note that the controller values are quantized into 0, ... 8 to correspond to the nine discrete positions of the original drawbar system:
+where <NUM> is one of [16, 513, 8, 4, 223, 2, 135 , 113, 1].
+Set MIDI\-Controller IDs to adjust given drawbar. \fB\-\-\fR
+The range is inversely mapped to the position of the drawbar, so that fader\-like controllers work in reverse, like real drawbars. Note that the MIDI controller values are quantized into 0 ... 8 to correspond to the nine discrete positions of the original drawbar system:
 0:8 (loudest), 1\-15:7, 16\-31:6,  32\-47:5, 48\-63:4, 64\-79:3, 80\-92:2, 96\-110:1, 111\-127:0(off)
 .TP
 rotary.speed\-preset
@@ -633,9 +679,8 @@ toggle rotary.speed\-preset between 1/2
 .TP
 rotary.speed\-select
 I* (\-)
-.TP
-low\-level access function 0..8:
-3^2 combinations) [stop/slow/fast]^[horn|drum]
+.IP
+low\-level access function 0..8 (3^2 combinations) [stop/slow/fast]^[horn|drum]
 .TP
 swellpedal1
 D* (0.7)
