@@ -61,6 +61,8 @@ The mapping of CCs to function can be modified by setting the
 Function\-names are equivalent to property\-names.
 e.g. "midi.controller.upper.22=overdrive.outputgain"
 assigns the overdrive\-gain to MIDI\-CC 22 on MIDI\-channel 1 (upper)
+(Note: each function can assigned only once, however MIDI\-CC can be re\-used
+and trigger multiple function at the same time.)
 .IP
 The program basically defines 'shortcuts'. Loading a program is usually
 equivalent to sending a series of CC. Programs are commonly used to define

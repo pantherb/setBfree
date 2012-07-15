@@ -379,6 +379,8 @@ static void Usage (int configdoc) {
   "  Function-names are equivalent to property-names.\n"
   "  e.g. \"midi.controller.upper.22=overdrive.outputgain\"\n"
   "  assigns the overdrive-gain to MIDI-CC 22 on MIDI-channel 1 (upper)\n"
+  "  (Note: each function can assigned only once, however MIDI-CC can be re-used\n"
+  "  and trigger multiple function at the same time.)\n"
   "  \n"
   "  The program basically defines 'shortcuts'. Loading a program is usually\n"
   "  equivalent to sending a series of CC. Programs are commonly used to define\n"

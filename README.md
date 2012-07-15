@@ -18,7 +18,8 @@ Quick-start
  - start jackd [http://jackaudio.org] or configure JACK autostart
  - run `setBfree-start`
  - connect JACK Audio/MIDI ports (using qjackctl or you favorite JACK
-   connection manager)
+   connection manager -- note: enable JACK-MIDI or use `a2jmidid` to expose
+	 MIDI-devices to JACK, alternatively run `setBfree midi.driver=alsa`)
 
 
 About
@@ -50,7 +51,9 @@ Run `setBfree -h` for a quick overview. `setBfree --help` will output a
 lengthy list of available options and properties than can be modified.
 
 `setBfree` is the synthesizer engine. It responds to MIDI messages (JACK-MIDI
-or ALSA-sequencer) and outputs audio to JACK and runs from the command-line.
+or ALSA-sequencer) and outputs audio to JACK. The engine does not have any
+graphical user interface (GUI). It is usually started from the commandline.
+
 The GUI `vb3kb` is a standalone application that simply sends MIDI messages to
 setBfree. `setBfree-start` is a shell-script that launches both and connects
 the GUI to the synth.
@@ -66,10 +69,16 @@ Getting started - standalone app
 --------------------------------
 
 You'll want reliable, low-latency, real-time audio. Therefore you want
-[JACK](http://jackaudio.org/). On GNU/Linux use `qjackctl` to start the
+[JACK](http://jackaudio.org/). On GNU/Linux we recommend `qjackctl` to start the
 jack-audio-server, on OSX jack comes with a GUI called JACK-pilot.
 
 To be continued..
+
+*   http://qjackctl.sf.net/
+*   http://jackaudio.org/faq
+*   aim for low-latency (256 frames/period or less) - except if you are church
+		organist, whom we believe are awesome latency-compensation organic systems
+*   http://home.gna.org/a2jmidid/
 
 
 Getting started - LV2 plugins
@@ -114,14 +123,14 @@ the drum-output signals and simply copy the incoming audio-signal to the horn
 L/R outputs. The cabinet-emulation is an experimental convolution engine and
 bypassed by default.
 
-The LV2-synth includes the first three effects until the Leslie they can be
-triggered via MIDI just as the standalone JACK application. The
-cabinet-emulation is not included in the LV2-synth, it depends on
-impulse-response files which are not shipped with the plugin.
+The LV2-synth includes the first three effects until and including the Leslie.
+The effects can be triggered via MIDI just as with the standalone JACK
+application. The cabinet-emulation is not included in the LV2-synth because it
+depends on impulse-response files which are not shipped with the plugin.
 
-The Vibrato and Chorus effects are built-into the synth-engine itself as are
-key-click and percussion modes. They are too much linked with the tone
-generation itself to be broken-out.
+The Vibrato and Chorus effects are built into the synth-engine itself, as are
+key-click and percussion modes. These features are linked to the tone
+generation itself and can not be broken-out to standalone effects.
 
 Summary of Changes since Beatrix
 --------------------------------
@@ -139,13 +148,13 @@ Compile
 
 Install the dependencies and simply call `make` followed by `sudo make install`.
 
-*   libjack-dev - required - http://jackaudio.org - used for audio I/O
-*   tcl-dev, tk-dev - required - needed for "vb3kb" virtual Keyboard - GUI wrapper for testing and debugging.
+*   libjack-dev - **required** - http://jackaudio.org/ - used for audio I/O
+*   tcl-dev, tk-dev - **required** - http://tcl.sf.net/ - virtual Keyboard GUI
 *   libasound2-dev - optional, recommended - ALSA MIDI
 *   lv2-dev - optional, recommended - build effects as LV2 plugins
-*   libzita-convolver-dev - optional - IR leslie speaker-emulation for the standalone organ app
+*   libzita-convolver-dev - optional - IR leslie cabinet-emulation
 *   libsndfile1-dev - optional - needed to load IR samples for zita-convolver
-*   liblo-dev - optional - http://opensoundcontrol.org - used for standalone preamp/overdrive app.
+*   liblo-dev - optional - http://opensoundcontrol.org/ - used only in standalone preamp/overdrive app.
 *   help2man - optional - re-create the man pages
 *   doxygen - optional - create source-code annotations
 
@@ -165,12 +174,12 @@ The Makefile understands PREFIX and DESTDIR variables:
 	make ENABLE_CONVOLUTION=yes PREFIX=/usr
 	make install ENABLE_CONVOLUTION=yes PREFIX=/usr DESTDIR=mypackage/setbfree/
 
-Packagers: see debian/rules in the git-repository. LDFLAGS can be passed as is,
+**Packagers**: see debian/rules in the git-repository. LDFLAGS can be passed as is,
 CFLAGS should be specified by overriding the OPTIMIZATIONS variable.
 The packaging also includes a desktop-file to launch setBfree from the
 application-menu which is not included in the release.
 
-Mac/OSX: The same instructions apply. tcl/tk is included with OSX. The JackOSX
+**Mac/OSX**: The same instructions apply. Tcl/Tk is included with OSX. The JackOSX
 packages available from jackaudio.org provide neccesary header and development
 files. The setBfree git-repository includes a script to build universal binary
 and create a DMG.  However this script assumes that universal (PPC, i386,
