@@ -140,9 +140,9 @@ Compile
 Install the dependencies and simply call `make` followed by `sudo make install`.
 
 *   libjack-dev - required - http://jackaudio.org - used for audio I/O
+*   tcl-dev, tk-dev - required - needed for "vb3kb" virtual Keyboard - GUI wrapper for testing and debugging.
 *   libasound2-dev - optional, recommended - ALSA MIDI
 *   lv2-dev - optional, recommended - build effects as LV2 plugins
-*   tcl-dev, tk-dev - optional, recommended - needed for "vb3kb" virtual Keyboard - GUI wrapper for testing and debugging.
 *   libzita-convolver-dev - optional - IR leslie speaker-emulation for the standalone organ app
 *   libsndfile1-dev - optional - needed to load IR samples for zita-convolver
 *   liblo-dev - optional - http://opensoundcontrol.org - used for standalone preamp/overdrive app.
@@ -155,7 +155,8 @@ If zita-convolver and libsndfile1-dev are available you can use
 	make clean
 	make ENABLE_CONVOLUTION=yes
 
-to enable a built-in convolution reverb.
+to enable experimental built-in convolution reverb used for leslie cabinet
+simulation (at some point down the road this will be enabled the default).
 
 
 The Makefile understands PREFIX and DESTDIR variables:
@@ -164,3 +165,14 @@ The Makefile understands PREFIX and DESTDIR variables:
 	make ENABLE_CONVOLUTION=yes PREFIX=/usr
 	make install ENABLE_CONVOLUTION=yes PREFIX=/usr DESTDIR=mypackage/setbfree/
 
+Packagers: see debian/rules in the git-repository. LDFLAGS can be passed as is,
+CFLAGS should be specified by overriding the OPTIMIZATIONS variable.
+The packaging also includes a desktop-file to launch setBfree from the
+application-menu which is not included in the release.
+
+Mac/OSX: The same instructions apply. tcl/tk is included with OSX. The JackOSX
+packages available from jackaudio.org provide neccesary header and development
+files. The setBfree git-repository includes a script to build universal binary
+and create a DMG.  However this script assumes that universal (PPC, i386,
+x86-64) versions of the JACK-libraries as well as zita-convolver and libsndfile
+are available in /usr/local/ on the build-host.
