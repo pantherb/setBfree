@@ -11,6 +11,7 @@ Hammond and Don Leslie.
 *   http://setbfree.org
 *   https://github.com/pantherb/setBfree
 
+
 Quick-start
 -----------
 
@@ -18,6 +19,7 @@ Quick-start
  - run `setBfree-start`
  - connect JACK Audio/MIDI ports (using qjackctl or you favorite JACK
    connection manager)
+
 
 About
 -----
@@ -63,6 +65,8 @@ Examples:
 Getting started - standalone app
 --------------------------------
 
+You'll want reliable, low-latency, real-time audio. Therefore you want [JACK](http://jackaudio.org/). On GNU/Linux use `qjackctl` to start the jack-audio-server, on OSX jack comes with a GUI called JACK-pilot.
+
 To be continued..
 
 
@@ -70,6 +74,45 @@ Getting started - LV2 plugins
 -----------------------------
 
 To be continued..
+
+
+Internal Signal Flow
+--------------------
+
+	     +--------+    /-----------\    /--------\
+	     |        |    |           |    |        |
+	MIDI | Synth- |    |  Preamp/  |    |        |
+	--=->|        +--->|           +--->| Reverb +--\
+	     | Engine |    | Overdrive |    |        |  |
+	     |        |    |           |    |        |  |
+	     +--------+    \-----------/    \--------/  |
+	                                                |
+	  /---------------------------------------------/
+	  |
+	  |  /--------\ Horn L/R  /-----------\
+	  |  |        +---------->|  Cabinet  +-----*--> Audio-Out Left
+	  |  |        +---------->| Emulation +--\  |
+	  \->| Leslie |           \-----------/  |  |
+	     |        +--------------------------|--/
+	     |        +--------------------------*-----> Audio-Out Right
+	     \--------/ Drum L/R
+
+Render diagram with http://ditaa.org/
+
+Each of the stages - except the synth-engine itself - can be bypassed. The
+effects are available as standalone LV2 plugins which provides for creating
+custom effect chains and use 3rd party effects.
+
+The preamp/overdrive is disabled by default, reverb is set to 30% (unless
+overridden with `reverb.mix`, `reverb.dry` or `reverb.wet`). Note that a
+stopped leslie will still modify the sound (horn-speaker characteristics,
+angle-dependent reflections). Bypassing the leslie (`whirl.bypass=1`) will mute
+the drum-output signals and simply copy the incoming audio-signal to the horn
+L/R outputs. The cabinet-emulation is an experimental convolution engine and
+bypassed by default.
+
+The LV2-synth includes the first three effects until the Leslie they can be triggered via MIDI just as the standalone JACK application. The cabinet-emulation is not included in the LV2-synth, it depends on impulse-response files which are not shipped with the plugin.
+
 
 Summary of Changes since Beatrix
 --------------------------------
@@ -88,7 +131,7 @@ Compile
 Install the dependencies and simply call `make` followed by `sudo make install`.
 
 *   libjack-dev - required - http://jackaudio.org - used for audio I/O
-*   libasound2-dev - optional, recommended - ALSA MIDI 
+*   libasound2-dev - optional, recommended - ALSA MIDI
 *   lv2-dev - optional, recommended - build effects as LV2 plugins
 *   tcl-dev, tk-dev - optional, recommended - needed for "vb3kb" virtual Keyboard - GUI wrapper for testing and debugging.
 *   libzita-convolver-dev - optional - IR leslie speaker-emulation for the standalone organ app
