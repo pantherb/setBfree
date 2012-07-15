@@ -1,3 +1,7 @@
+2012-07-16 (v0.5.3)  Robin Gareus <robin@gareus.org>
+* updated built-in documentation
+* minor tweaks to the GUI
+
 2012-07-14 (v0.5.2)  Robin Gareus <robin@gareus.org>
 * build-system: use LDFLAGS if present
 * remove hardcoded default program - it is [re-]generated during build
