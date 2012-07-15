@@ -19,9 +19,9 @@ TCLLIBDIR=lib64 lib
 $(foreach tprefix,$(TCLPREFIX), \
   $(foreach tlibdir,$(TCLLIBDIR), \
     $(if $(shell test -f $(tprefix)/$(tlibdir)/tclConfig.sh -a $(tprefix)/$(tlibdir)/tkConfig.sh && echo yes), \
-		  $(eval TCLTKPREFIX=$(tprefix))\
-		  $(eval TCLTKLIBDIR=$(tlibdir))\
-		)\
+      $(eval TCLTKPREFIX=$(tprefix))\
+      $(eval TCLTKLIBDIR=$(tlibdir))\
+    )\
   )\
 )
 

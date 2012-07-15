@@ -26,7 +26,7 @@ OBJS= \
 	../b_overdrive/overdrive.o
 
 HEADERS = \
-  cfgParser.h \
+	cfgParser.h \
 	main.h \
 	midi.h \
 	pgmParser.h \
