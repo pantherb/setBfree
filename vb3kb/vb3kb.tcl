@@ -403,6 +403,52 @@ proc setDistChacater {v} {
   SeqControl 0 93 $v
 }
 
+proc AboutWindow {} {
+  if {[winfo exists .t]} {
+    raise .t
+    return
+  }
+  tk::toplevel .t
+  wm title .t "About setBfree"
+  wm iconname .t "About setBfree"
+  wm transient .t .
+
+  panedwindow .t.pnd -orient v -opaqueresize 0
+  message .t.txt -text "
+setBfree - DSP tonewheel organ
+
+http://setbfree.org/
+https://github.com/pantherb/setBfree
+
+Copyright \xa9 2003, 2004, 2008-2012
+Fredrik Kilander <fk@dsv.su.se>
+Robin Gareus <robin@gareus.org>
+Ken Restivo <ken@restivo.org>
+Will Panther <pantherb@setbfree.org>
+
+
+vb3kb - virtual B3 Keyboard
+
+Copyright \xa9 1997-2000, 2012
+Takashi Iwai <tiwai@suse.de>
+Robin Gareus <robin@gareus.org>
+
+Use and redistribute under the terms of the GNU General Public License
+" \
+  -justify center -aspect 400 -border 2 -bg white -relief groove
+
+  button .t.btn -relief raised -text "Close" -padx 0 -command [list destroy .t] -default active
+
+  .t.pnd add .t.txt
+  .t.pnd add .t.btn
+  pack .t.pnd -fill both -expand 1
+  raise .t
+  bind .t <Visibility> "focus .t.btn"
+  bind .t <Key-Escape> "destroy .t"
+  bind .t <Key-Return> "destroy .t"
+  tk::PlaceWindow .t widget .
+}
+
 proc menupgm {w t v} {
   global $v
   $w configure -text $t
@@ -433,6 +479,9 @@ proc PanelCreate {{pw ""}} {
     scale $pw.tp.vol -orient vertical -from 127 -to 0 -showvalue false -command "setVolume" -bd 1 -relief sunken
     $pw.tp.vol set 127
 
+    frame $pw.tp.rbtn
+    button $pw.tp.rbtn.about -relief raised -text "About" -padx 0 -command "AboutWindow"
+
     set w $pw.ctrl
     frame $w
 
@@ -451,7 +500,7 @@ proc PanelCreate {{pw ""}} {
     $w.percmode.m add radio -label "fast" -variable gpercmode -value 36 -command [list menupgm $w.percmode "fast" gpercmode]
     $w.percmode.m add radio -label "slow" -variable gpercmode -value 37 -command [list menupgm $w.percmode "slow" gpercmode]
 
-    menubutton $w.percharm -relief raised -width 6 -menu $w.percharm.m
+    menubutton $w.percharm -relief raised -width 7 -menu $w.percharm.m
     menu $w.percharm.m -tearoff 0
     $w.percharm.m add radio -label "2nd" -variable gpercharm -value 38 -command [list menupgm $w.percharm "2nd" gpercharm]
     $w.percharm.m add radio -label "3rd" -variable gpercharm -value 39 -command [list menupgm $w.percharm "3rd" gpercharm]
@@ -488,16 +537,16 @@ proc PanelCreate {{pw ""}} {
 
     scale $w.dist -orient horizontal -from 0 -to 127 -showvalue false -command "setDistChacater"
 
-    menubutton $pw.tp.pctrl -relief raised -width 7 -menu $pw.tp.pctrl.m
-    menu $pw.tp.pctrl.m -tearoff 0
+    menubutton $pw.tp.rbtn.pctrl -relief raised -width 8 -menu $pw.tp.rbtn.pctrl.m -padx 0
+    menu $pw.tp.rbtn.pctrl.m -tearoff 0
     global ctrlval programpresets
     foreach i $programpresets {
 	set type [lindex $i 0]
 	set label [lindex $i 1]
-	$pw.tp.pctrl.m add radio -label $label -variable curctrl -value $type -command [list NewControl $pw.tp.pctrl $i]
+	$pw.tp.rbtn.pctrl.m add radio -label $label -variable curctrl -value $type -command [list NewControl $pw.tp.rbtn.pctrl $i]
 	set ctrlval($type) [lindex $i 2]
     }
-    NewControl $pw.tp.pctrl [lindex $programpresets 0]
+    NewControl $pw.tp.rbtn.pctrl [lindex $programpresets 0]
 
     # initialize checkbox and slider values
     global gleslie gpercmode gvibrate greverb convolution percmode
@@ -518,7 +567,8 @@ proc PanelCreate {{pw ""}} {
 
     # arrange elements
 
-    pack $pw.tp.vol $pw.tp.bars $pw.tp.pctrl -side left
+    pack $pw.tp.rbtn.about $pw.tp.rbtn.pctrl -side top -padx 3 -pady 3 -fill both
+    pack $pw.tp.vol $pw.tp.bars $pw.tp.rbtn -side left
     pack $pw.tp -side top
 
     set w $pw.ctrl.c1
@@ -578,8 +628,11 @@ proc AdvancedCreate {{pw ""}} {
   scale $w.ccparam -orient horizontal -from 0 -to 127 -showvalue true -width 10 -length 164 -command "setCCparam"
   scale $w.ccvalue -orient horizontal -from 0 -to 127 -showvalue true -width 10 -length 164 -command "sendCC"
 
+  label $w.lc -text "Chn:"
+  label $w.lp -text "Par:"
+  label $w.lv -text "Val:"
 
-  pack $w.ccchannel $w.ccparam $w.ccvalue -fill x -side left
+  pack $w.lc $w.ccchannel $w.lp $w.ccparam $w.lv $w.ccvalue -side left -anchor s
   pack $w -side top
   pack $pw.adv -side bottom -pady 1
 }
@@ -645,6 +698,41 @@ SeqProgram 0 0 60 # no split
 wm title . "setBfree - DSP tonewheel organ"
 wm iconname . "setBfree"
 wm resizable . false false
+
+catch {
+  if {[tk windowingsystem] eq {aqua}} {
+    image create photo vblogo -file ../Resources/setBfree.icns
+    wm iconphoto . -default vblogo
+  } else {
+    image create photo vblogo -width 16 -height 16
+    vblogo put #ffffff -to  1  1  15 15
+    vblogo put #000000 -to  1  1  2 15 
+    vblogo put #000000 -to  1  1  15 2
+    vblogo put #000000 -to  5  1  8 9 
+    vblogo put #000000 -to  6  9  7 14 
+    vblogo put #000000 -to  11 1  14 9 
+    vblogo put #000000 -to  12 9  13 14 
+
+    vblogo put #cc0000 -to  2 2  3 14 
+    vblogo put #cc0000 -to  3 2 
+    vblogo put #cc0000 -to  3 7 
+    vblogo put #cc0000 -to  3 13 
+    vblogo put #cc0000 -to  4 3  5 7 
+    vblogo put #cc0000 -to  4 8  5 13
+
+    vblogo put #cc0000 -to  8 2  11 4
+    vblogo put #cc0000 -to  10 4
+    vblogo put #cc0000 -to  9 5 10 8
+    vblogo put #cc0000 -to  10 8 11 13
+    vblogo put #cc0000 -to  8 11
+    vblogo put #cc0000 -to  8 12 10 14
+    vblogo redither
+
+    image create photo vblogo32  -width 32 -height 32
+    vblogo32 copy vblogo -zoom 2 2
+    wm iconphoto . -default vblogo vblogo32
+  }
+}
 
 bind . <Destroy> {SeqOff}
 bind . <Control-c> {exit 0}
