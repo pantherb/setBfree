@@ -65,7 +65,9 @@ Examples:
 Getting started - standalone app
 --------------------------------
 
-You'll want reliable, low-latency, real-time audio. Therefore you want [JACK](http://jackaudio.org/). On GNU/Linux use `qjackctl` to start the jack-audio-server, on OSX jack comes with a GUI called JACK-pilot.
+You'll want reliable, low-latency, real-time audio. Therefore you want
+[JACK](http://jackaudio.org/). On GNU/Linux use `qjackctl` to start the
+jack-audio-server, on OSX jack comes with a GUI called JACK-pilot.
 
 To be continued..
 
@@ -97,7 +99,8 @@ Internal Signal Flow
 	     |        +--------------------------*-----> Audio-Out Right
 	     \--------/ Drum L/R
 
-Render diagram with http://ditaa.org/
+Render diagram with http://ditaa.org/ 
+A pre-rendered image is available in the doc/ folder.
 
 Each of the stages - except the synth-engine itself - can be bypassed. The
 effects are available as standalone LV2 plugins which provides for creating
@@ -111,7 +114,10 @@ the drum-output signals and simply copy the incoming audio-signal to the horn
 L/R outputs. The cabinet-emulation is an experimental convolution engine and
 bypassed by default.
 
-The LV2-synth includes the first three effects until the Leslie they can be triggered via MIDI just as the standalone JACK application. The cabinet-emulation is not included in the LV2-synth, it depends on impulse-response files which are not shipped with the plugin.
+The LV2-synth includes the first three effects until the Leslie they can be
+triggered via MIDI just as the standalone JACK application. The
+cabinet-emulation is not included in the LV2-synth, it depends on
+impulse-response files which are not shipped with the plugin.
 
 
 Summary of Changes since Beatrix
