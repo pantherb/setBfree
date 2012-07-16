@@ -154,6 +154,7 @@ void parseConfigurationLine (char * fname, int lineNumber, char * oneLine) {
 
 }
 
+#ifndef CFG_MAIN
 /* text representation of enum conftype */
 const char *conftypenames[CFG_LAST] = { "S", "D", "F", "I" };
 
@@ -179,7 +180,6 @@ void formatDoc (char *modulename, const ConfigDoc *d) {
   printf("\n");
 }
 
-#ifndef CFG_MAIN
 extern const char * filterTypeNames [10]; //defined in b3_whirl/eqcomp.c
 /*
  *
