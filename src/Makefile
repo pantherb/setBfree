@@ -1,15 +1,11 @@
-PREFIX ?= /usr/local
-OPTIMIZATIONS ?= -msse -msse2 -mfpmath=sse -ffast-math -fomit-frame-pointer -O3 -fno-finite-math-only -pipe
-ENABLE_CONVOLUTION ?= no
+include ../common.mak
 
 INCLUDEPATHS = -I../b_overdrive/ -I../b_whirl  -I../b_reverb -I../b_conv
-bindir = $(PREFIX)/bin
-sharedir = $(PREFIX)/share/setBfree
-CFLAGS = $(OPTIMIZATIONS) -Wall -fPIC
+
 CFLAGS+= $(INCLUDEPATHS)
 CFLAGS+= -DSHAREDIR="\"$(sharedir)\""
-CFLAGS+= -DVERSION="\"$(VERSION)\""
 LOADLIBES = -lm -lpthread
+
 BXCC=$(CC)
 
 OBJS= \
@@ -112,11 +108,13 @@ clean:
 install: setBfree
 	install -d $(DESTDIR)$(bindir)
 	install -m755 setBfree $(DESTDIR)$(bindir)
-	install -m755 setBfree-start.sh $(DESTDIR)$(bindir)/setBfree-start
 	install -d $(DESTDIR)$(sharedir)/cfg
 	install -d $(DESTDIR)$(sharedir)/pgm
 	install -m644 ../cfg/*.cfg $(DESTDIR)$(sharedir)/cfg
 	install -m644 ../pgm/*.pgm $(DESTDIR)$(sharedir)/pgm
+ifneq ($(TCLTKPREFIX),)
+	install -m755 setBfree-start.sh $(DESTDIR)$(bindir)/setBfree-start
+endif
 
 uninstall:
 	rm -f $(DESTDIR)$(bindir)/setBfree

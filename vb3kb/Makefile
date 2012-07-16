@@ -1,34 +1,15 @@
-PREFIX ?= /usr/local
-OPTIMIZATIONS ?= -msse -msse2 -mfpmath=sse -ffast-math -fomit-frame-pointer -O3 -fno-finite-math-only
+include ../common.mak
 
-bindir = $(PREFIX)/bin
-sharedir = $(PREFIX)/share/setBfree
+ifeq ($(TCLTKPREFIX),)
+  $(error "TCL/TK is not available - install tk-dev and tcl-dev to build the GUI")
+endif
 
 TCLFILE ?= $(sharedir)/vb3kb.tcl
 
 OBJS=vb3kb.o midi_jack.o
 
 LOADLIBES=-lm -lpthread
-CFLAGS = $(OPTIMIZATIONS) -Wall
 CFLAGS+=-DVKB_TCLFILE=\"$(TCLFILE)\"
-CFLAGS+=-DVERSION="\"$(VERSION)\""
-
-TCLPREFIX=/usr /usr/local
-TCLLIBDIR=lib64 lib
-
-$(foreach tprefix,$(TCLPREFIX), \
-  $(foreach tlibdir,$(TCLLIBDIR), \
-    $(if $(shell test -f $(tprefix)/$(tlibdir)/tclConfig.sh -a $(tprefix)/$(tlibdir)/tkConfig.sh && echo yes), \
-      $(eval TCLTKPREFIX=$(tprefix))\
-      $(eval TCLTKLIBDIR=$(tlibdir))\
-    )\
-  )\
-)
-
-ifeq ($(TCLTKPREFIX),)
-  # TODO make GUI optional...
-  $(error "TCL/TK is required - install tk-dev and tcl-dev")
-endif
 
 CFLAGS+=-I$(TCLTKPREFIX)/include/tcl`. $(TCLTKPREFIX)/$(TCLTKLIBDIR)/tclConfig.sh && echo \$$TCL_VERSION`
 LOADLIBES+=-ltcl`. $(TCLTKPREFIX)/$(TCLTKLIBDIR)/tclConfig.sh && echo \$$TCL_VERSION`

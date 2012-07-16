@@ -1,15 +1,10 @@
-PREFIX ?= /usr/local
-OPTIMIZATIONS ?= -msse -msse2 -mfpmath=sse -ffast-math -fomit-frame-pointer -O3 -fno-finite-math-only
+include ../common.mak
 
-bindir = $(PREFIX)/bin
-lv2dir = $(PREFIX)/lib/lv2
-
-CFLAGS = $(OPTIMIZATIONS) -Wall -fPIC
 LOADLIBES = -lm
 
 targets=whirl.o eqcomp.o
 
-ifeq ($(shell pkg-config --exists lv2 lv2core && echo yes), yes)
+ifeq ($(LV2AVAIL), yes)
   targets+=lv2
   LIB_EXT=.so
   LV2NAME=b_whirl

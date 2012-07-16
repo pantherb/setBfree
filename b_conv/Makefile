@@ -1,18 +1,12 @@
-PREFIX ?= /usr/local
-OPTIMIZATIONS ?= -msse -msse2 -mfpmath=sse -ffast-math -fomit-frame-pointer -O3 -fno-finite-math-only
-ENABLE_CONVOLUTION ?= no
-
-sharedir = $(PREFIX)/share/setBfree
+include ../common.mak
 
 IRPATH ?= $(sharedir)/ir
 
-CXXFLAGS = $(OPTIMIZATIONS) -Wall
 CXXFLAGS+= -DIRPATH=\"$(IRPATH)\"
 LOADLIBES = -lm
 
 # nothing to compile here. ../src will call make convolution.o
 targets=
-#targets=convolution.o
 
 all: $(targets)
 

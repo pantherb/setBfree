@@ -1,24 +1,18 @@
-PREFIX ?= /usr/local
-OPTIMIZATIONS ?= -msse -msse2 -mfpmath=sse -ffast-math -fomit-frame-pointer -O3 -fno-finite-math-only
+include ../common.mak
 
-bindir = $(PREFIX)/bin
-lv2dir = $(PREFIX)/lib/lv2
-
-CFLAGS = $(OPTIMIZATIONS) -Wall -fPIC
 LOADLIBES = -lm
-
 CFLAGS+= -I../src -I../b_overdrive -I../b_reverb -I../b_whirl
 
 targets=
 
-ifeq ($(shell pkg-config --exists lv2 lv2core && echo yes), yes)
+ifeq ($(LV2AVAIL), yes)
   targets+=lv2
   LIB_EXT=.so
   LV2NAME=b_synth
 endif
 
 #NOTE: midi.c and cfgParser.c needs to be re-compiled w/o HAVE_ASEQ
-# and HAVE_ZITACONVOLVE respectively. Other objects are identical.
+# and HAVE_ZITACONVOLVE. Other objects are identical.
 OBJ= \
   ../src/midi.c \
   ../src/cfgParser.c \

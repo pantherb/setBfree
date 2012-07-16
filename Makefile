@@ -1,13 +1,15 @@
-PREFIX ?= /usr/local
-OPTIMIZATIONS?=-msse -msse2 -mfpmath=sse -ffast-math -fomit-frame-pointer -O3 -fno-finite-math-only
-ENABLE_CONVOLUTION ?= no ## set to 'yes' to enable convolution for speaker cabinet emulation - requires IR files.
 VERSION=0.5.3
-
-export PREFIX
 export VERSION
-export OPTIMIZATIONS
 
-SUBDIRS = b_overdrive b_whirl b_reverb b_conv src b_synth vb3kb
+include common.mak
+
+SUBDIRS = b_overdrive b_whirl b_reverb b_conv src b_synth
+
+ifeq ($(TCLTKPREFIX),)
+  $(info "TCL/TK is not available - install tk-dev and tcl-dev to build the GUI")
+else
+	SUBDIRS+=vb3kb
+endif
 
 default: all
 

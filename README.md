@@ -149,7 +149,7 @@ Compile
 Install the dependencies and simply call `make` followed by `sudo make install`.
 
 *   libjack-dev - **required** - http://jackaudio.org/ - used for audio I/O
-*   tcl-dev, tk-dev - **required** - http://tcl.sf.net/ - virtual Keyboard GUI
+*   tcl-dev, tk-dev - optional, recommended - http://tcl.sf.net/ - virtual Keyboard GUI
 *   libasound2-dev - optional, recommended - ALSA MIDI
 *   lv2-dev - optional, recommended - build effects as LV2 plugins
 *   libzita-convolver-dev - optional - IR leslie cabinet-emulation
