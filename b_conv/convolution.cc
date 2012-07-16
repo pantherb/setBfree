@@ -64,6 +64,8 @@ int audiofile_read (const char *fn, float **buf, unsigned int *n_ch, unsigned in
   SNDFILE  *sndfile;
   int ok = -2;
 
+  memset(&nfo, 0, sizeof(SF_INFO));
+
   if ((sndfile = sf_open(fn, SFM_READ, &nfo)) == 0)
     return -1;
   if (SampleRateI != nfo.samplerate) {
