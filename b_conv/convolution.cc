@@ -41,7 +41,7 @@
 
 #define DFLT_IR_STRING _S(DFLT_IR_FILE)
 
-#define PRINT_WARNINGS
+//#define PRINT_WARNINGS // not RT-safe
 #define AUDIO_CHANNELS 2 // see src/main.c
 
 extern int SampleRateI;
@@ -291,13 +291,7 @@ void convolve (const float ** inbuf, float ** outbuf, size_t n_channels, size_t 
 
   if (wet <= 0) {
     copy_input_to_output(inbuf, outbuf, n_channels, n_samples);
-    if (convproc->state () != Convproc::ST_STOP)
-      convproc->stop_process ();
     return;
-  }
-
-  if (convproc->state () == Convproc::ST_STOP) {
-    convproc->start_process (sched_priority, sched_policy);
   }
 
   if (convproc->state () != Convproc::ST_PROC) {
