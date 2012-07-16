@@ -48,7 +48,7 @@ ifeq ($(shell pkg-config --exists alsa && echo yes), yes)
   CFLAGS+=-DHAVE_ASEQ `pkg-config --cflags alsa`
   LOADLIBES+=`pkg-config --libs alsa`
 else
-  $(info "compliling w/o ALSA Sequencer - libasound is missing - JACK-midi is alwasy on")
+  $(info "compiling w/o ALSA Sequencer - libasound is missing - JACK-midi is always on")
 endif
 
 

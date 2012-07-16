@@ -40,7 +40,7 @@ ifeq ($(shell pkg-config --exists alsa && echo yes), yes)
   LOADLIBES+=`pkg-config --libs alsa`
   OBJS+=midi_alsa.o
 else
-  $(info "compliling w/o ALSA Sequencer, JACK-midi is alwasy on")
+  $(info "compiling w/o ALSA Sequencer, JACK-midi is always on")
 endif
 
 CFLAGS+=`pkg-config --cflags jack`
