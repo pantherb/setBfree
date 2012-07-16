@@ -497,8 +497,11 @@ proc PanelCreate {{pw ""}} {
     menu $w.percmode.m -tearoff 0
     $w.percmode.m add radio -label "soft" -variable gpercmode -value 34 -command [list menupgm $w.percmode "soft" gpercmode]
     $w.percmode.m add radio -label "norm" -variable gpercmode -value 35 -command [list menupgm $w.percmode "norm" gpercmode]
-    $w.percmode.m add radio -label "fast" -variable gpercmode -value 36 -command [list menupgm $w.percmode "fast" gpercmode]
-    $w.percmode.m add radio -label "slow" -variable gpercmode -value 37 -command [list menupgm $w.percmode "slow" gpercmode]
+
+    menubutton $w.percspd -relief raised -width 8 -menu $w.percspd.m
+    menu $w.percspd.m -tearoff 0
+    $w.percspd.m add radio -label "fast" -variable gpercspd -value 36 -command [list menupgm $w.percspd "fast" gpercspd]
+    $w.percspd.m add radio -label "slow" -variable gpercspd -value 37 -command [list menupgm $w.percspd "slow" gpercspd]
 
     menubutton $w.percharm -relief raised -width 7 -menu $w.percharm.m
     menu $w.percharm.m -tearoff 0
@@ -549,14 +552,15 @@ proc PanelCreate {{pw ""}} {
     NewControl $pw.tp.rbtn.pctrl [lindex $programpresets 0]
 
     # initialize checkbox and slider values
-    global gleslie gpercmode gvibrate greverb convolution percmode
-    set gleslie 52; set gpercmode 34; set gvibrate 42; set greverb 27; set gpercharm 39
+    global gleslie gpercmode gpercspd gvibrate greverb convolution percmode
+    set gleslie 52; set gpercmode 35; set gpercspd 37; set gvibrate 42; set greverb 27; set gpercharm 39
 
     menupgm $w.reverb "Reverb off" greverb
     menupgm $w.leslie "Leslie off" gleslie
 
     set w $pw.ctrl.c1
-    menupgm $w.percmode "soft" gpercmode
+    menupgm $w.percmode "norm" gpercmode
+    menupgm $w.percspd "slow" gpercspd
     menupgm $w.vibrate "v1" gvibrate
     menupgm $w.percharm "3rd" gpercharm
     toggleperc
@@ -572,7 +576,7 @@ proc PanelCreate {{pw ""}} {
     pack $pw.tp -side top
 
     set w $pw.ctrl.c1
-    pack $w.percussion $w.percmode $w.percharm $w.viblonoff $w.vibuonoff $w.vibrate -fill x -side left
+    pack $w.percussion $w.percmode $w.percspd $w.percharm $w.viblonoff $w.vibuonoff $w.vibrate -fill x -side left
     pack $w -side top
 
     set w $pw.ctrl.c2
