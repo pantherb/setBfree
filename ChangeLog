@@ -1,3 +1,12 @@
+2012-07-17 (v0.5.4)  Robin Gareus <robin@gareus.org>
+* fixes segfault on shutdown (free oscillators)
+* fix segfault on convolution thread initialization -- pthread_getschedparam()
+* fix potential segfault when reading IR file -- initialize SF_INFO
+* GUI: separate fast/slow, norm/fast percussion
+* consolidate Makefiles (common.mak)
+* compile standalone tool to check program files
+* fixes various typos in messages
+
 2012-07-16 (v0.5.3)  Robin Gareus <robin@gareus.org>
 * updated built-in documentation
 * minor tweaks to the GUI
