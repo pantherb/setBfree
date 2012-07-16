@@ -3290,7 +3290,7 @@ void initToneGenerator () {
     activeKeys[i] = 0;
   for (i=0; i< CR_PGMMAX; ++i)
     memset((void*)&corePgm[i], sizeof(CoreIns), 0);
-  for (i=0; i< NOF_WHEELS + 1; ++i)
+  for (i=0; i<= NOF_WHEELS; ++i)
     memset((void*)&oscillators[i], sizeof(struct _oscillator), 0);
   for (i=0; i< 128; ++i) {
     eqvAtt[i]=0.0; eqvSet[i]='\0';
@@ -3413,7 +3413,7 @@ void freeToneGenerator () {
   freeListElements(leConfig);
   freeListElements(leRuntime);
   int i;
-  for (i=1; i <= NOF_WHEELS + 1; i++) {
+  for (i=1; i <= NOF_WHEELS; i++) {
     if (oscillators[i].wave) free(oscillators[i].wave);
   }
 }
