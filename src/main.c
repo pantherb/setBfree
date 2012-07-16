@@ -721,7 +721,7 @@ int main (int argc, char * argv []) {
   freeConvolution();
 #endif
   munlockall();
-
+  fprintf(stderr, "bye\n");
   return 0;
 }
 

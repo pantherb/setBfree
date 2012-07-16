@@ -266,7 +266,7 @@ void initConvolution (
 
 void freeConvolution () {
   convproc->stop_process ();
-  convproc->cleanup();
+  delete(convproc);
 }
 
 void copy_input_to_output(const float ** inbuf, float ** outbuf, size_t n_channels, size_t n_samples) {
