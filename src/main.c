@@ -103,6 +103,7 @@ static jack_default_audio_sample_t bufJ [2][BUFFER_SIZE_SAMPLES];
 static jack_default_audio_sample_t bufH [2][BUFFER_SIZE_SAMPLES];
 static jack_default_audio_sample_t bufD [2][BUFFER_SIZE_SAMPLES];
 #endif
+static int synth_ready = 0;
 
 void mixdown (float **inout, const float **in2, int nchannels, int nsamples) {
   int c,i;
@@ -139,6 +140,14 @@ int jack_srate_callback(jack_nframes_t nframes, void *arg) {
 int jack_audio_callback (jack_nframes_t nframes, void *arg) {
   jack_default_audio_sample_t **out = j_output_bufferptrs;
   int i;
+
+  if (!synth_ready) {
+    for (i=0;i<AUDIO_CHANNELS;i++) {
+      out[i] = jack_port_get_buffer (j_output_port[i], nframes);
+      memset(out[i], 0, nframes*sizeof(jack_default_audio_sample_t));
+    }
+    return (0);
+  }
 
   /* MIDI */
   if (use_jack_midi) {
@@ -242,7 +251,7 @@ int open_jack(void) {
 
   jack_srate_callback(jack_get_sample_rate(j_client),NULL); // force geting samplerate
 
-  return(0);
+  return jack_activate(j_client);
 }
 
 static void connect_jack_ports() {
@@ -321,8 +330,14 @@ static void initAll () {
   fprintf (stderr, "Convolve : ");
   fflush (stderr);
   int s_policy= 0;
-  struct sched_param  s_param;
-  pthread_getschedparam(jack_client_thread_id (j_client), &s_policy, &s_param);
+  struct sched_param s_param;
+
+  memset (&s_param, 0, sizeof(struct sched_param));
+  if (jack_client_thread_id(j_client)) {
+    pthread_getschedparam(jack_client_thread_id(j_client), &s_policy, &s_param);
+  } else {
+    fprintf(stderr, "zita-convolver: not using RT scheduling\n");
+  }
   initConvolution(AUDIO_CHANNELS, BUFFER_SIZE_SAMPLES, s_param.sched_priority, s_policy);
 #endif
 
@@ -693,9 +708,10 @@ int main (int argc, char * argv []) {
   signal (SIGINT, catchsig);
 #endif
 
-  jack_activate(j_client);
 
   connect_jack_ports();
+
+  synth_ready = 1;
 
   fprintf(stderr,"All systems go. press CTRL-C, or send SIGINT or SIGHUP to terminate\n");
   while (j_client)
