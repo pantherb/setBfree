@@ -627,6 +627,16 @@ void midiPrimeControllerMapping () {
   loadCCMap ("overdrive.character",   93, ctrlUseA, NULL, NULL);
 
   loadCCMap ("convolution.mix", 94, ctrlUseA, NULL, NULL);
+
+#if 0 // leslie testing
+  loadCCMap ("whirl.horn.breakpos", 34, ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.drum.breakpos", 35, ctrlUseA, NULL, NULL);
+
+  loadCCMap ("whirl.horn.acceleration", 36, ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.horn.deceleration", 37, ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.drum.acceleration", 38, ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.drum.deceleration", 39, ctrlUseA, NULL, NULL);
+#endif
 }
 
 /*
