@@ -210,7 +210,8 @@ static unsigned int outpos = 0;
 
 typedef enum {a0, a1, a2, b0, b1, b2, z0, z1} filterCoeff;
 
-static float drfw[8];		/* Drum filter */
+static float drfL[8];		/* Drum filter */
+static float drfR[8];		/* Drum filter */
 static int    lpT = 8;          /* high shelf */
 static double lpF = 811.9695;	/* Frequency */
 static double lpQ =   1.6016;	/* Q, bandwidth */
@@ -495,7 +496,8 @@ static void initTables () {
     drumSpacing[i] += drumRadiusSamples + 1.0;
   }
 
-  setIIRFilter (drfw, lpT, lpF, lpQ, lpG);
+  setIIRFilter (drfL, lpT, lpF, lpQ, lpG);
+  setIIRFilter (drfR, lpT, lpF, lpQ, lpG);
   setIIRFilter (hafw, haT, haF, haQ, haG);
   setIIRFilter (hbfw, hbT, hbF, hbQ, hbG);
 
@@ -1319,7 +1321,7 @@ void whirlProc2 (const float * inbuffer,
 
     {
       float y;
-      EQ_IIR(drfw, DLbuf[outpos], y);
+      EQ_IIR(drfL, DLbuf[outpos], y);
       if (outL)
 	*outL++ = (float) (y + (hornLevel * HLbuf[outpos]) + leak);
       if (outHL)
@@ -1327,7 +1329,7 @@ void whirlProc2 (const float * inbuffer,
       if (outDL)
 	*outDL++ = y;
 
-      EQ_IIR(drfw, DRbuf[outpos], y);
+      EQ_IIR(drfR, DRbuf[outpos], y);
       if (outR)
 	*outR++ = (float) (y + (hornLevel * HRbuf[outpos]) + leak);
       if (outHR)
