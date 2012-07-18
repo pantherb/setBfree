@@ -89,6 +89,9 @@ static const char *portnames[AUDIO_CHANNELS] = {
   "out_left", "out_right"
 };
 
+static const char *midiport = "midi_in";
+static const char *jack_client_name = "setBfree";
+
 static float bufA [BUFFER_SIZE_SAMPLES];
 static float bufB [BUFFER_SIZE_SAMPLES];
 static float bufC [BUFFER_SIZE_SAMPLES];
@@ -213,7 +216,7 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
 
 int open_jack(void) {
   int i;
-  j_client = jack_client_open ("setBfree", JackNullOption, NULL);
+  j_client = jack_client_open (jack_client_name, JackNullOption, NULL);
 
   if (!j_client) {
     fprintf(stderr, "could not connect to jack.\n");
@@ -243,7 +246,7 @@ int open_jack(void) {
   }
 
   if (use_jack_midi) { // use JACK-midi
-    jack_midi_port = jack_port_register(j_client, "midi_in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput , 0);
+    jack_midi_port = jack_port_register(j_client, midiport, JACK_DEFAULT_MIDI_TYPE, JackPortIsInput , 0);
     if (jack_midi_port == NULL) {
       fprintf(stderr, "can't register jack-midi-port\n");
 	jack_client_close (j_client);
