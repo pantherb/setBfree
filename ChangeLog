@@ -1,4 +1,4 @@
-2012-07-18 (unreleased)  Robin Gareus <robin@gareus.org>
+2012-07-18 (v0.5.5)  Robin Gareus <robin@gareus.org>
 * fixed bug with leslie drum filter - /weird-sound/ is gone
 * implemented dynamics from AES paper: units of
 /whirl.{horn|drum}.{acc|dec}eleration/ have changed !
