@@ -292,7 +292,7 @@ void xfr_biased (char * xs, char * ys) {
   pushIndent ();
 
   /* Temp var to hold value to be squared */
-  sprintf (buf, "float x2 = bias + %s;", xs);
+  sprintf (buf, "float x2 = %s + bias;", xs);
   codeln (buf);
 
   sprintf (buf, "%s = 1.0 - norm - (1.0 / (1.0 + (x2 * x2)));", ys);

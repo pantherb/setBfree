@@ -213,11 +213,11 @@
 
 /* XZB_SIZE: Input history buffer (interpolation filter) */
 
-#define XZB_SIZE 256
+#define XZB_SIZE 64
 
 /* YZB_SIZE: Output history buffer (decimation filter) */
 
-#define YZB_SIZE 1024
+#define YZB_SIZE 128
 
 /* AAL_LEN: The nof points in the decimation filter */
 

@@ -346,7 +346,7 @@ void moduleHeader () {
   vspace (1);
 
   commentln ("Negative index access wrap sentinel");
-  sprintf (buf, "static float * xzwp = &(xzb[%d]);", DFQ);
+  sprintf (buf, "static float * xzwp = &(xzb[%d]);", DFQ+1);
   codeln (buf);
 
   vspace (1);
@@ -793,15 +793,7 @@ void funcBody (void (* transferdef) (char *, char *)) {
 
 
 #ifdef SAG_EMULATION
-  codeln ("if (xin < 0.0) {");
-  pushIndent ();
-  codeln ("sagZ = (sagFb * sagZ) - xin;");
-  popIndent ();
-  codeln ("} else {");
-  pushIndent ();
-  codeln ("sagZ = xin + (sagFb * sagZ);");
-  popIndent ();
-  codeln ("}");
+  codeln ("sagZ = (sagFb * sagZ) + fabsf(xin);");
   codeln ("bias = biasBase - (sagZgb * sagZ);");
   codeln ("norm = 1.0 - (1.0 / (1.0 + (bias * bias)));");
 #endif /* SAG_EMULATION */
