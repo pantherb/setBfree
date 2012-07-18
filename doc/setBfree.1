@@ -74,9 +74,16 @@ Programs are defined in a .pgm file and are fixed after starting
 the application. They are activated by sending MIDI\-program\-change
 messages (also known as 'presets') MIDI\-banks are ignored. So at most
 127 programs can be specified.
-.PP
-Default config: "/usr/share/setBfree/cfg/default.cfg"
-Default program: "/usr/share/setBfree/pgm/default.pgm"
+.IP
+At startup 'default.cfg' and 'default.pgm' in $XDG_CONFIG_HOME/setBfree/
+(default: $HOME/.config/setBfree/) are are evaluated if the files exist,
+unless '\-\-noconfig' or '\-\-noprogram' options are given.
+An additional config or program file can be loaded using the '\-c' and '\-p'
+option respectively.
+.IP
+Example config: "/usr/share/setBfree/cfg/default.cfg"
+.IP
+Example program: "/usr/share/setBfree/pgm/default.pgm"
 .SS "Instrument Properties:"
 .IP
 Below is a list of available property\-value pairs and their default

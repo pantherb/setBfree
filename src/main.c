@@ -66,8 +66,11 @@
 #define SHAREDIR "."
 #endif
 
-static char * defaultConfigFile = SHAREDIR "/cfg/default.cfg";
-static char * defaultProgrammeFile = SHAREDIR "/pgm/default.pgm";
+static const char * templateConfigFile = SHAREDIR "/cfg/default.cfg";
+static const char * templateProgrammeFile = SHAREDIR "/pgm/default.pgm";
+
+static char * defaultConfigFile = NULL;
+static char * defaultProgrammeFile = NULL;
 
 #define AUDIO_CHANNELS (2)
 #define CHN_LEFT (0)
@@ -409,9 +412,15 @@ static void Usage (int configdoc) {
   "  messages (also known as 'presets') MIDI-banks are ignored. So at most\n"
   "  127 programs can be specified.\n"
   "\n"
+  "  At startup 'default.cfg' and 'default.pgm' in $XDG_CONFIG_HOME/setBfree/\n"
+  "  (default: $HOME/.config/setBfree/) are are evaluated if the files exist,\n"
+  "  unless '--noconfig' or '--noprogram' options are given.\n"
+  "  An additional config or program file can be loaded using the '-c' and '-p'\n"
+  "  option respectively.\n"
+  "\n"
   );
-    printf ("Default config: \"%s\"\nDefault program: \"%s\"\n\n",
-	defaultConfigFile, defaultProgrammeFile);
+    printf ("  Example config: \"%s\"\n\n  Example program: \"%s\"\n\n",
+	templateConfigFile, templateProgrammeFile);
     dumpConfigDoc();
   }
   printf (
@@ -605,6 +614,20 @@ int main (int argc, char * argv []) {
     }
   }
 
+  if (getenv("XDG_CONFIG_HOME")) {
+    size_t hl = strlen(getenv("XDG_CONFIG_HOME"));
+    defaultConfigFile=(char*) malloc(hl+32);
+    defaultProgrammeFile=(char*) malloc(hl+32);
+    sprintf(defaultConfigFile, "%s/setBfree/default.cfg", getenv("XDG_CONFIG_HOME"));
+    sprintf(defaultProgrammeFile, "%s/setBfree/default.cfg", getenv("XDG_CONFIG_HOME"));
+  } else if (getenv("HOME")) {
+    size_t hl = strlen(getenv("HOME"));
+    defaultConfigFile=(char*) malloc(hl+30);
+    defaultProgrammeFile=(char*) malloc(hl+30);
+    sprintf(defaultConfigFile, "%s/.config/setBfree/default.cfg", getenv("HOME"));
+    sprintf(defaultProgrammeFile, "%s/.config/setBfree/default.cfg", getenv("HOME"));
+  }
+
   setDisplayPgmChanges (FALSE); /* not RT safe */
 
   /*
@@ -619,7 +642,7 @@ int main (int argc, char * argv []) {
    * default configuration file we do that now.
    */
 
-  if (doDefaultConfig == TRUE) {
+  if (doDefaultConfig == TRUE && defaultConfigFile) {
     if (access (defaultConfigFile, R_OK) == 0) {
       parseConfigurationFile (defaultConfigFile);
     }
@@ -656,7 +679,7 @@ int main (int argc, char * argv []) {
    * We are initialized and now load the programme file.
    */
 
-  if (doDefaultProgram == TRUE) {
+  if (doDefaultProgram == TRUE && defaultProgrammeFile) {
     if (access (defaultProgrammeFile, R_OK) == 0)
       loadProgrammeFile (defaultProgrammeFile);
   } else {
@@ -725,6 +748,9 @@ int main (int argc, char * argv []) {
   }
 #endif
 
+  free(defaultConfigFile);
+  free(defaultProgrammeFile);
+
   free(j_output_bufferptrs);
   free(j_output_port);
   free(midi_port);
@@ -737,6 +763,7 @@ int main (int argc, char * argv []) {
   freeConvolution();
 #endif
   munlockall();
+
   fprintf(stderr, "bye\n");
   return 0;
 }
