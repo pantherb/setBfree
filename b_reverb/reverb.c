@@ -89,7 +89,7 @@
 
 #include "reverb.h"
 
-#define MAXDELAY 6600
+#define MAXDELAY 16384 // TODO alloc dynamically size dependend on SampleRate
 extern double SampleRateD;
 
 #define NZ 7
