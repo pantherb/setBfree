@@ -1,3 +1,8 @@
+2012-07-18 (unreleased)  Robin Gareus <robin@gareus.org>
+* fixed bug with leslie drum filter - /weird-sound/ is gone
+* implemented dynamics from AES paper: units of
+/whirl.{horn|drum}.{acc|dec}eleration/ have changed !
+
 2012-07-17 (v0.5.4)  Robin Gareus <robin@gareus.org>
 * fixes segfault on shutdown (free oscillators)
 * fix segfault on convolution thread initialization -- pthread_getschedparam()
