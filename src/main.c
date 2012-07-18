@@ -428,11 +428,11 @@ static void Usage (int configdoc) {
   printf (
   "%s\n", name);
   printf (
-  "%s -p pgm/default.pgm midi.port=\"a2j:[AV]\" midi.driver=\"jack\"\n", name);
+  "%s -p pgm/default.pgm midi.port=\"a2j:[AV]\" midi.driver=jack\n", name);
   printf (
-  "%s midi.port=\"129\" midi.driver=\"alsa\" jack.connect=\"jack_rack:in_\"\n", name);
+  "%s midi.port=129 midi.driver=alsa jack.connect=jack_rack:in_\n", name);
   printf (
-  "%s jack.out.left=\"system:playback_7\" jack.out.right=\"system:playback_8\"\n", name);
+  "%s jack.out.left=system:playback_7 jack.out.right=system:playback_8\n", name);
   printf (
   "\n"
   "Report bugs at <http://github.com/pantherb/setBfree/issues>.\n"

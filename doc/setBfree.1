@@ -459,12 +459,12 @@ target RPM for fast (aka tremolo) horn speed
 whirl.horn.acceleration
 D* (0.161)
 .IP
-differntial time constant [s]
+time constant; seconds. Time required to accelerate reduced by a factor exp(1) = 2.718..
 .TP
 whirl.horn.deceleration
 D* (0.321)
 .IP
-differntial time constant [s]
+time constant; seconds. Time required to decelerate reduced by a factor exp(1) = 2.718..
 .TP
 whirl.horn.breakpos
 D* (0)
@@ -484,12 +484,12 @@ target RPM for fast (aka tremolo) drum speed.
 whirl.drum.acceleration
 D* (4.127)
 .IP
-differntial time constant [s]
+time constant in seconds. Time required to accelerate reduced by a factor exp(1) = 2.718..
 .TP
 whirl.drum.deceleration
 D* (1.371)
 .IP
-differntial time constant [s]
+time constant in seconds. Time required to decelerate reduced by a factor exp(1) = 2.718..
 .TP
 whirl.drum.breakpos
 D* (0)
@@ -727,9 +727,9 @@ I* (0)
 <64: third harmonic, >=64 second harmonic
 .SH EXAMPLES
 setBfree
-setBfree \fB\-p\fR pgm/default.pgm midi.port="a2j:[AV]" midi.driver="jack"
-setBfree midi.port="129" midi.driver="alsa" jack.connect="jack_rack:in_"
-setBfree jack.out.left="system:playback_7" jack.out.right="system:playback_8"
+setBfree \fB\-p\fR pgm/default.pgm midi.port="a2j:[AV]" midi.driver=jack
+setBfree midi.port=129 midi.driver=alsa jack.connect=jack_rack:in_
+setBfree jack.out.left=system:playback_7 jack.out.right=system:playback_8
 .SH "REPORTING BUGS"
 Report bugs at <http://github.com/pantherb/setBfree/issues>.
 .br
