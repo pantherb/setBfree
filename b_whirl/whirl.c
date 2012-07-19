@@ -97,12 +97,20 @@ static int drumAngle = 0;
  * by Jorge Herrera, Craig Hanson, and Jonathan S. Abel
  * Presented at the 127th Convention
  * 2009 October 9–12 New York NY, USA
+ *
+ *  horn: fast:7.056 Hz, slow: 0.672 Hz
+ *  drum: fast:5.955 Hz, slow: 0.101 Hz (wrong?)
+ *
+ * alternate values:
+ * http://www.dairiki.org/HammondWiki/LeslieRotationSpeed 
+ *  horn: fast: 400 RPM, slow: 48 RPM
+ *  drum: fast: 342 RPM, slow: 40 RPM
  */
 
 /* target speed */
 static float hornRPMslow = 60.0 * 0.672;
 static float hornRPMfast = 60.0 * 7.056;
-static float drumRPMslow = 60.0 * 0.101;
+static float drumRPMslow = 60.0 * 0.600;
 static float drumRPMfast = 60.0 * 5.955;
 
 /* time constants [s] -- first order differential */
@@ -943,7 +951,7 @@ static const ConfigDoc doc[] = {
   {"whirl.horn.acceleration", CFG_DOUBLE, "0.161", "time constant; seconds. Time required to accelerate reduced by a factor exp(1) = 2.718.."},
   {"whirl.horn.deceleration", CFG_DOUBLE, "0.321", "time constant; seconds. Time required to decelerate reduced by a factor exp(1) = 2.718.."},
   {"whirl.horn.breakpos", CFG_DOUBLE, "0", "horn stop position 0: free, 0.0-1.0 clockwise position where to stop. 1.0:front-center"},
-  {"whirl.drum.slowrpm", CFG_DOUBLE, "6.06", "target RPM for slow (aka choral) drum speed."},
+  {"whirl.drum.slowrpm", CFG_DOUBLE, "36.0", "target RPM for slow (aka choral) drum speed."},
   {"whirl.drum.fastrpm", CFG_DOUBLE, "357.3", "target RPM for fast (aka tremolo) drum speed."},
   {"whirl.drum.acceleration", CFG_DOUBLE, "4.127", "time constant in seconds. Time required to accelerate reduced by a factor exp(1) = 2.718.."},
   {"whirl.drum.deceleration", CFG_DOUBLE, "1.371", "time constant in seconds. Time required to decelerate reduced by a factor exp(1) = 2.718.."},
