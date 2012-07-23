@@ -647,12 +647,14 @@ int main (int argc, char * argv []) {
 
   if (doDefaultConfig == TRUE && defaultConfigFile) {
     if (access (defaultConfigFile, R_OK) == 0) {
+      fprintf(stderr, "loading cfg: %s\n", defaultConfigFile);
       parseConfigurationFile (defaultConfigFile);
     }
   }
 
   if (alternateConfigFile) {
     if (access (alternateConfigFile, R_OK) == 0) {
+      fprintf(stderr, "loading cfg: %s\n", alternateConfigFile);
       parseConfigurationFile (alternateConfigFile);
     }
   }
