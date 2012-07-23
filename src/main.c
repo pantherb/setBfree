@@ -16,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  
+ * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
 #include <stdio.h>
@@ -147,6 +147,10 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
   jack_default_audio_sample_t **out = j_output_bufferptrs;
   int i;
 
+  void *jack_midi_buf = NULL;
+  int midi_events = 0;
+  jack_nframes_t midi_tme_proc = 0;
+
   if (!synth_ready) {
     for (i=0;i<AUDIO_CHANNELS;i++) {
       out[i] = jack_port_get_buffer (j_output_port[i], nframes);
@@ -155,18 +159,10 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
     return (0);
   }
 
-  /* MIDI */
   if (use_jack_midi) {
-    void *jack_buf = jack_port_get_buffer(jack_midi_port, nframes);
-    int nevents = jack_midi_get_event_count(jack_buf);
-    for (i=0; i<nevents; i++) {
-      jack_midi_event_t ev;
-      jack_midi_event_get(&ev, jack_buf, i);
-      parse_jack_midi_event(&ev);
-    }
+    jack_midi_buf = jack_port_get_buffer(jack_midi_port, nframes);
+    midi_events = jack_midi_get_event_count(jack_midi_buf);
   }
-
-  /* AUDIO */
 
   for (i=0;i<AUDIO_CHANNELS;i++) {
     out[i] = jack_port_get_buffer (j_output_port[i], nframes);
@@ -180,6 +176,15 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
     int nremain = nframes - written;
 
     if (boffset >= BUFFER_SIZE_SAMPLES)  {
+      if (use_jack_midi) {
+	for (i=0; i<midi_events; i++) {
+	  jack_midi_event_t ev;
+	  jack_midi_event_get(&ev, jack_midi_buf, i);
+	  if (ev.time >= written && ev.time < (written + BUFFER_SIZE_SAMPLES))
+	    parse_jack_midi_event(&ev);
+	}
+	midi_tme_proc = written + BUFFER_SIZE_SAMPLES;
+      }
       boffset = 0;
       oscGenerateFragment (bufA, BUFFER_SIZE_SAMPLES);
       preamp (bufA, bufB, BUFFER_SIZE_SAMPLES);
@@ -211,6 +216,19 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
     written+=nread;
     boffset+=nread;
   }
+
+  if (use_jack_midi) {
+    /* process remaining MIDI events
+     * IF nframes < BUFFER_SIZE_SAMPLES OR nframes != N * BUFFER_SIZE_SAMPLES
+     */
+    for (i=0; i<midi_events; i++) {
+      jack_midi_event_t ev;
+      jack_midi_event_get(&ev, jack_midi_buf, i);
+      if (ev.time >= midi_tme_proc)
+	parse_jack_midi_event(&ev);
+    }
+  }
+
   return(0);
 }
 
