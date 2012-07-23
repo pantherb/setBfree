@@ -60,6 +60,7 @@ extern const ConfigDoc *midiDoc ();
 extern void setMIDINoteShift (char offset);
 
 extern void initMidiTables();
+extern void initControllerTable ();
 extern int getCCFunctionId (const char * name);
 
 #ifdef HAVE_ASEQ

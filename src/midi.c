@@ -143,10 +143,10 @@ char * ccFuncNames[] = {
   "overdrive.inputgain",
   "overdrive.outputgain",
 
-  "xov.ctl_biased",
-  "xov.ctl_biased_fb",
   "xov.ctl_biased_fb2",
+  "xov.ctl_biased_fb", // XXX should be unique prefix code
   "xov.ctl_biased_gfb",
+  "xov.ctl_biased", // XXX should be unique prefix code
   "xov.ctl_sagtobias",
 
   "convolution.mix",
@@ -218,6 +218,13 @@ static void (*ctrlvecC[128])(unsigned char uc);
 
 static void (**ctrlvec[16]) (unsigned char); /**< control function table per MIDI channel */
 
+typedef uint8_t midiccflags_t;
+static midiccflags_t ctrlflg[16][128]; /**< binary flags for each control  -- binary OR */
+
+enum { // 1,2,4,8,.. - adjust ctrlflg once >8 to uint16_t
+  MFLAG_INV = 1,
+};
+
 /* ---------------------------------------------------------------- */
 
 /*
@@ -227,11 +234,16 @@ int getCCFunctionId (const char * name) {
   int i;
   assert (name != NULL);
   for (i = 0; ccFuncNames[i] != NULL; i++) {
-    if (0 == strcmp (name, ccFuncNames[i])) {
+    if (0 == strncmp (name, ccFuncNames[i], strlen(ccFuncNames[i]))) {
       return i;
     }
   }
   return -1;
+}
+
+static void parseCCFlags(midiccflags_t *f, char *param) {
+  int l = strlen(param);
+  if (param[l-1] == '-') *f |= MFLAG_INV;
 }
 
 /*
@@ -305,18 +317,16 @@ void useMIDIControlFunction (char * cfname, void (* f) (unsigned char)) {
 /*
  * This initializes the MIDI controller vector tables.
  */
-static void loadControllerTable () {
+void initControllerTable () {
   int i;
   for (i = 0; i < 128; i++) {
-    if (ctrlvecA[i] == NULL) {
-      ctrlvecA[i] = emptyControlFunction;
+    int chn;
+    for (chn = 0; chn < 16; chn++) {
+      ctrlflg[chn][i] = 0;
     }
-    if (ctrlvecB[i] == NULL) {
-      ctrlvecB[i] = emptyControlFunction;
-    }
-    if (ctrlvecC[i] == NULL) {
-      ctrlvecC[i] = emptyControlFunction;
-    }
+    ctrlvecA[i] = emptyControlFunction;
+    ctrlvecB[i] = emptyControlFunction;
+    ctrlvecC[i] = emptyControlFunction;
   }
 }
 
@@ -723,17 +733,22 @@ int midiConfig (ConfigContext * cfg) {
    */
   else if (strncasecmp (cfg->name, "midi.controller.", 16) == 0) {
     unsigned char * ctrlUse = ctrlUseA;
+    midiccflags_t * flagUse = ctrlflg[rcvChA];
+
     int ccIdx = 0;
     if (strncasecmp ((cfg->name) + 16, "upper", 5) == 0) {
       ctrlUse = ctrlUseA;
+      flagUse = ctrlflg[rcvChA];
       ccIdx = 22;
     }
     else if (strncasecmp ((cfg->name) + 16, "lower", 5) == 0) {
       ctrlUse = ctrlUseB;
+      flagUse = ctrlflg[rcvChB];
       ccIdx = 22;
     }
     else if (strncasecmp ((cfg->name) + 16, "pedals", 6) == 0) {
       ctrlUse = ctrlUseC;
+      flagUse = ctrlflg[rcvChC];
       ccIdx = 23;
     }
     else {
@@ -751,6 +766,7 @@ int midiConfig (ConfigContext * cfg) {
 	  if (-1 < i) {
 	    /* Store the controller number indexed by abstract function id */
 	    ctrlUse[i] = ccn;
+	    parseCCFlags(&(flagUse[ccn]), cfg->value);
 	    ack++;
 	  }
 	  else {
@@ -791,7 +807,6 @@ const ConfigDoc *midiDoc () {
 }
 
 void initMidiTables() {
-  loadControllerTable ();
   loadKeyTableA ();
   loadKeyTableB ();
   loadKeyTableC ();
@@ -863,8 +878,13 @@ void process_midi_event(const struct bmidi_event_t *ev) {
 	  );
       }
 #endif
-      if (ctrlvec[ev->channel] && ctrlvec[ev->channel][ev->control_param])
-	(ctrlvec[ev->channel][ev->control_param])(ev->control_value);
+      if (ctrlvec[ev->channel] && ctrlvec[ev->channel][ev->control_param]) {
+	uint8_t val = ev->control_value & 0x7f;
+	if (ctrlflg[ev->channel][ev->control_param] & MFLAG_INV) {
+	  val = 127 - val;
+	}
+	(ctrlvec[ev->channel][ev->control_param])(val);
+      }
       break;
     default:
       break;
@@ -1039,14 +1059,14 @@ void parse_lv2_midi_event(uint8_t *d, size_t l) {
   parse_jack_midi_event(&ev);
 }
 
-void dumpCCAssigment(FILE * fp, unsigned char *ctrl) {
+void dumpCCAssigment(FILE * fp, unsigned char *ctrl, midiccflags_t *flags) {
   int i;
   //TODO don't print header if no assignments
   fprintf(fp,"  Controller | Function \n");
   for (i=0;i<127;++i) {
     if (ctrl[i] != 255) {
       // TODO sort by controller ?
-      fprintf(fp,"     %03d     | %s\n", ctrl[i] ,ccFuncNames[i]);
+      fprintf(fp,"     %03d     | %s %s\n", ctrl[i] ,ccFuncNames[i], (flags[i]&1)?"-":"");
     }
   }
 }
@@ -1054,11 +1074,11 @@ void dumpCCAssigment(FILE * fp, unsigned char *ctrl) {
 void listCCAssignments(FILE * fp) {
   fprintf(fp,"MIDI CC Assigments:\n");
   fprintf(fp,"--- Upper Manual   - Channel %2d ---\n", rcvChA);
-  dumpCCAssigment(fp, ctrlUseA);
+  dumpCCAssigment(fp, ctrlUseA, ctrlflg[rcvChA]);
   fprintf(fp,"--- Lower Manual   - Channel %2d ---\n", rcvChB);
-  dumpCCAssigment(fp, ctrlUseB);
+  dumpCCAssigment(fp, ctrlUseB, ctrlflg[rcvChB]);
   fprintf(fp,"--- Pedal          - Channel %2d ---\n", rcvChC);
-  dumpCCAssigment(fp, ctrlUseC);
+  dumpCCAssigment(fp, ctrlUseC, ctrlflg[rcvChC]);
 }
 
 /* vi:set ts=8 sts=2 sw=2: */

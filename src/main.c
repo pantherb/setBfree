@@ -656,6 +656,7 @@ int main (int argc, char * argv []) {
    * static initializations that is not practical to achieve in source code.
    */
 
+  initControllerTable ();
   midiPrimeControllerMapping ();
 
   /*
