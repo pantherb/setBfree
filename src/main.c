@@ -640,13 +640,13 @@ int main (int argc, char * argv []) {
     defaultConfigFile=(char*) malloc(hl+32);
     defaultProgrammeFile=(char*) malloc(hl+32);
     sprintf(defaultConfigFile, "%s/setBfree/default.cfg", getenv("XDG_CONFIG_HOME"));
-    sprintf(defaultProgrammeFile, "%s/setBfree/default.cfg", getenv("XDG_CONFIG_HOME"));
+    sprintf(defaultProgrammeFile, "%s/setBfree/default.pgm", getenv("XDG_CONFIG_HOME"));
   } else if (getenv("HOME")) {
     size_t hl = strlen(getenv("HOME"));
     defaultConfigFile=(char*) malloc(hl+30);
     defaultProgrammeFile=(char*) malloc(hl+30);
     sprintf(defaultConfigFile, "%s/.config/setBfree/default.cfg", getenv("HOME"));
-    sprintf(defaultProgrammeFile, "%s/.config/setBfree/default.cfg", getenv("HOME"));
+    sprintf(defaultProgrammeFile, "%s/.config/setBfree/default.pgm", getenv("HOME"));
   }
 
   setDisplayPgmChanges (FALSE); /* not RT safe */
