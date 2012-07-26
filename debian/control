@@ -7,7 +7,7 @@ Build-Depends: debhelper (>= 8),
  libjack-dev | libjack-jackd2-dev,
  liblo-dev,
  libsndfile1-dev,
- libzita-convolver-dev (>=3.1.0-1),
+ libzita-convolver-dev (>=3.1.0),
  lv2-dev (>=1.0.0~dfsg2-2),
  tcl-dev,
  tk-dev
