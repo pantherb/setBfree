@@ -140,7 +140,7 @@ int convolutionConfig (ConfigContext * cfg) {
 }
 
 static const ConfigDoc doc[] = {
-  {_S"convolution.mix", CFG_DOUBLE,   _S"1.0",  _S"Note: modifies dry/wet. [0..1]"},
+  {_S"convolution.mix", CFG_DOUBLE,   _S"0.0",  _S"Note: modifies dry/wet. [0..1]"},
   {_S"convolution.ir.file", CFG_TEXT, _S("\"" DFLT_IR_FILE "\""),     _S"convolution sample filename"},
   {_S"convolution.ir.channel.<int>", CFG_INT, _S"-",    _S"<int> 1:Left, 2:Right; value: channel-number in IR file to use, default: 1->1, 2->2"},
   {_S"convolution.ir.gain.<int>",    CFG_DOUBLE, _S"0.5", _S"gain-factor to apply to IR data on load. <int> 1:left-channel, 2:right-channel."},

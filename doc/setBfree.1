@@ -441,10 +441,10 @@ I  (0)
 .IP
 if set to 1, completely bypass leslie emulation
 .TP
-rotary.speed\-preset
-I* (0)
+whirl.speed\-preset
+I  (0)
 .IP
-horn and drum speed. 0:stopped, 1:slow, 2:fast
+initial horn and drum speed. 0:stopped, 1:slow, 2:fast
 .TP
 whirl.horn.slowrpm
 D  (40.32)
@@ -472,7 +472,7 @@ D* (0)
 horn stop position 0: free, 0.0\-1.0 clockwise position where to stop. 1.0:front\-center
 .TP
 whirl.drum.slowrpm
-D  (6.06)
+D  (36.0)
 .IP
 target RPM for slow (aka choral) drum speed.
 .TP
@@ -609,7 +609,7 @@ Note: modifies dry/wet.
 .SS "Parameters for 'Convolution Reverb Effect':"
 .TP
 convolution.mix
-D* (1.0)
+D* (0.0)
 .IP
 Note: modifies dry/wet. [0..1]
 .TP

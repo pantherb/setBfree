@@ -124,9 +124,9 @@ typedef struct _revcontrol {
   double drumTarget;
 } RevControl;
 
+#define revSelectEnd (4)
 static RevControl revoptions [9];
-static int revselects[9];
-static size_t revSelectEnd;
+static int revselects[revSelectEnd];
 static int revSelect = 0;
 
 static int hornAcDc = 0;
@@ -329,7 +329,6 @@ static void computeRotationSpeeds () {
   revselects[1] = 4;		/* both slow */
   revselects[2] = 8;		/* both fast */
   revselects[3] = 4;		/* both slow */
-  revSelectEnd = 4;		/* How may entries in revselects[] */
   setRevSelect(revSelect);
 }
 
@@ -925,7 +924,7 @@ int whirlConfig (ConfigContext * cfg) {
     cb1dl = k;
   }
   else if (getConfigParameter_i ("whirl.speed-preset", cfg, &k) == 1) {
-    revSelect = k;
+    revSelect = k % revSelectEnd;
   }
   else if (getConfigParameter_ir ("whirl.bypass", cfg, &k, 0, 1) == 1) {
     bypass = k;
@@ -945,7 +944,7 @@ int whirlConfig (ConfigContext * cfg) {
 
 static const ConfigDoc doc[] = {
   {"whirl.bypass", CFG_INT, "0", "if set to 1, completely bypass leslie emulation"},
-  {"rotary.speed-preset", CFG_INT, "0", "horn and drum speed. 0:stopped, 1:slow, 2:fast"},
+  {"whirl.speed-preset", CFG_INT, "0", "initial horn and drum speed. 0:stopped, 1:slow, 2:fast"},
   {"whirl.horn.slowrpm", CFG_DOUBLE, "40.32", "target RPM for slow (aka choral) horn speed"},
   {"whirl.horn.fastrpm", CFG_DOUBLE, "423.36", "target RPM for fast (aka tremolo) horn speed"},
   {"whirl.horn.acceleration", CFG_DOUBLE, "0.161", "time constant; seconds. Time required to accelerate reduced by a factor exp(1) = 2.718.."},
