@@ -48,7 +48,6 @@
 #include "main.h"
 #include "midi.h"
 
-#include "reverb.h"
 #include "whirl.h"
 #include "overdrive.h"
 
@@ -887,7 +886,7 @@ void installProgram (unsigned char uc) {
       }
 
       if (flags0 & FL_RVBMIX) {
-	setReverbMix (PGM->reverbMix);
+	setReverbMix (inst_reverb, PGM->reverbMix);
       }
 
       if (flags0 & (FL_KSPLTL|FL_KSPLTP|FL_TRA_PD|FL_TRA_LM|FL_TRA_UM)) {

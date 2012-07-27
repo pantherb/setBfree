@@ -39,6 +39,7 @@ typedef struct {
   float* output;
 
   float* mix;
+  struct b_reverb *instance;
 } B3R;
 
 double SampleRateD = 22050.0;
@@ -51,7 +52,8 @@ instantiate(const LV2_Descriptor*     descriptor,
 {
   B3R* b3r = (B3R*)malloc(sizeof(B3R));
   SampleRateD = rate;
-  initReverb();
+  b3r->instance = allocReverb();
+  initReverb(b3r->instance);
 
   return (LV2_Handle)b3r;
 }
@@ -89,8 +91,8 @@ run(LV2_Handle instance, uint32_t n_samples)
   const float* const input  = b3r->input;
   float* const       output = b3r->output;
 
-  setReverbMix (*(b3r->mix));
-  reverb(input, output, n_samples);
+  setReverbMix (b3r->instance, *(b3r->mix));
+  reverb(b3r->instance, input, output, n_samples);
 }
 
 static void
@@ -101,6 +103,8 @@ deactivate(LV2_Handle instance)
 static void
 cleanup(LV2_Handle instance)
 {
+  B3R* b3r = (B3R*)instance;
+  freeReverb(b3r->instance);
   free(instance);
 }
 

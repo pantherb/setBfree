@@ -56,4 +56,8 @@ extern double SampleRateD;
 extern int    SampleRateI;
 extern double vMax;
 
+/* class instances */
+#include "reverb.h"
+extern struct b_reverb *inst_reverb;
+
 #endif /* MAIN_H */

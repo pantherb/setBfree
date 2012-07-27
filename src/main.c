@@ -111,6 +111,8 @@ static jack_default_audio_sample_t bufD [2][BUFFER_SIZE_SAMPLES];
 #endif
 static int synth_ready = 0;
 
+struct b_reverb *inst_reverb = NULL;
+
 void mixdown (float **inout, const float **in2, int nchannels, int nsamples) {
   int c,i;
   for (c=0; c < nchannels; c++)
@@ -188,7 +190,7 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
       boffset = 0;
       oscGenerateFragment (bufA, BUFFER_SIZE_SAMPLES);
       preamp (bufA, bufB, BUFFER_SIZE_SAMPLES);
-      reverb (bufB, bufC, BUFFER_SIZE_SAMPLES);
+      reverb (inst_reverb, bufB, bufC, BUFFER_SIZE_SAMPLES);
 
 #ifdef HAVE_ZITACONVOLVE
       whirlProc2(bufC,
@@ -317,6 +319,25 @@ static void connect_jack_ports() {
 }
 
 /*
+ * Instantiate /classes/.
+ */
+static void allocAll () {
+  inst_reverb = allocReverb();
+}
+
+/*
+ * delete /class/ instances
+ */
+static void freeAll () {
+  freeReverb(inst_reverb);
+
+  freeToneGenerator();
+#ifdef HAVE_ZITACONVOLVE
+  freeConvolution();
+#endif
+}
+
+/*
  * Ask each module to initialize itself.
  */
 static void initAll () {
@@ -344,7 +365,7 @@ static void initAll () {
 
   fprintf (stderr, "Reverb : ");
   fflush (stderr);
-  initReverb ();
+  initReverb (inst_reverb);
 
   fprintf (stderr, "Whirl : ");
   fflush (stderr);
@@ -635,6 +656,17 @@ int main (int argc, char * argv []) {
     }
   }
 
+  /*
+   * allocate data structures, instances.
+   */
+  allocAll();
+
+  /*
+   * evaluate configuration
+   */
+
+  setDisplayPgmChanges (FALSE); /* not RT safe -- user may override*/
+
   if (getenv("XDG_CONFIG_HOME")) {
     size_t hl = strlen(getenv("XDG_CONFIG_HOME"));
     defaultConfigFile=(char*) malloc(hl+32);
@@ -648,8 +680,6 @@ int main (int argc, char * argv []) {
     sprintf(defaultConfigFile, "%s/.config/setBfree/default.cfg", getenv("HOME"));
     sprintf(defaultProgrammeFile, "%s/.config/setBfree/default.pgm", getenv("HOME"));
   }
-
-  setDisplayPgmChanges (FALSE); /* not RT safe */
 
   /*
    * Here we call modules that need to execute code in order to arrange
@@ -690,12 +720,13 @@ int main (int argc, char * argv []) {
 			    configOverride[i]);
   }
 
-  if (mlockall (MCL_CURRENT | MCL_FUTURE)) {
-    fprintf(stderr, "Can not lock memory\n");
-  }
   /*
    * Having configured the initialization phase we can now actually do it.
    */
+
+  if (mlockall (MCL_CURRENT | MCL_FUTURE)) {
+    fprintf(stderr, "Warning: Can not lock memory.\n");
+  }
 
   initAll ();
 
@@ -747,23 +778,22 @@ int main (int argc, char * argv []) {
   setDrawBars (2, presetSelect); /* 86 - */
 #endif
 
-  //setVibrato (0); /* done during initAll()->initVibrato() */
-  //setRevSelect (WHIRL_SLOW); /* done during initAll()->initWhirl()->initTables() according to 'whirl.speed-preset' */
-
 #ifndef _WIN32
   signal (SIGHUP, catchsig);
   signal (SIGINT, catchsig);
 #endif
-
 
   connect_jack_ports();
 
   synth_ready = 1;
 
   fprintf(stderr,"All systems go. press CTRL-C, or send SIGINT or SIGHUP to terminate\n");
-  while (j_client)
-    sleep (1); // jack callback is doing this:
 
+  while (j_client)
+    sleep (1); /* jack callback is doing this the work now */
+
+
+  /* shutdown and cleanup */
 #ifdef HAVE_ASEQ
   if (!use_jack_midi) {
     aseq_stop=1;
@@ -782,10 +812,7 @@ int main (int argc, char * argv []) {
   for (i=0;i<AUDIO_CHANNELS; i++)
     free(jack_port[i]);
 
-  freeToneGenerator();
-#ifdef HAVE_ZITACONVOLVE
-  freeConvolution();
-#endif
+  freeAll();
   munlockall();
 
   fprintf(stderr, "bye\n");

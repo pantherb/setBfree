@@ -38,7 +38,6 @@
 #include "tonegen.h"
 #include "vibrato.h"
 #include "midi.h"
-#include "reverb.h"
 #include "whirl.h"
 #include "overdrive.h"
 #include "program.h"
@@ -77,7 +76,7 @@ static int distributeParameter (ConfigContext * cfg) {
   n += scannerConfig (cfg);
   n += ampConfig (cfg);
   n += whirlConfig (cfg);
-  n += reverbConfig (cfg);
+  n += reverbConfig (inst_reverb, cfg);
 #ifdef HAVE_ZITACONVOLVE
   n += convolutionConfig(cfg);
 #endif

@@ -37,6 +37,33 @@
 #include "program.h"
 #include "overdrive.h"
 
+/* LV2 */
+
+#include "lv2/lv2plug.in/ns/lv2core/lv2.h"
+
+#include "lv2/lv2plug.in/ns/ext/urid/urid.h"
+#include "lv2/lv2plug.in/ns/ext/midi/midi.h"
+#include "lv2/lv2plug.in/ns/ext/event/event-helpers.h"
+
+#define B3S_URI "http://gareus.org/oss/lv2/b_synth"
+
+typedef enum {
+  B3S_MIDIIN   = 0,
+  B3S_OUTL     = 1,
+  B3S_OUTR     = 2,
+} PortIndex;
+
+typedef struct {
+  LV2_Event_Buffer* midiin;
+  float* outL;
+  float* outR;
+  uint32_t event_id;
+
+  struct b_reverb *inst_reverb;
+} B3S;
+
+/* main synth wrappers */
+
 const ConfigDoc *mainDoc () { return NULL;}
 int mainConfig (ConfigContext * cfg) { return 0; }
 
@@ -46,7 +73,7 @@ int SampleRateI = 48000;
 double vMax = 2.0 * M_PI;
 
 
-void initSynth() {
+void initSynth(B3S *b3s) {
   // equicalent to ../src/main.c main()
   unsigned int defaultPreset[9] = {8,8,8, 0,0,0,0, 0,0};
 
@@ -57,7 +84,7 @@ void initSynth() {
   initVibrato ();
   initToneGenerator ();
   initPreamp ();
-  initReverb ();
+  initReverb (b3s->inst_reverb);
   initWhirl ();
   /* end - initAll() */
 
@@ -84,7 +111,7 @@ static float bufC [BUFFER_SIZE_SAMPLES];
 static float bufJ [2][BUFFER_SIZE_SAMPLES];
 
 
-void synthSound (uint32_t nframes, float **out) {
+void synthSound (B3S *instance, uint32_t nframes, float **out) {
   static int boffset = BUFFER_SIZE_SAMPLES;
 
   jack_nframes_t written = 0;
@@ -96,7 +123,7 @@ void synthSound (uint32_t nframes, float **out) {
       boffset = 0;
       oscGenerateFragment (bufA, BUFFER_SIZE_SAMPLES);
       preamp (bufA, bufB, BUFFER_SIZE_SAMPLES);
-      reverb (bufB, bufC, BUFFER_SIZE_SAMPLES);
+      reverb (instance->inst_reverb, bufB, bufC, BUFFER_SIZE_SAMPLES);
       whirlProc(bufC, bufJ[0], bufJ[1], BUFFER_SIZE_SAMPLES);
     }
 
@@ -111,28 +138,6 @@ void synthSound (uint32_t nframes, float **out) {
 }
 
 /* LV2 */
-
-#include "lv2/lv2plug.in/ns/lv2core/lv2.h"
-
-#include "lv2/lv2plug.in/ns/ext/urid/urid.h"
-#include "lv2/lv2plug.in/ns/ext/midi/midi.h"
-#include "lv2/lv2plug.in/ns/ext/event/event-helpers.h"
-
-#define B3S_URI "http://gareus.org/oss/lv2/b_synth"
-
-typedef enum {
-  B3S_MIDIIN   = 0,
-  B3S_OUTL     = 1,
-  B3S_OUTR     = 2,
-} PortIndex;
-
-typedef struct {
-  LV2_Event_Buffer* midiin;
-  float* outL;
-  float* outR;
-  uint32_t event_id;
-} B3S;
-
 
 static LV2_Handle
 instantiate(const LV2_Descriptor*     descriptor,
@@ -157,8 +162,9 @@ instantiate(const LV2_Descriptor*     descriptor,
       }
     }
   }
+  b3s->inst_reverb = allocReverb();
 
-  initSynth();
+  initSynth(b3s);
 
   return (LV2_Handle)b3s;
 }
@@ -212,7 +218,7 @@ run(LV2_Handle instance, uint32_t n_samples)
   }
 
   // synthesize sound
-  synthSound(n_samples, audio);
+  synthSound(instance, n_samples, audio);
 }
 
 static void
@@ -223,6 +229,8 @@ deactivate(LV2_Handle instance)
 static void
 cleanup(LV2_Handle instance)
 {
+  B3S* b3s = (B3S*)instance;
+  freeReverb(b3s->inst_reverb);
   freeToneGenerator();
   free(instance);
 }

@@ -92,96 +92,109 @@
 #define MAXDELAY 16384 // TODO alloc dynamically size dependend on SampleRate
 extern double SampleRateD;
 
-#define NZ 7
 
-static int end[NZ] = {
-  2999,
-  2331,
-  1893,
-  1097,
+struct b_reverb *allocReverb() {
+  int i;
+  struct b_reverb *r = (struct b_reverb*) calloc(1, sizeof(struct b_reverb));
+  if (!r) {
+    return NULL;
+    fprintf (stderr, "FATAL: memory allocation failed for reverb.\n");
+    exit(1);
+  }
+  r->inputGain = 0.025;	/* Input gain value */
+  r->fbk = -0.015;	/* Feedback gain */
+  r->wet = 0.3;		/* Output dry gain */
+  r->dry = 0.7;		/* Output wet gain */
 
-  1051,
-  337,
-  113
-};
+  /* These are all  1/sqrt(2) = 0.7071067811865475 */
+  r->gain[0] = 0.7071067811865475;	/* FBCF (feedback combfilter) */
+  r->gain[1] = 0.7071067811865475;	/* FBCF */
+  r->gain[2] = 0.7071067811865475;	/* FBCF */
+  r->gain[3] = 0.7071067811865475;	/* FBCF */
 
-/* These are all  1/sqrt(2) = 0.7071067811865475 */
+  r->gain[4] = 0.7071067811865475;	/* AP (all-pass filter) */
+  r->gain[5] = 0.7071067811865475;	/* AP */
+  r->gain[6] = 0.7071067811865475;	/* AP */
 
-static float gain[NZ] = {
-  0.7071067811865475,		/* FBCF (feedback combfilter) */
-  0.7071067811865475,		/* FBCF */
-  0.7071067811865475,		/* FBCF */
-  0.7071067811865475,		/* FBCF */
+  r->end[0] = 2999;
+  r->end[1] = 2331;
+  r->end[2] = 1893;
+  r->end[3] = 1097;
 
-  0.7071067811865475,		/* AP (all-pass filter) */
-  0.7071067811865475,		/* AP */
-  0.7071067811865475		/* AP */
-};
+  r->end[4] = 1051;
+  r->end[5] = 337;
+  r->end[6] = 113;
 
-static float delays[NZ][MAXDELAY];
+  for (i=0; i< RV_NZ; ++i) {
+    r->delays[i]= calloc(MAXDELAY, sizeof(float));
+    if (!r->delays[i]) {
+      fprintf (stderr, "FATAL: memory allocation failed for reverb.\n");
+      exit(1);
+    }
+  }
+  return r;
+}
 
-static float * idx0[NZ];	/* Reset pointer */
-static float * idxp[NZ];	/* Index pointer */
-static float * endp[NZ];	/* End pointer */
-
-static float inputGain   = 0.025;	/* Input gain value */
-
-static float fbk = -0.015;	/* Feedback gain */
-static float wet = 0.3;		/* Output dry gain */
-static float dry = 0.7;		/* Output wet gain */
+void freeReverb(struct b_reverb *r) {
+  int i;
+  for (i=0; i< RV_NZ; ++i) {
+    free(r->delays[i]);
+  }
+  free(r);
+}
 
 /*
  *
  */
-static void setReverbEndPointer (int i) {
-  if ((0 <= i) && (i < NZ)) {
-    int e = (end[i] * SampleRateD / 22050.0);
-    endp[i] = idx0[i] + e + 1;
+static void setReverbEndPointer (struct b_reverb *r, int i) {
+  if ((0 <= i) && (i < RV_NZ)) {
+    int e = (r->end[i] * SampleRateD / 22050.0);
+    r->endp[i] = r->idx0[i] + e + 1;
   }
 }
 
 /*
  *
  */
-void setReverbInputGain (float g) {
-  inputGain = g;
+void setReverbInputGain (struct b_reverb *r, float g) {
+  r->inputGain = g;
 }
 
 /*
  *
  */
-void setReverbOutputGain (float g) {
-  float u = wet + dry;
-  wet = g * (wet / u);
-  dry = g * (dry / u);
+void setReverbOutputGain (struct b_reverb *r, float g) {
+  float u = r->wet + r->dry;
+  r->wet = g * (r->wet / u);
+  r->dry = g * (r->dry / u);
 }
 
 /*
  * @param g  0.0 Dry ... 1.0 wet
  */
-void setReverbMix (float g) {
-  float u = wet + dry;
-  wet = g * u;
-  dry = u - (g * u);
+void setReverbMix (struct b_reverb *r, float g) {
+  float u = r->wet + r->dry;
+  r->wet = g * u;
+  r->dry = u - (g * u);
 }
 
 /*
  *
  */
-void setReverbFeedbackGainInDelay (int i, float g) {
-  if ((0 <= i) && (i < NZ)) {
-    gain[i] = g;
+void setReverbFeedbackGainInDelay (struct b_reverb *r, int i, float g) {
+  if ((0 <= i) && (i < RV_NZ)) {
+    r->gain[i] = g;
   }
 }
 
 /*
  *
  */
-void setReverbSamplesInDelay (int i, int s) {
-  if ((0 <= i) && (i < NZ)) {
+void setReverbSamplesInDelay (struct b_reverb *r, int i, int s) {
+  if ((0 <= i) && (i < RV_NZ)) {
     if ((0 <= s) && (s < MAXDELAY)) {
-      end[i] = s;
-      setReverbEndPointer (i);
+      r->end[i] = s;
+      setReverbEndPointer (r, i);
     }
   }
 }
@@ -189,54 +202,54 @@ void setReverbSamplesInDelay (int i, int s) {
 /*
  *
  */
-void setReverbFeedbackGain (float g) {
-  fbk = g;
+void setReverbFeedbackGain (struct b_reverb *r, float g) {
+  r->fbk = g;
 }
 
 /*
  *
  */
-void setReverbDry (float g) {
-  dry = g;
+void setReverbDry (struct b_reverb *r, float g) {
+  r->dry = g;
 }
 
 /*
  *
  */
-void setReverbWet (float g) {
-  wet = g;
+void setReverbWet (struct b_reverb *r, float g) {
+  r->wet = g;
 }
 
 /*
  *
  */
-int reverbConfig (ConfigContext * cfg) {
+int reverbConfig (struct b_reverb *r, ConfigContext * cfg) {
   int ack = 0;
   if (strcasecmp (cfg->name, "reverb.wet") == 0) {
     double v;
     if (sscanf (cfg->value, "%lf", &v) == 1) {
-      wet = v;
+      r->wet = v;
       ack++;
     }
   }
   else if (strcasecmp (cfg->name, "reverb.dry") == 0) {
     double v;
     if (sscanf (cfg->value, "%lf", &v) == 1) {
-      dry = v;
+      r->dry = v;
       ack++;
     }
   }
   else if (strcasecmp (cfg->name, "reverb.inputgain") == 0) {
     double v;
     if (sscanf (cfg->value, "%lf", &v) == 1) {
-      setReverbInputGain ((float) v);
+      setReverbInputGain (r, (float) v);
       ack++;
     }
   }
   else if (strcasecmp (cfg->name, "reverb.outputgain") == 0) {
     double v;
     if (sscanf (cfg->value, "%lf", &v) == 1) {
-      setReverbOutputGain ((float) v);
+      setReverbOutputGain (r, (float) v);
       ack++;
     }
   }
@@ -244,7 +257,7 @@ int reverbConfig (ConfigContext * cfg) {
     double v;
     if (sscanf (cfg->value, "%lf", &v) == 1) {
       if ((0 <= v) && (v <= 1.0)) {
-	setReverbMix ((float) v);
+	setReverbMix (r, (float) v);
 	ack++;
       }
     }
@@ -270,19 +283,20 @@ const ConfigDoc *reverbDoc () {
 /*
  *
  */
-void initReverb () {
+void initReverb (struct b_reverb *r) {
   int i;
-  for (i = 0; i < NZ; i++) {
-    idx0[i] = idxp[i] = &(delays[i][0]);
-    setReverbEndPointer (i);
+  for (i = 0; i < RV_NZ; i++) {
+    r->idx0[i] = r->idxp[i] = &(r->delays[i][0]);
+    setReverbEndPointer (r, i);
   }
-  setReverbInputGain (inputGain);
+  setReverbInputGain (r, r->inputGain);
 }
 
 /*
  *
  */
-float * reverb (const float * inbuf,
+float * reverb (struct b_reverb *r,
+		const float * inbuf,
 		float * outbuf,
 		size_t bufferLengthSamples)
 {
@@ -296,31 +310,31 @@ float * reverb (const float * inbuf,
     int j;
     float y;
     float xo = (*xp++);
-    float x = y_1 + (inputGain * xo);
+    float x = y_1 + (r->inputGain * xo);
     float xa = 0.0;
 
     /* First we do four feedback comb filters (ie parallel delay lines,
        each with a single tap at the end that feeds back at the start) */
 
     for (j = 0; j < 4; j++) {
-      y = (*idxp[j]);
-      *idxp[j] = x + (gain[j] * y);
-      if (endp[j] <= ++(idxp[j])) idxp[j] = idx0[j];
+      y = (*r->idxp[j]);
+      *r->idxp[j] = x + (r->gain[j] * y);
+      if (r->endp[j] <= ++(r->idxp[j])) r->idxp[j] = r->idx0[j];
       xa += y;
     }
 
     for (; j < 7; j++) {
-      y = (*idxp[j]);
-      *idxp[j] = gain[j] * (xa + y);
-      if (endp[j] <= ++(idxp[j])) idxp[j] = idx0[j];
+      y = (*r->idxp[j]);
+      *r->idxp[j] = r->gain[j] * (xa + y);
+      if (r->endp[j] <= ++(r->idxp[j])) r->idxp[j] = r->idx0[j];
       xa = y - xa;
     }
 
     y = 0.5 * (xa + yy1);
     yy1 = y;
-    y_1 = fbk * xa;
+    y_1 = r->fbk * xa;
 
-    *yp++ = ((wet * y) + (dry * xo));
+    *yp++ = ((r->wet * y) + (r->dry * xo));
   }
   return outbuf;
 }
