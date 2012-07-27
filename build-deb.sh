@@ -5,10 +5,12 @@ DEBRELEASE=$(head -n1 debian/changelog | cut -d ' ' -f 2 | sed 's/[()]*//g')
 TMPDIR=/tmp/setbfree-${DEBRELEASE}
 rm -rf ${TMPDIR}
 
+GITBRANCH=${GITBRANCH:-master}
+
 echo "debian -export-ignore" >> .git/info/attributes
 
 git-buildpackage \
-	--git-upstream-branch=master --git-debian-branch=master \
+	--git-upstream-branch=$GITBRANCH --git-debian-branch=$GITBRANCH \
 	--git-upstream-tree=branch \
 	--git-export-dir=${TMPDIR} --git-cleaner=/bin/true \
 	--git-force-create \
