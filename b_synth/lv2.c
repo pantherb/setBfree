@@ -72,6 +72,8 @@ double SampleRateD = 48000.0;
 int SampleRateI = 48000;
 double vMax = 2.0 * M_PI;
 
+//temp global -- src/cfgParser.c, src/program.c
+struct b_reverb *inst_reverb = NULL;
 
 void initSynth(B3S *b3s) {
   // equicalent to ../src/main.c main()
@@ -163,6 +165,7 @@ instantiate(const LV2_Descriptor*     descriptor,
     }
   }
   b3s->inst_reverb = allocReverb();
+  inst_reverb = b3s->inst_reverb; // XXX temp. until src/*.c is updated.
 
   initSynth(b3s);
 
