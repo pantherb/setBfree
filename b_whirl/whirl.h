@@ -27,6 +27,190 @@
 #include "../src/cfgParser.h" // ConfigContext
 #include "../src/midi.h" // useMIDIControlFunction
 
+#define WHIRL_DISPLC_SIZE ((unsigned int) (1 << 11))
+#define WHIRL_DISPLC_MASK ((WHIRL_DISPLC_SIZE) - 1)
+
+#define WHIRL_BUF_SIZE_SAMPLES ((unsigned int) (1 << 11))
+#define WHIRL_BUF_MASK_SAMPLES (WHIRL_BUF_SIZE_SAMPLES - 1)
+
+typedef enum {a0, a1, a2, b0, b1, b2, z0, z1} filterCoeff;
+
+typedef struct _revcontrol {
+  double hornTarget;
+  double drumTarget;
+} RevControl;
+
+struct b_whirl {
+
+  int bypass;        ///< if set to 1 completely bypass this effect
+  double hnBreakPos; ///< where to stop horn - 0: free, 1.0: front-center, ]0..1] clockwise circle */
+  double drBreakPos; ///< where to stop drum
+
+/*
+ * Forward (clockwise) displacement table for writing positions.
+ */
+  float hnFwdDispl[WHIRL_DISPLC_SIZE]; /* Horn */
+  float drFwdDispl[WHIRL_DISPLC_SIZE]; /* Drum */
+
+/*
+ * Backward (counter-clockwise) displacement table.
+ */
+  float hnBwdDispl[WHIRL_DISPLC_SIZE]; /* Horn */
+  float drBwdDispl[WHIRL_DISPLC_SIZE]; /* Drum */
+
+  float bfw[WHIRL_DISPLC_SIZE][5];
+  float bbw[WHIRL_DISPLC_SIZE][5];
+
+#define AGBUF 512
+#define AGMASK (AGBUF-1)
+
+  float adx0[AGBUF];
+  float adx1[AGBUF];
+  float adx2[AGBUF];
+  int   adi0;
+  int   adi1;
+  int   adi2;
+
+  double ipx;
+  double ipy;
+
+/*
+ * Writing positions (actually, indexes into hnFwdDispl[]):
+ *                Left  Right
+ * Primary           0      1
+ * First reflec.     2      3
+ * Second refl.      4      5
+ */
+
+  int hornPhase[6];
+
+  int drumPhase[6];
+
+/* The current angle of rotating elements */
+
+  double hornAngleGRD;  /* 0..1 */
+  double drumAngleGRD;
+
+  int hornAngle;
+  int drumAngle;
+
+/* rotational frequency and time-constats were taken from the paper
+ * "Discrete Time Emulation of the Leslie Speaker"
+ * by Jorge Herrera, Craig Hanson, and Jonathan S. Abel
+ * Presented at the 127th Convention
+ * 2009 October 9–12 New York NY, USA
+ *
+ *  horn: fast:7.056 Hz, slow: 0.672 Hz
+ *  drum: fast:5.955 Hz, slow: 0.101 Hz (wrong?)
+ *
+ * alternate values:
+ * http://www.dairiki.org/HammondWiki/LeslieRotationSpeed 
+ *  horn: fast: 400 RPM, slow: 48 RPM
+ *  drum: fast: 342 RPM, slow: 40 RPM
+ */
+
+/* target speed */
+  float hornRPMslow;
+  float hornRPMfast;
+  float drumRPMslow;
+  float drumRPMfast;
+
+/* time constants [s] -- first order differential */
+  float hornAcc;
+  float hornDec;
+  float drumAcc;
+  float drumDec;
+
+#define revSelectEnd (4)
+  RevControl revoptions[9];
+  int revselects[revSelectEnd];
+  int revSelect;
+
+  int hornAcDc;
+  int drumAcDc;
+
+  double hornIncrUI; ///< current angular speed - unit: radians / sample / (2*M_PI)
+  double drumIncrUI; ///< current angular speed - unit: radians / sample / (2*M_PI)
+
+  double hornTarget; ///< target angular speed  - unit: radians / sample / (2*M_PI)
+  double drumTarget; ///< target angular speed  - unit: radians / sample / (2*M_PI)
+
+/*
+ * Spacing between reflections in samples. The first can't be zero, since
+ * we must allow for the swing of the extent to wander close to the reader.
+ */
+
+  float hornSpacing[6];
+  float hornRadiusCm; /* 17.0; 25-nov-04 */
+  float drumRadiusCm;
+
+  float airSpeed;	/* Meters per second */
+  float micDistCm;	/* From mic to origin */
+  float drumSpacing[6];
+
+/* Delay buffers */
+
+  float HLbuf[WHIRL_BUF_SIZE_SAMPLES]; /* Horn left buffer */
+  float HRbuf[WHIRL_BUF_SIZE_SAMPLES]; /* Horn right buffer */
+  float DLbuf[WHIRL_BUF_SIZE_SAMPLES]; /* Drum left buffer */
+  float DRbuf[WHIRL_BUF_SIZE_SAMPLES]; /* Drum right buffer */
+
+/* Single read position, incremented by one, always. */
+
+  unsigned int outpos;
+
+
+  float drfL[8];/* Drum filter */
+  float drfR[8];/* Drum filter */
+  int    lpT;	/* high shelf */
+  double lpF;	/* Frequency */
+  double lpQ;	/* Q, bandwidth */
+  double lpG;	/* Gain */
+
+  float hafw[8];		/* Horn filter a */
+  float haT; /* low pass */
+  float haF; /* 3900.0; 25-nov-04 */
+  float haQ; /*   1.4; 25-nov-04 */
+  float haG; /*   0.0; 25-nov-04 */
+
+  float hbfw[8];
+  float hbT;		/* low shelf */
+  float hbF;
+  float hbQ; /* 2.0; 25-nov-04 */
+  float hbG; /* -60.0; 25-nov-04 */ /* negative gain */
+
+#ifdef HORN_COMB_FILTER
+#define COMB_SIZE ((unsigned int) (1 << 10))
+#define COMB_MASK (COMB_SIZE - 1)
+
+  float comb0[COMB_SIZE];
+  float cb0fb;
+  int   cb0dl;
+  float * cb0wp;		/* Write pointer */
+  float * cb0rp;		/* Read pointer */
+  float * cb0bp;		/* Begin pointer */
+  float * cb0es;		/* End sentinel */
+
+  float comb1[COMB_SIZE];
+  float cb1fb;
+  int   cb1dl;
+  float * cb1wp;
+  float * cb1rp;
+  float * cb1bp;
+  float * cb1es;
+#else /* allow to parse config files which include these values */
+  float cb0fb;
+  int   cb0dl;
+  float cb1fb;
+  int   cb1dl;
+#endif
+
+  float hornLevel;
+  float leakLevel;
+  float leakage;
+
+};
+
 extern int whirlConfig (ConfigContext * cfg);
 extern const ConfigDoc *whirlDoc ();
 

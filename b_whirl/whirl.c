@@ -119,12 +119,7 @@ static float hornDec = 0.321;
 static float drumAcc = 4.127;
 static float drumDec = 1.371;
 
-typedef struct _revcontrol {
-  double hornTarget;
-  double drumTarget;
-} RevControl;
-
-#define revSelectEnd (4)
+//#define revSelectEnd (4)
 static RevControl revoptions [9];
 static int revselects[revSelectEnd];
 static int revSelect = 0;
@@ -176,7 +171,7 @@ static float DRbuf[BUF_SIZE_SAMPLES]; /* Drum right buffer */
 
 static unsigned int outpos = 0;
 
-typedef enum {a0, a1, a2, b0, b1, b2, z0, z1} filterCoeff;
+//typedef enum {a0, a1, a2, b0, b1, b2, z0, z1} filterCoeff;
 
 static float drfL[8];		/* Drum filter */
 static float drfR[8];		/* Drum filter */
@@ -227,6 +222,145 @@ static float hornLevel = 0.7;
 static float leakLevel = 0.15;
 static float leakage = 0;
 
+void initValues(struct b_whirl *w) {
+  w->bypass=0;
+  w->hnBreakPos=0;
+  w->drBreakPos=0;
+
+  /* The current angle of rotating elements */
+  w->hornAngleGRD=0; /* 0..1 */
+  w->drumAngleGRD=0;
+
+  w->hornAngle=0;
+  w->drumAngle=0;
+
+/* rotational frequency and time-constats were taken from the paper
+ * "Discrete Time Emulation of the Leslie Speaker"
+ * by Jorge Herrera, Craig Hanson, and Jonathan S. Abel
+ * Presented at the 127th Convention
+ * 2009 October 9–12 New York NY, USA
+ *
+ *  horn: fast:7.056 Hz, slow: 0.672 Hz
+ *  drum: fast:5.955 Hz, slow: 0.101 Hz (wrong?)
+ *
+ * alternate values:
+ * http://www.dairiki.org/HammondWiki/LeslieRotationSpeed 
+ *  horn: fast: 400 RPM, slow: 48 RPM
+ *  drum: fast: 342 RPM, slow: 40 RPM
+ */
+
+  /* target speed  - RPM */
+  w->hornRPMslow = 60.0 * 0.672;
+  w->hornRPMfast = 60.0 * 7.056;
+  w->drumRPMslow = 60.0 * 0.600;
+  w->drumRPMfast = 60.0 * 5.955;
+
+  /* time constants [s] -- first order differential */
+  w->hornAcc = 0.161;
+  w->hornDec = 0.321;
+  w->drumAcc = 4.127;
+  w->drumDec = 1.371;
+
+  w->hornAcDc = w->drumAcDc = 0;
+
+  /* angular speed - unit: radians / sample / (2*M_PI) */
+  w->hornIncrUI = 0; ///< current angular speed 
+  w->drumIncrUI = 0; ///< current angular speed
+
+  w->hornTarget = 0; ///< target angular speed
+  w->drumTarget = 0; ///< target angular speed
+
+  /*
+   * Spacing between reflections in samples. The first can't be zero, since
+   * we must allow for the swing of the extent to wander close to the reader.
+   */
+
+  w->hornSpacing[0] = 12.0; /* Primary */
+  w->hornSpacing[1] = 18.0;
+  w->hornSpacing[2] = 53.0; /* First reflection */
+  w->hornSpacing[3] = 50.0;
+  w->hornSpacing[4] = 106.0; /* Secondary reflection */
+  w->hornSpacing[5] = 116.0;
+
+  w->hornRadiusCm = 19.2;
+  w->drumRadiusCm = 22.0;
+
+  w->airSpeed = 340.0; /* Meters per second */
+  w->micDistCm= 2.0;   /* From mic to origin */
+
+  w->drumSpacing[0] = 36.0;
+  w->drumSpacing[1] = 39.0;
+  w->drumSpacing[2] = 79.0;
+  w->drumSpacing[3] = 86.0;
+  w->drumSpacing[4] = 123.0;
+  w->drumSpacing[5] = 116.0;
+
+  w->outpos=0;
+
+  memset(w->drfR, 0, 8*sizeof(float));
+  w->lpT = 8;		/* high shelf */
+  w->lpF = 811.9695;	/* Frequency */
+  w->lpQ =   1.6016;	/* Q, bandwidth */
+  w->lpG = -38.9291;	/* Gain */
+
+  memset(w->hafw, 0, 8*sizeof(float));
+  w->haT = 0;		/* low pass */
+  w->haF = 4500;	/* 3900.0; 25-nov-04 */
+  w->haQ = 2.7456;	/* 1.4; 25-nov-04 */
+  w->haG = -30.0; 	/* 0.0; 25-nov-04 */
+
+  memset(w->hbfw, 0, 8*sizeof(float));
+  w->hbT = 7;		/* low shelf */
+  w->hbF = 300.0;
+  w->hbQ =   1.0;
+  w->hbG = -30.0;
+
+  w->hornLevel = 0.7;
+  w->leakLevel = 0.15;
+  w->leakage = 0;
+
+#ifdef HORN_COMB_FILTER
+  memset(w->comb0, 0 , sizeof(float) * COMB_SIZE);
+  w->cb0fb = -0.55;
+  w->cb0dl = 38;
+
+  memset(w->comb1, 0 , sizeof(float) * COMB_SIZE);
+  w->cb1fb = -0.3508;
+  w->cb1dl = 120;
+#else
+  w->cb0fb = 0;
+  w->cb0dl = 0;
+  w->cb1fb = 0;
+  w->cb1dl = 0;
+#endif
+
+  // TODO zero arrays..
+  memset(w->HLbuf, 0, sizeof(float) * WHIRL_BUF_SIZE_SAMPLES);
+  memset(w->HRbuf, 0, sizeof(float) * WHIRL_BUF_SIZE_SAMPLES);
+  memset(w->DLbuf, 0, sizeof(float) * WHIRL_BUF_SIZE_SAMPLES);
+  memset(w->DRbuf, 0, sizeof(float) * WHIRL_BUF_SIZE_SAMPLES);
+
+  memset(w->hnFwdDispl, 0, sizeof(float) * WHIRL_DISPLC_SIZE);
+  memset(w->drFwdDispl, 0, sizeof(float) * WHIRL_DISPLC_SIZE);
+
+  memset(w->hnBwdDispl, 0, sizeof(float) * WHIRL_DISPLC_SIZE);
+  memset(w->drBwdDispl, 0, sizeof(float) * WHIRL_DISPLC_SIZE);
+
+  int i;
+  for (i=0; i<WHIRL_DISPLC_SIZE; i++) {
+    memset(w->bfw[i], 0, sizeof(float) * 5);
+    memset(w->bbw[i], 0, sizeof(float) * 5);
+  }
+
+  memset(w->adx0, 0, sizeof(float) * AGBUF);
+  memset(w->adx1, 0, sizeof(float) * AGBUF);
+  memset(w->adx2, 0, sizeof(float) * AGBUF);
+  w->adi0 = w->adi1 = w->adi2 = 0;
+
+  w->ipx = w->ipy = 0.0;
+
+  //hornPhase, drumPhase -> initTables()
+}
 
 /*
  *
