@@ -178,6 +178,7 @@ void setReverbMix (struct b_reverb *r, float g) {
   r->dry = u - (g * u);
 }
 
+#if 0 // unused
 /*
  *
  */
@@ -219,50 +220,32 @@ void setReverbDry (struct b_reverb *r, float g) {
 void setReverbWet (struct b_reverb *r, float g) {
   r->wet = g;
 }
+#endif
 
 /*
  *
  */
 int reverbConfig (struct b_reverb *r, ConfigContext * cfg) {
-  int ack = 0;
-  if (strcasecmp (cfg->name, "reverb.wet") == 0) {
-    double v;
-    if (sscanf (cfg->value, "%lf", &v) == 1) {
-      r->wet = v;
-      ack++;
-    }
+  int ack = 1;
+  double d;
+  if (getConfigParameter_d ("reverb.wet", cfg, &d) == 1) {
+    r->wet = d;
   }
-  else if (strcasecmp (cfg->name, "reverb.dry") == 0) {
-    double v;
-    if (sscanf (cfg->value, "%lf", &v) == 1) {
-      r->dry = v;
-      ack++;
-    }
+  else if (getConfigParameter_d ("reverb.dry", cfg, &d) == 1) {
+    r->dry = d;
   }
-  else if (strcasecmp (cfg->name, "reverb.inputgain") == 0) {
-    double v;
-    if (sscanf (cfg->value, "%lf", &v) == 1) {
-      setReverbInputGain (r, (float) v);
-      ack++;
-    }
+  else if (getConfigParameter_d ("reverb.inputgain", cfg, &d) == 1) {
+    setReverbInputGain (r, (float) d);
   }
-  else if (strcasecmp (cfg->name, "reverb.outputgain") == 0) {
-    double v;
-    if (sscanf (cfg->value, "%lf", &v) == 1) {
-      setReverbOutputGain (r, (float) v);
-      ack++;
-    }
+  else if (getConfigParameter_d ("reverb.outputgain", cfg, &d) == 1) {
+    setReverbOutputGain (r, (float) d);
   }
-  else if (strcasecmp (cfg->name, "reverb.mix") == 0) {
-    double v;
-    if (sscanf (cfg->value, "%lf", &v) == 1) {
-      if ((0 <= v) && (v <= 1.0)) {
-	setReverbMix (r, (float) v);
-	ack++;
-      }
-    }
+  else if (getConfigParameter_dr ("reverb.mix", cfg, &d, 0, 1.0) == 1) {
+    setReverbMix (r, (float) d);
   }
-
+  else {
+    ack=0;
+  }
   return ack;
 }
 
@@ -270,7 +253,7 @@ static const ConfigDoc doc[] = {
   {"reverb.wet", CFG_DOUBLE, "0.3", "Wet signal level; range [0..1]"},
   {"reverb.dry", CFG_DOUBLE, "0.7", "Dry signal level; range [0..1]"},
   {"reverb.inputgain", CFG_DOUBLE, "0.025", "Input Gain; range [0..1]"},
-  {"reverb.outputgain", CFG_DOUBLE, "1.0", "Note: modifies dry/wet."},
+  {"reverb.outputgain", CFG_DOUBLE, "1.0", "Note: modifies dry and wet values."},
   {"reverb.mix", CFG_DOUBLE, "0.3", "Note: modifies dry/wet."},
   {NULL}
 };
@@ -300,6 +283,15 @@ float * reverb (struct b_reverb *r,
 		float * outbuf,
 		size_t bufferLengthSamples)
 {
+  float ** idxp = r->idxp;
+  float * const * endp = r->endp;
+  float * const * idx0 = r->idx0;
+  const float * gain = r->gain;
+  const float inputGain = r->inputGain;
+  const float fbk = r->fbk;
+  const float wet = r->wet;
+  const float dry = r->dry;
+
   int i;
   const float * xp =  inbuf;
   float * yp =  outbuf;
@@ -310,31 +302,31 @@ float * reverb (struct b_reverb *r,
     int j;
     float y;
     float xo = (*xp++);
-    float x = y_1 + (r->inputGain * xo);
+    float x = y_1 + (inputGain * xo);
     float xa = 0.0;
 
     /* First we do four feedback comb filters (ie parallel delay lines,
        each with a single tap at the end that feeds back at the start) */
 
     for (j = 0; j < 4; j++) {
-      y = (*r->idxp[j]);
-      *r->idxp[j] = x + (r->gain[j] * y);
-      if (r->endp[j] <= ++(r->idxp[j])) r->idxp[j] = r->idx0[j];
+      y = (*idxp[j]);
+      *idxp[j] = x + (gain[j] * y);
+      if (endp[j] <= ++(idxp[j])) idxp[j] = idx0[j];
       xa += y;
     }
 
     for (; j < 7; j++) {
-      y = (*r->idxp[j]);
-      *r->idxp[j] = r->gain[j] * (xa + y);
-      if (r->endp[j] <= ++(r->idxp[j])) r->idxp[j] = r->idx0[j];
+      y = (*idxp[j]);
+      *idxp[j] = gain[j] * (xa + y);
+      if (endp[j] <= ++(idxp[j])) idxp[j] = idx0[j];
       xa = y - xa;
     }
 
     y = 0.5 * (xa + yy1);
     yy1 = y;
-    y_1 = r->fbk * xa;
+    y_1 = fbk * xa;
 
-    *yp++ = ((r->wet * y) + (r->dry * xo));
+    *yp++ = ((wet * y) + (dry * xo));
   }
   return outbuf;
 }
