@@ -185,3 +185,10 @@ files. The setBfree git-repository includes a script to build universal binary
 and create a DMG.  However this script assumes that universal (PPC, i386,
 x86-64) versions of the JACK-libraries as well as zita-convolver and libsndfile
 are available in /usr/local/ on the build-host.
+
+Thanks
+------
+
+Many thanks to all who contributed ideas, bug-reports, patches and feedback. In
+Particular (in alphabetical order): Dominique Michel, Fons Adriaensen, Jeremy
+Jongepier, Julien Claasen and Ken Restivo.
