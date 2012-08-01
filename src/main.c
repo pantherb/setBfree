@@ -98,7 +98,6 @@ static float bufC [BUFFER_SIZE_SAMPLES];
 
 double SampleRateD = 48000.0;
 int    SampleRateI = 48000;
-double vMax = 2.0 * M_PI;
 
 static jack_client_t *j_client = NULL;
 static jack_port_t **j_output_port;

@@ -54,7 +54,6 @@ extern void listCCAssignments(FILE * fp);
 
 extern double SampleRateD;
 extern int    SampleRateI;
-extern double vMax;
 
 /* class instances */
 #include "reverb.h"

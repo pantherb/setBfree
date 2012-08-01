@@ -70,7 +70,6 @@ int mainConfig (ConfigContext * cfg) { return 0; }
 
 double SampleRateD = 48000.0;
 int SampleRateI = 48000;
-double vMax = 2.0 * M_PI;
 
 //temp global -- src/cfgParser.c, src/program.c
 struct b_reverb *inst_reverb = NULL;

@@ -24,6 +24,8 @@
  * - allocReverb()   -- prepare instance, initialize default config
  * - reverbConfig()  -- set configuration variables (optional)
  * - initReverb()    -- derive static variables from cfg, allocate buffers
+ *   Note: SampleRate is unknown until step (3) initReverb()
+ *
  *
  * The reverb algorithm was pieced together from two sources:
  *
