@@ -14,3 +14,6 @@ override_dh_auto_install:
 	install -d $(CURDIR)/debian/setbfree/usr/share/pixmaps/
 	install -m 644 $(CURDIR)/doc/setBfree.png \
 		$(CURDIR)/debian/setbfree/usr/share/pixmaps/
+
+override_dh_auto_clean:
+
