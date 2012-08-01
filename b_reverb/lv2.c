@@ -136,4 +136,7 @@ lv2_descriptor(uint32_t index)
     return NULL;
   }
 }
+
+int getConfigParameter_dr (char * par, ConfigContext * cfg, double * dp, double lowInc, double highInc) { return 0; }
+int getConfigParameter_d (char * par, ConfigContext * cfg, double * dp) { return 0; }
 /* vi:set ts=8 sts=2 sw=2: */

@@ -25,18 +25,26 @@
 
 #define RV_NZ 7
 struct b_reverb {
+	/* static buffers, pointers */
+	float *delays[RV_NZ]; /**< delay line buffer */
+
+	float * idx0[RV_NZ];	/**< Reset pointer ref delays[]*/
+	float * idxp[RV_NZ];	/**< Index pointer ref delays[]*/
+	float * endp[RV_NZ];	/**< End pointer   ref delays[]*/
+
+	float gain[RV_NZ];    /**< feedback gains */
+	float yy1; /**< Previous output sample */
+	float y_1; /**< Feedback sample */
+
+	/* static config */
   int end[RV_NZ];
-	float gain[RV_NZ];
-	float *delays[RV_NZ];/**< delay line buffer */
-	float * idx0[RV_NZ];	/**< Reset pointer */
-	float * idxp[RV_NZ];	/**< Index pointer */
-	float * endp[RV_NZ];	/**< End pointer */
 
+	/* dynamic config */
 	float inputGain;	/**< Input gain value */
-
 	float fbk;	/**< Feedback gain */
 	float wet;	/**< Output dry gain */
 	float dry;	/**< Output wet gain */
+
 };
 
 #include "../src/cfgParser.h"

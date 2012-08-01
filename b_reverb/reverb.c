@@ -19,9 +19,12 @@
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  
  */
 
-/* reverb.c
- * Fredrik Kilander
- * 12-apr-2003/FK Adapted from springReverb2.c
+/* 
+ * effect initialization is done in 3 steps:
+ * - allocReverb()   -- prepare instance, initialize default config
+ * - reverbConfig()  -- set configuration variables (optional)
+ * - initReverb()    -- derive static variables from cfg, allocate buffers
+ *
  * The reverb algorithm was pieced together from two sources:
  *
  * 1. Philip Edelbrock, 'Room Acoustics Modeling',
@@ -32,7 +35,7 @@
  *
  * 2. Julius O. Smith III, 'Digital Waveguide Modeling of Musical Instruments',
  *    'A Schroeder Reverberator called JCRev',
- *    http://www-ccrma.stanford.edu/~jos/waveguide/Schroeder_Reverberator...
+ *    https://ccrma.stanford.edu/~jos/waveguide/Schroeder_Reverberators.html
  *
  *    All-pass filter delay lengths.
  *
@@ -89,9 +92,7 @@
 
 #include "reverb.h"
 
-#define MAXDELAY 16384 // TODO alloc dynamically size dependend on SampleRate
 extern double SampleRateD;
-
 
 struct b_reverb *allocReverb() {
   int i;
@@ -116,22 +117,24 @@ struct b_reverb *allocReverb() {
   r->gain[5] = 0.7071067811865475;	/* AP */
   r->gain[6] = 0.7071067811865475;	/* AP */
 
+  /* delay lines */
   r->end[0] = 2999;
   r->end[1] = 2331;
   r->end[2] = 1893;
   r->end[3] = 1097;
 
+  /* all pass filters */
   r->end[4] = 1051;
   r->end[5] = 337;
   r->end[6] = 113;
 
   for (i=0; i< RV_NZ; ++i) {
-    r->delays[i]= calloc(MAXDELAY, sizeof(float));
-    if (!r->delays[i]) {
-      fprintf (stderr, "FATAL: memory allocation failed for reverb.\n");
-      exit(1);
-    }
+    r->delays[i]= NULL;
   }
+
+  r->yy1 = 0.0;
+  r->y_1 = 0.0;
+
   return r;
 }
 
@@ -143,13 +146,17 @@ void freeReverb(struct b_reverb *r) {
   free(r);
 }
 
-/*
- *
- */
-static void setReverbEndPointer (struct b_reverb *r, int i) {
+/* used during initialization, set array end pointers */
+static void setReverbPointers (struct b_reverb *r, int i) {
   if ((0 <= i) && (i < RV_NZ)) {
-    int e = (r->end[i] * SampleRateD / 22050.0);
-    r->endp[i] = r->idx0[i] + e + 1;
+    const int e = (r->end[i] * SampleRateD / 22050.0);
+    r->delays[i] = (float *) realloc((void *)r->delays[i], (e + 2) * sizeof(float));
+    if (!r->delays[i]) {
+      fprintf (stderr, "FATAL: memory allocation failed for reverb.\n");
+      exit(1);
+    }
+    r->endp[i] = r->delays[i] + e + 1;
+    r->idx0[i] = r->idxp[i] = &(r->delays[i][0]);
   }
 }
 
@@ -193,9 +200,9 @@ void setReverbFeedbackGainInDelay (struct b_reverb *r, int i, float g) {
  */
 void setReverbSamplesInDelay (struct b_reverb *r, int i, int s) {
   if ((0 <= i) && (i < RV_NZ)) {
-    if ((0 <= s) && (s < MAXDELAY)) {
+    if (0 <= s) {
       r->end[i] = s;
-      setReverbEndPointer (r, i);
+      setReverbPointers (r, i);
     }
   }
 }
@@ -269,8 +276,7 @@ const ConfigDoc *reverbDoc () {
 void initReverb (struct b_reverb *r) {
   int i;
   for (i = 0; i < RV_NZ; i++) {
-    r->idx0[i] = r->idxp[i] = &(r->delays[i][0]);
-    setReverbEndPointer (r, i);
+    setReverbPointers (r, i);
   }
   setReverbInputGain (r, r->inputGain);
 }
@@ -283,10 +289,10 @@ float * reverb (struct b_reverb *r,
 		float * outbuf,
 		size_t bufferLengthSamples)
 {
-  float ** idxp = r->idxp;
-  float * const * endp = r->endp;
-  float * const * idx0 = r->idx0;
-  const float * gain = r->gain;
+  float ** const idxp = r->idxp;
+  float * const * const endp = r->endp;
+  float * const * const idx0 = r->idx0;
+  const float * const gain = r->gain;
   const float inputGain = r->inputGain;
   const float fbk = r->fbk;
   const float wet = r->wet;
@@ -295,14 +301,12 @@ float * reverb (struct b_reverb *r,
   int i;
   const float * xp =  inbuf;
   float * yp =  outbuf;
-  static float yy1 = 0;		/* Previous output sample */
-  static float y_1 = 0;		/* Feedback sample */
 
   for (i = 0; i < bufferLengthSamples; i++) {
     int j;
     float y;
-    float xo = (*xp++);
-    float x = y_1 + (inputGain * xo);
+    const float xo = (*xp++);
+    const float x = r->y_1 + (inputGain * xo);
     float xa = 0.0;
 
     /* First we do four feedback comb filters (ie parallel delay lines,
@@ -322,9 +326,9 @@ float * reverb (struct b_reverb *r,
       xa = y - xa;
     }
 
-    y = 0.5 * (xa + yy1);
-    yy1 = y;
-    y_1 = fbk * xa;
+    y = 0.5 * (xa + r->yy1);
+    r->yy1 = y;
+    r->y_1 = fbk * xa;
 
     *yp++ = ((wet * y) + (dry * xo));
   }
