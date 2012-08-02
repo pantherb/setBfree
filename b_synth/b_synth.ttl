@@ -1,6 +1,7 @@
 @prefix doap: <http://usefulinc.com/ns/doap#> .
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix lv2atom: <http://lv2plug.in/ns/ext/atom#> .
 @prefix lv2ev: <http://lv2plug.in/ns/ext/event#> .
 @prefix lv2pg: <http://lv2plug.in/ns/ext/port-groups#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
@@ -24,11 +25,13 @@ rg:bsynth-out a lv2pg:Group ;
 	doap:name "setBfree DSP tonewheel Organ";
 	doap:license <http://opensource.org/licenses/gpl-2.0> ;
 	lv2:optionalFeature lv2:hardRTCapable ;
+	lv2:requiredFeature <http://lv2plug.in/ns/ext/uri-map> ;
 	lv2:port
 	[
-		a lv2:InputPort, lv2ev:EventPort ;
+		a lv2:InputPort, lv2atom:AtomPort ;
+		lv2atom:bufferType lv2atom:Sequence ;
 		lv2:index 0 ;
-		lv2ev:supportsEvent <http://lv2plug.in/ns/ext/midi#MidiEvent> ;
+		lv2atom:supports <http://lv2plug.in/ns/ext/midi#MidiEvent> ;
 		lv2:symbol "in";
 		lv2:name "MIDI In";
 	],

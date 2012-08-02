@@ -43,6 +43,7 @@
 
 #include "lv2/lv2plug.in/ns/ext/urid/urid.h"
 #include "lv2/lv2plug.in/ns/ext/midi/midi.h"
+#include "lv2/lv2plug.in/ns/ext/atom/util.h"
 #include "lv2/lv2plug.in/ns/ext/event/event-helpers.h"
 
 #define B3S_URI "http://gareus.org/oss/lv2/b_synth"
@@ -54,7 +55,7 @@ typedef enum {
 } PortIndex;
 
 typedef struct {
-  LV2_Event_Buffer* midiin;
+  LV2_Atom_Sequence* midiin;
   float* outL;
   float* outR;
   uint32_t event_id;
@@ -66,7 +67,6 @@ typedef struct {
 
 const ConfigDoc *mainDoc () { return NULL;}
 int mainConfig (ConfigContext * cfg) { return 0; }
-
 
 double SampleRateD = 48000.0;
 int SampleRateI = 48000;
@@ -180,7 +180,7 @@ connect_port(LV2_Handle instance,
 
   switch ((PortIndex)port) {
     case B3S_MIDIIN:
-      b3s->midiin = (LV2_Event_Buffer*)data;
+      b3s->midiin = (LV2_Atom_Sequence*)data;
       break;
     case B3S_OUTL:
       b3s->outL = (float*)data;
@@ -207,15 +207,12 @@ run(LV2_Handle instance, uint32_t n_samples)
 
   // handle midi events
   if (b3s->midiin) {
-    LV2_Event_Iterator iter;
-    lv2_event_begin(&iter, b3s->midiin);
-    while (lv2_event_is_valid(&iter)) {
-      uint8_t   *data;
-      LV2_Event *event = lv2_event_get(&iter, &data);
-      if (event && (b3s->event_id == 0 || event->type == b3s->event_id)) {
-	parse_lv2_midi_event(data, event->size);
+    LV2_Atom_Event* ev = lv2_atom_sequence_begin(&(b3s->midiin)->body);
+    while(!lv2_atom_sequence_is_end(&(b3s->midiin)->body, (b3s->midiin)->atom.size, ev)) {
+      if (b3s->event_id == 0 || ev->body.type == b3s->event_id) {
+	parse_lv2_midi_event((uint8_t*)(ev+1), ev->body.size);
       }
-      lv2_event_increment(&iter);
+      ev = lv2_atom_sequence_next(ev);
     }
   }
 

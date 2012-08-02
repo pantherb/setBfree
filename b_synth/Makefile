@@ -1,7 +1,7 @@
 include ../common.mak
 
 LOADLIBES = -lm
-CFLAGS+= -I../src -I../b_overdrive -I../b_reverb -I../b_whirl
+CFLAGS+= -I../src -I../b_overdrive -I../b_reverb -I../b_whirl -std=c99
 
 targets=
 
