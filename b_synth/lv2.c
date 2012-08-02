@@ -205,11 +205,11 @@ run(LV2_Handle instance, uint32_t n_samples)
   audio[0] = b3s->outL;
   audio[1] = b3s->outR;
 
-  // handle midi events
+  // handle MIDI events
   if (b3s->midiin) {
     LV2_Atom_Event* ev = lv2_atom_sequence_begin(&(b3s->midiin)->body);
     while(!lv2_atom_sequence_is_end(&(b3s->midiin)->body, (b3s->midiin)->atom.size, ev)) {
-      if (b3s->event_id == 0 || ev->body.type == b3s->event_id) {
+      if (ev->body.type == b3s->event_id) {
 	parse_lv2_midi_event((uint8_t*)(ev+1), ev->body.size);
       }
       ev = lv2_atom_sequence_next(ev);

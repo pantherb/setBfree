@@ -8,25 +8,24 @@
 
 rg:bwhirl-in a pg:Group ;
    a pg:MonoGroup ;
-   :symbol "in" .
+   lv2:symbol "in" .
   
 rg:bwhirl-out a pg:Group ;
    a pg:StereoGroup ;
-   :symbol "out" ;
+   lv2:symbol "out" ;
    pg:source rg:bwhirl-in .
 
 <http://gareus.org/>
 	a foaf:Person ;
 	foaf:name "Robin Gareus" ;
 	foaf:mbox <mailto:robin@gareus.org> ;
-	rdfs:seeAlso <http://gareus.org/> .
+	foaf:homepage <http://gareus.org/> .
 
 <http://gareus.org/oss/lv2/b_whirl>
-	a lv2:Plugin ,
-		lv2:B_Whirl ;
+	a lv2:Plugin;
 	doap:maintainer <http://gareus.org/> ;
 	doap:name "B Organ Whirl Speaker";
-	doap:license <http://opensource.org/licenses/gpl-2.0> ;
+	doap:license <http://usefulinc.com/doap/licenses/gpl> ;
 	lv2:optionalFeature lv2:hardRTCapable ;
 	lv2:port
 	[
@@ -42,7 +41,7 @@ rg:bwhirl-out a pg:Group ;
 		a lv2:AudioPort ,
 			lv2:OutputPort ;
 		lv2:index 1 ;
-		lv2:symbol "outl" ;
+		lv2:symbol "left" ;
 		lv2:name "Left output" ;
     pg:inGroup rg:bwhirl-out ;
     pg:role pg:leftChannel ;
@@ -51,7 +50,7 @@ rg:bwhirl-out a pg:Group ;
 		a lv2:AudioPort ,
 			lv2:OutputPort ;
 		lv2:index 2 ;
-		lv2:symbol "outl" ;
+		lv2:symbol "right" ;
 		lv2:name "Right output" ;
     pg:inGroup rg:bwhirl-out ;
     pg:role pg:rightChannel ;

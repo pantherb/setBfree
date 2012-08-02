@@ -2,31 +2,31 @@
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix lv2: <http://lv2plug.in/ns/lv2core#> .
 @prefix pg: <http://lv2plug.in/ns/ext/port-groups#> .
+@prefix pp: <http://lv2plug.in/ns/ext/port-props#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix rg: <http://gareus.org/oss/lv2/> .
 
 rg:bwhirl-in a pg:Group ;
    a pg:MonoGroup ;
-   :symbol "in" .
+   lv2:symbol "in" .
   
 rg:bwhirl-out a pg:Group ;
    a pg:StereoGroup ;
-   :symbol "out" ;
+   lv2:symbol "out" ;
    pg:source rg:bwhirl-in .
 
 <http://gareus.org/>
 	a foaf:Person ;
 	foaf:name "Robin Gareus" ;
 	foaf:mbox <mailto:robin@gareus.org> ;
-	rdfs:seeAlso <http://gareus.org/> .
+	foaf:homepage <http://gareus.org/> .
 
 <http://gareus.org/oss/lv2/b_whirlExt>
-	a lv2:Plugin ,
-		lv2:B_WhirlExt ;
+	a lv2:Plugin;
 	doap:maintainer <http://gareus.org/> ;
 	doap:name "B Organ Whirl Speaker Extended Version";
-	doap:license <http://opensource.org/licenses/gpl-2.0> ;
+	doap:license <http://usefulinc.com/doap/licenses/gpl> ;
 	lv2:optionalFeature lv2:hardRTCapable ;
 	lv2:port
 	[
@@ -42,7 +42,7 @@ rg:bwhirl-out a pg:Group ;
 		a lv2:AudioPort ,
 			lv2:OutputPort ;
 		lv2:index 1 ;
-		lv2:symbol "outl" ;
+		lv2:symbol "left" ;
 		lv2:name "Left output" ;
     pg:inGroup rg:bwhirl-out ;
     pg:role pg:leftChannel ;
@@ -51,7 +51,7 @@ rg:bwhirl-out a pg:Group ;
 		a lv2:AudioPort ,
 			lv2:OutputPort ;
 		lv2:index 2 ;
-		lv2:symbol "outl" ;
+		lv2:symbol "right" ;
 		lv2:name "Right output" ;
     pg:inGroup rg:bwhirl-out ;
     pg:role pg:rightChannel ;
@@ -75,6 +75,7 @@ rg:bwhirl-out a pg:Group ;
 		lv2:scalePoint [ rdfs:label "fast, stop"; rdf:value 6 ] ;
 		lv2:scalePoint [ rdfs:label "fast, slow"; rdf:value 7 ] ;
 		lv2:scalePoint [ rdfs:label "fast, fast"; rdf:value 8 ] ;
+		pp:displayPriority 1000 ;
 	],
 	[
 		a lv2:InputPort ,
@@ -95,6 +96,7 @@ rg:bwhirl-out a pg:Group ;
 		lv2:scalePoint [ rdfs:label "PEQ peaking eq"; rdf:value 6 ] ;
 		lv2:scalePoint [ rdfs:label "LSH low shelf"; rdf:value 7 ] ;
 		lv2:scalePoint [ rdfs:label "HSH high shelf"; rdf:value 8 ] ;
+		pp:displayPriority 100 ;
 	],
 	[
 		a lv2:InputPort ,
@@ -105,6 +107,7 @@ rg:bwhirl-out a pg:Group ;
 		lv2:default 4500.0 ;
 		lv2:minimum 250 ;
 		lv2:maximum 8000.0 ;
+		pp:displayPriority 100 ;
 	],
 	[
 		a lv2:InputPort ,
@@ -115,6 +118,7 @@ rg:bwhirl-out a pg:Group ;
 		lv2:default 2.7456 ;
 		lv2:minimum 0.01 ;
 		lv2:maximum 6.0 ;
+		pp:displayPriority 100 ;
 	],
 	[
 		a lv2:InputPort ,
@@ -125,6 +129,7 @@ rg:bwhirl-out a pg:Group ;
 		lv2:default -30.0 ;
 		lv2:minimum -48.0 ;
 		lv2:maximum  48.0 ;
+		pp:displayPriority 100 ;
 	],
 	[
 		a lv2:InputPort ,
@@ -145,6 +150,7 @@ rg:bwhirl-out a pg:Group ;
 		lv2:scalePoint [ rdfs:label "PEQ peaking eq"; rdf:value 6 ] ;
 		lv2:scalePoint [ rdfs:label "LSH low shelf"; rdf:value 7 ] ;
 		lv2:scalePoint [ rdfs:label "HSH high shelf"; rdf:value 8 ] ;
+		pp:displayPriority 100 ;
 	],
 	[
 		a lv2:InputPort ,
@@ -155,6 +161,7 @@ rg:bwhirl-out a pg:Group ;
 		lv2:default 300.0 ;
 		lv2:minimum 250 ;
 		lv2:maximum 8000.0 ;
+		pp:displayPriority 100 ;
 	],
 	[
 		a lv2:InputPort ,
@@ -165,6 +172,7 @@ rg:bwhirl-out a pg:Group ;
 		lv2:default 1.0 ;
 		lv2:minimum 0.01 ;
 		lv2:maximum 6.0 ;
+		pp:displayPriority 100 ;
 	],
 	[
 		a lv2:InputPort ,
@@ -175,5 +183,6 @@ rg:bwhirl-out a pg:Group ;
 		lv2:default -30.0 ;
 		lv2:minimum -48.0 ;
 		lv2:maximum  48.0 ;
+		pp:displayPriority 100 ;
 	]
 	.

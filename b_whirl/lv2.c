@@ -28,6 +28,7 @@
 #include "lv2/lv2plug.in/ns/lv2core/lv2.h"
 
 #define B3W_URI "http://gareus.org/oss/lv2/b_whirl"
+#define B3W_URI_EXT "http://gareus.org/oss/lv2/b_whirlExt"
 
 typedef enum {
   B3W_INPUT      = 0,
@@ -198,6 +199,17 @@ static const LV2_Descriptor descriptor = {
   extension_data
 };
 
+static const LV2_Descriptor descriptorExt = {
+  B3W_URI_EXT,
+  instantiate,
+  connect_port,
+  activate,
+  run,
+  deactivate,
+  cleanup,
+  extension_data
+};
+
 LV2_SYMBOL_EXPORT
 const LV2_Descriptor*
 lv2_descriptor(uint32_t index)
@@ -205,6 +217,8 @@ lv2_descriptor(uint32_t index)
   switch (index) {
   case 0:
     return &descriptor;
+  case 1:
+    return &descriptorExt;
   default:
     return NULL;
   }
