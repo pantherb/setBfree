@@ -74,7 +74,7 @@ int SampleRateI = 48000;
 //temp global -- src/cfgParser.c, src/program.c
 struct b_reverb *inst_reverb = NULL;
 
-void initSynth(B3S *b3s) {
+void initSynth(B3S *b3s, double rate) {
   // equicalent to ../src/main.c main()
   unsigned int defaultPreset[9] = {8,8,8, 0,0,0,0, 0,0};
 
@@ -85,7 +85,7 @@ void initSynth(B3S *b3s) {
   initVibrato ();
   initToneGenerator ();
   initPreamp ();
-  initReverb (b3s->inst_reverb);
+  initReverb (b3s->inst_reverb, rate);
   initWhirl ();
   /* end - initAll() */
 
@@ -166,7 +166,7 @@ instantiate(const LV2_Descriptor*     descriptor,
   b3s->inst_reverb = allocReverb();
   inst_reverb = b3s->inst_reverb; // XXX temp. until src/*.c is updated.
 
-  initSynth(b3s);
+  initSynth(b3s, rate);
 
   return (LV2_Handle)b3s;
 }

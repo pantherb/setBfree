@@ -37,7 +37,8 @@ struct b_reverb {
 	float y_1; /**< Feedback sample */
 
 	/* static config */
-  int end[RV_NZ];
+	int end[RV_NZ];
+	double SampleRateD;
 
 	/* dynamic config */
 	float inputGain;	/**< Input gain value */
@@ -65,7 +66,7 @@ extern void setReverbDry (struct b_reverb *r, float g);
 
 extern void setReverbWet (struct b_reverb *r, float g);
 
-extern void initReverb (struct b_reverb *r);
+extern void initReverb (struct b_reverb *r, double rate);
 
 extern float * reverb (struct b_reverb *r, const float * inbuf, float * outbuf, size_t bufferLengthSamples);
 

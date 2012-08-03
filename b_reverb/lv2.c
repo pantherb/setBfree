@@ -46,18 +46,16 @@ typedef struct {
   struct b_reverb *instance;
 } B3R;
 
-double SampleRateD = 22050.0;
-
 static LV2_Handle
 instantiate(const LV2_Descriptor*     descriptor,
             double                    rate,
             const char*               bundle_path,
             const LV2_Feature* const* features)
 {
-  B3R* b3r = (B3R*)malloc(sizeof(B3R));
-  SampleRateD = rate;
+  B3R* b3r = (B3R*)calloc(1, sizeof(B3R));
+  if(!b3r) { return NULL ;}
   b3r->instance = allocReverb();
-  initReverb(b3r->instance);
+  initReverb(b3r->instance, rate);
 
   return (LV2_Handle)b3r;
 }

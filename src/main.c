@@ -364,7 +364,7 @@ static void initAll () {
 
   fprintf (stderr, "Reverb : ");
   fflush (stderr);
-  initReverb (inst_reverb);
+  initReverb (inst_reverb, SampleRateD);
 
   fprintf (stderr, "Whirl : ");
   fflush (stderr);

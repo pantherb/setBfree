@@ -94,8 +94,6 @@
 
 #include "reverb.h"
 
-extern double SampleRateD;
-
 struct b_reverb *allocReverb() {
   int i;
   struct b_reverb *r = (struct b_reverb*) calloc(1, sizeof(struct b_reverb));
@@ -110,14 +108,14 @@ struct b_reverb *allocReverb() {
   r->dry = 0.7;		/* Output wet gain */
 
   /* These are all  1/sqrt(2) = 0.7071067811865475 */
-  r->gain[0] = 0.7071067811865475;	/* FBCF (feedback combfilter) */
-  r->gain[1] = 0.7071067811865475;	/* FBCF */
-  r->gain[2] = 0.7071067811865475;	/* FBCF */
-  r->gain[3] = 0.7071067811865475;	/* FBCF */
+  r->gain[0] = sqrtf(0.5);	/* FBCF (feedback combfilter) */
+  r->gain[1] = sqrtf(0.5);	/* FBCF */
+  r->gain[2] = sqrtf(0.5);	/* FBCF */
+  r->gain[3] = sqrtf(0.5);	/* FBCF */
 
-  r->gain[4] = 0.7071067811865475;	/* AP (all-pass filter) */
-  r->gain[5] = 0.7071067811865475;	/* AP */
-  r->gain[6] = 0.7071067811865475;	/* AP */
+  r->gain[4] = sqrtf(0.5);	/* AP (all-pass filter) */
+  r->gain[5] = sqrtf(0.5);	/* AP */
+  r->gain[6] = sqrtf(0.5);	/* AP */
 
   /* delay lines */
   r->end[0] = 2999;
@@ -151,7 +149,7 @@ void freeReverb(struct b_reverb *r) {
 /* used during initialization, set array end pointers */
 static void setReverbPointers (struct b_reverb *r, int i) {
   if ((0 <= i) && (i < RV_NZ)) {
-    const int e = (r->end[i] * SampleRateD / 22050.0);
+    const int e = (r->end[i] * r->SampleRateD / 22050.0);
     r->delays[i] = (float *) realloc((void *)r->delays[i], (e + 2) * sizeof(float));
     if (!r->delays[i]) {
       fprintf (stderr, "FATAL: memory allocation failed for reverb.\n");
@@ -275,8 +273,9 @@ const ConfigDoc *reverbDoc () {
 /*
  *
  */
-void initReverb (struct b_reverb *r) {
+void initReverb (struct b_reverb *r, double rate) {
   int i;
+  r->SampleRateD = rate;
   for (i = 0; i < RV_NZ; i++) {
     setReverbPointers (r, i);
   }
@@ -308,7 +307,7 @@ float * reverb (struct b_reverb *r,
     int j;
     float y;
     const float xo = (*xp++);
-    const float x = r->y_1 + (inputGain * xo);
+    const float x = r->y_1 + (inputGain * xo) + DENORMAL_HACK;
     float xa = 0.0;
 
     /* First we do four feedback comb filters (ie parallel delay lines,
