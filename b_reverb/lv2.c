@@ -32,6 +32,8 @@ typedef enum {
   B3R_INPUT      = 0,
   B3R_OUTPUT     = 1,
   B3R_MIX        = 2,
+  B3R_GAIN_IN    = 3,
+  B3R_GAIN_OUT   = 4,
 } PortIndex;
 
 typedef struct {
@@ -39,6 +41,8 @@ typedef struct {
   float* output;
 
   float* mix;
+  float* gain_in;
+  float* gain_out;
   struct b_reverb *instance;
 } B3R;
 
@@ -75,6 +79,12 @@ connect_port(LV2_Handle instance,
     case B3R_MIX:
       b3r->mix = (float*)data;
       break;
+    case B3R_GAIN_IN:
+      b3r->gain_in = (float*)data;
+      break;
+    case B3R_GAIN_OUT:
+      b3r->gain_out = (float*)data;
+      break;
   }
 }
 
@@ -91,7 +101,12 @@ run(LV2_Handle instance, uint32_t n_samples)
   const float* const input  = b3r->input;
   float* const       output = b3r->output;
 
-  setReverbMix (b3r->instance, *(b3r->mix));
+  if(b3r->mix)
+    setReverbMix (b3r->instance, *(b3r->mix));
+  if(b3r->gain_in)
+    setReverbInputGain (b3r->instance, *(b3r->gain_in));
+  if(b3r->gain_out)
+    setReverbOutputGain (b3r->instance, *(b3r->gain_out));
   reverb(b3r->instance, input, output, n_samples);
 }
 

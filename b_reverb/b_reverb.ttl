@@ -34,6 +34,16 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
+		lv2:index 3 ;
+		lv2:symbol "gain_in" ;
+		lv2:name "Input Gain";
+		lv2:default 0.025;
+		lv2:minimum 0.0 ;
+		lv2:maximum 1.0 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
 		lv2:index 2 ;
 		lv2:symbol "mix" ;
 		lv2:name "Dry/Wet";
