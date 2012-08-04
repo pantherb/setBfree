@@ -213,11 +213,16 @@ static unsigned char ctrlUseC[CTRL_USE_MAX];
 
 /* Arrays of pointers to functions that handle controller values. */
 
-static void (*ctrlvecA[128])(unsigned char uc);
-static void (*ctrlvecB[128])(unsigned char uc);
-static void (*ctrlvecC[128])(unsigned char uc);
+typedef struct {
+  void (*fn)(void *, unsigned char);
+  void *d;
+} ctrl_function;
 
-static void (**ctrlvec[16]) (unsigned char); /**< control function table per MIDI channel */
+static ctrl_function ctrlvecA[128];
+static ctrl_function ctrlvecB[128];
+static ctrl_function ctrlvecC[128];
+
+static ctrl_function *ctrlvec[16]; /**< control function table per MIDI channel */
 
 typedef uint8_t midiccflags_t;
 static midiccflags_t ctrlflg[16][128]; /**< binary flags for each control  -- binary OR */
@@ -251,7 +256,7 @@ static void parseCCFlags(midiccflags_t *f, char *param) {
  * This is the default (empty) controller function. It does nothing at all
  * and therefore we initialize the ctrlvec tables with pointers to it.
  */
-static void emptyControlFunction (unsigned char uc) {}
+static void emptyControlFunction (void *d, unsigned char uc) {}
 
 /*
  * Assigns a control function to a MIDI controller.
@@ -263,28 +268,25 @@ static void emptyControlFunction (unsigned char uc) {}
  * @param controller MIDI controller number
  * @param f          Pointer to control function to assign to controller
  */
-static void assignMIDIControllerFunction (void (* vec []) (unsigned char),
+static void assignMIDIControllerFunction (ctrl_function *vec,
 					  unsigned char controller,
-					  void (*f) (unsigned char)) {
+					  void (*f) (void *, unsigned char),
+					  void *d) {
   assert (vec != NULL);
   if (f != NULL) {
-    if ((vec[controller] != emptyControlFunction) &&
-	(vec[controller] != NULL)) {
+    if ((vec[controller].fn != emptyControlFunction) &&
+	(vec[controller].fn != NULL)) {
       fprintf (stderr,
 	       "midiIn.c:WARNING, multiple allocation of controller %d!\n",
 	       (int) controller);
     }
-    vec[controller] = f;
-
-#if 0
-    if (vec == ctrlvecA) {
-      fprintf (stdout, "A[%d]=%x\n", (int) controller, f);
-    }
-#endif
+    vec[controller].fn = f;
+    vec[controller].d = d;
 
   }
   else {
-    vec[controller] = emptyControlFunction;
+    vec[controller].fn = emptyControlFunction;
+    vec[controller].d = NULL;
   }
 }
 
@@ -297,20 +299,20 @@ static void assignMIDIControllerFunction (void (* vec []) (unsigned char),
  *                  implemented by the function pointed to by the f parameter.
  * @param f         Pointer to function that acts on the controller message.
  */
-void useMIDIControlFunction (char * cfname, void (* f) (unsigned char)) {
+void useMIDIControlFunction (char * cfname, void (* f) (void *, unsigned char), void *d) {
 
   int x = getCCFunctionId (cfname);
 
   assert (-1 < x);
 
   if (ctrlUseA[x] < 128) {
-    assignMIDIControllerFunction (ctrlvecA, ctrlUseA[x], f);
+    assignMIDIControllerFunction (ctrlvecA, ctrlUseA[x], f, d);
   }
   if (ctrlUseB[x] < 128) {
-    assignMIDIControllerFunction (ctrlvecB, ctrlUseB[x], f);
+    assignMIDIControllerFunction (ctrlvecB, ctrlUseB[x], f, d);
   }
   if (ctrlUseC[x] < 128) {
-    assignMIDIControllerFunction (ctrlvecC, ctrlUseC[x], f);
+    assignMIDIControllerFunction (ctrlvecC, ctrlUseC[x], f, d);
   }
 
 }
@@ -325,9 +327,12 @@ void initControllerTable () {
     for (chn = 0; chn < 16; chn++) {
       ctrlflg[chn][i] = 0;
     }
-    ctrlvecA[i] = emptyControlFunction;
-    ctrlvecB[i] = emptyControlFunction;
-    ctrlvecC[i] = emptyControlFunction;
+    ctrlvecA[i].fn = emptyControlFunction;
+    ctrlvecB[i].fn = emptyControlFunction;
+    ctrlvecC[i].fn = emptyControlFunction;
+    ctrlvecA[i].d = NULL;
+    ctrlvecB[i].d = NULL;
+    ctrlvecC[i].d = NULL;
   }
 }
 
@@ -879,12 +884,12 @@ void process_midi_event(const struct bmidi_event_t *ev) {
 	  );
       }
 #endif
-      if (ctrlvec[ev->channel] && ctrlvec[ev->channel][ev->control_param]) {
+      if (ctrlvec[ev->channel] && ctrlvec[ev->channel][ev->control_param].fn) {
 	uint8_t val = ev->control_value & 0x7f;
 	if (ctrlflg[ev->channel][ev->control_param] & MFLAG_INV) {
 	  val = 127 - val;
 	}
-	(ctrlvec[ev->channel][ev->control_param])(val);
+	(ctrlvec[ev->channel][ev->control_param].fn)(ctrlvec[ev->channel][ev->control_param].d, val);
       }
       break;
     default:

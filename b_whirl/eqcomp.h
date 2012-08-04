@@ -48,17 +48,18 @@ extern void eqCompute (int type,
 		       double fqHz,
 		       double Q,
 		       double dbG,
-		       double * C);
+		       double * C,
+					 double SampleRateD);
 
-extern void eqcLowPass_f   (double fqHz, double Q, float * F);
-extern void eqcHighPass_f  (double fqHz, double Q, float * F);
-extern void eqcBandPass0_f (double fqHz, double Q, float * F);
-extern void eqcBandPass1_f (double fqHz, double Q, float * F);
-extern void eqcNotch_f     (double fqHz, double Q, float * F);
-extern void eqcAllPass_f   (double fqHz, double Q, float * F);
-extern void eqcPeaking_f   (double fqHz, double Q, double dbGain, float * F);
-extern void eqcPeaking_f   (double fqHz, double Q, double dbGain, float * F);
-extern void eqcLowShelf_f  (double fqHz, double Q, double dbGain, float * F);
-extern void eqcHighShelf_f (double fqHz, double Q, double dbGain, float * F);
+extern void eqcLowPass_f   (double fqHz, double Q, float * F, double SR);
+extern void eqcHighPass_f  (double fqHz, double Q, float * F, double SR);
+extern void eqcBandPass0_f (double fqHz, double Q, float * F, double SR);
+extern void eqcBandPass1_f (double fqHz, double Q, float * F, double SR);
+extern void eqcNotch_f     (double fqHz, double Q, float * F, double SR);
+extern void eqcAllPass_f   (double fqHz, double Q, float * F, double SR);
+extern void eqcPeaking_f   (double fqHz, double Q, double dbGain, float * F, double SR);
+extern void eqcPeaking_f   (double fqHz, double Q, double dbGain, float * F, double SR);
+extern void eqcLowShelf_f  (double fqHz, double Q, double dbGain, float * F, double SR);
+extern void eqcHighShelf_f (double fqHz, double Q, double dbGain, float * F, double SR);
 
 #endif /* EQCOMP_H */

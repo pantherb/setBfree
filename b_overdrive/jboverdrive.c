@@ -45,7 +45,7 @@ float p_globfeed = 0.5826;
 float p_gainin   = 0.3567;
 float p_gainout  = 0.07873;
 
-void useMIDIControlFunction (char * cfname, void (* f) (unsigned char)) {}
+void useMIDIControlFunction (char * cfname, void (* f) (void *, unsigned char), void *d) {}
 int getConfigParameter_fr (char * par, ConfigContext * cfg, float * fp, float lowInc, float highInc) {return 0;}
 int getConfigParameter_f (char * par, ConfigContext * cfg, float * fp) {return 0;}
 
@@ -75,7 +75,7 @@ int oscb_##PARAM (const char *path, const char *types, lo_arg **argv, int argc, 
   float v = argv[0]->f; \
   if (v<0 || v>1.0) return (0); \
   PARAM = v; \
-  FN(PARAM); \
+  FN(NULL, PARAM); \
   return(0); \
 }
 
@@ -318,13 +318,13 @@ int main (int argc, char**argv) {
   signal (SIGINT, catchsig);
 #endif
 
-  fctl_biased     (p_bias);
-  fctl_biased_fb  (p_feedback);
-  fctl_sagtoBias  (p_sagtobias);
-  fctl_biased_fb2 (p_postfeed);
-  fctl_biased_gfb (p_globfeed);
-  fsetInputGain   (p_gainin);
-  fsetOutputGain  (p_gainout);
+  fctl_biased     (NULL, p_bias);
+  fctl_biased_fb  (NULL, p_feedback);
+  fctl_sagtoBias  (NULL, p_sagtobias);
+  fctl_biased_fb2 (NULL, p_postfeed);
+  fctl_biased_gfb (NULL, p_globfeed);
+  fsetInputGain   (NULL, p_gainin);
+  fsetOutputGain  (NULL, p_gainout);
 
   jack_activate(j_client);
   connect_jack_ports();

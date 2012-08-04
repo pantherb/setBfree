@@ -27,17 +27,17 @@
 
 #define INTWRAP(FN) \
   vspace (1); \
-  codeln ("void f"FN" (float f) {"); \
+  codeln ("void f"FN" (void *d, float f) {"); \
   pushIndent (); \
-  codeln (FN" ((unsigned char)(f*127.0));"); \
+  codeln (FN" (d, (unsigned char)(f*127.0));"); \
   popIndent (); \
   codeln ("}");
 
 #define FLOATWRAP(FN) \
   vspace (1); \
-  codeln ("void "FN" (unsigned char uc) {"); \
+  codeln ("void "FN" (void *d, unsigned char uc) {"); \
   pushIndent (); \
-  codeln ("f"FN" (uc/127.0);"); \
+  codeln ("f"FN" (d, uc/127.0);"); \
   popIndent (); \
   codeln ("}");
 

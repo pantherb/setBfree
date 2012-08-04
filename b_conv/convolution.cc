@@ -103,7 +103,7 @@ void fsetConvolutionMix (float g) {
   dry = 1.0 - wet;
 }
 
-void setConvolutionMix (unsigned char u) {
+void setConvolutionMix (void *d, unsigned char u) {
   fsetConvolutionMix(u/127.0);
 }
 
@@ -261,7 +261,7 @@ void initConvolution (
     exit (1);
   }
 
-  ::useMIDIControlFunction (_S"convolution.mix", setConvolutionMix);
+  ::useMIDIControlFunction (_S"convolution.mix", setConvolutionMix, NULL);
 }
 
 void freeConvolution () {

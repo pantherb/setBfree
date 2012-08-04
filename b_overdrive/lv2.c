@@ -121,7 +121,7 @@ activate(LV2_Handle instance)
 #define SETPARAM(FN, NAME) \
   if (b3o->NAME) { \
     if (b3o->o_##NAME != *(b3o->NAME)) { \
-      FN (*(b3o->NAME)); \
+      FN (NULL, *(b3o->NAME)); \
       b3o->o_##NAME = *(b3o->NAME); \
     } \
   }
@@ -185,7 +185,7 @@ lv2_descriptor(uint32_t index)
     }
 }
 
-void useMIDIControlFunction (char * cfname, void (* f) (unsigned char)) {}
+void useMIDIControlFunction (char * cfname, void (* f) (void *, unsigned char), void *d) {}
 int getConfigParameter_fr (char * par, ConfigContext * cfg, float * fp, float lowInc, float highInc) {return 0;}
 int getConfigParameter_f (char * par, ConfigContext * cfg, float * fp) {return 0;}
 /* vi:set ts=8 sts=2 sw=2: */

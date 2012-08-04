@@ -58,5 +58,6 @@ extern int    SampleRateI;
 /* class instances */
 #include "reverb.h"
 extern struct b_reverb *inst_reverb;
+extern struct b_whirl *inst_whirl;
 
 #endif /* MAIN_H */

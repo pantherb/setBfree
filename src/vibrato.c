@@ -154,7 +154,7 @@ void setVibrato (int select) {
 /*
  * Implements the vibrato knob response to a MIDI controller.
  */
-static void setVibratoFromMIDI (unsigned char u) {
+static void setVibratoFromMIDI (void *d, unsigned char u) {
   switch (u / 22) {
   case 0:
     setVibrato (VIB1);
@@ -180,7 +180,7 @@ static void setVibratoFromMIDI (unsigned char u) {
 /*
  * Vibrato routing.
  */
-static void setVibratoRoutingFromMIDI (unsigned char uc) {
+static void setVibratoRoutingFromMIDI (void *d, unsigned char uc) {
   switch (uc / 32) {
   case 0:
     setVibratoUpper (FALSE);
@@ -271,8 +271,8 @@ void initVibrato () {
   setScannerFrequency (vibFqHertz);
   initIncrementTables ();
   setVibrato (0);
-  useMIDIControlFunction ("vibrato.knob", setVibratoFromMIDI);
-  useMIDIControlFunction ("vibrato.routing", setVibratoRoutingFromMIDI);
+  useMIDIControlFunction ("vibrato.knob", setVibratoFromMIDI, NULL);
+  useMIDIControlFunction ("vibrato.routing", setVibratoRoutingFromMIDI, NULL);
 }
 
 /*

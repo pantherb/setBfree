@@ -75,7 +75,7 @@ void hdr_biased () {
 
 void cfg_biased () {
   commentln ("Computes the constants for transfer curve");
-  codeln ("void cfg_biased (float new_bias) {");
+  codeln ("void cfg_biased (void *d, float new_bias) {");
   pushIndent ();
   codeln ("if (0.0 < new_bias) {");
   pushIndent ();
@@ -94,14 +94,14 @@ void cfg_biased () {
 }
 
 void ctl_biased () {
-  codeln ("void fctl_biased (float u) {");
+  codeln ("void fctl_biased (void *d, float u) {");
   pushIndent ();
   sprintf (buf, "float v = %g + ((%g - %g) * (u * u));",
 	   BIAS_LO,
 	   BIAS_HI,
 	   BIAS_LO);
   codeln (buf);
-  codeln ("cfg_biased (v);");
+  codeln ("cfg_biased (NULL, v);");
   popIndent ();
   codeln ("}");
 	FLOATWRAP("ctl_biased")
@@ -109,7 +109,7 @@ void ctl_biased () {
 #ifdef ADWS_PRE_DIFF
   vspace (3);
   commentln ("ovt_biased:Sets the positive feedback");
-  codeln ("void fctl_biased_fb (float u) {");
+  codeln ("void fctl_biased_fb (void *d, float u) {");
   pushIndent ();
   sprintf (buf, "adwFb = %g * u;", ADWS_FB_MAX);
   codeln (buf);
@@ -124,7 +124,7 @@ void ctl_biased () {
 #ifdef SAG_EMULATION
   vspace (3);
   commentln ("ovt_biased: Sets sag impact");
-  codeln ("void fctl_sagtoBias (float u) {");
+  codeln ("void fctl_sagtoBias (void *d, float u) {");
   pushIndent ();
   sprintf (buf, "sagZgb = %g + ((%g - %g) * u);",
 	   SAG_ZGB_LO,
@@ -141,7 +141,7 @@ void ctl_biased () {
 #ifdef ADWS_POST_DIFF
   vspace (3);
   commentln ("ovt_biased: Postdiff feedback control");
-  codeln ("void fctl_biased_fb2 (float u) {");
+  codeln ("void fctl_biased_fb2 (void *d, float u) {");
   pushIndent ();
   sprintf (buf, "adwFb2 = %g * u;", ADWS_FB2_MAX);
   codeln (buf);
@@ -155,7 +155,7 @@ void ctl_biased () {
 #ifdef ADWS_GFB
   vspace (3);
   commentln ("ovt_biased: Global feedback control");
-  codeln ("void fctl_biased_gfb (float u) {");
+  codeln ("void fctl_biased_gfb (void *d, float u) {");
   pushIndent ();
   sprintf (buf, "adwGfb = %g * u;", ADWS_GFB_MAX);
   codeln (buf);
@@ -169,7 +169,7 @@ void ctl_biased () {
 #ifdef ADWS_FAT_CTRL
   vspace (3);
   commentln ("ovt_biased: Fat control");
-  codeln ("void ctl_biased_fat (unsigned char uc) {");
+  codeln ("void ctl_biased_fat (void *d, unsigned char uc) {");
   pushIndent ();
   codeln ("if (uc < 64) {");
   pushIndent ();
@@ -243,7 +243,7 @@ void configDoc (int i, void * vp) {
 }
 
 void ini_biased () {
-  sprintf (buf, "cfg_biased (%g);", BIAS);
+  sprintf (buf, "cfg_biased (NULL, %g);", BIAS);
   codeln (buf);
 #ifdef ADWS_PRE_DIFF
   /* This is redundant if we have initialized the static var correctly */

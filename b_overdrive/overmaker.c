@@ -1167,9 +1167,9 @@ void legacyInit () {
 
 #ifdef PRE_FILTER_TYPE
   if (generatePreFilter) {
-    codeln ("useMIDIControlFunction (\"xov.prefilter.hz\", setPreFilterHz);");
-    codeln ("useMIDIControlFunction (\"xov.prefilter.q\", setPreFilterQ);");
-    codeln ("useMIDIControlFunction(\"xov.prefilter.gain\", setPreFilterG);");
+    codeln ("useMIDIControlFunction (\"xov.prefilter.hz\", setPreFilterHz, NULL);");
+    codeln ("useMIDIControlFunction (\"xov.prefilter.q\", setPreFilterQ, NULL);");
+    codeln ("useMIDIControlFunction(\"xov.prefilter.gain\", setPreFilterG, NULL);");
     sprintf (buf, "preFilterDefine (%d, pr_F, pr_Q, pr_G);", PRE_FILTER_TYPE);
     codeln (buf);
   }
@@ -1177,9 +1177,9 @@ void legacyInit () {
 
 #ifdef POST_FILTER_TYPE
   if (generatePostFilter) {
-    codeln ("useMIDIControlFunction (\"xov.postfilter.hz\", setPostFilterHz);");
-    codeln ("useMIDIControlFunction (\"xov.postfilter.q\", setPostFilterQ);");
-    codeln ("useMIDIControlFunction (\"xov.postfilter.gain\", setPostFilterG);");
+    codeln ("useMIDIControlFunction (\"xov.postfilter.hz\", setPostFilterHz, NULL);");
+    codeln ("useMIDIControlFunction (\"xov.postfilter.q\", setPostFilterQ, NULL);");
+    codeln ("useMIDIControlFunction (\"xov.postfilter.gain\", setPostFilterG, NULL);");
     sprintf (buf,"postFilterDefine (%d, de_F, de_Q, de_G);", POST_FILTER_TYPE);
     codeln (buf);
   }
@@ -1189,30 +1189,30 @@ void legacyInit () {
   /* ================================================================ */
 
 #ifdef TR_BIASED
-  sprintf (buf, "useMIDIControlFunction (\"xov.ctl_biased\", ctl_biased);");
+  sprintf (buf, "useMIDIControlFunction (\"xov.ctl_biased\", ctl_biased, NULL);");
   codeln (buf);
 
 #ifdef ADWS_PRE_DIFF
   sprintf (buf,
-	   "useMIDIControlFunction (\"xov.ctl_biased_fb\", ctl_biased_fb);");
+	   "useMIDIControlFunction (\"xov.ctl_biased_fb\", ctl_biased_fb, NULL);");
   codeln (buf);
 #endif /* ADWS_PRE_DIFF */
 
 #ifdef ADWS_POST_DIFF
   sprintf (buf,
-	   "useMIDIControlFunction (\"xov.ctl_biased_fb2\", ctl_biased_fb2);");
+	   "useMIDIControlFunction (\"xov.ctl_biased_fb2\", ctl_biased_fb2, NULL);");
   codeln (buf);
 #endif /* ADWS_POST_DIFF */
 
 #ifdef ADWS_GFB
   sprintf (buf,
-	   "useMIDIControlFunction (\"xov.ctl_biased_gfb\", ctl_biased_gfb);");
+	   "useMIDIControlFunction (\"xov.ctl_biased_gfb\", ctl_biased_gfb, NULL);");
   codeln (buf);
 #endif /* ADWS_GFB */
 
 #ifdef SAG_EMULATION
   sprintf (buf,
-	   "useMIDIControlFunction (\"xov.ctl_sagtobias\", ctl_sagtoBias);");
+	   "useMIDIControlFunction (\"xov.ctl_sagtobias\", ctl_sagtoBias, NULL);");
   codeln (buf);
 #endif /* SAG_EMULATION */
 
@@ -1220,7 +1220,7 @@ void legacyInit () {
   sprintf
     (
      buf,
-     "useMIDIControlFunction (\"overdrive.character\", ctl_biased_fat);"
+     "useMIDIControlFunction (\"overdrive.character\", ctl_biased_fat, NULL);"
      );
   codeln (buf);
 #endif /* ADWS_FAT_CTRL */
@@ -1232,28 +1232,28 @@ void legacyInit () {
 
 
 #ifdef INPUT_GAIN
-  sprintf (buf, "useMIDIControlFunction (\"overdrive.inputgain\", setInputGain);");
+  sprintf (buf, "useMIDIControlFunction (\"overdrive.inputgain\", setInputGain, NULL);");
   codeln (buf);
 #endif /* INPUT_GAIN */
 
 #ifdef OUTPUT_GAIN
-  sprintf (buf, "useMIDIControlFunction (\"overdrive.outputgain\", setOutputGain);");
+  sprintf (buf, "useMIDIControlFunction (\"overdrive.outputgain\", setOutputGain, NULL);");
   codeln (buf);
 #endif /* OUTPUT_GAIN */
 
 #ifdef PRE_DC_OFFSET
-  codeln ("useMIDIControlFunction (\"xov.pre_dc_offset\", setPreDCOffset);");
+  codeln ("useMIDIControlFunction (\"xov.pre_dc_offset\", setPreDCOffset, NULL);");
 #endif /* PRE_DC_OFFSET */
 
 #ifdef CLEAN_MIX
-  sprintf (buf, "useMIDIControlFunction (\"xov.mix.dry\", setCleanMix);");
+  sprintf (buf, "useMIDIControlFunction (\"xov.mix.dry\", setCleanMix, NULL);");
   codeln (buf);
 #endif /* CLEAN_MIX */
 
 #ifdef INPUT_COMPRESS
-  codeln ("useMIDIControlFunction (\"xov.compressor.threshold\", setIpcThreshold);");
-  codeln ("useMIDIControlFunction (\"xov.compressor.attack\", setIpcAttack);");
-  codeln ("useMIDIControlFunction (\"xov.compressor.release\", setIpcRelease);");
+  codeln ("useMIDIControlFunction (\"xov.compressor.threshold\", setIpcThreshold, NULL);");
+  codeln ("useMIDIControlFunction (\"xov.compressor.attack\", setIpcAttack, NULL);");
+  codeln ("useMIDIControlFunction (\"xov.compressor.release\", setIpcRelease, NULL);");
 #endif /* INPUT_COMPRESS */
   popIndent ();
   codeln ("}");
@@ -1284,21 +1284,21 @@ void legacyConfig () {
 
 #ifdef ADWS_GFB
   sprintf (buf,
-	   "else if (getConfigParameter_f (\"%s\", cfg, &v)) { %s(v); return 1; }",
+	   "else if (getConfigParameter_f (\"%s\", cfg, &v)) { %s(NULL, v); return 1; }",
 	   "xov.ctl_biased_gfb", "fctl_biased_gfb");
   codeln (buf);
 #endif
 
 #ifdef TR_BIASED
   sprintf (buf,
-	   "else if (getConfigParameter_f (\"%s\", cfg, &v)) { %s(v); return 1; }",
+	   "else if (getConfigParameter_f (\"%s\", cfg, &v)) { %s(NULL, v); return 1; }",
 	   "xov.ctl_biased", "fctl_biased");
   codeln (buf);
 #endif
 
 #ifdef ADWS_FAT_CTRL
   sprintf (buf,
-	   "else if (getConfigParameter_f (\"%s\", cfg, &v)) { %s(v); return 1; }",
+	   "else if (getConfigParameter_f (\"%s\", cfg, &v)) { %s(NULL, v); return 1; }",
 	   "overdrive.character", "fctl_biased_fat");
   codeln (buf);
 #endif /* ADWS_FAT_CTRL */
@@ -1445,7 +1445,7 @@ void preFilterControl () {
   char buf[BUFSZ];
   vspace (3);
   commentln ("Pre-filter runtime control");
-  codeln ("void setPreFilterHz (unsigned char uc) {");
+  codeln ("void setPreFilterHz (void *d, unsigned char uc) {");
   pushIndent ();
 
   codeln ("double u = (double) uc;");
@@ -1463,7 +1463,7 @@ void preFilterControl () {
 
   vspace (3);
 
-  codeln ("void setPreFilterQ (unsigned char uc) {");
+  codeln ("void setPreFilterQ (void *d, unsigned char uc) {");
   pushIndent ();
   sprintf (buf,
 	   "pr_Q = %g + ((%g - %g) * (((double) uc) / 127.0));",
@@ -1478,7 +1478,7 @@ void preFilterControl () {
 
   vspace (3);
 
-  codeln ("void setPreFilterG (unsigned char uc) {");
+  codeln ("void setPreFilterG (void *d, unsigned char uc) {");
   pushIndent ();
   sprintf (buf,
 	   "pr_G = %g + ((%g - %g) * (((double) uc) / 127.0));",
@@ -1501,7 +1501,7 @@ void postFilterControl () {
   char buf[BUFSZ];
   vspace (3);
   commentln ("Post-filter runtime control");
-  codeln ("void setPostFilterHz (unsigned char uc) {");
+  codeln ("void setPostFilterHz (void *d, unsigned char uc) {");
   pushIndent ();
 
   codeln ("double u = (double) uc;");
@@ -1519,7 +1519,7 @@ void postFilterControl () {
 
   vspace (3);
 
-  codeln ("void setPostFilterQ (unsigned char uc) {");
+  codeln ("void setPostFilterQ (void *d, unsigned char uc) {");
   pushIndent ();
   sprintf (buf,
 	   "de_Q = %g + ((%g - %g) * (((double) uc) / 127.0));",
@@ -1534,7 +1534,7 @@ void postFilterControl () {
 
   vspace (3);
 
-  codeln ("void setPostFilterG (unsigned char uc) {");
+  codeln ("void setPostFilterG (void *d, unsigned char uc) {");
   pushIndent ();
   sprintf (buf,
 	   "de_G = %g + ((%g - %g) * (((double) uc) / 127.0));",
@@ -1558,7 +1558,7 @@ void postFilterControl () {
 void outputGainControl () {
   char buf[BUFSZ];
   vspace (3);
-  codeln ("void setOutputGain (unsigned char uc) {");
+  codeln ("void setOutputGain (void *d, unsigned char uc) {");
   pushIndent ();
   sprintf (buf, "outputGain = %g + ((%g - %g) * (((float) uc) / 127.0));",
 	   OUTPUT_GAIN_LO,
@@ -1577,7 +1577,7 @@ void outputGainControl () {
 void inputGainControl () {
   char buf[BUFSZ];
   vspace (3);
-  codeln ("void setInputGain (unsigned char uc) {");
+  codeln ("void setInputGain (void *d, unsigned char uc) {");
   pushIndent ();
   sprintf (buf, "inputGain = %g + ((%g - %g) * (((float) uc) / 127.0));",
 	   INPUT_GAIN_LO,
@@ -1594,7 +1594,7 @@ void inputGainControl () {
 
 #ifdef PRE_DC_OFFSET
 void preDCOffsetControl () {
-  codeln ("void setPreDCOffset (unsigned char uc) {");
+  codeln ("void setPreDCOffset (void *d, unsigned char uc) {");
   pushIndent ();
 /*   codeln ("preDCOffset = 1.0 + ((((float) uc) / 127.0) * -2.0);"); */
   codeln ("preDCOffset = (((float) uc) / 511.0);");
@@ -1607,7 +1607,7 @@ void preDCOffsetControl () {
 
 #ifdef CLEAN_MIX
 void cleanMixControl () {
-  codeln ("void setCleanMix (unsigned char uc) {");
+  codeln ("void setCleanMix (void *d, unsigned char uc) {");
   pushIndent ();
   codeln ("float v = ((float) uc) / 127.0;");
   codeln ("mixClean = v;");
@@ -1621,7 +1621,7 @@ void cleanMixControl () {
 void inputCompressControl () {
   char buf[BUFSZ];
 
-  codeln ("void setIpcThreshold (unsigned char uc) {");
+  codeln ("void setIpcThreshold (void *d, unsigned char uc) {");
   pushIndent ();
   codeln ("float ratio = ((float) uc) / 127.0;");
   sprintf (buf, "ipcThreshold = %g + ((%g - %g) * ratio);",
@@ -1636,7 +1636,7 @@ void inputCompressControl () {
 
   vspace (3);
 
-  codeln ("void setIpcAttack (unsigned char uc) {");
+  codeln ("void setIpcAttack (void *d, unsigned char uc) {");
   pushIndent ();
   codeln ("float ratio = ((float) uc) / 127.0;");
   sprintf (buf, "ipcGainReduce = %g + ((%g - %g) * ratio);",
@@ -1649,7 +1649,7 @@ void inputCompressControl () {
 
   vspace (3);
 
-  codeln ("void setIpcRelease (unsigned char uc) {");
+  codeln ("void setIpcRelease (void *d, unsigned char uc) {");
   pushIndent ();
   codeln ("float ratio = ((float) uc) / 127.0;");
   sprintf (buf, "ipcGainRecover = %g + ((%g - %g) * ratio);",

@@ -111,6 +111,7 @@ static jack_default_audio_sample_t bufD [2][BUFFER_SIZE_SAMPLES];
 static int synth_ready = 0;
 
 struct b_reverb *inst_reverb = NULL;
+struct b_whirl *inst_whirl = NULL;
 
 void mixdown (float **inout, const float **in2, int nchannels, int nsamples) {
   int c,i;
@@ -192,7 +193,8 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
       reverb (inst_reverb, bufB, bufC, BUFFER_SIZE_SAMPLES);
 
 #ifdef HAVE_ZITACONVOLVE
-      whirlProc2(bufC,
+      whirlProc2(inst_whirl, 
+	  bufC,
 	  NULL, NULL,
 	  bufH[0], bufH[1],
 	  bufD[0], bufD[1],
@@ -205,7 +207,7 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
       convolve(horn, out, 2, BUFFER_SIZE_SAMPLES);
       mixdown(out, drum, AUDIO_CHANNELS, BUFFER_SIZE_SAMPLES);
 #else
-      whirlProc(bufC, bufJ[0], bufJ[1], BUFFER_SIZE_SAMPLES);
+      whirlProc(inst_whirl, bufC, bufJ[0], bufJ[1], BUFFER_SIZE_SAMPLES);
 #endif
     }
 
@@ -321,7 +323,14 @@ static void connect_jack_ports() {
  * Instantiate /classes/.
  */
 static void allocAll () {
-  inst_reverb = allocReverb();
+  if (! (inst_reverb = allocReverb())) {
+    fprintf (stderr, "FATAL: memory allocation failed for reverb.\n");
+    exit(1);
+  }
+  if (! (inst_whirl = allocWhirl())) {
+    fprintf (stderr, "FATAL: memory allocation failed for whirl.\n");
+    exit(1);
+  }
 }
 
 /*
@@ -329,6 +338,7 @@ static void allocAll () {
  */
 static void freeAll () {
   freeReverb(inst_reverb);
+  freeWhirl(inst_whirl);
 
   freeToneGenerator();
 #ifdef HAVE_ZITACONVOLVE
@@ -368,7 +378,7 @@ static void initAll () {
 
   fprintf (stderr, "Whirl : ");
   fflush (stderr);
-  initWhirl ();
+  initWhirl (inst_whirl, SampleRateD);
 
 #ifdef HAVE_ZITACONVOLVE
   fprintf (stderr, "Convolve : ");

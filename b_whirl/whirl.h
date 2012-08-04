@@ -42,6 +42,7 @@ typedef struct _revcontrol {
 
 struct b_whirl {
 
+  double SampleRateD;
   int bypass;        ///< if set to 1 completely bypass this effect
   double hnBreakPos; ///< where to stop horn - 0: free, 1.0: front-center, ]0..1] clockwise circle */
   double drBreakPos; ///< where to stop drum
@@ -71,8 +72,6 @@ struct b_whirl {
   int   adi1;
   int   adi2;
 
-  double ipx;
-  double ipy;
 
 /*
  * Writing positions (actually, indexes into hnFwdDispl[]):
@@ -91,25 +90,7 @@ struct b_whirl {
   double hornAngleGRD;  /* 0..1 */
   double drumAngleGRD;
 
-  int hornAngle;
-  int drumAngle;
-
-/* rotational frequency and time-constats were taken from the paper
- * "Discrete Time Emulation of the Leslie Speaker"
- * by Jorge Herrera, Craig Hanson, and Jonathan S. Abel
- * Presented at the 127th Convention
- * 2009 October 9–12 New York NY, USA
- *
- *  horn: fast:7.056 Hz, slow: 0.672 Hz
- *  drum: fast:5.955 Hz, slow: 0.101 Hz (wrong?)
- *
- * alternate values:
- * http://www.dairiki.org/HammondWiki/LeslieRotationSpeed 
- *  horn: fast: 400 RPM, slow: 48 RPM
- *  drum: fast: 342 RPM, slow: 40 RPM
- */
-
-/* target speed */
+/* target speed - rotational frequency */
   float hornRPMslow;
   float hornRPMfast;
   float drumRPMslow;
@@ -158,7 +139,7 @@ struct b_whirl {
 /* Single read position, incremented by one, always. */
 
   unsigned int outpos;
-
+  float z[4];
 
   float drfL[8];/* Drum filter */
   float drfR[8];/* Drum filter */
@@ -211,18 +192,21 @@ struct b_whirl {
 
 };
 
-extern int whirlConfig (ConfigContext * cfg);
+extern struct b_whirl *allocWhirl();
+extern void freeWhirl(struct b_whirl *w);
+extern int whirlConfig (struct b_whirl *w, ConfigContext * cfg);
 extern const ConfigDoc *whirlDoc ();
 
-extern void initWhirl ();
-extern void setRevSelect (int n);
+extern void initWhirl (struct b_whirl *w, double rate);
 
-extern void whirlProc (const float * inbuffer,
+extern void whirlProc (struct b_whirl *w,
+		       const float * inbuffer,
 		       float * outbL,
 		       float * outbR,
 		       size_t bufferLengthSamples);
 
-extern void whirlProc2 (const float * inbuffer,
+extern void whirlProc2 (struct b_whirl *w,
+			const float * inbuffer,
 		        float * outL, float * outR,
 		        float * outHL, float * outHR,
 		        float * outDL, float * outDR,
@@ -232,14 +216,15 @@ extern void whirlProc2 (const float * inbuffer,
 #define WHIRL_SLOW 1
 #define WHIRL_STOP 0
 
-void useRevOption (int n);
-void isetHornFilterAType (int v);
-void fsetHornFilterAFrequency (float v);
-void fsetHornFilterAQ (float v);
-void fsetHornFilterAGain (float v);
-void isetHornFilterBType (int v);
-void fsetHornFilterBFrequency (float v);
-void fsetHornFilterBQ (float v);
-void fsetHornFilterBGain (float v);
+extern void setRevSelect (struct b_whirl *w, int n);
+extern void useRevOption (struct b_whirl *w, int n);
+extern void isetHornFilterAType (struct b_whirl *w, int v);
+extern void fsetHornFilterAFrequency (struct b_whirl *w, float v);
+extern void fsetHornFilterAQ (struct b_whirl *w, float v);
+extern void fsetHornFilterAGain (struct b_whirl *w, float v);
+extern void isetHornFilterBType (struct b_whirl *w, int v);
+extern void fsetHornFilterBFrequency (struct b_whirl *w, float v);
+extern void fsetHornFilterBQ (struct b_whirl *w, float v);
+extern void fsetHornFilterBGain (struct b_whirl *w, float v);
 #endif /* WHIRL_H */
 /* vi:set ts=8 sts=2 sw=2: */

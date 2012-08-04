@@ -54,7 +54,12 @@ instantiate(const LV2_Descriptor*     descriptor,
 {
   B3R* b3r = (B3R*)calloc(1, sizeof(B3R));
   if(!b3r) { return NULL ;}
-  b3r->instance = allocReverb();
+
+  if (!(b3r->instance = allocReverb())) {
+    free(b3r);
+    return NULL;
+  }
+
   initReverb(b3r->instance, rate);
 
   return (LV2_Handle)b3r;

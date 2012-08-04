@@ -61,6 +61,7 @@ typedef struct {
   uint32_t event_id;
 
   struct b_reverb *inst_reverb;
+  struct b_whirl *inst_whirl;
 } B3S;
 
 /* main synth wrappers */
@@ -73,6 +74,7 @@ int SampleRateI = 48000;
 
 //temp global -- src/cfgParser.c, src/program.c
 struct b_reverb *inst_reverb = NULL;
+struct b_whirl *inst_whirl = NULL;
 
 void initSynth(B3S *b3s, double rate) {
   // equicalent to ../src/main.c main()
@@ -86,7 +88,7 @@ void initSynth(B3S *b3s, double rate) {
   initToneGenerator ();
   initPreamp ();
   initReverb (b3s->inst_reverb, rate);
-  initWhirl ();
+  initWhirl (b3s->inst_whirl, rate);
   /* end - initAll() */
 
   initMidiTables();
@@ -97,7 +99,7 @@ void initSynth(B3S *b3s, double rate) {
   setDrawBars (2, defaultPreset);
 
 #if 1
-  setRevSelect (WHIRL_SLOW);
+  setRevSelect (b3s->inst_whirl, WHIRL_SLOW);
 #endif
 }
 
@@ -125,7 +127,7 @@ void synthSound (B3S *instance, uint32_t nframes, float **out) {
       oscGenerateFragment (bufA, BUFFER_SIZE_SAMPLES);
       preamp (bufA, bufB, BUFFER_SIZE_SAMPLES);
       reverb (instance->inst_reverb, bufB, bufC, BUFFER_SIZE_SAMPLES);
-      whirlProc(bufC, bufJ[0], bufJ[1], BUFFER_SIZE_SAMPLES);
+      whirlProc(instance->inst_whirl, bufC, bufJ[0], bufJ[1], BUFFER_SIZE_SAMPLES);
     }
 
     int nread = MIN(nremain, (BUFFER_SIZE_SAMPLES - boffset));
@@ -164,7 +166,9 @@ instantiate(const LV2_Descriptor*     descriptor,
     }
   }
   b3s->inst_reverb = allocReverb();
+  b3s->inst_whirl = allocWhirl();
   inst_reverb = b3s->inst_reverb; // XXX temp. until src/*.c is updated.
+  inst_whirl = b3s->inst_whirl; // XXX temp. until src/*.c is updated.
 
   initSynth(b3s, rate);
 
@@ -230,6 +234,7 @@ cleanup(LV2_Handle instance)
 {
   B3S* b3s = (B3S*)instance;
   freeReverb(b3s->inst_reverb);
+  freeWhirl(b3s->inst_whirl);
   freeToneGenerator();
   free(instance);
 }

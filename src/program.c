@@ -882,7 +882,7 @@ void installProgram (unsigned char uc) {
       }
 
       if (flags0 & FL_ROTSPS) {
-	setRevSelect ((int) (PGM->rotarySpeedSelect));
+	setRevSelect (inst_whirl, (int) (PGM->rotarySpeedSelect));
       }
 
       if (flags0 & FL_RVBMIX) {

@@ -3177,35 +3177,35 @@ static void setMIDIDrawBar (int bus, unsigned char v) {
   setDrawBar (bus, (8 * ((unsigned int) (127 - v))) / 127);
 }
 
-static void setDrawbar0 (unsigned char v) { setMIDIDrawBar (0, v);}
-static void setDrawbar1 (unsigned char v) { setMIDIDrawBar (1, v);}
-static void setDrawbar2 (unsigned char v) { setMIDIDrawBar (2, v);}
-static void setDrawbar3 (unsigned char v) { setMIDIDrawBar (3, v);}
-static void setDrawbar4 (unsigned char v) { setMIDIDrawBar (4, v);}
-static void setDrawbar5 (unsigned char v) { setMIDIDrawBar (5, v);}
-static void setDrawbar6 (unsigned char v) { setMIDIDrawBar (6, v);}
-static void setDrawbar7 (unsigned char v) { setMIDIDrawBar (7, v);}
-static void setDrawbar8 (unsigned char v) { setMIDIDrawBar (8, v);}
+static void setDrawbar0 (void *d, unsigned char v) { setMIDIDrawBar (0, v);}
+static void setDrawbar1 (void *d, unsigned char v) { setMIDIDrawBar (1, v);}
+static void setDrawbar2 (void *d, unsigned char v) { setMIDIDrawBar (2, v);}
+static void setDrawbar3 (void *d, unsigned char v) { setMIDIDrawBar (3, v);}
+static void setDrawbar4 (void *d, unsigned char v) { setMIDIDrawBar (4, v);}
+static void setDrawbar5 (void *d, unsigned char v) { setMIDIDrawBar (5, v);}
+static void setDrawbar6 (void *d, unsigned char v) { setMIDIDrawBar (6, v);}
+static void setDrawbar7 (void *d, unsigned char v) { setMIDIDrawBar (7, v);}
+static void setDrawbar8 (void *d, unsigned char v) { setMIDIDrawBar (8, v);}
 
-static void setDrawbar9  (unsigned char v) { setMIDIDrawBar ( 9, v);}
-static void setDrawbar10 (unsigned char v) { setMIDIDrawBar (10, v);}
-static void setDrawbar11 (unsigned char v) { setMIDIDrawBar (11, v);}
-static void setDrawbar12 (unsigned char v) { setMIDIDrawBar (12, v);}
-static void setDrawbar13 (unsigned char v) { setMIDIDrawBar (13, v);}
-static void setDrawbar14 (unsigned char v) { setMIDIDrawBar (14, v);}
-static void setDrawbar15 (unsigned char v) { setMIDIDrawBar (15, v);}
-static void setDrawbar16 (unsigned char v) { setMIDIDrawBar (16, v);}
-static void setDrawbar17 (unsigned char v) { setMIDIDrawBar (17, v);}
+static void setDrawbar9  (void *d, unsigned char v) { setMIDIDrawBar ( 9, v);}
+static void setDrawbar10 (void *d, unsigned char v) { setMIDIDrawBar (10, v);}
+static void setDrawbar11 (void *d, unsigned char v) { setMIDIDrawBar (11, v);}
+static void setDrawbar12 (void *d, unsigned char v) { setMIDIDrawBar (12, v);}
+static void setDrawbar13 (void *d, unsigned char v) { setMIDIDrawBar (13, v);}
+static void setDrawbar14 (void *d, unsigned char v) { setMIDIDrawBar (14, v);}
+static void setDrawbar15 (void *d, unsigned char v) { setMIDIDrawBar (15, v);}
+static void setDrawbar16 (void *d, unsigned char v) { setMIDIDrawBar (16, v);}
+static void setDrawbar17 (void *d, unsigned char v) { setMIDIDrawBar (17, v);}
 
-static void setDrawbar18 (unsigned char v) { setMIDIDrawBar (18, v);}
-static void setDrawbar19 (unsigned char v) { setMIDIDrawBar (19, v);}
-static void setDrawbar20 (unsigned char v) { setMIDIDrawBar (20, v);}
-static void setDrawbar21 (unsigned char v) { setMIDIDrawBar (21, v);}
-static void setDrawbar22 (unsigned char v) { setMIDIDrawBar (22, v);}
-static void setDrawbar23 (unsigned char v) { setMIDIDrawBar (23, v);}
-static void setDrawbar24 (unsigned char v) { setMIDIDrawBar (24, v);}
-static void setDrawbar25 (unsigned char v) { setMIDIDrawBar (25, v);}
-static void setDrawbar26 (unsigned char v) { setMIDIDrawBar (26, v);}
+static void setDrawbar18 (void *d, unsigned char v) { setMIDIDrawBar (18, v);}
+static void setDrawbar19 (void *d, unsigned char v) { setMIDIDrawBar (19, v);}
+static void setDrawbar20 (void *d, unsigned char v) { setMIDIDrawBar (20, v);}
+static void setDrawbar21 (void *d, unsigned char v) { setMIDIDrawBar (21, v);}
+static void setDrawbar22 (void *d, unsigned char v) { setMIDIDrawBar (22, v);}
+static void setDrawbar23 (void *d, unsigned char v) { setMIDIDrawBar (23, v);}
+static void setDrawbar24 (void *d, unsigned char v) { setMIDIDrawBar (24, v);}
+static void setDrawbar25 (void *d, unsigned char v) { setMIDIDrawBar (25, v);}
+static void setDrawbar26 (void *d, unsigned char v) { setMIDIDrawBar (26, v);}
 
 /**
  * This routine controls percussion from a MIDI controller.
@@ -3216,7 +3216,7 @@ static void setDrawbar26 (unsigned char v) { setMIDIDrawBar (26, v);}
  * 0---16-------------64-------------112------127
  *
  */
-static void setPercVolumeFromMIDI (unsigned char u) {
+static void setPercVolumeFromMIDI (void *d, unsigned char u) {
   if (u < 64) {
     if (u < 16) {
       setPercussionEnabled (FALSE); /* off */
@@ -3239,7 +3239,7 @@ static void setPercVolumeFromMIDI (unsigned char u) {
  * This routine controls percussion from a MIDI controller.
  * It sets fast or slow decay.
  */
-static void setPercDecayFromMIDI (unsigned char u) {
+static void setPercDecayFromMIDI (void *d, unsigned char u) {
   if (u < 64) {
     setPercussionFast (TRUE);
   }
@@ -3252,7 +3252,7 @@ static void setPercDecayFromMIDI (unsigned char u) {
  * This routine controls percussion from a MIDI controller.
  * It sets the third or second harmonic.
  */
-static void setPercHarmonicFromMIDI (unsigned char u) {
+static void setPercHarmonicFromMIDI (void *d, unsigned char u) {
   if (u < 64) {
     setPercussionFirst (FALSE);
   }
@@ -3264,7 +3264,7 @@ static void setPercHarmonicFromMIDI (unsigned char u) {
 /**
  * This routine controls the swell pedal from a MIDI controller.
  */
-static void setSwellPedalFromMIDI (unsigned char u) {
+static void setSwellPedalFromMIDI (void *d, unsigned char u) {
   swellPedalGain = (outputLevelTrim * ((double) u)) / 127.0;
 }
 
@@ -3358,42 +3358,42 @@ void initToneGenerator () {
   setPercussionFast (TRUE);
   setPercussionEnabled (FALSE);
 
-  useMIDIControlFunction ("swellpedal1", setSwellPedalFromMIDI);
-  useMIDIControlFunction ("swellpedal2", setSwellPedalFromMIDI);
+  useMIDIControlFunction ("swellpedal1", setSwellPedalFromMIDI, NULL);
+  useMIDIControlFunction ("swellpedal2", setSwellPedalFromMIDI, NULL);
 
-  useMIDIControlFunction ("upper.drawbar16",  setDrawbar0);
-  useMIDIControlFunction ("upper.drawbar513", setDrawbar1);
-  useMIDIControlFunction ("upper.drawbar8",   setDrawbar2);
-  useMIDIControlFunction ("upper.drawbar4",   setDrawbar3);
-  useMIDIControlFunction ("upper.drawbar223", setDrawbar4);
-  useMIDIControlFunction ("upper.drawbar2",   setDrawbar5);
-  useMIDIControlFunction ("upper.drawbar135", setDrawbar6);
-  useMIDIControlFunction ("upper.drawbar113", setDrawbar7);
-  useMIDIControlFunction ("upper.drawbar1",   setDrawbar8);
+  useMIDIControlFunction ("upper.drawbar16",  setDrawbar0, NULL);
+  useMIDIControlFunction ("upper.drawbar513", setDrawbar1, NULL);
+  useMIDIControlFunction ("upper.drawbar8",   setDrawbar2, NULL);
+  useMIDIControlFunction ("upper.drawbar4",   setDrawbar3, NULL);
+  useMIDIControlFunction ("upper.drawbar223", setDrawbar4, NULL);
+  useMIDIControlFunction ("upper.drawbar2",   setDrawbar5, NULL);
+  useMIDIControlFunction ("upper.drawbar135", setDrawbar6, NULL);
+  useMIDIControlFunction ("upper.drawbar113", setDrawbar7, NULL);
+  useMIDIControlFunction ("upper.drawbar1",   setDrawbar8, NULL);
 
-  useMIDIControlFunction ("lower.drawbar16",  setDrawbar9);
-  useMIDIControlFunction ("lower.drawbar513", setDrawbar10);
-  useMIDIControlFunction ("lower.drawbar8",   setDrawbar11);
-  useMIDIControlFunction ("lower.drawbar4",   setDrawbar12);
-  useMIDIControlFunction ("lower.drawbar223", setDrawbar13);
-  useMIDIControlFunction ("lower.drawbar2",   setDrawbar14);
-  useMIDIControlFunction ("lower.drawbar135", setDrawbar15);
-  useMIDIControlFunction ("lower.drawbar113", setDrawbar16);
-  useMIDIControlFunction ("lower.drawbar1",   setDrawbar17);
+  useMIDIControlFunction ("lower.drawbar16",  setDrawbar9, NULL);
+  useMIDIControlFunction ("lower.drawbar513", setDrawbar10, NULL);
+  useMIDIControlFunction ("lower.drawbar8",   setDrawbar11, NULL);
+  useMIDIControlFunction ("lower.drawbar4",   setDrawbar12, NULL);
+  useMIDIControlFunction ("lower.drawbar223", setDrawbar13, NULL);
+  useMIDIControlFunction ("lower.drawbar2",   setDrawbar14, NULL);
+  useMIDIControlFunction ("lower.drawbar135", setDrawbar15, NULL);
+  useMIDIControlFunction ("lower.drawbar113", setDrawbar16, NULL);
+  useMIDIControlFunction ("lower.drawbar1",   setDrawbar17, NULL);
 
-  useMIDIControlFunction ("pedal.drawbar16",  setDrawbar18);
-  useMIDIControlFunction ("pedal.drawbar513", setDrawbar19);
-  useMIDIControlFunction ("pedal.drawbar8",   setDrawbar20);
-  useMIDIControlFunction ("pedal.drawbar4",   setDrawbar21);
-  useMIDIControlFunction ("pedal.drawbar223", setDrawbar22);
-  useMIDIControlFunction ("pedal.drawbar2",   setDrawbar23);
-  useMIDIControlFunction ("pedal.drawbar135", setDrawbar24);
-  useMIDIControlFunction ("pedal.drawbar113", setDrawbar25);
-  useMIDIControlFunction ("pedal.drawbar1",   setDrawbar26);
+  useMIDIControlFunction ("pedal.drawbar16",  setDrawbar18, NULL);
+  useMIDIControlFunction ("pedal.drawbar513", setDrawbar19, NULL);
+  useMIDIControlFunction ("pedal.drawbar8",   setDrawbar20, NULL);
+  useMIDIControlFunction ("pedal.drawbar4",   setDrawbar21, NULL);
+  useMIDIControlFunction ("pedal.drawbar223", setDrawbar22, NULL);
+  useMIDIControlFunction ("pedal.drawbar2",   setDrawbar23, NULL);
+  useMIDIControlFunction ("pedal.drawbar135", setDrawbar24, NULL);
+  useMIDIControlFunction ("pedal.drawbar113", setDrawbar25, NULL);
+  useMIDIControlFunction ("pedal.drawbar1",   setDrawbar26, NULL);
 
-  useMIDIControlFunction ("percussion.enable",   setPercVolumeFromMIDI);
-  useMIDIControlFunction ("percussion.decay",    setPercDecayFromMIDI);
-  useMIDIControlFunction ("percussion.harmonic", setPercHarmonicFromMIDI);
+  useMIDIControlFunction ("percussion.enable",   setPercVolumeFromMIDI, NULL);
+  useMIDIControlFunction ("percussion.decay",    setPercDecayFromMIDI, NULL);
+  useMIDIControlFunction ("percussion.harmonic", setPercHarmonicFromMIDI, NULL);
 
 #if 0
   dumpOscToText ("osc.txt");

@@ -97,7 +97,8 @@ void eqCompute (int type,
 		double fqHz,
 		double Q,
 		double dbG,
-		double * C)
+		double * C,
+		double SampleRateD)
 {
   double     A = pow (10.0, (dbG / 40.0));
   double omega = (2.0 * M_PI * fqHz) / SampleRateD;
@@ -213,9 +214,9 @@ static void loadArray_f (float * F, double * C) {
  * fqHz cutoff
  * Q    Bandwidth of resonance peak
  */
-void eqcLowPass_f (double fqHz, double Q, float * F) {
+void eqcLowPass_f (double fqHz, double Q, float * F, double SR) {
   double C[6];
-  eqCompute (EQC_LPF, fqHz, Q, 0.0, C);
+  eqCompute (EQC_LPF, fqHz, Q, 0.0, C, SR);
   loadArray_f (F, C);
 }
 
@@ -224,9 +225,9 @@ void eqcLowPass_f (double fqHz, double Q, float * F) {
  * fqHz cutoff
  * Q    Bandwidth of resonance peak
  */
-void eqcHighPass_f (double fqHz, double Q, float * F) {
+void eqcHighPass_f (double fqHz, double Q, float * F, double SR) {
   double C[6];
-  eqCompute (EQC_HPF, fqHz, Q, 0.0, C);
+  eqCompute (EQC_HPF, fqHz, Q, 0.0, C, SR);
   loadArray_f (F, C);
 }
 
@@ -235,9 +236,9 @@ void eqcHighPass_f (double fqHz, double Q, float * F) {
  * fqHz Resonance frequency
  * Q    Bandwidth of resonance peak
  */
-void eqcBandPass0_f (double fqHz, double Q, float * F) {
+void eqcBandPass0_f (double fqHz, double Q, float * F, double SR) {
   double C[6];
-  eqCompute (EQC_BPF0, fqHz, Q, 0.0, C);
+  eqCompute (EQC_BPF0, fqHz, Q, 0.0, C, SR);
   loadArray_f (F, C);
 }
 
@@ -246,9 +247,9 @@ void eqcBandPass0_f (double fqHz, double Q, float * F) {
  * fqHz Resonance frequency
  * Q    Bandwidth of resonance peak
  */
-void eqcBandPass1_f (double fqHz, double Q, float * F) {
+void eqcBandPass1_f (double fqHz, double Q, float * F, double SR) {
   double C[6];
-  eqCompute (EQC_BPF1, fqHz, Q, 0.0, C);
+  eqCompute (EQC_BPF1, fqHz, Q, 0.0, C, SR);
   loadArray_f (F, C);
 }
 
@@ -257,9 +258,9 @@ void eqcBandPass1_f (double fqHz, double Q, float * F) {
  * fqHz Cut frequency
  * Q    Bandwidth of cut trough.
  */
-void eqcNotch_f (double fqHz, double Q, float * F) {
+void eqcNotch_f (double fqHz, double Q, float * F, double SR) {
   double C[6];
-  eqCompute (EQC_NOTCH, fqHz, Q, 0.0, C);
+  eqCompute (EQC_NOTCH, fqHz, Q, 0.0, C, SR);
   loadArray_f (F, C);
 }
 
@@ -268,9 +269,9 @@ void eqcNotch_f (double fqHz, double Q, float * F) {
  * fqHz Resonance frequency?
  * Q    Bandwidth of resonance?
  */
-void eqcAllPass_f (double fqHz, double Q, float * F) {
+void eqcAllPass_f (double fqHz, double Q, float * F, double SR) {
   double C[6];
-  eqCompute (EQC_APF, fqHz, Q, 0.0, C);
+  eqCompute (EQC_APF, fqHz, Q, 0.0, C, SR);
   loadArray_f (F, C);
 }
 
@@ -280,9 +281,9 @@ void eqcAllPass_f (double fqHz, double Q, float * F) {
  * Q    Bandwidth of resonance peak
  * dBGain Gain (positive or negative)
  */
-void eqcPeaking_f (double fqHz, double Q, double dBGain, float * F) {
+void eqcPeaking_f (double fqHz, double Q, double dBGain, float * F, double SR) {
   double C[6];
-  eqCompute (EQC_PEQ, fqHz, Q, dBGain, C);
+  eqCompute (EQC_PEQ, fqHz, Q, dBGain, C, SR);
   loadArray_f (F, C);
 }
 
@@ -292,9 +293,9 @@ void eqcPeaking_f (double fqHz, double Q, double dBGain, float * F) {
  * Q    Resonance at cutoff
  * dBGain Gain
  */
-void eqcLowShelf_f (double fqHz, double Q, double dBGain, float * F) {
+void eqcLowShelf_f (double fqHz, double Q, double dBGain, float * F, double SR) {
   double C[6];
-  eqCompute (EQC_LOW, fqHz, Q, dBGain, C);
+  eqCompute (EQC_LOW, fqHz, Q, dBGain, C, SR);
   loadArray_f (F, C);
 }
 
@@ -304,9 +305,9 @@ void eqcLowShelf_f (double fqHz, double Q, double dBGain, float * F) {
  * Q    Resonance at cutoff
  * dBGain Gain
  */
-void eqcHighShelf_f (double fqHz, double Q, double dBGain, float * F) {
+void eqcHighShelf_f (double fqHz, double Q, double dBGain, float * F, double SR) {
   double C[6];
-  eqCompute (EQC_HIGH, fqHz, Q, dBGain, C);
+  eqCompute (EQC_HIGH, fqHz, Q, dBGain, C, SR);
   loadArray_f (F, C);
 }
 

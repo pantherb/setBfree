@@ -38,7 +38,7 @@
 #define MIDI_PITCH_BEND		0xE0
 #define MIDI_SYSTEM_PREFIX	0xF0
 
-extern void useMIDIControlFunction (char * cfname, void (* f) (unsigned char));
+extern void useMIDIControlFunction (char * cfname, void (* f) (void *, unsigned char), void *d);
 
 extern void setKeyboardSplitMulti (int flags,
 				   int p_splitA_PL,

@@ -43,6 +43,14 @@ typedef enum {
   B3W_FILTBFREQ  = 9,
   B3W_FILTBQUAL  =10,
   B3W_FILTBGAIN  =11,
+
+  B3W_HORNBREAK  =12,
+  B3W_HORNACCEL  =13,
+  B3W_HORNDECEL  =14,
+
+  B3W_DRUMBREAK  =15,
+  B3W_DRUMACCEL  =16,
+  B3W_DRUMDECEL  =17,
 } PortIndex;
 
 typedef struct {
@@ -61,9 +69,9 @@ typedef struct {
   float o_filta_freq, o_filtb_freq;
   float o_filta_qual, o_filtb_qual;
   float o_filta_gain, o_filtb_gain;
-} B3W;
 
-double SampleRateD = 22050.0;
+  struct b_whirl *instance;
+} B3W;
 
 static LV2_Handle
 instantiate(const LV2_Descriptor*     descriptor,
@@ -72,7 +80,12 @@ instantiate(const LV2_Descriptor*     descriptor,
             const LV2_Feature* const* features)
 {
   B3W* b3w = (B3W*)calloc(1,sizeof(B3W));
-  SampleRateD = rate;
+  if(!b3w) { return NULL ;}
+  if (!(b3w->instance = allocWhirl())) {
+    free(b3w);
+    return NULL;
+  }
+
   /* TODO: optional.
    * configure the plugin before initializing it
    * with alternate parameters or presets.
@@ -82,7 +95,8 @@ instantiate(const LV2_Descriptor*     descriptor,
    * allow to call initWhirl() with new whirlConfig()
    * parameters  during deactive/activate cycles..
    */
-  initWhirl();
+
+  initWhirl(b3w->instance, rate);
 
   return (LV2_Handle)b3w;
 }
@@ -131,6 +145,18 @@ connect_port(LV2_Handle instance,
     case B3W_FILTBGAIN:
       b3w->filtb_gain = (float*)data;
       break;
+    case B3W_HORNBREAK:
+      break;
+    case B3W_HORNACCEL:
+      break;
+    case B3W_HORNDECEL:
+      break;
+    case B3W_DRUMBREAK:
+      break;
+    case B3W_DRUMACCEL:
+      break;
+    case B3W_DRUMDECEL:
+      break;
   }
 }
 
@@ -142,7 +168,7 @@ activate(LV2_Handle instance)
 #define SETPARAM(FN, NAME, PROC) \
   if (b3w->NAME) { \
     if (b3w->o_##NAME != *(b3w->NAME)) { \
-      FN (PROC (*(b3w->NAME))); \
+      FN (b3w->instance, PROC (*(b3w->NAME))); \
       b3w->o_##NAME = *(b3w->NAME); \
     } \
   }
@@ -168,7 +194,7 @@ run(LV2_Handle instance, uint32_t n_samples)
   SETPARAM(fsetHornFilterBQ, filtb_qual, )
   SETPARAM(fsetHornFilterBGain, filtb_gain, )
 
-  whirlProc(input, outL, outR, n_samples);
+  whirlProc(b3w->instance, input, outL, outR, n_samples);
 }
 
 static void
@@ -179,6 +205,8 @@ deactivate(LV2_Handle instance)
 static void
 cleanup(LV2_Handle instance)
 {
+  B3W* b3w = (B3W*)instance;
+  freeWhirl(b3w->instance);
   free(instance);
 }
 
@@ -224,7 +252,7 @@ lv2_descriptor(uint32_t index)
   }
 }
 
-void useMIDIControlFunction (char * cfname, void (* f) (unsigned char)) { }
+void useMIDIControlFunction (char * cfname, void (* f) (void *d, unsigned char), void *d) { }
 int getConfigParameter_dr (char * par, ConfigContext * cfg, double * dp, double lowInc, double highInc) { return 0; }
 int getConfigParameter_d (char * par, ConfigContext * cfg, double * dp) { return 0; }
 int getConfigParameter_ir (char * par, ConfigContext * cfg, int * ip, int lowInc, int highInc) { return 0; }

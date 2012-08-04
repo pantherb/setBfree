@@ -39,19 +39,19 @@ extern float * overdrive (const float * inBuf, float * outBuf, size_t buflen);
  */
 
 /** Computes the constants for transfer curve */
-void fctl_biased (float u);
+void fctl_biased (void *d, float u);
 /** ovt_biased:Sets the positive feedback */
-void fctl_biased_fb (float u);
+void fctl_biased_fb (void *d, float u);
 /** ovt_biased: Sets sag impact */
-void fctl_sagtoBias (float u);
+void fctl_sagtoBias (void *d, float u);
 /** ovt_biased: Postdiff feedback control */
-void fctl_biased_fb2 (float u);
+void fctl_biased_fb2 (void *d, float u);
 /** ovt_biased: Global feedback control */
-void fctl_biased_gfb (float u);
+void fctl_biased_gfb (void *d, float u);
 /** ovt_biased: Fat control */
-void fctl_biased_fat (float u);
+void fctl_biased_fat (void *d, float u);
 
-void fsetInputGain (float u);
-void fsetOutputGain (float u);
+void fsetInputGain (void *d, float u);
+void fsetOutputGain (void *d, float u);
 
 #endif /* _OVERDRIVE_H_ */
