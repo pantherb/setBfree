@@ -184,5 +184,71 @@ rg:bwhirl-out a pg:Group ;
 		lv2:minimum -48.0 ;
 		lv2:maximum  48.0 ;
 		pp:displayPriority 100 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 12 ;
+		lv2:symbol "hornbreak" ;
+		lv2:name "Horn Break Position";
+		lv2:default 0.0 ;
+		lv2:minimum 0.0 ;
+		lv2:maximum 1.0 ;
+		pp:displayPriority 200 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 13 ;
+		lv2:symbol "hornaccel" ;
+		lv2:name "Horn Acceleration";
+		lv2:default 0.161 ;
+		lv2:minimum 0.001 ;
+		lv2:maximum 10.0 ;
+		pp:displayPriority 200 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 14 ;
+		lv2:symbol "horndecel" ;
+		lv2:name "Horn Deceleration";
+		lv2:default 0.321 ;
+		lv2:minimum 0.001 ;
+		lv2:maximum 10.0 ;
+		pp:displayPriority 200 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 15 ;
+		lv2:symbol "drumbreak" ;
+		lv2:name "Drum Break Position";
+		lv2:default 0.0 ;
+		lv2:minimum 0.0 ;
+		lv2:maximum 1.0 ;
+		pp:displayPriority 200 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 16 ;
+		lv2:symbol "drumaccel" ;
+		lv2:name "Drum Acceleration";
+		lv2:default 4.127 ;
+		lv2:minimum 0.01 ;
+		lv2:maximum 20.0 ;
+		pp:displayPriority 200 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 17 ;
+		lv2:symbol "drumdecel" ;
+		lv2:name "Drum Deceleration";
+		lv2:default 1.371 ;
+		lv2:minimum 0.01 ;
+		lv2:maximum 20.0 ;
+		pp:displayPriority 200 ;
 	]
 	.

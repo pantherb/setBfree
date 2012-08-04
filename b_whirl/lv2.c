@@ -54,21 +54,27 @@ typedef enum {
 } PortIndex;
 
 typedef struct {
-  float* input;
-  float* outL;
-  float* outR;
+  float *input;
+  float *outL;
+  float *outR;
 
-  float* rev_select;
-  float* filta_type, *filtb_type;
-  float* filta_freq, *filtb_freq;
-  float* filta_qual, *filtb_qual;
-  float* filta_gain, *filtb_gain;
+  float *rev_select;
+  float *filta_type, *filtb_type;
+  float *filta_freq, *filtb_freq;
+  float *filta_qual, *filtb_qual;
+  float *filta_gain, *filtb_gain;
+
+  float *horn_break, *horn_accel, *horn_decel;
+  float *drum_break, *drum_accel, *drum_decel;
 
   float o_rev_select;
   float o_filta_type, o_filtb_type;
   float o_filta_freq, o_filtb_freq;
   float o_filta_qual, o_filtb_qual;
   float o_filta_gain, o_filtb_gain;
+
+  float o_horn_break, o_horn_accel, o_horn_decel;
+  float o_drum_break, o_drum_accel, o_drum_decel;
 
   struct b_whirl *instance;
 } B3W;
@@ -146,16 +152,22 @@ connect_port(LV2_Handle instance,
       b3w->filtb_gain = (float*)data;
       break;
     case B3W_HORNBREAK:
+      b3w->horn_break = (float*)data;
       break;
     case B3W_HORNACCEL:
+      b3w->horn_accel = (float*)data;
       break;
     case B3W_HORNDECEL:
+      b3w->horn_decel = (float*)data;
       break;
     case B3W_DRUMBREAK:
+      b3w->drum_break = (float*)data;
       break;
     case B3W_DRUMACCEL:
+      b3w->drum_accel = (float*)data;
       break;
     case B3W_DRUMDECEL:
+      b3w->drum_decel = (float*)data;
       break;
   }
 }
@@ -169,6 +181,14 @@ activate(LV2_Handle instance)
   if (b3w->NAME) { \
     if (b3w->o_##NAME != *(b3w->NAME)) { \
       FN (b3w->instance, PROC (*(b3w->NAME))); \
+      b3w->o_##NAME = *(b3w->NAME); \
+    } \
+  }
+
+#define SETVALUE(VAR, NAME, PROC) \
+  if (b3w->NAME) { \
+    if (b3w->o_##NAME != *(b3w->NAME)) { \
+      b3w->instance->VAR = PROC (*(b3w->NAME)); \
       b3w->o_##NAME = *(b3w->NAME); \
     } \
   }
@@ -193,6 +213,14 @@ run(LV2_Handle instance, uint32_t n_samples)
   SETPARAM(fsetHornFilterBFrequency, filtb_freq, )
   SETPARAM(fsetHornFilterBQ, filtb_qual, )
   SETPARAM(fsetHornFilterBGain, filtb_gain, )
+
+  SETVALUE(hnBreakPos, horn_break, (double))
+  SETVALUE(hornAcc, horn_accel, )
+  SETVALUE(hornDec, horn_decel, )
+
+  SETVALUE(drBreakPos, drum_break, (double))
+  SETVALUE(drumAcc, drum_accel, )
+  SETVALUE(drumDec, drum_decel, )
 
   whirlProc(b3w->instance, input, outL, outR, n_samples);
 }
