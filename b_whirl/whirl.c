@@ -1042,7 +1042,7 @@ void whirlProc2 (struct b_whirl *w,
     }
   }
   if (w->drBreakPos>0) {
-    const int targetPos= w->drBreakPos - floor(w->drBreakPos);
+    const double targetPos= w->drBreakPos - floor(w->drBreakPos);
     if (!w->drumAcDc && w->drumIncrUI==0 && w->drumAngleGRD!=targetPos) {
       w->drumAngleGRD += 1.0/400.0;
       w->drumAngleGRD = w->drumAngleGRD - floor(w->drumAngleGRD);
@@ -1051,21 +1051,8 @@ void whirlProc2 (struct b_whirl *w,
   }
 #endif
 
-#ifdef DEBUG_SPEED
-  char const * const acdc[3]= {"<","#",">"};
-  static int fgh=0;
-  if ((fgh++ % (int)(w->SampleRateD/128/5) ) ==0) {
-    printf ("H:%.3f D:%.3f | HS:%.3f DS:%.3f [Hz]| HT:%.2f DT:%.2f [Hz]| %s %s\n",
-	(double)w->hornAngle/DISPLC_SIZE, (double)w->drumAngle/DISPLC_SIZE,
-	w->SampleRateD*(double)w->hornIncrUI, w->SampleRateD*(double)w->drumIncrUI,
-	w->SampleRateD*(double)w->hornTarget, w->SampleRateD*(double)w->drumTarget,
-	w->acdc[w->hornAcDc+1], w->acdc[w->drumAcDc+1]
-	);
-  }
-#endif
-
   /* localize struct variables */
-  double hornAngleGRD = w->drumAngleGRD;
+  double hornAngleGRD = w->hornAngleGRD;
   double drumAngleGRD = w->drumAngleGRD;
   unsigned int outpos = w->outpos;
 
@@ -1100,6 +1087,19 @@ void whirlProc2 (struct b_whirl *w,
 
   int hornAngle = hornAngleGRD * DISPLC_SIZE;
   int drumAngle = drumAngleGRD * DISPLC_SIZE;
+
+#ifdef DEBUG_SPEED
+  char const * const acdc[3]= {"<","#",">"};
+  static int fgh=0;
+  if ((fgh++ % (int)(w->SampleRateD/128/5) ) ==0) {
+    printf ("H:%.3f D:%.3f | HS:%.3f DS:%.3f [Hz]| HT:%.2f DT:%.2f [Hz]| %s %s\n",
+	(double)hornAngle/DISPLC_SIZE, (double)drumAngle/DISPLC_SIZE,
+	w->SampleRateD*(double)hornIncrUI, w->SampleRateD*(double)drumIncrUI,
+	w->SampleRateD*(double)w->hornTarget, w->SampleRateD*(double)w->drumTarget,
+	acdc[w->hornAcDc+1], acdc[w->drumAcDc+1]
+	);
+  }
+#endif
 
   /* process each sample */
   for (i = 0; i < bufferLengthSamples; i++) {
@@ -1282,8 +1282,8 @@ void whirlProc2 (struct b_whirl *w,
   }
 
   /* copy back variables */
-  w->drumAngleGRD = drumAngleGRD;
   w->hornAngleGRD = hornAngleGRD;
+  w->drumAngleGRD = drumAngleGRD;
   w->outpos = outpos;
 }
 
