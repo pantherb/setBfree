@@ -1,9 +1,8 @@
 Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: setBfree
-Maintainer: Robin Gareus <robin@gareus.org>
 Upstream-Contact: 
   Robin Gareus <robin@gareus.org>
-	Will Panther <pantherb@setbfree.org>
+  Will Panther <pantherb@setbfree.org>
 Source: git://github.com/pantherb/setBfree.git
 
 Files: *
@@ -14,11 +13,13 @@ Copyright:
 License: GPL-2+
 
 Files: vb3kb/*
+Copyright:
   1997-2000 by Takashi Iwai
   2012 Robin Gareus <robin@gareus.org>
 License: GPL-2+
 
 Files: b_whirl/*
+Copyright:
   2003-2004 Fredrik Kilander <fk@dsv.su.se>
   2008-2012 Robin Gareus <robin@gareus.org>
   2010 Ken Restivo <ken@restivo.org>
@@ -26,15 +27,18 @@ Files: b_whirl/*
 License: GPL-2+
 
 Files: b_conv/*
+Copyright:
   2012 Robin Gareus <robin@gareus.org>
 License: GPL-2+
 
 Files: b_conv/ir/ir_leslie-*.wav
+Copyright:
   2009 Ken Restivo <ken@restivo.org>
   2012 Robin Gareus <robin@gareus.org>
 License: CC-BY-SA-3.0
 
 Files: debian/*
+Copyright:
   2012 Robin Gareus <robin@gareus.org>
 License: GPL-2+
 
@@ -60,7 +64,7 @@ License: CC-BY-SA-3.0
  The work is protected by copyright and/or other applicable law. Any use of
  the work other than as authorized under this license or copyright law is
  prohibited.
-
+ .
  By exercising any rights to the work provided here, you accept and agree to
  be bound by the terms of this license. To the extent this license may be
  considered to be a contract, the licensor grants you the rights contained
