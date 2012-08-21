@@ -165,8 +165,8 @@ void initValues(struct b_whirl *w) {
   memset(w->drBwdDispl, 0, sizeof(float) * WHIRL_DISPLC_SIZE);
 
   for (i=0; i<WHIRL_DISPLC_SIZE; i++) {
-    memset(w->bfw[i], 0, sizeof(float) * 5);
-    memset(w->bbw[i], 0, sizeof(float) * 5);
+    memset(&w->bfw[i], 0, sizeof(struct _bw));
+    memset(&w->bbw[i], 0, sizeof(struct _bw));
   }
 
   memset(w->adx0, 0, sizeof(float) * AGBUF);
@@ -331,7 +331,7 @@ static void _ipoldraw (struct b_whirl *sw, double degrees, double level, int par
   for (i = fromIndex; i <= toIndex; i++) {
     double x = (double) (i - fromIndex);
     double w = (*ipy) + ((x / range) * (level - (*ipy)));
-    sw->bfw[i & DISPLC_MASK][partial] = (float) w;
+    sw->bfw[i & DISPLC_MASK].b[partial] = (float) w;
   }
 
   *ipy = level;
@@ -581,7 +581,7 @@ static void initTables (struct b_whirl *w) {
   for (i = 0; i < DISPLC_SIZE; i++) {
     double colsum = 0.0;
     for (j = 0; j < 5; j++) {
-      colsum += fabs (w->bfw[i][j]);
+      colsum += fabs (w->bfw[i].b[j]);
     }
     if (sum < colsum) {
       sum = colsum;
@@ -590,8 +590,8 @@ static void initTables (struct b_whirl *w) {
   /* Apply normalisation */
   for (i = 0; i < DISPLC_SIZE; i++) {
     for (j = 0; j < 5; j++) {
-      w->bfw[i][j] *= 1.0 / sum;
-      w->bbw[DISPLC_SIZE - i - 1][j] = w->bfw[i][j];
+      w->bfw[i].b[j] *= 1.0 / sum;
+      w->bbw[DISPLC_SIZE - i - 1].b[j] = w->bfw[i].b[j];
     }
   }
 
@@ -1084,6 +1084,8 @@ void whirlProc2 (struct b_whirl *w,
 
   //const float * const * const bfw = w->bfw;
   //const float * const * const bbw = w->bbw;
+  const struct _bw * const bfw = w->bfw;
+  const struct _bw * const bbw = w->bfw;
 
   int hornAngle = hornAngleGRD * DISPLC_SIZE;
   int drumAngle = drumAngleGRD * DISPLC_SIZE;
@@ -1116,11 +1118,11 @@ void whirlProc2 (struct b_whirl *w,
   //if (IS_DENORMAL(x)) fprintf(stderr,"DENORMAL x!\n");
 
 #define ANGFILTER(BW,DX,DI) {           \
-    xa  = BW[k][0] * x;                     \
-    xa += BW[k][1] * DX[(DI)];              \
-    xa += BW[k][2] * DX[((DI)+1) & AGMASK]; \
-    xa += BW[k][3] * DX[((DI)+2) & AGMASK]; \
-    xa += BW[k][4] * DX[((DI)+3) & AGMASK]; \
+    xa  = BW[k].b[0] * x;                     \
+    xa += BW[k].b[1] * DX[(DI)];              \
+    xa += BW[k].b[2] * DX[((DI)+1) & AGMASK]; \
+    xa += BW[k].b[3] * DX[((DI)+2) & AGMASK]; \
+    xa += BW[k].b[4] * DX[((DI)+3) & AGMASK]; \
     }
 
 #define ADDHIST(DX,DI,XS) {      \
@@ -1198,24 +1200,24 @@ void whirlProc2 (struct b_whirl *w,
 
     /* --- STATIC HORN FILTER --- */
     /* HORN PRIMARY */
-    HN_MOTION(0, HLbuf, hnFwdDispl, w->bfw, adx0, w->adi0);
-    HN_MOTION(1, HRbuf, hnBwdDispl, w->bbw, adx0, w->adi0);
+    HN_MOTION(0, HLbuf, hnFwdDispl, bfw, adx0, w->adi0);
+    HN_MOTION(1, HRbuf, hnBwdDispl, bbw, adx0, w->adi0);
     ADDHIST(adx0, w->adi0, x);
 
     /* HORN FIRST REFLECTION FILTER */
     FILTER_C(0.4, 0.4, 0);
 
     /* HORN FIRST REFLECTION */
-    HN_MOTION(2, HLbuf, hnBwdDispl, w->bbw, adx1, w->adi1);
-    HN_MOTION(3, HRbuf, hnFwdDispl, w->bfw, adx1, w->adi1);
+    HN_MOTION(2, HLbuf, hnBwdDispl, bbw, adx1, w->adi1);
+    HN_MOTION(3, HRbuf, hnFwdDispl, bfw, adx1, w->adi1);
     ADDHIST(adx1, w->adi1, x);
 
     /* HORN SECOND REFLECTION FILTER */
     FILTER_C(0.4, 0.4, 1);
 
     /* HORN SECOND REFLECTION */
-    HN_MOTION(4, HLbuf, hnFwdDispl, w->bfw, adx2, w->adi2);
-    HN_MOTION(5, HRbuf, hnBwdDispl, w->bbw, adx2, w->adi2);
+    HN_MOTION(4, HLbuf, hnFwdDispl, bfw, adx2, w->adi2);
+    HN_MOTION(5, HRbuf, hnBwdDispl, bbw, adx2, w->adi2);
     ADDHIST(adx2, w->adi2, x);
 
     /* 1A) do doppler shift for drum (actually orig signal -- FM

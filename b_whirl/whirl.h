@@ -40,6 +40,8 @@ typedef struct _revcontrol {
   double drumTarget;
 } RevControl;
 
+struct _bw { float b[5]; };
+
 struct b_whirl {
 
   double SampleRateD;
@@ -59,8 +61,8 @@ struct b_whirl {
   float hnBwdDispl[WHIRL_DISPLC_SIZE]; /* Horn */
   float drBwdDispl[WHIRL_DISPLC_SIZE]; /* Drum */
 
-  float bfw[WHIRL_DISPLC_SIZE][5];
-  float bbw[WHIRL_DISPLC_SIZE][5];
+  struct _bw bfw[WHIRL_DISPLC_SIZE];
+  struct _bw bbw[WHIRL_DISPLC_SIZE];
 
 #define AGBUF 512
 #define AGMASK (AGBUF-1)
