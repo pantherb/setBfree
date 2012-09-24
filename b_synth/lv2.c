@@ -149,6 +149,10 @@ instantiate(const LV2_Descriptor*     descriptor,
             const LV2_Feature* const* features)
 {
   B3S* b3s = (B3S*)malloc(sizeof(B3S));
+  if(!b3s) {
+    return NULL;
+  }
+  memset(b3s, 0, sizeof(B3S));
   b3s->event_id=0;
   b3s->midiin=NULL;
 
