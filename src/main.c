@@ -58,8 +58,6 @@
 #include<math.h>
 #endif
 
-#define BUFFER_SIZE_SAMPLES  (128)
-
 #define NOF_CFG_OVERS (32)	/* Max command-line config commands */
 
 #ifndef SHAREDIR
@@ -112,6 +110,7 @@ static int synth_ready = 0;
 
 struct b_reverb *inst_reverb = NULL;
 struct b_whirl *inst_whirl = NULL;
+struct b_tonegen *inst_synth = NULL;
 
 void mixdown (float **inout, const float **in2, int nchannels, int nsamples) {
   int c,i;
@@ -188,7 +187,7 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
 	midi_tme_proc = written + BUFFER_SIZE_SAMPLES;
       }
       boffset = 0;
-      oscGenerateFragment (bufA, BUFFER_SIZE_SAMPLES);
+      oscGenerateFragment (inst_synth, bufA, BUFFER_SIZE_SAMPLES);
       preamp (bufA, bufB, BUFFER_SIZE_SAMPLES);
       reverb (inst_reverb, bufB, bufC, BUFFER_SIZE_SAMPLES);
 
@@ -331,6 +330,10 @@ static void allocAll () {
     fprintf (stderr, "FATAL: memory allocation failed for whirl.\n");
     exit(1);
   }
+  if (! (inst_synth = allocTonegen())) {
+    fprintf (stderr, "FATAL: memory allocation failed for tonegen.\n");
+    exit(1);
+  }
 }
 
 /*
@@ -340,7 +343,7 @@ static void freeAll () {
   freeReverb(inst_reverb);
   freeWhirl(inst_whirl);
 
-  freeToneGenerator();
+  freeToneGenerator(inst_synth);
 #ifdef HAVE_ZITACONVOLVE
   freeConvolution();
 #endif
@@ -366,7 +369,7 @@ static void initAll () {
 
   fprintf (stderr, "Oscillators : ");
   fflush (stderr);
-  initToneGenerator ();
+  initToneGenerator (inst_synth);
 
   fprintf (stderr, "Overdrive : ");
   fflush (stderr);
@@ -781,10 +784,10 @@ int main (int argc, char * argv []) {
 
   setMIDINoteShift (0);
 
-  setDrawBars (0, presetSelect);
+  setDrawBars (inst_synth, 0, presetSelect);
 #if 0 // initial values are assigned in tonegen.c initToneGenerator()
-  setDrawBars (1, presetSelect); /* 838 000 000 */
-  setDrawBars (2, presetSelect); /* 86 - */
+  setDrawBars (inst_synth, 1, presetSelect); /* 838 000 000 */
+  setDrawBars (inst_synth, 2, presetSelect); /* 86 - */
 #endif
 
 #ifndef _WIN32

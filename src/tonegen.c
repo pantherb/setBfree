@@ -248,31 +248,7 @@
 /* Is O a valid oscillator number? */
 #define isOsc(O) ((0 <= (O)) && ((O) < 128))
 
-#ifndef BUFFER_SIZE_SAMPLES
-#define BUFFER_SIZE_SAMPLES 128
-#endif
-
 #define STRINGIFY(x) #x
-
-
-/**
- * List element definition for the distribution network specification.
- * These are allocated during the configuration and initialization phase.
- */
-typedef struct deflist_element {
-  struct deflist_element * next;
-  union {
-    struct {
-      float fa;
-      float fb;
-    } ff;
-    struct {
-      short sa;
-      short sb;
-      float fc;
-    } ssf;
-  } u;
-} ListElement;
 
 #define LE_HARMONIC_NUMBER_OF(LEP) ((LEP)->u.ssf.sa)
 #define LE_HARMONIC_LEVEL_OF(LEP) ((LEP)->u.ssf.fc)
@@ -293,32 +269,6 @@ typedef struct deflist_element {
 #define LE_BLOCKSIZE 200
 
 /**
- * The leConfig pointer points to ListElements allocated during config.
- * The referenced memory is released once config is complete.
- */
-
-static ListElement * leConfig = NULL;
-
-/** The leRuntime pointer points to ListElements allocated for playing. */
-
-static ListElement * leRuntime = NULL;
-
-/**
- * Wheels refer to number of signal sources in the tonegenerator.
- * Note that the first one is numbered 1 and the last 91, so allocations
- * must add one.
- */
-#define NOF_WHEELS 91
-
-/**
- * Keys are numbered thus:
- *   0-- 63, upper manual (  0-- 60 in use)
- *  64--127, lower manual ( 64--124 in use)
- * 128--160, pedal        (128--159 in use)
- */
-#define MAX_KEYS 160
-
-/**
  * Buses are numbered like this:
  *  0-- 8, upper manual, ( 0=16',  8=1')
  *  9--17, lower manual, ( 9=16', 17=1')
@@ -333,57 +283,6 @@ static ListElement * leRuntime = NULL;
 #define LOWER_BUS_END 18
 #define PEDAL_BUS_LO 18
 #define PEDAL_BUS_END 27
-
-/**
- * Active oscillator table element.
- */
-typedef struct aot_element {
-  float busLevel[NOF_BUSES];	/* The signal level from wheel to bus  */
-  int   keyCount[NOF_BUSES];	/* The nof keys adding up the level */
-  int   refCount;		/* Reference count */
-  float sumUpper;		/* The sum of the upper manual buses */
-  float sumLower;		/* The sum of the lower manual buses */
-  float sumPedal;		/* The sum of the pedal buses */
-  float sumPercn;		/* The amount routed to percussion */
-  float sumSwell;		/* The sum of U, L and P routed to swell */
-  float sumScanr;		/* The sum of U, L and P routed to scanner */
-  unsigned int flags;		/* House-holding bits */
-} AOTElement;
-
-/**
- * The Active Oscillator Table has one element (struct) for each wheel.
- * When a manual key is depressed, wheel, bus and gain data from the
- * keyContrib array is added to the corresponding rows (index by wheel)
- * and the sums are updated.
- */
-static AOTElement aot[NOF_WHEELS + 1];
-
-/**
- * The numbers of sounding oscillators/wheels are placed on this list.
- */
-static int activeOscList[NOF_WHEELS + 1];
-static int activeOscLEnd = 0; /**< end of activeOscList */
-
-/* Keycompression */
-
-#define KEYCOMPRESSION
-
-#ifdef KEYCOMPRESSION
-#define MAXKEYS 128
-static float keyCompTable[MAXKEYS];
-static int   keyDownCount = 0;
-#define KEYCOMP_ZERO_LEVEL 1.0
-#endif /* KEYCOMPRESSION */
-
-/**
- * The size of the message queue.
- */
-#define MSGQSZ 1024
-static unsigned short   msgQueue [MSGQSZ]; /**< Message queue ringbuffer - MIDI->Synth */
-
-static unsigned short * msgQueueWriter = msgQueue; /**< message-queue srite pointer */
-static unsigned short * msgQueueReader = msgQueue; /**< message-queue read pointer */
-static unsigned short * msgQueueEnd = &(msgQueue[MSGQSZ]);
 
 /*
  * The message layout is:
@@ -411,27 +310,6 @@ static unsigned short * msgQueueEnd = &(msgQueue[MSGQSZ]);
 #define MSG_KEY_ON(K)  (MSG_MKEYON  | ((K) & MSG_PMASK))
 
 
-
-/**
- * This is the instruction format for the core generator.
- */
-typedef struct _coreins {
-  short   opr;			/**< Instruction */
-  int     cnt;			/**< Sample count */
-  size_t  off;			/**< Target offset */
-  float * src;			/**< Pointer to source buffer */
-  float * env;			/**< Pointer to envelope array */
-  float * swl;			/**< Pointer into swell buffer */
-  float * prc;			/**< Pointer into percussion buffer */
-  float * vib;			/**< Pointer into vibrato buffer */
-  float sgain;			/**< Gain into swell buffer */
-  float nsgain;			/**< Next sgain */
-  float pgain;			/**< Gain into percussion buffer */
-  float npgain;			/**< Next pgain */
-  float vgain;			/**< Gain into vibrato buffer */
-  float nvgain;			/**< Next vgain */
-} CoreIns;
-
 /*
  * Fixed-point arithmetic - mantissa of 10 bits.
  * ENV_BASE is the scaling applied to the attack and release envelope curves
@@ -450,53 +328,6 @@ typedef struct _coreins {
 #define CR_CPYENV 2		/* Copy via envelope instruction */
 #define CR_ADDENV 3		/* Add via envelope instruction */
 
-#define CR_PGMMAX 256		/* Max length of a core program */
-
-/*
- * 2002-11-17/FK: It may be prudent to remember that we do not check
- * for overflow. 256/18=14 keys. Worst case scenario should be
- * 128 * 9 * 2 = 2304. Does that length hurt performance? Probably not
- * as much as an overrun will.
- */
-
-static CoreIns   corePgm[CR_PGMMAX];
-static CoreIns * coreWriter;
-static CoreIns * coreReader;
-
-/* Attack and release buffer envelopes for 9 buses. */
-
-static float attackEnv[9][BUFFER_SIZE_SAMPLES]; /**< Attack envelope buffer for 9 buses */
-static float releaseEnv[9][BUFFER_SIZE_SAMPLES];/**< Release envelope buffer for 9 buses */
-
-
-static int envAttackModel  = ENV_CLICK;
-static int envReleaseModel = ENV_LINEAR;
-static float envAttackClickLevel  = 0.50;
-static float envReleaseClickLevel = 0.25;
-/** Minimum random length (in samples) of attack key click noise burst. */
-static int envAtkClkMinLength = -1;  //  8 @ 22050
-/** Maximum random length (in samples) of attack key click noise burst. */
-static int envAtkClkMaxLength = -1;   // 40 @ 22050
-
-/**
- * There is one oscillator struct for each frequency.
- * The wave pointer points to a 16-bit PCM loop which contains the fundamental
- * frequency and harmonics of the tonewheel.
- */
-struct _oscillator {
-
-  float * wave;			/**< Pointer to tonewheel 'sample' */
-
-  size_t  lengthSamples;	/**< Nof samples in wave */
-  double  frequency;		/**< The frequency (Hertz) */
-  double  attenuation;		/**< Signal level (0.0 -- 1.0) */
-  int     pos;			/**< Read position */
-
-  int     aclPos;		/**< Position in active list */
-  unsigned short rflags;	/**< Rendering flags */
-
-};
-
 /* Rendering flag bits */
 #define ORF_MODIFIED 0x0004
 #define ORF_ADDED    0x0002
@@ -505,8 +336,6 @@ struct _oscillator {
 #define OR_ADD 0x0006
 #define OR_REM 0x0005
 
-static unsigned int newRouting = 0;
-static unsigned int oldRouting = 0;
 
 #define RT_PERC2ND 0x08
 #define RT_PERC3RD 0x04
@@ -515,294 +344,12 @@ static unsigned int oldRouting = 0;
 #define RT_LOWRVIB 0x01
 #define RT_VIB     0x03
 
-static unsigned int percSendBus = 4; /* 3 or 4 */
-static unsigned int percSendBusA = 3;
-static unsigned int percSendBusB = 4;
-
-static unsigned int upperKeyCount = 0;
-
-/**
- * A matrix of these structs is used in the initialization stage.
- * The matrix is indexed by MIDI note nr and bus number. Each element
- * thus models the connection between a tonegenerator and a bus.
- * Whole or part of the matrix can be loaded during configuration, while
- * uninitialized elements are always set to default values.
- * We load or compute MIDI->oscillator, foldback and tapering.
- * The information is then used to create the wave buffers and
- * runtime version of the keyOsc and connections arrays.
- */
-typedef struct _tmbassembly {	/**< Tone generator, Manual and Bus assembly */
-  float          taper;		/**< Taper value in dB */
-  unsigned char  oscNr;		/**< Oscillator number */
-  unsigned char  inited;	/**< 0 = Element not set, 1 = set */
-  unsigned char  waveSlot;	/**< Index into oscillator's wavetable */
-} TMBAssembly, * TMBAssemblyPtr;
-
-/**
- * Connection descriptor structure. This structure is the runtime description
- * of the connection between a resistance wire and a bus.
- */
-typedef struct _connection {
-  unsigned char osc;		/**< Oscillator that provides the wire */
-  unsigned char tpx;		/**< Taper index in that oscillator */
-  unsigned char bus;		/**< Bus number */
-  unsigned short acx;		/**< Position in list of active connections */
-} Connection, * ConnectionPtr;
-
-/**
- * Swell pedal (volume control)
- */
-static float swellPedalGain = 0.07;
-
-/**
- * Output level trim. Used to trim the overall output level.
- */
-static float outputLevelTrim = 0.05011872336272722;
-
-/**
- * Our master tuning frequency.
- */
-static double tuning = 440.0;
-
-/**
- * When gearTuning is FALSE, the tuning is equal-tempered.
- * When TRUE, the tuning is based on the integer ratio approximations found
- * in the mechanical tone generator of the original instrument. The resulting
- * values are very close to the real thing.
- */
-static int gearTuning = 1;
-
-/*
- * Not all of these are used.
- */
-static struct _oscillator oscillators [NOF_WHEELS + 1];
-
-/*
- * Vector of active keys, used to correctly manage
- * sounding and non-sounding keys.
- */
-static unsigned int activeKeys [MAX_KEYS];
-
-/**
- * The array drawBarGain holds the instantaneous amplification value for
- * each of the drawbars.
- */
-static float drawBarGain[NOF_BUSES];
-
-/**
- * The drawBarLevel table holds the possible drawbar amplification values
- * for all drawbars and settings. When a drawbar change is applied, the
- * appropriate value is copied from the table and installed in drawBarGain[].
- */
-static float drawBarLevel[NOF_BUSES][9];
-
-/**
- * The drawBarChange flag is set by the routine that effectuates a drawbar
- * change. The oscGenerateFragment routine then checks the flag, computes
- * new composed gain values, and resets the flag.
- */
-static unsigned short drawBarChange = 0;
-
-/**
- * True when percussion is enabled.
- */
-static int percEnabled = FALSE;
-
-/**
- * With percussion enabled, the output from the this bus is muted, to
- * simulate its operation as the percussion trigger. A value of -1
- * disables the muting feature.
- */
-static int percTriggerBus = 8;
-
-/**
- * While percussion AND trigger bus muting are active, this variable
- * holds the drawbar setting to restore to the trigger bus once
- * percussion is disabled.
- */
-static int percTrigRestore = 0;
-
-static int percIsSoft;		/**< Runtime toggle */
-static int percIsFast;		/**< Runtime toggle */
-
-static double percFastDecaySeconds = 1.0; /**< Config parameter */
-static double percSlowDecaySeconds = 4.0; /**< Config parameter */
-
-
-/* Alternate percussion 25-May-2003/FK */
-
-/**
- * Runtime: The instantaneous gain applied to the percussion signal.
- */
-static float percEnvGain;
-
-/**
- * Runtime: The starting value of percEnvGain when all keys are released.
- */
-static float percEnvGainReset;
-
-/**
- * Runtime: The percEnvGain value is updated by being multiplied by this
- * variable between each sample. The value is close to, but less than 1.
- */
-static float percEnvGainDecay;
-
-/**
- * Config: scaling factor used to raise the percussion gain reset level
- * to audible levels. Can be viewed as overall 'volume' for percussion.
- */
-#ifdef HIPASS_PERCUSSION
-static float percEnvScaling = 11.0;
-#else
-static float percEnvScaling =  3.0;
-#endif /* HIPASS_PERCUSSION */
-
-/**
- * Runtime: Normal volume reset value, copied to percEnvGainReset when
- * normal percussion is selected.
- */
-static float percEnvGainResetNorm     = 1.0;
-
-/**
- * Runtime: Soft volume reset value, copied to percEnvGainReset when
- * soft percussion is selected.
- */
-static float percEnvGainResetSoft     = 0.5012;
-
-/**
- * Runtime: Fast and Normal decay multiplier, copied to percEnvGainDecay
- * when that combination is selected.
- */
-static float percEnvGainDecayFastNorm = 0.9995; /* Runtime select */
-
-/**
- * Runtime: Fast and Soft decay multiplier, copied to percEnvGainDecay
- * when that combination is selected.
- */
-static float percEnvGainDecayFastSoft = 0.9995; /* Runtime select */
-
-/**
- * Runtime: Slow and Normal decay multiplier, copied to percEnvGainDecay
- * when that combination is selected.
- */
-static float percEnvGainDecaySlowNorm = 0.9999; /* Runtime select */
-
-/**
- * Runtime: Slow and Soft decay multiplier, copied to percEnvGainDecay
- * when that combination is selected.
- */
-static float percEnvGainDecaySlowSoft = 0.9999; /* Runtime select */
-
-/**
- * Drawbar gain when the percussion NORMAL/SOFT is in the NORMAL position.
- */
-static float percDrawbarNormalGain = 0.60512;
-
-/**
- * Drawbar gain when the percussion NORMAL/SOFT is in the SOFT position.
- */
-static float percDrawbarSoftGain = 1.0;
-
-/**
- * Runtime drawbar gain.
- */
-static float percDrawbarGain = 1.0;
-
-/**
- * This variable determines the model simulated by the tonegenerator
- * and the keyboard wiring.
- */
-static int tgVariant = TG_91FB12;
-
-/**
- * This variable determines the precision with which the wave buffers
- * for the tonegenerator are sized and created.
- */
-static double tgPrecision = 0.001;
-
 /*
  * Equalisation macro selection.
  */
 #define EQ_SPLINE 0
 #define EQ_PEAK24 1		/* Legacy */
 #define EQ_PEAK46 2		/* Legacy */
-
-static int eqMacro = EQ_SPLINE;
-static double eqvCeiling = 1.0;	/**< Normalizing manual osc eq. */
-static double eqvAtt [128];	/**< Values from config file */
-static char   eqvSet [128];	/**< Value is set by a config command */
-
-/*
- * EQ_SPLINE parameters.
- */
-static double eqP1y =  1.0;	/* Default is flat */
-static double eqR1y =  0.0;
-static double eqP4y =  1.0;
-static double eqR4y =  0.0;
-
-/**
- * Default value of crosstalk between tonewheels in the same compartment.
- * The value refers to the amount of rogue signal picked up.
- */
-static double defaultCompartmentCrosstalk = 0.01; /* -40 dB */
-
-/**
- * Default value of crosstalk between transformers on the top of the tg.
- */
-static double defaultTransformerCrosstalk = 0.0;
-
-/**
- * Default value of crosstalk between connection on the terminal strip.
- */
-static double defaultTerminalStripCrosstalk = 0.01; /* -40 db */
-
-/**
- * Default throttle on the crosstalk distribution model for wiring.
- */
-
-static double defaultWiringCrosstalk = 0.01; /* -40 dB */
-
-/**
- * Signals weaker than this are not put on the contribution list.
- */
-
-static double contributionFloorLevel = 0.0000158;
-
-/**
- * If non-zero, signals that ARE placed on the contribution have at least
- * this level.
- */
-
-static double contributionMinLevel = 0.0;
-
-/*
- * Default amplitudes of tonewheel harmonics
- */
-#define MAX_PARTIALS 12
-static double wheel_Harmonics [MAX_PARTIALS] = { 1.0 }; /** < amplitudes of tonewheel harmonics */
-
-
-/**
- * The wheelHarmonics array is filled in during configuration. The list in
- * index 0 is used as default for non-configured slots.
- * First wheel number is 1, last is 91, hence 92 elements are needed.
- */
-static ListElement * wheelHarmonics[NOF_WHEELS + 1];
-
-/**
- * The terminalMix array is filled in during configuration. For each terminal
- * on the tonegenerator is describes the mix between wheels heard on the
- * terminal, and is thus responsible for the crosstalk generated in and on
- * the tonegenerator. The identity value should perhaps be assumed?
- */
-static ListElement * terminalMix[NOF_WHEELS + 1];
-
-/**
- * The keyTaper array is filled in during configuration. For each key and
- * bus contact in the key it describes the tonegenerator terminal connected
- * to it and the taper level.
- */
-static ListElement * keyTaper[MAX_KEYS];
 
 /* These units are in dB */
 
@@ -813,24 +360,96 @@ static ListElement * keyTaper[MAX_KEYS];
 #define taperPlusOne      3.5
 #define taperPlusTwo      7.0
 
-/**
- * The keyCrosstalk array is filled in during configuration. For each key
- * and bus contact in the key it describes the tonegenerator terminal also
- * heard in addition to the specification in the keyTaper array.
- */
-static ListElement * keyCrosstalk[MAX_KEYS];
 
-/**
- * The keyContrib array is loaded by routine compilePlayMatrix and is used
- * by the sound runtime to add or remove contribution from wheels to buses
- * as controlled by each key.
- */
-static ListElement * keyContrib[MAX_KEYS];
+static void initValues (struct b_tonegen *t) {
+  t->leConfig = NULL;
+  t->leRuntime = NULL;
+  t->activeOscLEnd = 0;
+
+  t->msgQueueWriter = t->msgQueue;
+  t->msgQueueReader = t->msgQueue;
+  t->msgQueueEnd = &(t->msgQueue[MSGQSZ]);
+  t->envAttackModel  = ENV_CLICK;
+  t->envReleaseModel = ENV_LINEAR;
+
+  t->envAttackClickLevel = 0.50;
+  t->envReleaseClickLevel = 0.25;
+
+  t->envAtkClkMinLength = -1; //  8 @ 22050
+  t->envAtkClkMaxLength = -1; // 40 @ 22050
+
+  t->newRouting = 0;
+  t->oldRouting = 0;
+
+  t->percSendBus = 4; /* 3 or 4 */
+  t->percSendBusA = 3;
+  t->percSendBusB = 4;
+
+  t->upperKeyCount = 0;
+
+#ifdef KEYCOMPRESSION
+  t->keyDownCount = 0;
+#endif
+
+  t->swellPedalGain = 0.07;
+  t->outputLevelTrim = 0.05011872336272722;
+  t->tuning = 440.0;
+
+  t->gearTuning = 1;
+
+  t->drawBarChange = 0;
+  t->percEnabled = FALSE;
+
+  t->percTriggerBus = 8;
+  t->percTrigRestore = 0;
+
+  t->percFastDecaySeconds = 1.0;
+  t->percSlowDecaySeconds = 4.0;
+
+#ifdef HIPASS_PERCUSSION
+  t->percEnvScaling = 11.0;
+#else
+  t->percEnvScaling =  3.0;
+#endif /* HIPASS_PERCUSSION */
+
+
+  t->percEnvGainResetNorm     = 1.0;
+  t->percEnvGainResetSoft     = 0.5012;
+  t->percEnvGainDecayFastNorm = 0.9995; /* Runtime select */
+  t->percEnvGainDecayFastSoft = 0.9995; /* Runtime select */
+  t->percEnvGainDecaySlowNorm = 0.9999; /* Runtime select */
+  t->percEnvGainDecaySlowSoft = 0.9999; /* Runtime select */
+  t->percDrawbarNormalGain = 0.60512;
+  t->percDrawbarSoftGain = 1.0;
+  t->percDrawbarGain = 1.0;
+
+  t->tgVariant = TG_91FB12;
+  t->tgPrecision = 0.001;
+  t->eqMacro = EQ_SPLINE;
+  t->eqvCeiling = 1.0;	/**< Normalizing manual osc eq. */
+
+  t->eqP1y =  1.0;	/* Default is flat */
+  t->eqR1y =  0.0;
+  t->eqP4y =  1.0;
+  t->eqR4y =  0.0;
+
+  t->defaultCompartmentCrosstalk = 0.01; /* -40 dB */
+  t->defaultTransformerCrosstalk = 0.0;
+  t->defaultTerminalStripCrosstalk = 0.01; /* -40 db */
+  t->defaultWiringCrosstalk = 0.01; /* -40 dB */
+  t->contributionFloorLevel = 0.0000158;
+  t->contributionMinLevel = 0.0;
+  int i;
+  for (i=0; i< MAX_PARTIALS; i++)
+    t->wheel_Harmonics[i]  = 0;
+  t->wheel_Harmonics[0]  = 1.0;
+  //t->wheel_Harmonics  = { 1.0 }; /** < amplitudes of tonewheel harmonics */
+}
 
 /**
  * Gear ratios for a 60 Hertz organ.
  */
-static double gears60ratios [12][2] = {
+static const double const gears60ratios [12][2] = {
   {85, 104},			/* c  */
   {71,  82},			/* c# */
   {67,  73},			/* d  */
@@ -848,7 +467,7 @@ static double gears60ratios [12][2] = {
 /**
  * Gear ratios for a 50 Hertz organ (estimated).
  */
-static double gears50ratios [12][2] = {
+static const double const gears50ratios [12][2] = {
   {17, 26},			/* c  */
   {57, 82},			/* c# */
   {11, 15},			/* d  */
@@ -867,7 +486,7 @@ static double gears50ratios [12][2] = {
  * This table is indexed by frequency number, i.e. the tone generator number
  * on the 91 oscillator generator. The first frequency/generator is numbered 1.
  */
-static short wheelPairs [92] = {
+static const short const wheelPairs [92] = {
   0,				/* 0: not used */
   49, 50, 51, 52,  53, 54, 55, 56,  57, 58, 59, 60, /* 1-12 */
   61, 62, 63, 64,  65, 66, 67, 68,  69, 70, 71, 72, /* 13-24 */
@@ -889,7 +508,7 @@ static short wheelPairs [92] = {
  * description of rows of transformers mounted on top of
  * the tonegenerator for the upper (north) manual
  */
-static short northTransformers [] = {
+static const short const northTransformers [] = {
   85, 66, 90, 71, 47, 64, 86, 69, 45, 62, 86, 67, 91, 72, 48, 65, 89, 70,
   46, 63, 87, 68, 44, 61,
   0
@@ -899,7 +518,7 @@ static short northTransformers [] = {
  * description of rows of transformers mounted on top of
  * the tonegenerator for the lower (south) manual
  */
-static short southTransformers [] = {
+static const short const southTransformers [] = {
   78, 54, 83, 59, 76, 52, 81, 57, 74, 50, 79, 55, 84, 60, 77, 53, 82, 58,
   75, 51, 80, 56, 73, 49,
   0
@@ -910,7 +529,7 @@ static short southTransformers [] = {
  * This array describes how oscillators are arranged on the terminal
  * soldering strip.
  */
-static short terminalStrip [] = {
+static const short const terminalStrip [] = {
   85, 42, 30, 76, 66, 18,  6, 54, 90, 35, 83, 71, 23, 11, 59, 47, 40,
   28, 76, 64, 16,  4, 52, 88, 33, 81, 69, 21,  9, 57, 45, 34, 26, 74,
   62, 14,  2, 50, 86, 43, 31, 79, 67, 19,  7, 55, 91, 36, 84, 72, 24,
@@ -1015,15 +634,15 @@ static ListElement * newListElement (ListElement ** pple) {
 /**
  * Allocates and returns a new configuration list element.
  */
-static ListElement * newConfigListElement () {
-  return newListElement (&leConfig);
+static ListElement * newConfigListElement (struct b_tonegen *t) {
+  return newListElement (&t->leConfig);
 }
 
 /**
  * Allocates and returns a new runtime list element.
  */
-static ListElement * newRuntimeListElement () {
-  return newListElement (&leRuntime);
+static ListElement * newRuntimeListElement (struct b_tonegen *t) {
+  return newListElement (&t->leRuntime);
 }
 
 /**
@@ -1045,12 +664,12 @@ static ListElement * appendListElement (ListElement ** pple, ListElement * lep)
  * before calling initToneGenerator() to have effect and is thus the
  * target for startup configuration values.
  */
-void setToneGeneratorModel (int variant) {
+void setToneGeneratorModel (struct b_tonegen *t, int variant) {
   switch (variant) {
   case TG_91FB00:
   case TG_82FB09:
   case TG_91FB12:
-    tgVariant = variant;
+    t->tgVariant = variant;
     break;
   }
 }
@@ -1060,18 +679,18 @@ void setToneGeneratorModel (int variant) {
  * be made before calling initToneGenerator() to have effect. It is the
  * target of startup configuration values.
  */
-void setWavePrecision (double precision) {
+void setWavePrecision (struct b_tonegen *t, double precision) {
   if (0.0 < precision) {
-    tgPrecision = precision;
+    t->tgPrecision = precision;
   }
 }
 
 /**
  * Sets the tuning.
  */
-void setTuning (double refA_Hz) {
+void setTuning (struct b_tonegen *t, double refA_Hz) {
   if ((220.0 <= refA_Hz) && (refA_Hz <= 880.0)) {
-    tuning = refA_Hz;
+    t->tuning = refA_Hz;
   }
 }
 
@@ -1229,7 +848,7 @@ static double taperingModel (int key, int bus) {
 /**
  * Applies the built-in default model to the manual tapering and crosstalk.
  */
-static void applyManualDefaults (int keyOffset, int busOffset) {
+static void applyManualDefaults (struct b_tonegen *t, int keyOffset, int busOffset) {
   int k;
   /* Terminal number distances between buses. */
   int ULoffset[9] = {-12, 7, 0,  12, 19, 24, 28,  31, 36};
@@ -1253,7 +872,7 @@ static void applyManualDefaults (int keyOffset, int busOffset) {
    *  across the manuals.)
    */
 
-  switch (tgVariant) {
+  switch (t->tgVariant) {
   case TG_91FB00:
     ULlowerFoldback = 1;	/* C-based generator, no foldback */
     leastTerminal = 1;
@@ -1270,7 +889,7 @@ static void applyManualDefaults (int keyOffset, int busOffset) {
 
   for (k = 0; k <= 60; k++) {	/* Iterate over 60 keys */
     int keyNumber = k + keyOffset; /* Determine the key's number */
-    if (keyTaper[keyNumber] == NULL) { /* If taper is unset */
+    if (t->keyTaper[keyNumber] == NULL) { /* If taper is unset */
       int b;
       for (b = 0; b < 9; b++) {	/* For each bus contact */
 	int terminalNumber;
@@ -1280,12 +899,12 @@ static void applyManualDefaults (int keyOffset, int busOffset) {
 	while (terminalNumber  < ULlowerFoldback) { terminalNumber += 12;}
 	while (ULupperFoldback < terminalNumber)  { terminalNumber -= 12;}
 
-	lep = newConfigListElement ();
+	lep = newConfigListElement (t);
 	LE_TERMINAL_OF(lep) = (short) terminalNumber;
 	LE_BUSNUMBER_OF(lep) = (short) (b + busOffset);
 	LE_LEVEL_OF(lep) = (float) taperingModel (k, b);
 
-	appendListElement (&(keyTaper[keyNumber]), lep);
+	appendListElement (&(t->keyTaper[keyNumber]), lep);
       }
     }
   }
@@ -1297,7 +916,7 @@ static void applyManualDefaults (int keyOffset, int busOffset) {
  *
  * @param nofPedals The number of pedals to enable.
  */
-static void applyPedalDefaults (int nofPedals) {
+static void applyPedalDefaults (struct b_tonegen *t, int nofPedals) {
   int k;
   int PDoffset[9] = {-12, 7, 0, 12, 19, 24, 28, 31, 36};
   ListElement * lep;
@@ -1306,18 +925,18 @@ static void applyPedalDefaults (int nofPedals) {
 
   for (k = 0; k < nofPedals; k++) {
     int keyNumber = k + 128;
-    if (keyTaper[keyNumber] == NULL) {
+    if (t->keyTaper[keyNumber] == NULL) {
       int b;
       for (b = 0; b < 9; b++) {
 	int terminalNumber;
 	terminalNumber = (k + 13) + PDoffset[b];
 	if (terminalNumber < 1) continue;
 	if (91 < terminalNumber) continue;
-	lep = newConfigListElement ();
+	lep = newConfigListElement (t);
 	LE_TERMINAL_OF(lep)  = (short) terminalNumber;
 	LE_BUSNUMBER_OF(lep) = (short) (b + PEDAL_BUS_LO);
 	LE_LEVEL_OF(lep)     = (float) dBToGain (taperReference);
-	appendListElement (&(keyTaper[keyNumber]), lep);
+	appendListElement (&(t->keyTaper[keyNumber]), lep);
       }
     }
   }
@@ -1329,28 +948,28 @@ static void applyPedalDefaults (int nofPedals) {
  * To the signal wired to each bus (contact) we add the signals wired into
  * the vertically neighbouring contacts, and divide by distance.
  */
-static void applyDefaultCrosstalk (int keyOffset, int busOffset) {
+static void applyDefaultCrosstalk (struct b_tonegen *t, int keyOffset, int busOffset) {
   int k;
   int b;
 
   for (k = 0; k <= 60; k++) {
     int keyNumber = k + keyOffset;
-    if (keyCrosstalk[keyNumber] == NULL) {
+    if (t->keyCrosstalk[keyNumber] == NULL) {
       for (b = 0; b < 9; b++) {
 	int busNumber = busOffset + b;
 	ListElement * lep;
-	for (lep = keyTaper[keyNumber]; lep != NULL; lep = lep->next) {
+	for (lep = t->keyTaper[keyNumber]; lep != NULL; lep = lep->next) {
 	  if (LE_BUSNUMBER_OF(lep) == busNumber) {
 	    continue;
 	  }
-	  ListElement * nlep = newConfigListElement ();
+	  ListElement * nlep = newConfigListElement (t);
 	  LE_TERMINAL_OF(nlep) = LE_TERMINAL_OF(lep);
 	  LE_BUSNUMBER_OF(nlep) = busNumber;
 	  LE_LEVEL_OF(nlep) =
-	    (defaultWiringCrosstalk * LE_LEVEL_OF(lep))
+	    (t->defaultWiringCrosstalk * LE_LEVEL_OF(lep))
 	    /
 	    fabs(busNumber - LE_BUSNUMBER_OF(lep));
-	  appendListElement (&(keyCrosstalk[keyNumber]), nlep);
+	  appendListElement (&(t->keyCrosstalk[keyNumber]), nlep);
 	}
       }
     }
@@ -1360,7 +979,7 @@ static void applyDefaultCrosstalk (int keyOffset, int busOffset) {
 /**
  * Find east-west neighbours.
  */
-static int findEastWestNeighbours (short * v, int w, int * ep, int * wp) {
+static int findEastWestNeighbours (const short const * v, int w, int * ep, int * wp) {
   int i;
 
   assert (v  != NULL);
@@ -1401,26 +1020,24 @@ static void findTransformerNeighbours (int w, int * ep, int * wp) {
 /**
  * This routine applies default models to the configuration.
  */
-static void applyDefaultConfiguration () {
+static void applyDefaultConfiguration (struct b_tonegen *t) {
   int i;
   ListElement * lep;
 
   /* Crosstalk at the terminals. Terminal mix. */
 
-
-
   for (i = 1; i <= NOF_WHEELS; i++) {
-    if (terminalMix[i] == NULL) {
-      lep = newConfigListElement ();
+    if (t->terminalMix[i] == NULL) {
+      lep = newConfigListElement (t);
       LE_WHEEL_NUMBER_OF(lep) = (short) i;
-      LE_WHEEL_LEVEL_OF(lep) = 1.0 - defaultCompartmentCrosstalk;
-      appendListElement (&(terminalMix[i]), lep);
-      if (0.0 < defaultCompartmentCrosstalk) {
+      LE_WHEEL_LEVEL_OF(lep) = 1.0 - t->defaultCompartmentCrosstalk;
+      appendListElement (&(t->terminalMix[i]), lep);
+      if (0.0 < t->defaultCompartmentCrosstalk) {
 	if (0 < wheelPairs[i]) {
-	  lep = newConfigListElement ();
+	  lep = newConfigListElement (t);
 	  LE_WHEEL_NUMBER_OF(lep) = wheelPairs[i];
-	  LE_WHEEL_LEVEL_OF(lep) = defaultCompartmentCrosstalk;
-	  appendListElement (&(terminalMix[i]), lep);
+	  LE_WHEEL_LEVEL_OF(lep) = t->defaultCompartmentCrosstalk;
+	  appendListElement (&(t->terminalMix[i]), lep);
 	}
       }
     }
@@ -1434,7 +1051,7 @@ static void applyDefaultConfiguration () {
    * mix of that neighbour.
    */
 
-  if (0.0 < defaultTransformerCrosstalk) {
+  if (0.0 < t->defaultTransformerCrosstalk) {
 
     for (i = 44; i <= NOF_WHEELS; i++) {
       int east = 0;
@@ -1443,40 +1060,40 @@ static void applyDefaultConfiguration () {
       findTransformerNeighbours (i, &east, &west);
 
       if (0 < east) {
-	lep = newConfigListElement ();
+	lep = newConfigListElement (t);
 	LE_WHEEL_NUMBER_OF(lep) = (short) east;
-	LE_WHEEL_LEVEL_OF(lep) = defaultTransformerCrosstalk;
-	appendListElement (&(terminalMix[i]), lep);
+	LE_WHEEL_LEVEL_OF(lep) = t->defaultTransformerCrosstalk;
+	appendListElement (&(t->terminalMix[i]), lep);
       }
 
       if (0 < west) {
-	lep = newConfigListElement ();
+	lep = newConfigListElement (t);
 	LE_WHEEL_NUMBER_OF(lep) = (short) west;
-	LE_WHEEL_LEVEL_OF(lep) = defaultTransformerCrosstalk;
-	appendListElement (&(terminalMix[i]), lep);
+	LE_WHEEL_LEVEL_OF(lep) = t->defaultTransformerCrosstalk;
+	appendListElement (&(t->terminalMix[i]), lep);
       }
     }
 
   } /* if defaultTransformerCrosstalk */
 
-  if (0.0 < defaultTerminalStripCrosstalk) {
+  if (0.0 < t->defaultTerminalStripCrosstalk) {
     for (i = 1; i <= NOF_WHEELS; i++) {
       int east = 0;
       int west = 0;
       findEastWestNeighbours (terminalStrip, i, &east, &west);
 
       if (0 < east) {
-	lep = newConfigListElement ();
+	lep = newConfigListElement (t);
 	LE_WHEEL_NUMBER_OF(lep) = (short) east;
-	LE_WHEEL_LEVEL_OF(lep) = defaultTerminalStripCrosstalk;
-	appendListElement (&(terminalMix[i]), lep);
+	LE_WHEEL_LEVEL_OF(lep) = t->defaultTerminalStripCrosstalk;
+	appendListElement (&(t->terminalMix[i]), lep);
       }
 
       if (0 < west) {
-	lep = newConfigListElement ();
+	lep = newConfigListElement (t);
 	LE_WHEEL_NUMBER_OF(lep) = (short) west;
-	LE_WHEEL_LEVEL_OF(lep) = defaultTerminalStripCrosstalk;
-	appendListElement (&(terminalMix[i]), lep);
+	LE_WHEEL_LEVEL_OF(lep) = t->defaultTerminalStripCrosstalk;
+	appendListElement (&(t->terminalMix[i]), lep);
       }
 
     }
@@ -1484,13 +1101,13 @@ static void applyDefaultConfiguration () {
 
   /* Key connections and taper */
 
-  applyManualDefaults ( 0, 0);
-  applyManualDefaults (64, 9);
-  applyPedalDefaults (32);
+  applyManualDefaults (t,  0, 0);
+  applyManualDefaults (t, 64, 9);
+  applyPedalDefaults (t, 32);
 
   /* Key crosstalk */
-  applyDefaultCrosstalk ( 0, 0);
-  applyDefaultCrosstalk (64, 9);
+  applyDefaultCrosstalk (t,  0, 0);
+  applyDefaultCrosstalk (t, 64, 9);
 
   /*
    * As yet there is no default crosstalk model for pedals, but they will
@@ -1518,7 +1135,8 @@ static void applyDefaultConfiguration () {
  * @param rowLength   The nof columns in each row.
  * @param endRowp
  */
-static void cpmInsert (const ListElement * lep,
+static void cpmInsert ( struct b_tonegen *t /* XXX terminalMix */,
+		       const ListElement * lep,
 		       unsigned char cpmBus[NOF_WHEELS + 1][NOF_BUSES],
 		       float cpmGain[NOF_WHEELS][NOF_BUSES],
 		       short wheelNumber[NOF_WHEELS + 1],
@@ -1533,7 +1151,7 @@ static void cpmInsert (const ListElement * lep,
   int b;
   ListElement * tlep;
 
-  for (tlep = terminalMix[terminal]; tlep != NULL; tlep = tlep->next) {
+  for (tlep = t->terminalMix[terminal]; tlep != NULL; tlep = tlep->next) {
     float gain = LE_WHEEL_LEVEL_OF(tlep) * LE_LEVEL_OF(lep);
     short wnr = LE_WHEEL_NUMBER_OF(tlep);
 
@@ -1575,7 +1193,7 @@ static void cpmInsert (const ListElement * lep,
  * This function also contains the transition from configuration list elements
  * to runtime list elements.
  */
-static void compilePlayMatrix () {
+static void compilePlayMatrix (struct b_tonegen *t) {
 
   static unsigned char cpmBus [NOF_WHEELS + 1][NOF_BUSES];
   static float cpmGain [NOF_WHEELS][NOF_BUSES];
@@ -1596,13 +1214,13 @@ static void compilePlayMatrix () {
     /* Reset the accumulation matrix */
     endRow = 0;
     /* Put in key taper information (info from the wiring model) */
-    for (lep = keyTaper[k]; lep != NULL; lep = lep->next) {
-      cpmInsert (lep, cpmBus, cpmGain, wheelNumber, rowLength, &endRow);
+    for (lep = t->keyTaper[k]; lep != NULL; lep = lep->next) {
+      cpmInsert (t, lep, cpmBus, cpmGain, wheelNumber, rowLength, &endRow);
     }
 #if 1				/* Disabled while debugging */
     /* Put in crosstalk information (info from the crosstalk model) */
-    for (lep = keyCrosstalk[k]; lep != NULL; lep = lep->next) {
-      cpmInsert (lep, cpmBus, cpmGain, wheelNumber, rowLength, &endRow);
+    for (lep = t->keyCrosstalk[k]; lep != NULL; lep = lep->next) {
+      cpmInsert (t, lep, cpmBus, cpmGain, wheelNumber, rowLength, &endRow);
     }
 #endif
     /* Read the matrix and generate a list entry in the keyContrib table. */
@@ -1611,7 +1229,7 @@ static void compilePlayMatrix () {
       for (c = 0; c < rowLength[w]; c++) {
 #if 0
 	/* Original code 22-sep-2004/FK */
-	ListElement * rep = newRuntimeListElement ();
+	ListElement * rep = newRuntimeListElement (t);
 	LE_WHEEL_NUMBER_OF(rep) = wheelNumber[w];
 	LE_BUSNUMBER_OF(rep) = cpmBus[w][c];
 	LE_LEVEL_OF(rep) = cpmGain[w][c];
@@ -1620,21 +1238,21 @@ static void compilePlayMatrix () {
 	/* Test code 22-sep-2004/FK */
 	ListElement ** P;
 	ListElement * rep;
-	if (cpmGain[w][c] < contributionFloorLevel) continue;
-	rep = newRuntimeListElement ();
+	if (cpmGain[w][c] < t->contributionFloorLevel) continue;
+	rep = newRuntimeListElement (t);
 	LE_WHEEL_NUMBER_OF(rep) = wheelNumber[w];
 	LE_BUSNUMBER_OF(rep)    = cpmBus[w][c];
 	LE_LEVEL_OF(rep)        = cpmGain[w][c];
 
-	if (LE_LEVEL_OF(rep) < contributionMinLevel) {
-	  LE_LEVEL_OF(rep) = contributionMinLevel;
+	if (LE_LEVEL_OF(rep) < t->contributionMinLevel) {
+	  LE_LEVEL_OF(rep) = t->contributionMinLevel;
 	}
 
 #endif
 
 	/* Insertion sort, first on wheel then on bus. */
 
-	for (P = &(keyContrib[k]); (*P) != NULL; P = &((*P)->next)) {
+	for (P = &(t->keyContrib[k]); (*P) != NULL; P = &((*P)->next)) {
 	  if (sortMode == 0) {
 	    if (LE_WHEEL_NUMBER_OF(rep) < LE_WHEEL_NUMBER_OF(*P)) break;
 	    if (LE_WHEEL_NUMBER_OF(rep) == LE_WHEEL_NUMBER_OF(*P)) {
@@ -1652,8 +1270,8 @@ static void compilePlayMatrix () {
   } /* for each key */
 #if 0				/* DEBUG */
   for (k = 0; k < MAX_KEYS; k++) {
-    if (keyContrib[k] != NULL) {
-      keyContrib[k]->next = NULL;
+    if (t->keyContrib[k] != NULL) {
+      t->keyContrib[k]->next = NULL;
     }
   }
 #endif
@@ -1684,7 +1302,8 @@ static double damperCurve (int thisTG, /* Number of requested TG */
  * Applies a constrained spline (p1x=0, p4x=0) to the oscillator's
  * attenuation.
  */
-static int apply_CH_Spline (int nofOscillators,
+static int apply_CH_Spline (struct b_tonegen *tg,
+			    int nofOscillators,
 			    double p1y,
 			    double r1y,
 			    double p4y,
@@ -1704,7 +1323,7 @@ static int apply_CH_Spline (int nofOscillators,
       + r4y * ( tCb - tSq);
 
     a = (r < 0.0) ? 0.0 : (1.0 < r) ? 1.0 : r;
-    oscillators[i].attenuation = a;
+    tg->oscillators[i].attenuation = a;
   }
 
   return 0;
@@ -1713,19 +1332,19 @@ static int apply_CH_Spline (int nofOscillators,
 /**
  * Implements a built-in oscillator equalization curve.
  */
-static int applyOscEQ_peak24 (int nofOscillators) {
+static int applyOscEQ_peak24 (struct b_tonegen *t, int nofOscillators) {
   int i;
 
   for (i = 1; i <= 43; i++) {
-    oscillators[i].attenuation = damperCurve (i,  1, 43, 0.2, -0.8,  1.0);
+    t->oscillators[i].attenuation = damperCurve (i,  1, 43, 0.2, -0.8,  1.0);
   }
 
   for (i = 44; i <= 48; i++) {
-    oscillators[i].attenuation = damperCurve (i, 44, 48, 1.6, -0.4, -0.3);
+    t->oscillators[i].attenuation = damperCurve (i, 44, 48, 1.6, -0.4, -0.3);
   }
 
   for (i = 49; i <= nofOscillators; i++) {
-    oscillators[i].attenuation =
+    t->oscillators[i].attenuation =
       damperCurve (i, 49, nofOscillators, 0.9, -1.0, -0.7);
   }
 
@@ -1735,19 +1354,19 @@ static int applyOscEQ_peak24 (int nofOscillators) {
 /**
  * Implements a built-in oscillator equalization curve.
  */
-static int applyOscEQ_peak46 (int nofOscillators) {
+static int applyOscEQ_peak46 (struct b_tonegen *t, int nofOscillators) {
   int i;
 
   for (i = 1; i <= 43; i++) {
-    oscillators[i].attenuation = damperCurve (i,  1, 43,  0.3, 0.4,  1.0);
+    t->oscillators[i].attenuation = damperCurve (i,  1, 43,  0.3, 0.4,  1.0);
   }
 
   for (i = 44; i <= 48; i++) {
-    oscillators[i].attenuation = damperCurve (i, 44, 48,  0.1, -0.4, 0.4);
+    t->oscillators[i].attenuation = damperCurve (i, 44, 48,  0.1, -0.4, 0.4);
   }
 
   for (i = 49; i <= nofOscillators; i++) {
-    oscillators[i].attenuation =
+    t->oscillators[i].attenuation =
       damperCurve (i, 49, nofOscillators, 0.8, -1.0, -0.3);
   }
 
@@ -1909,7 +1528,7 @@ static void writeSamples (float * buf,
  *
  * @param precision  The loop precision value. See function fitWave().
  */
-static void initOscillators (int variant, double precision) {
+static void initOscillators (struct b_tonegen *t, int variant, double precision) {
   int i;
   double baseTuning;
   int nofOscillators;
@@ -1921,19 +1540,19 @@ static void initOscillators (int variant, double precision) {
 
   case 0:
     nofOscillators = 91;
-    baseTuning     = tuning / 8.0;
+    baseTuning     = t->tuning / 8.0;
     tuningOsc      = 10;
     break;
 
   case 1:
     nofOscillators = 82;
-    baseTuning     = tuning / 8.0;
+    baseTuning     = t->tuning / 8.0;
     tuningOsc      = 1;
     break;
 
   case 2:
     nofOscillators = 91;
-    baseTuning     = tuning / 8.0;
+    baseTuning     = t->tuning / 8.0;
     tuningOsc      = 10;
     break;
 
@@ -1946,15 +1565,15 @@ static void initOscillators (int variant, double precision) {
    * oscillator struct.
    */
 
-  switch (eqMacro) {
+  switch (t->eqMacro) {
   case EQ_SPLINE:
-    apply_CH_Spline (nofOscillators, eqP1y, eqR1y, eqP4y, eqR4y);
+    apply_CH_Spline (t, nofOscillators, t->eqP1y, t->eqR1y, t->eqP4y, t->eqR4y);
     break;
   case EQ_PEAK24:
-    applyOscEQ_peak24 (nofOscillators);
+    applyOscEQ_peak24 (t, nofOscillators);
     break;
   case EQ_PEAK46:
-    applyOscEQ_peak46 (nofOscillators);
+    applyOscEQ_peak46 (t, nofOscillators);
     break;
   }
 
@@ -1962,22 +1581,22 @@ static void initOscillators (int variant, double precision) {
     int j;
     size_t wszs;		/* Wave size samples */
     size_t wszb;		/* Wave size bytes */
-    double t;
+    double tun;
     ListElement * lep;
 
-    osp = & (oscillators[i]);
+    osp = & (t->oscillators[i]);
 
-    if (eqvSet[i] != 0) {
-      osp->attenuation = eqvAtt[i];
+    if (t->eqvSet[i] != 0) {
+      osp->attenuation = t->eqvAtt[i];
     }
 
     osp->aclPos = -1;
     osp->rflags =  0;
     osp->pos    =  0;
 
-    t = (double) (i - tuningOsc);
+    tun = (double) (i - tuningOsc);
 
-    if (gearTuning) {
+    if (t->gearTuning) {
       /* Frequency number minus one. The frequency number is the number of
 	 the oscillator on the tone generator with 91 oscillators. This
 	 means that the frequency number here always is 0 for c@37 Hz.
@@ -1999,7 +1618,7 @@ static void initOscillators (int variant, double precision) {
 
       assert ((0 <= select) && (select < 12));
 
-      if (gearTuning == 1) {
+      if (t->gearTuning == 1) {
 	gearA = gears60ratios[select][0];
 	gearB = gears60ratios[select][1];
 	osp->frequency = (20.0 * teeth * gearA) / gearB;
@@ -2009,10 +1628,10 @@ static void initOscillators (int variant, double precision) {
 	gearB = gears50ratios[select][1];
 	osp->frequency = (25.0 * teeth * gearA) / gearB;
       }
-      osp->frequency *= (tuning / 440.0);
+      osp->frequency *= (t->tuning / 440.0);
     }
     else {
-      osp->frequency = baseTuning * pow (2.0, t / 12.0);
+      osp->frequency = baseTuning * pow (2.0, tun / 12.0);
     }
 
     /*
@@ -2057,12 +1676,12 @@ static void initOscillators (int variant, double precision) {
     /* Reset the harmonics list to the compile-time value. */
 
     for (j = 0; j < MAX_PARTIALS; j++) {
-      harmonicsList[j] = wheel_Harmonics[j];
+      harmonicsList[j] = t->wheel_Harmonics[j];
     }
 
     /* Add optional global default from configuration */
 
-    for (lep = wheelHarmonics[0]; lep != NULL; lep = lep->next) {
+    for (lep = t->wheelHarmonics[0]; lep != NULL; lep = lep->next) {
       int h = LE_HARMONIC_NUMBER_OF(lep) - 1;
       assert (0 <= h);
       if (h < MAX_PARTIALS) {
@@ -2072,7 +1691,7 @@ static void initOscillators (int variant, double precision) {
 
     /* Then add any harmonics specific to this wheel. */
 
-    for (lep = wheelHarmonics[i]; lep != NULL; lep = lep->next) {
+    for (lep = t->wheelHarmonics[i]; lep != NULL; lep = lep->next) {
       int h = LE_HARMONIC_NUMBER_OF(lep) - 1;
       assert (0 <= h);
       if (h < MAX_PARTIALS) {
@@ -2096,22 +1715,22 @@ static void initOscillators (int variant, double precision) {
 /**
  * Controls the routing of the upper manual through the vibrato scanner.
  */
-void setVibratoUpper (int isEnabled) {
+void setVibratoUpper (struct b_tonegen *t, int isEnabled) {
   if (isEnabled) {
-    newRouting |= RT_UPPRVIB;
+    t->newRouting |= RT_UPPRVIB;
   } else {
-    newRouting &= ~RT_UPPRVIB;
+    t->newRouting &= ~RT_UPPRVIB;
   }
 }
 
 /**
  * Controls the routing of the lower manual through the vibrato scanner.
  */
-void setVibratoLower (int isEnabled) {
+void setVibratoLower (struct b_tonegen *t, int isEnabled) {
   if (isEnabled) {
-    newRouting |= RT_LOWRVIB;
+    t->newRouting |= RT_LOWRVIB;
   } else {
-    newRouting &= ~RT_LOWRVIB;
+    t->newRouting &= ~RT_LOWRVIB;
   }
 }
 
@@ -2121,42 +1740,42 @@ void setVibratoLower (int isEnabled) {
  * @param isEnabled  If true, percussion is enabled. If false, percussion
  *                   is disabled.
  */
-void setPercussionEnabled (int isEnabled) {
+void setPercussionEnabled (struct b_tonegen *t, int isEnabled) {
 
   if (isEnabled) {
-    newRouting |=  RT_PERC;
-    if (-1 < percTriggerBus) {
-      drawBarGain[percTriggerBus] = 0.0;
-      drawBarChange = 1;
+    t->newRouting |=  RT_PERC;
+    if (-1 < t->percTriggerBus) {
+      t->drawBarGain[t->percTriggerBus] = 0.0;
+      t->drawBarChange = 1;
     }
   } else {
-    newRouting &= ~RT_PERC;
-    if (-1 < percTriggerBus) {
-      drawBarGain[percTriggerBus] =
-	drawBarLevel[percTriggerBus][percTrigRestore];
-      drawBarChange = 1;
+    t->newRouting &= ~RT_PERC;
+    if (-1 < t->percTriggerBus) {
+      t->drawBarGain[t->percTriggerBus] =
+	t->drawBarLevel[t->percTriggerBus][t->percTrigRestore];
+      t->drawBarChange = 1;
     }
   }
-  percEnabled = isEnabled;
+  t->percEnabled = isEnabled;
 }
 
 /**
  * This routine sets the percCounterReset variable from the current
  * combination of the control flags percIsFast and percIsSoft.
  */
-static void setPercussionResets () {
-  if (percIsFast) {
+static void setPercussionResets (struct b_tonegen *t) {
+  if (t->percIsFast) {
 
     /* Alternate 25-May-2003 */
-    percEnvGainDecay =
-      percIsSoft ? percEnvGainDecayFastSoft : percEnvGainDecayFastNorm;
+    t->percEnvGainDecay =
+      t->percIsSoft ? t->percEnvGainDecayFastSoft : t->percEnvGainDecayFastNorm;
 
   }
   else {			/* Slow */
 
     /* Alternate 25-May-2003 */
-    percEnvGainDecay =
-      percIsSoft ? percEnvGainDecaySlowSoft : percEnvGainDecaySlowNorm;
+    t->percEnvGainDecay =
+      t->percIsSoft ? t->percEnvGainDecaySlowSoft : t->percEnvGainDecaySlowNorm;
 
   }
 }
@@ -2166,9 +1785,9 @@ static void setPercussionResets () {
  * @param isFast  If true, selects fast percussion decay. If false,
  *                selects slow percussion decay.
  */
-void setPercussionFast (int isFast) {
-  percIsFast = isFast;
-  setPercussionResets ();
+void setPercussionFast (struct b_tonegen *t, int isFast) {
+  t->percIsFast = isFast;
+  setPercussionResets (t);
 }
 
 /**
@@ -2176,26 +1795,26 @@ void setPercussionFast (int isFast) {
  * @param isSoft  If true, selects soft percussion. If false, selects
  *                normal percussion.
  */
-void setPercussionVolume (int isSoft) {
-  percIsSoft = isSoft;
+void setPercussionVolume (struct b_tonegen *t, int isSoft) {
+  t->percIsSoft = isSoft;
 
   /* Alternate 25-May-2003 */
-  percEnvGainReset =
-    percEnvScaling * (isSoft ? percEnvGainResetSoft : percEnvGainResetNorm);
+  t->percEnvGainReset =
+    t->percEnvScaling * (isSoft ? t->percEnvGainResetSoft : t->percEnvGainResetNorm);
 
-  percDrawbarGain = isSoft ? percDrawbarSoftGain : percDrawbarNormalGain;
+  t->percDrawbarGain = isSoft ? t->percDrawbarSoftGain : t->percDrawbarNormalGain;
 
-  setPercussionResets ();
+  setPercussionResets (t);
 }
 
 /**
  * Selects first or second choice of percussion tone tap.
  */
-void setPercussionFirst (int isFirst) {
+void setPercussionFirst (struct b_tonegen *t, int isFirst) {
   if (isFirst) {
-    percSendBus = percSendBusA;
+    t->percSendBus = t->percSendBusA;
   } else {
-    percSendBus = percSendBusB;
+    t->percSendBus = t->percSendBusB;
   }
 }
 
@@ -2232,30 +1851,30 @@ double getPercDecayConst_sec (double ig, double tg, double seconds) {
  * has been updated. It recomputes the reset values for the percussion
  * amplification and the percussion amplification decrement counter.
  */
-static void computePercResets () {
+static void computePercResets (struct b_tonegen *t) {
 
   /* Compute the percussion reset values. */
 
   /* Alternate 25-May-2003 */
-  percEnvGainDecayFastNorm = getPercDecayConst_sec (percEnvGainResetNorm,
+  t->percEnvGainDecayFastNorm = getPercDecayConst_sec (t->percEnvGainResetNorm,
 						    dBToGain (-60.0),
-						    percFastDecaySeconds);
+						    t->percFastDecaySeconds);
 
-  percEnvGainDecayFastSoft = getPercDecayConst_sec (percEnvGainResetSoft,
+  t->percEnvGainDecayFastSoft = getPercDecayConst_sec (t->percEnvGainResetSoft,
 						    dBToGain (-60.0),
-						    percFastDecaySeconds);
+						    t->percFastDecaySeconds);
 
-  percEnvGainDecaySlowNorm = getPercDecayConst_sec (percEnvGainResetNorm,
+  t->percEnvGainDecaySlowNorm = getPercDecayConst_sec (t->percEnvGainResetNorm,
 						    dBToGain (-60.0),
-						    percSlowDecaySeconds);
+						    t->percSlowDecaySeconds);
 
-  percEnvGainDecaySlowSoft = getPercDecayConst_sec (percEnvGainResetSoft,
+  t->percEnvGainDecaySlowSoft = getPercDecayConst_sec (t->percEnvGainResetSoft,
 						    dBToGain (-60.0),
-						    percSlowDecaySeconds);
+						    t->percSlowDecaySeconds);
 
   /* Deploy the computed reset values. */
 
-  setPercussionResets ();
+  setPercussionResets (t);
 }
 
 
@@ -2263,24 +1882,24 @@ static void computePercResets () {
  * This routine sets the fast percussion decay time.
  * @param seconds  The percussion decay time.
  */
-void setFastPercussionDecay (double seconds) {
-  percFastDecaySeconds = seconds;
-  if (percFastDecaySeconds <= 0.0) {
-    percFastDecaySeconds = 0.1;
+void setFastPercussionDecay (struct b_tonegen *t, double seconds) {
+  t->percFastDecaySeconds = seconds;
+  if (t->percFastDecaySeconds <= 0.0) {
+    t->percFastDecaySeconds = 0.1;
   }
-  computePercResets ();
+  computePercResets (t);
 }
 
 /**
  * This routine sets the slow percussion decay time.
  * @param seconds  The percussion decay time.
  */
-void setSlowPercussionDecay (double seconds) {
-  percSlowDecaySeconds = seconds;
-  if (percSlowDecaySeconds <= 0.0) {
-    percSlowDecaySeconds = 0.1;
+void setSlowPercussionDecay (struct b_tonegen *t, double seconds) {
+  t->percSlowDecaySeconds = seconds;
+  if (t->percSlowDecaySeconds <= 0.0) {
+    t->percSlowDecaySeconds = 0.1;
   }
-  computePercResets ();
+  computePercResets (t);
 }
 
 /**
@@ -2288,8 +1907,8 @@ void setSlowPercussionDecay (double seconds) {
  * The expected level is 1.0 with soft volume less than that.
  * @param g  The starting gain.
  */
-void setNormalPercussionGain (double g) {
-  percEnvGainResetNorm = (float) g;
+void setNormalPercussionGain (struct b_tonegen *t, double g) {
+  t->percEnvGainResetNorm = (float) g;
 }
 
 /**
@@ -2297,27 +1916,27 @@ void setNormalPercussionGain (double g) {
  * The expected level is less than 1.0.
  * @param g  The starting gain.
  */
-void setSoftPercussionGain (double g) {
-  percEnvGainResetSoft = (float) g;
+void setSoftPercussionGain (struct b_tonegen *t, double g) {
+  t->percEnvGainResetSoft = (float) g;
 }
 
 /**
  * Sets the percussion gain scaling factor.
  * @param s  The scaling factor.
  */
-void setPercussionGainScaling (double s) {
-  percEnvScaling = (float) s;
+void setPercussionGainScaling (struct b_tonegen *t, double s) {
+  t->percEnvScaling = (float) s;
 }
 
-void setEnvAttackModel (int model) {
+void setEnvAttackModel (struct b_tonegen *t, int model) {
   if ((0 <= model) && (model < ENV_CLICKMODELS)) {
-    envAttackModel = model;
+    t->envAttackModel = model;
   }
 }
 
-void setEnvReleaseModel (int model) {
+void setEnvReleaseModel (struct b_tonegen *t, int model) {
   if ((0 <= model) && (model < ENV_CLICKMODELS)) {
-    envReleaseModel = model;
+    t->envReleaseModel = model;
   }
 }
 
@@ -2328,8 +1947,8 @@ void setEnvReleaseModel (int model) {
  * envelopes (they close at different times). However, a higher value will
  * simulate more oxidization of the contacts, as in a worn instrument.
  */
-void setEnvAttackClickLevel (double u) {
-  envAttackClickLevel = u;
+void setEnvAttackClickLevel (struct b_tonegen *t, double u) {
+  t->envAttackClickLevel = u;
 }
 
 static void setEnvAtkClkLength (int * p, double u) {
@@ -2344,19 +1963,19 @@ static void setEnvAtkClkLength (int * p, double u) {
  * Sets the minimum duration of a keyclick noise burst. The unit is a fraction
  * (0.0 -- 1.0) of the adjustable range.
  */
-void setEnvAtkClkMinLength (double u) {
-  setEnvAtkClkLength (&envAtkClkMinLength, u);
+void setEnvAtkClkMinLength (struct b_tonegen *t, double u) {
+  setEnvAtkClkLength (&t->envAtkClkMinLength, u);
 }
 
 /**
  * Sets the maximum duration of a keyclick noise burst.
  */
-void setEnvAtkClkMaxLength (double u) {
-  setEnvAtkClkLength (&envAtkClkMaxLength, u);
+void setEnvAtkClkMaxLength (struct b_tonegen *t, double u) {
+  setEnvAtkClkLength (&t->envAtkClkMaxLength, u);
 }
 
-void setEnvReleaseClickLevel (double u) {
- envReleaseClickLevel = u;
+void setEnvReleaseClickLevel (struct b_tonegen *t, double u) {
+ t->envReleaseClickLevel = u;
 }
 
 #ifdef KEYCOMPRESSION
@@ -2375,7 +1994,7 @@ void setEnvReleaseClickLevel (double u) {
  *
  * The first eight positions are handcrafted to sound less obvious.
  */
-static void initKeyCompTable () {
+static void initKeyCompTable (struct b_tonegen *t) {
   int i;
   float u = -5.0;
   float v = -9.0;
@@ -2383,22 +2002,22 @@ static void initKeyCompTable () {
 
  /* The first two entries, 0 and 1, should be equal! */
 
-  keyCompTable[ 0] = keyCompTable[1] = KEYCOMP_ZERO_LEVEL;
-  keyCompTable[ 2] = dBToGain ( -1.1598);
-  keyCompTable[ 3] = dBToGain ( -2.0291);
-  keyCompTable[ 4] = dBToGain ( -2.4987);
-  keyCompTable[ 5] = dBToGain ( -2.9952);
-  keyCompTable[ 6] = dBToGain ( -3.5218);
-  keyCompTable[ 7] = dBToGain ( -4.0823);
-  keyCompTable[ 8] = dBToGain ( -4.6815);
-  keyCompTable[ 9] = dBToGain ( -4.9975);
-  keyCompTable[10] = dBToGain ( -4.9998);
+  t->keyCompTable[ 0] = t->keyCompTable[1] = KEYCOMP_ZERO_LEVEL;
+  t->keyCompTable[ 2] = dBToGain ( -1.1598);
+  t->keyCompTable[ 3] = dBToGain ( -2.0291);
+  t->keyCompTable[ 4] = dBToGain ( -2.4987);
+  t->keyCompTable[ 5] = dBToGain ( -2.9952);
+  t->keyCompTable[ 6] = dBToGain ( -3.5218);
+  t->keyCompTable[ 7] = dBToGain ( -4.0823);
+  t->keyCompTable[ 8] = dBToGain ( -4.6815);
+  t->keyCompTable[ 9] = dBToGain ( -4.9975);
+  t->keyCompTable[10] = dBToGain ( -4.9998);
 
   /* Linear interpolation from u to v. */
 
   for (i = 11; i < MAXKEYS; i++) {
     float a = (float) (i - 11);
-    keyCompTable[i] = dBToGain (u + ((v - u) * a * m));
+    t->keyCompTable[i] = dBToGain (u + ((v - u) * a * m));
   }
 
 }
@@ -2408,7 +2027,7 @@ static void initKeyCompTable () {
 /**
  * Dumps the configuration lists to a text file.
  */
-static void dumpConfigLists (char * fname) {
+static void dumpConfigLists (struct b_tonegen *t, char * fname) {
   FILE * fp;
   int i;
   int j;
@@ -2421,13 +2040,13 @@ static void dumpConfigLists (char * fname) {
 
     for (i = 0; i <= NOF_WHEELS; i++) {
       fprintf (fp, "wheelHarmonics[%2d]=", i);
-      if (wheelHarmonics[i] == NULL) {
+      if (t->wheelHarmonics[i] == NULL) {
 	fprintf (fp, "NULL");
       }
       else {
 	ListElement * lep;
 	j = 0;
-	for (lep = wheelHarmonics[i]; lep != NULL; lep = lep->next) {
+	for (lep = t->wheelHarmonics[i]; lep != NULL; lep = lep->next) {
 	  if (j++) fprintf (fp, ", ");
 	  fprintf (fp,
 		   "f%d:%f",
@@ -2444,13 +2063,13 @@ static void dumpConfigLists (char * fname) {
 
     for (i = 0; i <= NOF_WHEELS; i++) {
       fprintf (fp, "terminalMix[%2d]=", i);
-      if (terminalMix[i] == NULL) {
+      if (t->terminalMix[i] == NULL) {
 	fprintf (fp, "NULL");
       }
       else {
 	ListElement * lep;
 	j = 0;
-	for (lep = terminalMix[i]; lep != NULL; lep = lep->next) {
+	for (lep = t->terminalMix[i]; lep != NULL; lep = lep->next) {
 	  if (j++) fprintf (fp, ", ");
 	  fprintf (fp,
 		   "w%d:%f",
@@ -2465,13 +2084,13 @@ static void dumpConfigLists (char * fname) {
 
     for (i = 0; i < MAX_KEYS; i++) {
       fprintf (fp, "keyTaper[%2d]=", i);
-      if (keyTaper[i] == NULL) {
+      if (t->keyTaper[i] == NULL) {
 	fprintf (fp, "NULL");
       }
       else {
 	ListElement * lep;
 	j = 0;
-	for (lep = keyTaper[i]; lep != NULL; lep = lep->next) {
+	for (lep = t->keyTaper[i]; lep != NULL; lep = lep->next) {
 	  if (j++) fprintf (fp, ", ");
 	  fprintf (fp,
 		   "t%d:b%d:g%f",
@@ -2487,13 +2106,13 @@ static void dumpConfigLists (char * fname) {
 
     for (i = 0; i < MAX_KEYS; i++) {
       fprintf (fp, "keyCrosstalk[%2d]=", i);
-      if (keyCrosstalk[i] == NULL) {
+      if (t->keyCrosstalk[i] == NULL) {
 	fprintf (fp, "NULL");
       }
       else {
 	ListElement * lep;
 	j = 0;
-	for (lep = keyCrosstalk[i]; lep != NULL; lep = lep->next) {
+	for (lep = t->keyCrosstalk[i]; lep != NULL; lep = lep->next) {
 	  if (j++) fprintf (fp, ", ");
 	  fprintf (fp,
 		   "b%d:t%d:g%f",
@@ -2517,7 +2136,7 @@ static void dumpConfigLists (char * fname) {
 /**
  * Dumps the keyContrib table to a text file.
  */
-static void dumpRuntimeData (char * fname) {
+static void dumpRuntimeData (struct b_tonegen *t, char * fname) {
   FILE * fp;
   int k;
   if ((fp = fopen (fname, "w")) != NULL) {
@@ -2528,7 +2147,7 @@ static void dumpRuntimeData (char * fname) {
       int j = 0;
       int wcount = 0;
       int lastWheel = -1;
-      for (rep = keyContrib[k]; rep != NULL; rep = rep->next) {
+      for (rep = t->keyContrib[k]; rep != NULL; rep = rep->next) {
 	int x;
 	double dbLevel = 20.0 * log10 (LE_LEVEL_OF(rep));
 	if (j++) {
@@ -2562,7 +2181,7 @@ static void dumpRuntimeData (char * fname) {
  * 22-sep-2003/FK
  * Dump the oscillator array for diagnostics.
  */
-static int dumpOscToText (char * fname) {
+static int dumpOscToText (struct b_tonegen *t, char * fname) {
   FILE * fp;
   int i;
   size_t bufferSamples = 0;
@@ -2582,11 +2201,11 @@ static int dumpOscToText (char * fname) {
   for (i = 0; i < 128; i++) {
     fprintf (fp, "[%3d]:%7.2lf Hz:%5zu:%6zu:%5.2lf\n",
 	     i,
-	     oscillators[i].frequency,
-	     oscillators[i].lengthSamples,
-	     oscillators[i].lengthSamples * sizeof (float),
-	     oscillators[i].attenuation);
-    bufferSamples += oscillators[i].lengthSamples;
+	     t->oscillators[i].frequency,
+	     t->oscillators[i].lengthSamples,
+	     t->oscillators[i].lengthSamples * sizeof (float),
+	     t->oscillators[i].attenuation);
+    bufferSamples += t->oscillators[i].lengthSamples;
   }
 
   fprintf (fp, "TOTAL MEMORY: %zu samples, %zu bytes\n",
@@ -2601,76 +2220,76 @@ static int dumpOscToText (char * fname) {
 /**
  * This routine configures this module.
  */
-int oscConfig (ConfigContext * cfg) {
+int oscConfig (struct b_tonegen *t, ConfigContext * cfg) {
   int ack = 0;
   double d;
   int ival;
   if ((ack = getConfigParameter_d ("osc.tuning", cfg, &d)) == 1) {
-    setTuning (d);
+    setTuning (t, d);
   }
   else if (!strcasecmp (cfg->name, "osc.temperament")) {
     ack++;
     if (!strcasecmp (cfg->value, "equal")) {
-      gearTuning = 0;
+      t->gearTuning = 0;
     }
     else if (!strcasecmp (cfg->value, "gear60")) {
-      gearTuning = 1;
+      t->gearTuning = 1;
     }
     else if (!strcasecmp (cfg->value, "gear50")) {
-      gearTuning = 2;
+      t->gearTuning = 2;
     }
     else {
       showConfigfileContext (cfg, "'equal', 'gear60', or 'gear50' expected");
     }
   }
   else if ((ack = getConfigParameter_d ("osc.x-precision", cfg, &d)) == 1) {
-    setWavePrecision (d);
+    setWavePrecision (t, d);
   }
   else if ((ack = getConfigParameter_d ("osc.perc.fast",
 				       cfg,
-				       &percFastDecaySeconds))) {
+				       &t->percFastDecaySeconds))) {
     ;
   }
   else if ((ack = getConfigParameter_d ("osc.perc.slow",
 				       cfg,
-				       &percSlowDecaySeconds))) {
+				       &t->percSlowDecaySeconds))) {
     ;
   }
   else if ((ack = getConfigParameter_d ("osc.perc.normal", cfg, &d)) == 1) {
-    setNormalPercussionGain (d);
+    setNormalPercussionGain (t, d);
   }
   else if ((ack = getConfigParameter_d ("osc.perc.soft", cfg, &d)) == 1) {
-    setSoftPercussionGain (d);
+    setSoftPercussionGain (t, d);
   }
   else if ((ack = getConfigParameter_d ("osc.perc.gain", cfg, &d)) == 1) {
-    setPercussionGainScaling (d);
+    setPercussionGainScaling (t, d);
   }
   else if ((ack = getConfigParameter_ir ("osc.perc.bus.a",
 					 cfg,
 					 &ival,
 					 0, 8)) == 1) {
-    percSendBusA = ival;
+    t->percSendBusA = ival;
   }
   else if ((ack = getConfigParameter_ir ("osc.perc.bus.b",
 					 cfg,
 					 &ival,
 					 0, 8)) == 1) {
-    percSendBusB = ival;
+    t->percSendBusB = ival;
   }
   else if ((ack = getConfigParameter_ir ("osc.perc.bus.trig",
 					 cfg,
 					 &ival,
 					 -1, 8)) == 1) {
-    percTriggerBus = ival;
+    t->percTriggerBus = ival;
   }
   else if (!strcasecmp (cfg->name, "osc.eq.macro")) {
     ack++;
     if (!strcasecmp (cfg->value, "chspline")) {
-      eqMacro = EQ_SPLINE;
+      t->eqMacro = EQ_SPLINE;
     } else if (!strcasecmp (cfg->value, "peak24")) {
-      eqMacro = EQ_PEAK24;
+      t->eqMacro = EQ_PEAK24;
     } else if (!strcasecmp (cfg->value, "peak46")) {
-      eqMacro = EQ_PEAK46;
+      t->eqMacro = EQ_PEAK46;
     } else {
       fprintf (stderr,
 	       "%s:line %d:%s expected chspline, peak24 or peak46:%s\n",
@@ -2680,15 +2299,15 @@ int oscConfig (ConfigContext * cfg) {
 	       cfg->value);
     }
   }
-  else if ((ack = getConfigParameter_d ("osc.eq.p1y", cfg, &eqP1y)))
+  else if ((ack = getConfigParameter_d ("osc.eq.p1y", cfg, &t->eqP1y)))
     ;
-  else if ((ack = getConfigParameter_d ("osc.eq.r1y", cfg, &eqR1y)))
+  else if ((ack = getConfigParameter_d ("osc.eq.r1y", cfg, &t->eqR1y)))
     ;
-  else if ((ack = getConfigParameter_d ("osc.eq.p4y", cfg, &eqP4y)))
+  else if ((ack = getConfigParameter_d ("osc.eq.p4y", cfg, &t->eqP4y)))
     ;
-  else if ((ack = getConfigParameter_d ("osc.eq.r4y", cfg, &eqR4y)))
+  else if ((ack = getConfigParameter_d ("osc.eq.r4y", cfg, &t->eqR4y)))
     ;
-  else if ((ack = getConfigParameter_d ("osc.eqv.ceiling", cfg, &eqvCeiling)))
+  else if ((ack = getConfigParameter_d ("osc.eqv.ceiling", cfg, &t->eqvCeiling)))
     ;
   else if (!strncasecmp (cfg->name, "osc.eqv.", 8)) {
     int n;
@@ -2697,9 +2316,9 @@ int oscConfig (ConfigContext * cfg) {
     if (sscanf (cfg->name, "osc.eqv.%d", &n) == 1) {
       if ((0 <= n) && (n <= 127)) {
 	if (sscanf (cfg->value, "%lf", &v) == 1) {
-	  if ((0.0 <= v) && (v <= eqvCeiling)) {
-	    eqvAtt[n] = v / eqvCeiling;
-	    eqvSet[n] = 1;
+	  if ((0.0 <= v) && (v <= t->eqvCeiling)) {
+	    t->eqvAtt[n] = v / t->eqvCeiling;
+	    t->eqvSet[n] = 1;
 	  }
 	}
 	else {
@@ -2719,10 +2338,10 @@ int oscConfig (ConfigContext * cfg) {
     if (sscanf (cfg->name, "osc.harmonic.%d", &n) == 1) {
 
       if (sscanf (cfg->value, "%lf", &v) == 1) {
-	ListElement * lep = newConfigListElement ();
+	ListElement * lep = newConfigListElement (t);
 	LE_HARMONIC_NUMBER_OF(lep) = (short) n;
 	LE_HARMONIC_LEVEL_OF(lep) = (float) v;
-	appendListElement (&(wheelHarmonics[0]), lep);
+	appendListElement (&(t->wheelHarmonics[0]), lep);
       }
       else {
 	configDoubleUnparsable (cfg);
@@ -2732,10 +2351,10 @@ int oscConfig (ConfigContext * cfg) {
     else if (sscanf (cfg->name, "osc.harmonic.w%d.f%d", &w, &n) == 2) {
       if ((0 < w) && (w <= NOF_WHEELS)) {
 	if (sscanf (cfg->value, "%lf", &v) == 1) {
-	  ListElement * lep = newConfigListElement ();
+	  ListElement * lep = newConfigListElement (t);
 	  LE_HARMONIC_NUMBER_OF(lep) = (short) n;
 	  LE_HARMONIC_LEVEL_OF(lep) = (float) v;
-	  appendListElement (&(wheelHarmonics[w]), lep);
+	  appendListElement (&(t->wheelHarmonics[w]), lep);
 	}
 	else {
 	  configDoubleUnparsable (cfg);
@@ -2757,10 +2376,10 @@ int oscConfig (ConfigContext * cfg) {
       if ((0 < n) && (n <= NOF_WHEELS) &&
 	  (0 < w) && (w <= NOF_WHEELS)) {
 	if (sscanf (cfg->value, "%lf", &v) == 1) {
-	  ListElement * lep = newConfigListElement ();
+	  ListElement * lep = newConfigListElement (t);
 	  LE_WHEEL_NUMBER_OF(lep) = (short) w;
 	  LE_WHEEL_LEVEL_OF(lep) = (float) v;
-	  appendListElement (&(terminalMix[n]), lep);
+	  appendListElement (&(t->terminalMix[n]), lep);
 	}
 	else {
 	  configDoubleUnparsable (cfg);
@@ -2776,20 +2395,20 @@ int oscConfig (ConfigContext * cfg) {
   else if (!strncasecmp (cfg->name, "osc.taper.", 10)) {
     int k;
     int b;
-    int t;
+    int w;
     double v;
     char buf[128];
     ack++;
-    if (sscanf (cfg->name, "osc.taper.k%d.b%d.t%d", &k, &b, &t) == 3) {
+    if (sscanf (cfg->name, "osc.taper.k%d.b%d.t%d", &k, &b, &w) == 3) {
       if ((0 < k) && (k < MAX_KEYS)) {
 	if ((0 < b) && (b < NOF_BUSES)) {
-	  if ((0 < t) && (t <= NOF_WHEELS)) {
+	  if ((0 < w) && (w <= NOF_WHEELS)) {
 	    if (sscanf (cfg->value, "%lf", &v) == 1) {
-	      ListElement * lep = newConfigListElement ();
-	      LE_TERMINAL_OF(lep) = t;
+	      ListElement * lep = newConfigListElement (t);
+	      LE_TERMINAL_OF(lep) = w;
 	      LE_BUSNUMBER_OF(lep) = b;
 	      LE_TAPER_OF(lep) = (float) v;
-	      appendListElement (&keyTaper[k], lep);
+	      appendListElement (&t->keyTaper[k], lep);
 	    }
 	    else {
 	      configDoubleUnparsable (cfg);
@@ -2818,18 +2437,18 @@ int oscConfig (ConfigContext * cfg) {
     if (sscanf (cfg->name, "osc.crosstalk.k%d", &k) == 1) {
       if ((0 < k) && (k < MAX_KEYS)) {
 	int b;
-	int t;
+	int w;
 	double v;
 	char * s = cfg->value;
 	do {
-	  if (sscanf (s, "%d:%d:%lf", &b, &t, &v) == 3) {
+	  if (sscanf (s, "%d:%d:%lf", &b, &w, &v) == 3) {
 	    if ((0 < b) && (b < NOF_BUSES)) {
-	      if ((0 < t) && (t <= NOF_WHEELS)) {
-		ListElement * lep = newConfigListElement ();
-		LE_TERMINAL_OF(lep) = t;
+	      if ((0 < w) && (w <= NOF_WHEELS)) {
+		ListElement * lep = newConfigListElement (t);
+		LE_TERMINAL_OF(lep) = w;
 		LE_BUSNUMBER_OF(lep) = b;
 		LE_LEVEL_OF(lep) = v;
-		appendListElement (&(keyCrosstalk[k]), lep);
+		appendListElement (&(t->keyCrosstalk[k]), lep);
 	      }
 	      else {
 		sprintf (buf, "Terminal numbers must be 1--%d", NOF_WHEELS);
@@ -2858,72 +2477,72 @@ int oscConfig (ConfigContext * cfg) {
   }
   else if ((ack = getConfigParameter_dr ("osc.compartment-crosstalk",
 					 cfg, &d, 0.0, 1.0)) == 1) {
-    defaultCompartmentCrosstalk = d;
+    t->defaultCompartmentCrosstalk = d;
   }
   else if ((ack = getConfigParameter_dr ("osc.transformer-crosstalk",
 					 cfg, &d, 0.0, 1.0)) == 1) {
-    defaultTransformerCrosstalk = d;
+    t->defaultTransformerCrosstalk = d;
   }
   else if ((ack = getConfigParameter_dr ("osc.terminalstrip-crosstalk",
 					 cfg, &d, 0.0, 1.0)) == 1) {
-    defaultTerminalStripCrosstalk = d;
+    t->defaultTerminalStripCrosstalk = d;
   }
   else if ((ack = getConfigParameter_dr ("osc.wiring-crosstalk",
 					 cfg, &d, 0.0, 1.0)) == 1) {
-    defaultWiringCrosstalk = d;
+    t->defaultWiringCrosstalk = d;
   }
   else if ((ack = getConfigParameter_dr ("osc.contribution-floor",
 					 cfg, &d, 0.0, 1.0)) == 1) {
-    contributionFloorLevel = d;
+    t->contributionFloorLevel = d;
   }
   else if ((ack = getConfigParameter_dr ("osc.contribution-min",
 					 cfg, &d, 0.0, 1.0)) == 1) {
-    contributionMinLevel = d;
+    t->contributionMinLevel = d;
   }
   else if ((ack = getConfigParameter_dr ("osc.attack.click.level",
 					 cfg, &d, 0.0, 1.0)) == 1) {
-    setEnvAttackClickLevel (d);
+    setEnvAttackClickLevel (t, d);
   }
   else if ((ack = getConfigParameter_dr ("osc.attack.click.maxlength",
 					 cfg, &d, 0.0, 1.0)) == 1) {
-    setEnvAtkClkMaxLength (d);
+    setEnvAtkClkMaxLength (t, d);
   }
   else if ((ack = getConfigParameter_dr ("osc.attack.click.minlength",
 					 cfg, &d, 0.0, 1.0)) == 1) {
-    setEnvAtkClkMinLength (d);
+    setEnvAtkClkMinLength (t, d);
   }
   else if ((ack = getConfigParameter_dr ("osc.release.click.level",
 					 cfg, &d, 0.0, 1.0)) == 1) {
-    setEnvReleaseClickLevel (d);
+    setEnvReleaseClickLevel (t, d);
   }
   else if (!strcasecmp (cfg->name, "osc.release.model")) {
     ack++;
     if (!strcasecmp (getConfigValue (cfg), "click")) {
-      setEnvReleaseModel (ENV_CLICK);
+      setEnvReleaseModel (t, ENV_CLICK);
     }
     else if (!strcasecmp (getConfigValue (cfg), "cosine")) {
-      setEnvReleaseModel (ENV_COSINE);
+      setEnvReleaseModel (t, ENV_COSINE);
     }
     else if (!strcasecmp (getConfigValue (cfg), "linear")) {
-      setEnvReleaseModel (ENV_LINEAR);
+      setEnvReleaseModel (t, ENV_LINEAR);
     }
     else if (!strcasecmp (getConfigValue (cfg), "shelf")) {
-      setEnvReleaseModel (ENV_SHELF);
+      setEnvReleaseModel (t, ENV_SHELF);
     }
   }
   else if (!strcasecmp (cfg->name, "osc.attack.model")) {
     ack++;
     if (!strcasecmp (getConfigValue (cfg), "click")) {
-      setEnvAttackModel (ENV_CLICK);
+      setEnvAttackModel (t, ENV_CLICK);
     }
     else if (!strcasecmp (getConfigValue (cfg), "cosine")) {
-      setEnvAttackModel (ENV_COSINE);
+      setEnvAttackModel (t, ENV_COSINE);
     }
     else if (!strcasecmp (getConfigValue (cfg), "linear")) {
-      setEnvAttackModel (ENV_LINEAR);
+      setEnvAttackModel (t, ENV_LINEAR);
     }
     else if (!strcasecmp (getConfigValue (cfg), "shelf")) {
-      setEnvAttackModel (ENV_SHELF);
+      setEnvAttackModel (t, ENV_SHELF);
     }
   }
   return ack;
@@ -2980,7 +2599,7 @@ const ConfigDoc *oscDoc () {
 /**
  * This routine initialises the envelope shape tables.
  */
-static void initEnvelopes () {
+static void initEnvelopes (struct b_tonegen *t) {
   int bss = BUFFER_SIZE_SAMPLES;
   int b;
   int i;			/* 0 -- 127 */
@@ -2991,120 +2610,120 @@ static void initEnvelopes () {
 
   for (b = 0; b < 9; b++) {
 
-    if (envAttackModel == ENV_CLICK) {
+    if (t->envAttackModel == ENV_CLICK) {
       /* Select a random length of this burst. */
-      bound = envAtkClkMaxLength - envAtkClkMinLength;
+      bound = t->envAtkClkMaxLength - t->envAtkClkMinLength;
       if (bound < 1) {
 	bound = 1;
       }
-      burst = envAtkClkMinLength + (rand () % bound);
+      burst = t->envAtkClkMinLength + (rand () % bound);
       if (bss <= burst) {
 	burst = bss - 1;
       }
       /* Select a random start position of the burst. */
       start = (rand () % (bss - burst));
       /* From sample 0 to start the amplification is zero. */
-      for (i = 0; i < start; i++) attackEnv[b][i] = 0.0;
+      for (i = 0; i < start; i++) t->attackEnv[b][i] = 0.0;
       /* In the burst area the amplification is random. */
       for (; i < (start + burst); i++) {
-	attackEnv[b][i] = 1.0 - (envAttackClickLevel * drnd ());
+	t->attackEnv[b][i] = 1.0 - (t->envAttackClickLevel * drnd ());
       }
       /* From the end of the burst to the end of the envelope the
 	 amplification is unity. */
-      for (; i < bss; i++) attackEnv[b][i] = 1.0;
+      for (; i < bss; i++) t->attackEnv[b][i] = 1.0;
 
 #if 1
       /* 2002-08-31/FK EXPERIMENTAL */
       /* Two-point average low-pass filter. */
       {
-	attackEnv[b][0] /= 2.0;
+	t->attackEnv[b][0] /= 2.0;
 	for (i = 1; i < bss; i++) {
-	  attackEnv[b][i] = (attackEnv[b][i-1] + attackEnv[b][i]) / 2.0;
+	  t->attackEnv[b][i] = (t->attackEnv[b][i-1] + t->attackEnv[b][i]) / 2.0;
 	}
       }
 #endif
 
     }
 
-    if (envAttackModel == ENV_SHELF) {
-      bound = envAtkClkMaxLength - envAtkClkMinLength;
+    if (t->envAttackModel == ENV_SHELF) {
+      bound = t->envAtkClkMaxLength - t->envAtkClkMinLength;
       if (bound < 1) bound = 1;
       start = rand () % bound;
       if ((bss - 2) <= start) start = bss - 2;
-      for (i = 0; i < start; i++) attackEnv[b][i] = 0.0;
-      attackEnv[b][i + 0] = 0.33333333;
-      attackEnv[b][i + 1] = 0.66666666;
+      for (i = 0; i < start; i++) t->attackEnv[b][i] = 0.0;
+      t->attackEnv[b][i + 0] = 0.33333333;
+      t->attackEnv[b][i + 1] = 0.66666666;
       for (i = i + 2; i < bss; i++) {
-	attackEnv[b][i] = 1.0;
+	t->attackEnv[b][i] = 1.0;
       }
     }
 
-    if (envReleaseModel == ENV_SHELF) {
-      bound = envAtkClkMaxLength - envAtkClkMinLength;
+    if (t->envReleaseModel == ENV_SHELF) {
+      bound = t->envAtkClkMaxLength - t->envAtkClkMinLength;
       if (bound < 1) bound = 1;
       start = rand () % bound;
       if ((bss - 2) <= start) start = bss - 2;
-      for (i = 0; i < start; i++) releaseEnv[b][i] = 0.0;
-      releaseEnv[b][i + 0] = 0.33333333;
-      releaseEnv[b][i + 1] = 0.66666666;
+      for (i = 0; i < start; i++) t->releaseEnv[b][i] = 0.0;
+      t->releaseEnv[b][i + 0] = 0.33333333;
+      t->releaseEnv[b][i + 1] = 0.66666666;
       for (i = i + 2; i < bss; i++) {
-	releaseEnv[b][i] = 1.0;
+	t->releaseEnv[b][i] = 1.0;
       }
     }
 
-    if (envReleaseModel == ENV_CLICK) {
+    if (t->envReleaseModel == ENV_CLICK) {
       burst = 8 + (rand () % 32);
       start = (rand () % (bss - burst));
 
-      for (i = 0; i < start; i++) releaseEnv[b][i] = 0.0;
+      for (i = 0; i < start; i++) t->releaseEnv[b][i] = 0.0;
       for (; i < (start + burst); i++) {
-	releaseEnv[b][i] = 1.0 - (envReleaseClickLevel * drnd ());
+	t->releaseEnv[b][i] = 1.0 - (t->envReleaseClickLevel * drnd ());
       }
-      for (; i < bss; i++) releaseEnv[b][i] = 1.0;
+      for (; i < bss; i++) t->releaseEnv[b][i] = 1.0;
       /* Filter the envelope */
-      releaseEnv[b][0] /= 2.0;
+      t->releaseEnv[b][0] /= 2.0;
       for (i = 1; i < bss; i++) {
-	releaseEnv[b][i] = (releaseEnv[b][i-1] + releaseEnv[b][i]) / 2.0;
+	t->releaseEnv[b][i] = (t->releaseEnv[b][i-1] + t->releaseEnv[b][i]) / 2.0;
       }
     }
 
     /* cos(0)=1.0, cos(PI/2)=0, cos(PI)=-1.0 */
 
-    if (envAttackModel == ENV_COSINE) {	/* Sigmoid decay */
+    if (t->envAttackModel == ENV_COSINE) {	/* Sigmoid decay */
       for (i = 0; i < BUFFER_SIZE_SAMPLES; i++) {
 	int d = BUFFER_SIZE_SAMPLES - (i + 1);
 	double a = (M_PI * (double) d) / T;	/* PI < a <= 0 */
-	attackEnv [b][i] = 0.5 + (0.5 * cos (a));
+	t->attackEnv [b][i] = 0.5 + (0.5 * cos (a));
       }
     }
 
-    if (envReleaseModel == ENV_COSINE) {
+    if (t->envReleaseModel == ENV_COSINE) {
       for (i = 0; i < BUFFER_SIZE_SAMPLES; i++) {
 	double a = (M_PI * (double) i) / T;	/* 0 < b <= PI */
-	releaseEnv[b][i] = 0.5 - (0.5 * cos (a));
+	t->releaseEnv[b][i] = 0.5 - (0.5 * cos (a));
       }
     }
 
-    if (envAttackModel == ENV_LINEAR) {	/* Linear decay */
+    if (t->envAttackModel == ENV_LINEAR) {	/* Linear decay */
       int k = BUFFER_SIZE_SAMPLES;			/* TEST SPECIAL */
 
       for (i = 0; i < BUFFER_SIZE_SAMPLES; i++) {
 	if (i < k) {
-	  attackEnv[b][i]  = ((float) i) / (float) k;
+	  t->attackEnv[b][i]  = ((float) i) / (float) k;
 	} else {
-	  attackEnv[b][i] = 1.0;
+	  t->attackEnv[b][i] = 1.0;
 	}
       }
     }
 
-    if (envReleaseModel == ENV_LINEAR) {
+    if (t->envReleaseModel == ENV_LINEAR) {
       int k = BUFFER_SIZE_SAMPLES;			/* TEST SPECIAL */
 
       for (i = 0; i < BUFFER_SIZE_SAMPLES; i++) {
 	if (i < k) {
-	  releaseEnv[b][i] = ((float) i) / (float) k;
+	  t->releaseEnv[b][i] = ((float) i) / (float) k;
 	} else {
-	  releaseEnv[b][i] = 1.0;
+	  t->releaseEnv[b][i] = 1.0;
 	}
       }
     }
@@ -3120,15 +2739,15 @@ static void initEnvelopes () {
  * @param bus      The bus (0--26) for which the drawbar is set.
  * @param setting  The position setting (0--8) of the drawbar.
  */
-static void setDrawBar (int bus, unsigned int setting) {
+static void setDrawBar (struct b_tonegen *t, int bus, unsigned int setting) {
   assert ((0 <= bus) && (bus < NOF_BUSES));
   assert ((0 <= setting) && (setting < 9));
-  drawBarChange = 1;
-  if (bus == percTriggerBus) {
-    percTrigRestore = setting;
-    if (percEnabled) return;
+  t->drawBarChange = 1;
+  if (bus == t->percTriggerBus) {
+    t->percTrigRestore = setting;
+    if (t->percEnabled) return;
   }
-  drawBarGain[bus] = drawBarLevel[bus][setting];
+  t->drawBarGain[bus] = t->drawBarLevel[bus][setting];
 }
 
 /**
@@ -3141,7 +2760,7 @@ static void setDrawBar (int bus, unsigned int setting) {
  * @param manual   0=upper, 1=lower, 2=pedals
  * @param setting  Array of 9 integers.
  */
-void setDrawBars (unsigned int manual, unsigned int setting []) {
+void setDrawBars (struct b_tonegen *t, unsigned int manual, unsigned int setting []) {
   int i;
   int offset;
   if (manual == 0) {
@@ -3154,7 +2773,7 @@ void setDrawBars (unsigned int manual, unsigned int setting []) {
     assert (0);
   }
   for (i = 0; i < 9; i++) {
-    setDrawBar (offset + i, setting[i]);
+    setDrawBar (t, offset + i, setting[i]);
   }
 }
 
@@ -3173,39 +2792,39 @@ void setDrawBars (unsigned int manual, unsigned int setting []) {
  *
  */
 
-static void setMIDIDrawBar (int bus, unsigned char v) {
-  setDrawBar (bus, (8 * ((unsigned int) (127 - v))) / 127);
+static void setMIDIDrawBar (struct b_tonegen *t, int bus, unsigned char v) {
+  setDrawBar (t, bus, (8 * ((unsigned int) (127 - v))) / 127);
 }
 
-static void setDrawbar0 (void *d, unsigned char v) { setMIDIDrawBar (0, v);}
-static void setDrawbar1 (void *d, unsigned char v) { setMIDIDrawBar (1, v);}
-static void setDrawbar2 (void *d, unsigned char v) { setMIDIDrawBar (2, v);}
-static void setDrawbar3 (void *d, unsigned char v) { setMIDIDrawBar (3, v);}
-static void setDrawbar4 (void *d, unsigned char v) { setMIDIDrawBar (4, v);}
-static void setDrawbar5 (void *d, unsigned char v) { setMIDIDrawBar (5, v);}
-static void setDrawbar6 (void *d, unsigned char v) { setMIDIDrawBar (6, v);}
-static void setDrawbar7 (void *d, unsigned char v) { setMIDIDrawBar (7, v);}
-static void setDrawbar8 (void *d, unsigned char v) { setMIDIDrawBar (8, v);}
+static void setDrawbar0 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 0, v);}
+static void setDrawbar1 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 1, v);}
+static void setDrawbar2 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 2, v);}
+static void setDrawbar3 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 3, v);}
+static void setDrawbar4 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 4, v);}
+static void setDrawbar5 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 5, v);}
+static void setDrawbar6 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 6, v);}
+static void setDrawbar7 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 7, v);}
+static void setDrawbar8 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 8, v);}
 
-static void setDrawbar9  (void *d, unsigned char v) { setMIDIDrawBar ( 9, v);}
-static void setDrawbar10 (void *d, unsigned char v) { setMIDIDrawBar (10, v);}
-static void setDrawbar11 (void *d, unsigned char v) { setMIDIDrawBar (11, v);}
-static void setDrawbar12 (void *d, unsigned char v) { setMIDIDrawBar (12, v);}
-static void setDrawbar13 (void *d, unsigned char v) { setMIDIDrawBar (13, v);}
-static void setDrawbar14 (void *d, unsigned char v) { setMIDIDrawBar (14, v);}
-static void setDrawbar15 (void *d, unsigned char v) { setMIDIDrawBar (15, v);}
-static void setDrawbar16 (void *d, unsigned char v) { setMIDIDrawBar (16, v);}
-static void setDrawbar17 (void *d, unsigned char v) { setMIDIDrawBar (17, v);}
+static void setDrawbar9  (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d,  9, v);}
+static void setDrawbar10 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 10, v);}
+static void setDrawbar11 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 11, v);}
+static void setDrawbar12 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 12, v);}
+static void setDrawbar13 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 13, v);}
+static void setDrawbar14 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 14, v);}
+static void setDrawbar15 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 15, v);}
+static void setDrawbar16 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 16, v);}
+static void setDrawbar17 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 17, v);}
 
-static void setDrawbar18 (void *d, unsigned char v) { setMIDIDrawBar (18, v);}
-static void setDrawbar19 (void *d, unsigned char v) { setMIDIDrawBar (19, v);}
-static void setDrawbar20 (void *d, unsigned char v) { setMIDIDrawBar (20, v);}
-static void setDrawbar21 (void *d, unsigned char v) { setMIDIDrawBar (21, v);}
-static void setDrawbar22 (void *d, unsigned char v) { setMIDIDrawBar (22, v);}
-static void setDrawbar23 (void *d, unsigned char v) { setMIDIDrawBar (23, v);}
-static void setDrawbar24 (void *d, unsigned char v) { setMIDIDrawBar (24, v);}
-static void setDrawbar25 (void *d, unsigned char v) { setMIDIDrawBar (25, v);}
-static void setDrawbar26 (void *d, unsigned char v) { setMIDIDrawBar (26, v);}
+static void setDrawbar18 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 18, v);}
+static void setDrawbar19 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 19, v);}
+static void setDrawbar20 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 20, v);}
+static void setDrawbar21 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 21, v);}
+static void setDrawbar22 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 22, v);}
+static void setDrawbar23 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 23, v);}
+static void setDrawbar24 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 24, v);}
+static void setDrawbar25 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 25, v);}
+static void setDrawbar26 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 26, v);}
 
 /**
  * This routine controls percussion from a MIDI controller.
@@ -3217,21 +2836,22 @@ static void setDrawbar26 (void *d, unsigned char v) { setMIDIDrawBar (26, v);}
  *
  */
 static void setPercVolumeFromMIDI (void *d, unsigned char u) {
+  struct b_tonegen *t = (struct b_tonegen *) d;
   if (u < 64) {
     if (u < 16) {
-      setPercussionEnabled (FALSE); /* off */
+      setPercussionEnabled (t, FALSE); /* off */
     }
     else {
-      setPercussionEnabled (TRUE); /* on */
-      setPercussionVolume (FALSE); /* normal volume */
+      setPercussionEnabled (t, TRUE); /* on */
+      setPercussionVolume (t, FALSE); /* normal volume */
     }
   }
   else if (u < 112) {
-    setPercussionEnabled (TRUE); /* on */
-    setPercussionVolume (TRUE);	/* soft volume */
+    setPercussionEnabled (t, TRUE); /* on */
+    setPercussionVolume (t, TRUE);	/* soft volume */
   }
   else {
-    setPercussionEnabled (FALSE); /* off */
+    setPercussionEnabled (t, FALSE); /* off */
   }
 }
 
@@ -3240,11 +2860,12 @@ static void setPercVolumeFromMIDI (void *d, unsigned char u) {
  * It sets fast or slow decay.
  */
 static void setPercDecayFromMIDI (void *d, unsigned char u) {
+  struct b_tonegen *t = (struct b_tonegen *) d;
   if (u < 64) {
-    setPercussionFast (TRUE);
+    setPercussionFast (t, TRUE);
   }
   else {
-    setPercussionFast (FALSE);
+    setPercussionFast (t, FALSE);
   }
 }
 
@@ -3253,11 +2874,12 @@ static void setPercDecayFromMIDI (void *d, unsigned char u) {
  * It sets the third or second harmonic.
  */
 static void setPercHarmonicFromMIDI (void *d, unsigned char u) {
+  struct b_tonegen *t = (struct b_tonegen *) d;
   if (u < 64) {
-    setPercussionFirst (FALSE);
+    setPercussionFirst (t, FALSE);
   }
   else {
-    setPercussionFirst (TRUE);
+    setPercussionFirst (t, TRUE);
   }
 }
 
@@ -3265,7 +2887,8 @@ static void setPercHarmonicFromMIDI (void *d, unsigned char u) {
  * This routine controls the swell pedal from a MIDI controller.
  */
 static void setSwellPedalFromMIDI (void *d, unsigned char u) {
-  swellPedalGain = (outputLevelTrim * ((double) u)) / 127.0;
+  struct b_tonegen *t = (struct b_tonegen *) d;
+  t->swellPedalGain = (t->outputLevelTrim * ((double) u)) / 127.0;
 }
 
 /**
@@ -3273,65 +2896,65 @@ static void setSwellPedalFromMIDI (void *d, unsigned char u) {
  * configuration files have already been read, so parameters should already
  * be set.
  */
-void initToneGenerator () {
+void initToneGenerator (struct b_tonegen *t) {
   int i;
 
   /* init global variables */
-  percIsSoft=percIsFast=0;
-  percEnvGain=0;
+  t->percIsSoft=t->percIsFast=0;
+  t->percEnvGain=0;
   for (i=0; i< NOF_BUSES; ++i) {
     int j;
-    drawBarGain[i]=0;
+    t->drawBarGain[i]=0;
     for (j=0; j< 9; ++j) {
-      drawBarLevel[i][j] = 0;
+      t->drawBarLevel[i][j] = 0;
     }
   }
   for (i=0; i< MAX_KEYS; ++i)
-    activeKeys[i] = 0;
+    t->activeKeys[i] = 0;
   for (i=0; i< CR_PGMMAX; ++i)
-    memset((void*)&corePgm[i], sizeof(CoreIns), 0);
+    memset((void*)&t->corePgm[i], sizeof(CoreIns), 0);
   for (i=0; i<= NOF_WHEELS; ++i)
-    memset((void*)&oscillators[i], sizeof(struct _oscillator), 0);
+    memset((void*)&t->oscillators[i], sizeof(struct _oscillator), 0);
   for (i=0; i< 128; ++i) {
-    eqvAtt[i]=0.0; eqvSet[i]='\0';
+    t->eqvAtt[i]=0.0; t->eqvSet[i]='\0';
   }
 
-  if (envAtkClkMinLength<0) {
-    envAtkClkMinLength = floor(SampleRateD * 8.0 / 22050.0);
+  if (t->envAtkClkMinLength<0) {
+    t->envAtkClkMinLength = floor(SampleRateD * 8.0 / 22050.0);
   }
-  if (envAtkClkMaxLength<0) {
-    envAtkClkMaxLength = ceil(SampleRateD * 40.0 / 22050.0);
-  }
-
-  if (envAtkClkMinLength > BUFFER_SIZE_SAMPLES) {
-    envAtkClkMinLength = BUFFER_SIZE_SAMPLES;
-  }
-  if (envAtkClkMaxLength > BUFFER_SIZE_SAMPLES) {
-    envAtkClkMaxLength = BUFFER_SIZE_SAMPLES;
+  if (t->envAtkClkMaxLength<0) {
+    t->envAtkClkMaxLength = ceil(SampleRateD * 40.0 / 22050.0);
   }
 
-  applyDefaultConfiguration ();
+  if (t->envAtkClkMinLength > BUFFER_SIZE_SAMPLES) {
+    t->envAtkClkMinLength = BUFFER_SIZE_SAMPLES;
+  }
+  if (t->envAtkClkMaxLength > BUFFER_SIZE_SAMPLES) {
+    t->envAtkClkMaxLength = BUFFER_SIZE_SAMPLES;
+  }
+
+  applyDefaultConfiguration (t);
 
 #if 0
-  dumpConfigLists ("osc_cfglists.txt");
+  dumpConfigLists (t, "osc_cfglists.txt");
 #endif
 
-  compilePlayMatrix ();
+  compilePlayMatrix (t);
 
 #if 0
-  dumpRuntimeData ("osc_runtime.txt");
+  dumpRuntimeData (t, "osc_runtime.txt");
 #endif
 
   /* Allocate taper buffers, initialize oscillator structs, build keyOsc. */
-  initOscillators (tgVariant, tgPrecision);
+  initOscillators (t, t->tgVariant, t->tgPrecision);
 
 #ifdef KEYCOMPRESSION
 
-  initKeyCompTable ();
+  initKeyCompTable (t);
 
 #endif /* KEYCOMPRESSION */
 
-  initEnvelopes ();
+  initEnvelopes (t);
 
   /* Initialise drawbar gain values */
 
@@ -3339,64 +2962,64 @@ void initToneGenerator () {
     int setting;
     for (setting = 0; setting < 9; setting++) {
       float u = (float) setting;
-      drawBarLevel[i][setting] = u / 8.0;
+      t->drawBarLevel[i][setting] = u / 8.0;
     }
   }
 
 #if 1
   /* Gives the lower drawbars a temporary initial value */
-  setMIDIDrawBar ( 9, 8);
-  setMIDIDrawBar (10, 3);
-  setMIDIDrawBar (11, 8);
+  setMIDIDrawBar (t,  9, 8);
+  setMIDIDrawBar (t, 10, 3);
+  setMIDIDrawBar (t, 11, 8);
 
-  setMIDIDrawBar (18, 8);
-  setMIDIDrawBar (20, 6);
+  setMIDIDrawBar (t, 18, 8);
+  setMIDIDrawBar (t, 20, 6);
 #endif
 
-  setPercussionFirst (FALSE);
-  setPercussionVolume (FALSE);
-  setPercussionFast (TRUE);
-  setPercussionEnabled (FALSE);
+  setPercussionFirst (t, FALSE);
+  setPercussionVolume (t, FALSE);
+  setPercussionFast (t, TRUE);
+  setPercussionEnabled (t, FALSE);
 
-  useMIDIControlFunction ("swellpedal1", setSwellPedalFromMIDI, NULL);
-  useMIDIControlFunction ("swellpedal2", setSwellPedalFromMIDI, NULL);
+  useMIDIControlFunction ("swellpedal1", setSwellPedalFromMIDI, t);
+  useMIDIControlFunction ("swellpedal2", setSwellPedalFromMIDI, t);
 
-  useMIDIControlFunction ("upper.drawbar16",  setDrawbar0, NULL);
-  useMIDIControlFunction ("upper.drawbar513", setDrawbar1, NULL);
-  useMIDIControlFunction ("upper.drawbar8",   setDrawbar2, NULL);
-  useMIDIControlFunction ("upper.drawbar4",   setDrawbar3, NULL);
-  useMIDIControlFunction ("upper.drawbar223", setDrawbar4, NULL);
-  useMIDIControlFunction ("upper.drawbar2",   setDrawbar5, NULL);
-  useMIDIControlFunction ("upper.drawbar135", setDrawbar6, NULL);
-  useMIDIControlFunction ("upper.drawbar113", setDrawbar7, NULL);
-  useMIDIControlFunction ("upper.drawbar1",   setDrawbar8, NULL);
+  useMIDIControlFunction ("upper.drawbar16",  setDrawbar0, t);
+  useMIDIControlFunction ("upper.drawbar513", setDrawbar1, t);
+  useMIDIControlFunction ("upper.drawbar8",   setDrawbar2, t);
+  useMIDIControlFunction ("upper.drawbar4",   setDrawbar3, t);
+  useMIDIControlFunction ("upper.drawbar223", setDrawbar4, t);
+  useMIDIControlFunction ("upper.drawbar2",   setDrawbar5, t);
+  useMIDIControlFunction ("upper.drawbar135", setDrawbar6, t);
+  useMIDIControlFunction ("upper.drawbar113", setDrawbar7, t);
+  useMIDIControlFunction ("upper.drawbar1",   setDrawbar8, t);
 
-  useMIDIControlFunction ("lower.drawbar16",  setDrawbar9, NULL);
-  useMIDIControlFunction ("lower.drawbar513", setDrawbar10, NULL);
-  useMIDIControlFunction ("lower.drawbar8",   setDrawbar11, NULL);
-  useMIDIControlFunction ("lower.drawbar4",   setDrawbar12, NULL);
-  useMIDIControlFunction ("lower.drawbar223", setDrawbar13, NULL);
-  useMIDIControlFunction ("lower.drawbar2",   setDrawbar14, NULL);
-  useMIDIControlFunction ("lower.drawbar135", setDrawbar15, NULL);
-  useMIDIControlFunction ("lower.drawbar113", setDrawbar16, NULL);
-  useMIDIControlFunction ("lower.drawbar1",   setDrawbar17, NULL);
+  useMIDIControlFunction ("lower.drawbar16",  setDrawbar9, t);
+  useMIDIControlFunction ("lower.drawbar513", setDrawbar10, t);
+  useMIDIControlFunction ("lower.drawbar8",   setDrawbar11, t);
+  useMIDIControlFunction ("lower.drawbar4",   setDrawbar12, t);
+  useMIDIControlFunction ("lower.drawbar223", setDrawbar13, t);
+  useMIDIControlFunction ("lower.drawbar2",   setDrawbar14, t);
+  useMIDIControlFunction ("lower.drawbar135", setDrawbar15, t);
+  useMIDIControlFunction ("lower.drawbar113", setDrawbar16, t);
+  useMIDIControlFunction ("lower.drawbar1",   setDrawbar17, t);
 
-  useMIDIControlFunction ("pedal.drawbar16",  setDrawbar18, NULL);
-  useMIDIControlFunction ("pedal.drawbar513", setDrawbar19, NULL);
-  useMIDIControlFunction ("pedal.drawbar8",   setDrawbar20, NULL);
-  useMIDIControlFunction ("pedal.drawbar4",   setDrawbar21, NULL);
-  useMIDIControlFunction ("pedal.drawbar223", setDrawbar22, NULL);
-  useMIDIControlFunction ("pedal.drawbar2",   setDrawbar23, NULL);
-  useMIDIControlFunction ("pedal.drawbar135", setDrawbar24, NULL);
-  useMIDIControlFunction ("pedal.drawbar113", setDrawbar25, NULL);
-  useMIDIControlFunction ("pedal.drawbar1",   setDrawbar26, NULL);
+  useMIDIControlFunction ("pedal.drawbar16",  setDrawbar18, t);
+  useMIDIControlFunction ("pedal.drawbar513", setDrawbar19, t);
+  useMIDIControlFunction ("pedal.drawbar8",   setDrawbar20, t);
+  useMIDIControlFunction ("pedal.drawbar4",   setDrawbar21, t);
+  useMIDIControlFunction ("pedal.drawbar223", setDrawbar22, t);
+  useMIDIControlFunction ("pedal.drawbar2",   setDrawbar23, t);
+  useMIDIControlFunction ("pedal.drawbar135", setDrawbar24, t);
+  useMIDIControlFunction ("pedal.drawbar113", setDrawbar25, t);
+  useMIDIControlFunction ("pedal.drawbar1",   setDrawbar26, t);
 
-  useMIDIControlFunction ("percussion.enable",   setPercVolumeFromMIDI, NULL);
-  useMIDIControlFunction ("percussion.decay",    setPercDecayFromMIDI, NULL);
-  useMIDIControlFunction ("percussion.harmonic", setPercHarmonicFromMIDI, NULL);
+  useMIDIControlFunction ("percussion.enable",   setPercVolumeFromMIDI, t);
+  useMIDIControlFunction ("percussion.decay",    setPercDecayFromMIDI, t);
+  useMIDIControlFunction ("percussion.harmonic", setPercHarmonicFromMIDI, t);
 
 #if 0
-  dumpOscToText ("osc.txt");
+  dumpOscToText (t, "osc.txt");
 #endif
 }
 
@@ -3409,12 +3032,12 @@ void freeListElements (ListElement *lep) {
   }
 }
 
-void freeToneGenerator () {
-  freeListElements(leConfig);
-  freeListElements(leRuntime);
+void freeToneGenerator (struct b_tonegen *t) {
+  freeListElements(t->leConfig);
+  freeListElements(t->leRuntime);
   int i;
   for (i=1; i <= NOF_WHEELS; i++) {
-    if (oscillators[i].wave) free(oscillators[i].wave);
+    if (t->oscillators[i].wave) free(t->oscillators[i].wave);
   }
 }
 
@@ -3423,25 +3046,25 @@ void freeToneGenerator () {
  * This function is the entry point for the MIDI parser when it has received
  * a NOTE OFF message on a channel and note number mapped to a playing key.
  */
-void oscKeyOff (unsigned char keyNumber) {
+void oscKeyOff (struct b_tonegen *t, unsigned char keyNumber) {
   if (MAX_KEYS <= keyNumber) return;
   /* The key must be marked as on */
-  if (activeKeys[keyNumber] != 0) {
+  if (t->activeKeys[keyNumber] != 0) {
     /* Flag the key as inactive */
-    activeKeys[keyNumber] = 0;
+    t->activeKeys[keyNumber] = 0;
     /* Track upper manual keys for percussion trigger */
     if (keyNumber < 64) {
-      upperKeyCount--;
+      t->upperKeyCount--;
     }
 #ifdef KEYCOMPRESSION
-    keyDownCount--;
-    assert (0 <= keyDownCount);
+    t->keyDownCount--;
+    assert (0 <= t->keyDownCount);
 #endif /* KEYCOMPRESSION */
     /* Write message saying that the key is released */
-    *msgQueueWriter++ = MSG_KEY_OFF(keyNumber);
+    *t->msgQueueWriter++ = MSG_KEY_OFF(keyNumber);
     /* Check for wrap on message queue */
-    if (msgQueueWriter == msgQueueEnd) {
-      msgQueueWriter = msgQueue;
+    if (t->msgQueueWriter == t->msgQueueEnd) {
+      t->msgQueueWriter = t->msgQueue;
     }
   } /* if key was active */
 
@@ -3453,26 +3076,26 @@ void oscKeyOff (unsigned char keyNumber) {
  * This function is the entry point for the MIDI parser when it has received
  * a NOTE ON message on a channel and note number mapped to a playing key.
  */
-void oscKeyOn (unsigned char keyNumber) {
+void oscKeyOn (struct b_tonegen *t, unsigned char keyNumber) {
   if (MAX_KEYS <= keyNumber) return;
   /* If the key is already depressed, release it first. */
-  if (activeKeys[keyNumber] != 0) {
-    oscKeyOff (keyNumber);
+  if (t->activeKeys[keyNumber] != 0) {
+    oscKeyOff (t, keyNumber);
   }
   /* Mark the key as active */
-  activeKeys[keyNumber] = 1;
+  t->activeKeys[keyNumber] = 1;
   /* Track upper manual for percussion trigger */
   if (keyNumber < 64) {
-    upperKeyCount++;
+    t->upperKeyCount++;
   }
 #ifdef KEYCOMPRESSION
-  keyDownCount++;
+  t->keyDownCount++;
 #endif /* KEYCOMPRESSION */
   /* Write message */
-  *msgQueueWriter++ = MSG_KEY_ON(keyNumber);
+  *t->msgQueueWriter++ = MSG_KEY_ON(keyNumber);
   /* Check for wrap on message queue */
-  if (msgQueueWriter == msgQueueEnd) {
-    msgQueueWriter = msgQueue;
+  if (t->msgQueueWriter == t->msgQueueEnd) {
+    t->msgQueueWriter = t->msgQueue;
   }
 
   /*  printf ("\rON :%3d", keyNumber); fflush (stdout); */
@@ -3529,7 +3152,7 @@ void oscKeyOn (unsigned char keyNumber) {
  * there are changes to be made, and human fingers are typically quite
  * slow. Sequencers, however, may put some strain on things.
  */
-void oscGenerateFragment (float * buf, size_t lengthSamples) {
+void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples) {
 
   int i;
   float * yptr = buf;
@@ -3546,7 +3169,7 @@ void oscGenerateFragment (float * buf, size_t lengthSamples) {
 #ifdef KEYCOMPRESSION
 
   static float keyCompLevel = KEYCOMP_ZERO_LEVEL;
-  float keyComp = keyCompTable[keyDownCount];
+  float keyComp = t->keyCompTable[t->keyDownCount];
   float keyCompDelta;
 #define KEYCOMPCHASE() {keyCompLevel += keyCompDelta;}
 
@@ -3565,62 +3188,62 @@ void oscGenerateFragment (float * buf, size_t lengthSamples) {
 #endif /* KEYCOMPRESSION */
 
   /* Reset the core program */
-  coreWriter = coreReader = corePgm;
+  t->coreWriter = t->coreReader = t->corePgm;
 
   /* ================================================================
 		     M E S S S A G E   Q U E U E
      ================================================================ */
 
-  while (msgQueueReader != msgQueueWriter) {
+  while (t->msgQueueReader != t->msgQueueWriter) {
 
-    unsigned short msg = *msgQueueReader++; /* Read next message */
+    unsigned short msg = *t->msgQueueReader++; /* Read next message */
     int keyNumber;
     ListElement * lep;
 
     /* Check wrap on message queue */
-    if (msgQueueReader == msgQueueEnd) {
-      msgQueueReader = msgQueue;
+    if (t->msgQueueReader == t->msgQueueEnd) {
+      t->msgQueueReader = t->msgQueue;
     }
 
     if (MSG_GET_MSG(msg) == MSG_MKEYON) {
       keyNumber = MSG_GET_PRM(msg);
-      for (lep = keyContrib[keyNumber]; lep != NULL; lep = lep->next) {
+      for (lep = t->keyContrib[keyNumber]; lep != NULL; lep = lep->next) {
 	int wheelNumber = LE_WHEEL_NUMBER_OF(lep);
-	osp = &(oscillators[wheelNumber]);
+	osp = &(t->oscillators[wheelNumber]);
 
-	if (aot[wheelNumber].refCount == 0) {
+	if (t->aot[wheelNumber].refCount == 0) {
 	  /* Flag the oscillator as added and modified */
 	  osp->rflags = OR_ADD;
 	  /* If not already on the active list, add it */
 	  if (osp->aclPos == -1) {
-	    osp->aclPos = activeOscLEnd;
-	    activeOscList[activeOscLEnd++] = wheelNumber;
+	    osp->aclPos = t->activeOscLEnd;
+	    t->activeOscList[t->activeOscLEnd++] = wheelNumber;
 	  }
 	}
 	else {
 	  osp->rflags |= ORF_MODIFIED;
 	}
 
-	aot[wheelNumber].busLevel[LE_BUSNUMBER_OF(lep)] += LE_LEVEL_OF(lep);
-	aot[wheelNumber].keyCount[LE_BUSNUMBER_OF(lep)] += 1;
-	aot[wheelNumber].refCount += 1;
+	t->aot[wheelNumber].busLevel[LE_BUSNUMBER_OF(lep)] += LE_LEVEL_OF(lep);
+	t->aot[wheelNumber].keyCount[LE_BUSNUMBER_OF(lep)] += 1;
+	t->aot[wheelNumber].refCount += 1;
       }
 
     }
     else if (MSG_GET_MSG(msg) == MSG_MKEYOFF) {
       keyNumber = MSG_GET_PRM(msg);
-      for (lep = keyContrib[keyNumber]; lep != NULL; lep = lep->next) {
+      for (lep = t->keyContrib[keyNumber]; lep != NULL; lep = lep->next) {
 	int wheelNumber = LE_WHEEL_NUMBER_OF(lep);
-	osp = &(oscillators[wheelNumber]);
+	osp = &(t->oscillators[wheelNumber]);
 
-	aot[wheelNumber].busLevel[LE_BUSNUMBER_OF(lep)] -= LE_LEVEL_OF(lep);
-	aot[wheelNumber].keyCount[LE_BUSNUMBER_OF(lep)] -= 1;
-	aot[wheelNumber].refCount -= 1;
+	t->aot[wheelNumber].busLevel[LE_BUSNUMBER_OF(lep)] -= LE_LEVEL_OF(lep);
+	t->aot[wheelNumber].keyCount[LE_BUSNUMBER_OF(lep)] -= 1;
+	t->aot[wheelNumber].refCount -= 1;
 
-	assert (0 <= aot[wheelNumber].refCount);
+	assert (0 <= t->aot[wheelNumber].refCount);
 	assert (-1 < osp->aclPos); /* Must be on the active osc list */
 
-	if (aot[wheelNumber].refCount == 0) {
+	if (t->aot[wheelNumber].refCount == 0) {
 	  osp->rflags = OR_REM;
 	}
 	else {
@@ -3637,8 +3260,8 @@ void oscGenerateFragment (float * buf, size_t lengthSamples) {
 		     A C T I V A T E D   L I S T
      ================================================================ */
 
-  if ((recomputeRouting = (oldRouting != newRouting))) {
-    oldRouting = newRouting;
+  if ((recomputeRouting = (t->oldRouting != t->newRouting))) {
+    t->oldRouting = t->newRouting;
   }
 
 
@@ -3647,11 +3270,11 @@ void oscGenerateFragment (float * buf, size_t lengthSamples) {
    * and removed oscillators are still on the list.
    */
 
-  for (i = 0; i < activeOscLEnd; i++) {
+  for (i = 0; i < t->activeOscLEnd; i++) {
 
-    int oscNumber = activeOscList[i]; /* Get the oscillator number */
-    AOTElement * aop = &(aot[oscNumber]); /* Get a pointer to active struct */
-    osp = &(oscillators[oscNumber]); /* Point to the oscillator */
+    int oscNumber = t->activeOscList[i]; /* Get the oscillator number */
+    AOTElement * aop = &(t->aot[oscNumber]); /* Get a pointer to active struct */
+    osp = &(t->oscillators[oscNumber]); /* Point to the oscillator */
 
     if (osp->rflags & ORF_REMOVED) { /* Decay instruction for removed osc. */
       /* Put it on the removal list */
@@ -3659,50 +3282,50 @@ void oscGenerateFragment (float * buf, size_t lengthSamples) {
 
       /* All envelopes, both attack and release must traverse 0-1. */
 
-      coreWriter->env = releaseEnv[i & 7];
+      t->coreWriter->env = t->releaseEnv[i & 7];
 
       if (copyDone) {
-	coreWriter->opr = CR_ADDENV;
+	t->coreWriter->opr = CR_ADDENV;
       } else {
-	coreWriter->opr = CR_CPYENV;
+	t->coreWriter->opr = CR_CPYENV;
 	copyDone = 1;
       }
 
-      coreWriter->src = osp->wave + osp->pos;
-      coreWriter->off = 0;	/* Start at the beginning of target buffers */
-      coreWriter->sgain = aop->sumSwell;
-      coreWriter->pgain = aop->sumPercn;
-      coreWriter->vgain = aop->sumScanr;
+      t->coreWriter->src = osp->wave + osp->pos;
+      t->coreWriter->off = 0;	/* Start at the beginning of target buffers */
+      t->coreWriter->sgain = aop->sumSwell;
+      t->coreWriter->pgain = aop->sumPercn;
+      t->coreWriter->vgain = aop->sumScanr;
       /* Target gain is zero */
-      coreWriter->nsgain = coreWriter->npgain = coreWriter->nvgain = 0.0;
+      t->coreWriter->nsgain = t->coreWriter->npgain = t->coreWriter->nvgain = 0.0;
 
       if (osp->lengthSamples < (osp->pos + BUFFER_SIZE_SAMPLES)) {
 	/* Need another instruction because of wrap */
-	CoreIns * prev = coreWriter;
-	coreWriter->cnt = osp->lengthSamples - osp->pos;
-	osp->pos = BUFFER_SIZE_SAMPLES - coreWriter->cnt;
-	coreWriter += 1;
-	coreWriter->opr = prev->opr;
-	coreWriter->src = osp->wave;
-	coreWriter->off = prev->cnt;
-	coreWriter->env = prev->env + prev->cnt;
+	CoreIns * prev = t->coreWriter;
+	t->coreWriter->cnt = osp->lengthSamples - osp->pos;
+	osp->pos = BUFFER_SIZE_SAMPLES - t->coreWriter->cnt;
+	t->coreWriter += 1;
+	t->coreWriter->opr = prev->opr;
+	t->coreWriter->src = osp->wave;
+	t->coreWriter->off = prev->cnt;
+	t->coreWriter->env = prev->env + prev->cnt;
 
-	coreWriter->sgain = prev->sgain;
-	coreWriter->pgain = prev->pgain;
-	coreWriter->vgain = prev->vgain;
+	t->coreWriter->sgain = prev->sgain;
+	t->coreWriter->pgain = prev->pgain;
+	t->coreWriter->vgain = prev->vgain;
 
-	coreWriter->nsgain = prev->nsgain;
-	coreWriter->npgain = prev->npgain;
-	coreWriter->nvgain = prev->nvgain;
+	t->coreWriter->nsgain = prev->nsgain;
+	t->coreWriter->npgain = prev->npgain;
+	t->coreWriter->nvgain = prev->nvgain;
 
-	coreWriter->cnt = osp->pos;
+	t->coreWriter->cnt = osp->pos;
       }
       else {
-	coreWriter->cnt = BUFFER_SIZE_SAMPLES;
+	t->coreWriter->cnt = BUFFER_SIZE_SAMPLES;
 	osp->pos += BUFFER_SIZE_SAMPLES;
       }
 
-      coreWriter += 1;
+      t->coreWriter += 1;
     }
     else {			/* ADD or MODIFIED */
       int reroute = 0;
@@ -3712,32 +3335,32 @@ void oscGenerateFragment (float * buf, size_t lengthSamples) {
        * used. For modified oscillators we provide the update below.
        */
       if (osp->rflags & ORF_ADDED) {
-	coreWriter->sgain = coreWriter->pgain = coreWriter->vgain = 0.0;
+	t->coreWriter->sgain = t->coreWriter->pgain = t->coreWriter->vgain = 0.0;
       }
       else {
-	coreWriter->sgain = aop->sumSwell;
-	coreWriter->pgain = aop->sumPercn;
-	coreWriter->vgain = aop->sumScanr;
+	t->coreWriter->sgain = aop->sumSwell;
+	t->coreWriter->pgain = aop->sumPercn;
+	t->coreWriter->vgain = aop->sumScanr;
       }
 
       /* Update the oscillator's contribution to each busgroup mix */
 
-      if ((osp->rflags & ORF_MODIFIED) || drawBarChange) {
+      if ((osp->rflags & ORF_MODIFIED) || t->drawBarChange) {
 	int d;
 	float sum = 0.0;
 
 	for (d = UPPER_BUS_LO; d < UPPER_BUS_END; d++) {
-	  sum += aop->busLevel[d] * drawBarGain[d];
+	  sum += aop->busLevel[d] * t->drawBarGain[d];
 	}
 	aop->sumUpper = sum;
 	sum = 0.0;
 	for (d = LOWER_BUS_LO; d < LOWER_BUS_END; d++) {
-	  sum += aop->busLevel[d] * drawBarGain[d];
+	  sum += aop->busLevel[d] * t->drawBarGain[d];
 	}
 	aop->sumLower = sum;
 	sum = 0.0;
 	for (d = PEDAL_BUS_LO; d < PEDAL_BUS_END; d++) {
-	  sum += aop->busLevel[d] * drawBarGain[d];
+	  sum += aop->busLevel[d] * t->drawBarGain[d];
 	}
 	aop->sumPedal = sum;
 	reroute = 1;
@@ -3747,8 +3370,8 @@ void oscGenerateFragment (float * buf, size_t lengthSamples) {
 
       if (reroute || recomputeRouting) {
 
-	if (oldRouting & RT_PERC) { /* Percussion */
-	  aop->sumPercn = aop->busLevel[percSendBus];
+	if (t->oldRouting & RT_PERC) { /* Percussion */
+	  aop->sumPercn = aop->busLevel[t->percSendBus];
 	}
 	else {
 	  aop->sumPercn = 0.0;
@@ -3757,14 +3380,14 @@ void oscGenerateFragment (float * buf, size_t lengthSamples) {
 	aop->sumScanr = 0.0;	/* Initialize scanner level */
 	aop->sumSwell = aop->sumPedal; /* Initialize swell level */
 
-	if (oldRouting & RT_UPPRVIB) { /* Upper manual ... */
+	if (t->oldRouting & RT_UPPRVIB) { /* Upper manual ... */
 	  aop->sumScanr += aop->sumUpper; /* ... to vibrato */
 	}
 	else {
 	  aop->sumSwell += aop->sumUpper; /* ... to swell pedal */
 	}
 
-	if (oldRouting & RT_LOWRVIB) { /* Lower manual ... */
+	if (t->oldRouting & RT_LOWRVIB) { /* Lower manual ... */
 	  aop->sumScanr += aop->sumLower; /* ... to vibrato */
 	}
 	else {
@@ -3775,66 +3398,66 @@ void oscGenerateFragment (float * buf, size_t lengthSamples) {
       /* Emit instructions for oscillator */
       if (osp->rflags & OR_ADD) {
 	/* Envelope attack instruction */
-	coreWriter->env = attackEnv[i & 7];
+	t->coreWriter->env = t->attackEnv[i & 7];
 	/* Next gain values */
-	coreWriter->nsgain = aop->sumSwell;
-	coreWriter->npgain = aop->sumPercn;
-	coreWriter->nvgain = aop->sumScanr;
+	t->coreWriter->nsgain = aop->sumSwell;
+	t->coreWriter->npgain = aop->sumPercn;
+	t->coreWriter->nvgain = aop->sumScanr;
 
 	if (copyDone) {
-	  coreWriter->opr = CR_ADDENV;
+	  t->coreWriter->opr = CR_ADDENV;
 	}
 	else {
-	  coreWriter->opr = CR_CPYENV;
+	  t->coreWriter->opr = CR_CPYENV;
 	  copyDone = 1;
 	}
       }
       else {
 	if (copyDone) {
-	  coreWriter->opr = CR_ADD;
+	  t->coreWriter->opr = CR_ADD;
 	}
 	else {
-	  coreWriter->opr = CR_CPY;
+	  t->coreWriter->opr = CR_CPY;
 	  copyDone = 1;
 	}
       }
 
       /* The source is the wave of the oscillator at its current position */
-      coreWriter->src = osp->wave + osp->pos;
-      coreWriter->off = 0;
+      t->coreWriter->src = osp->wave + osp->pos;
+      t->coreWriter->off = 0;
 
 
       if (osp->lengthSamples < (osp->pos + BUFFER_SIZE_SAMPLES)) {
 	/* Instruction wraps source buffer */
-	CoreIns * prev = coreWriter; /* Refer to the first instruction */
-	coreWriter->cnt = osp->lengthSamples - osp->pos; /* Set len count */
-	osp->pos = BUFFER_SIZE_SAMPLES - coreWriter->cnt; /* Updat src pos */
+	CoreIns * prev = t->coreWriter; /* Refer to the first instruction */
+	t->coreWriter->cnt = osp->lengthSamples - osp->pos; /* Set len count */
+	osp->pos = BUFFER_SIZE_SAMPLES - t->coreWriter->cnt; /* Updat src pos */
 
-	coreWriter += 1;	/* Advance to next instruction */
+	t->coreWriter += 1;	/* Advance to next instruction */
 
-	coreWriter->opr = prev->opr; /* Same operation */
-	coreWriter->src = osp->wave; /* Start of wave because of wrap */
-	coreWriter->off = prev->cnt;
-	if (coreWriter->opr & 2) {
-	  coreWriter->env = prev->env + prev->cnt; /* Continue envelope */
+	t->coreWriter->opr = prev->opr; /* Same operation */
+	t->coreWriter->src = osp->wave; /* Start of wave because of wrap */
+	t->coreWriter->off = prev->cnt;
+	if (t->coreWriter->opr & 2) {
+	  t->coreWriter->env = prev->env + prev->cnt; /* Continue envelope */
 	}
 	/* The gains are identical to the previous instruction */
-	coreWriter->sgain = prev->sgain;
-	coreWriter->pgain = prev->pgain;
-	coreWriter->vgain = prev->vgain;
+	t->coreWriter->sgain = prev->sgain;
+	t->coreWriter->pgain = prev->pgain;
+	t->coreWriter->vgain = prev->vgain;
 
-	coreWriter->nsgain = prev->nsgain;
-	coreWriter->npgain = prev->npgain;
-	coreWriter->nvgain = prev->nvgain;
+	t->coreWriter->nsgain = prev->nsgain;
+	t->coreWriter->npgain = prev->npgain;
+	t->coreWriter->nvgain = prev->nvgain;
 
-	coreWriter->cnt = osp->pos; /* Up to next read position */
+	t->coreWriter->cnt = osp->pos; /* Up to next read position */
       }
       else {
-	coreWriter->cnt = BUFFER_SIZE_SAMPLES;
+	t->coreWriter->cnt = BUFFER_SIZE_SAMPLES;
 	osp->pos += BUFFER_SIZE_SAMPLES;
       }
 
-      coreWriter += 1;	/* Advance to next instruction */
+      t->coreWriter += 1;	/* Advance to next instruction */
 
 
     } /* else aot element not removed, ie modified or added */
@@ -3844,7 +3467,7 @@ void oscGenerateFragment (float * buf, size_t lengthSamples) {
 
   } /* for the active list */
 
-  drawBarChange = 0;
+  t->drawBarChange = 0;
 
   /* ================================================================
 		       R E M O V A L   L I S T
@@ -3856,17 +3479,17 @@ void oscGenerateFragment (float * buf, size_t lengthSamples) {
    */
   for (i = 0; i < removedEnd; i++) {
     int vicosc = removedList[i]; /* Victim oscillator number */
-    int actidx = oscillators[vicosc].aclPos; /* Victim's active index */
-    oscillators[vicosc].aclPos = -1; /* Reset victim's backindex */
-    activeOscLEnd--;
+    int actidx = t->oscillators[vicosc].aclPos; /* Victim's active index */
+    t->oscillators[vicosc].aclPos = -1; /* Reset victim's backindex */
+    t->activeOscLEnd--;
 
-    assert (0 <= activeOscLEnd);
+    assert (0 <= t->activeOscLEnd);
 
-    if (0 < activeOscLEnd) {	/* If list is not yet empty ... */
-      int movosc = activeOscList[activeOscLEnd]; /* Fill hole w. last entry */
+    if (0 < t->activeOscLEnd) {	/* If list is not yet empty ... */
+      int movosc = t->activeOscList[t->activeOscLEnd]; /* Fill hole w. last entry */
       if (movosc != vicosc) {
-	activeOscList[actidx] = movosc;
-	oscillators[movosc].aclPos = actidx;
+	t->activeOscList[actidx] = movosc;
+	t->oscillators[movosc].aclPos = actidx;
       }
     }
   }
@@ -3882,7 +3505,7 @@ void oscGenerateFragment (float * buf, size_t lengthSamples) {
    * the input buffers to the mixing stage and reset the percussion.
    */
 
-  if (coreReader == coreWriter) {
+  if (t->coreReader == t->coreWriter) {
     float * ys = swlBuffer;
     float * yv = vibBuffer;
     float * yp = prcBuffer;
@@ -3895,20 +3518,20 @@ void oscGenerateFragment (float * buf, size_t lengthSamples) {
 
   }
 
-  for (; coreReader < coreWriter; coreReader++) {
-    short opr = coreReader->opr;
-    float * ys = swlBuffer + coreReader->off;
-    float * yv = vibBuffer + coreReader->off;
-    float * yp = prcBuffer + coreReader->off;
-    float   gs = coreReader->sgain;
-    float   gv = coreReader->vgain;
-    float   gp = coreReader->pgain;
-    float   ds = coreReader->nsgain - gs; /* Move these three down */
-    float   dv = coreReader->nvgain - gv;
-    float   dp = coreReader->npgain - gp;
-    float * ep  = coreReader->env;
-    float * xp  = coreReader->src;
-    int     n  = coreReader->cnt;
+  for (; t->coreReader < t->coreWriter; t->coreReader++) {
+    short opr = t->coreReader->opr;
+    float * ys = swlBuffer + t->coreReader->off;
+    float * yv = vibBuffer + t->coreReader->off;
+    float * yp = prcBuffer + t->coreReader->off;
+    float   gs = t->coreReader->sgain;
+    float   gv = t->coreReader->vgain;
+    float   gp = t->coreReader->pgain;
+    float   ds = t->coreReader->nsgain - gs; /* Move these three down */
+    float   dv = t->coreReader->nvgain - gv;
+    float   dp = t->coreReader->npgain - gp;
+    float * ep  = t->coreReader->env;
+    float * xp  = t->coreReader->src;
+    int     n  = t->coreReader->cnt;
 
     if (opr & 1) {		/* ADD and ADDENV */
       if (opr & 2) {		/* ADDENV */
@@ -3964,7 +3587,7 @@ void oscGenerateFragment (float * buf, size_t lengthSamples) {
 
   /* If anything is routed through the scanner, apply FX and get outbuffer */
 
-  if (oldRouting & RT_VIB) {
+  if (t->oldRouting & RT_VIB) {
 #if 1
     vibratoProc (vibBuffer, vibYBuffr, BUFFER_SIZE_SAMPLES);
 #else
@@ -3987,7 +3610,7 @@ void oscGenerateFragment (float * buf, size_t lengthSamples) {
     static float pz;
 #endif /* HIPASS_PERCUSSION */
 
-    if (oldRouting & RT_PERC) {	/* If percussion is on */
+    if (t->oldRouting & RT_PERC) {	/* If percussion is on */
 #ifdef HIPASS_PERCUSSION
       float * tp = &(prcBuffer[BUFFER_SIZE_SAMPLES - 1]);
       float temp = *tp;
@@ -4001,43 +3624,51 @@ void oscGenerateFragment (float * buf, size_t lengthSamples) {
       pz = temp;
       pp = prcBuffer;
 #endif /* HIPASS_PERCUSSION */
-      outputGain = swellPedalGain * percDrawbarGain;
-      if (oldRouting & RT_VIB) { /* If vibrato is on */
+      outputGain = t->swellPedalGain * t->percDrawbarGain;
+      if (t->oldRouting & RT_VIB) { /* If vibrato is on */
 	for (i = 0; i < BUFFER_SIZE_SAMPLES; i++) { /* Perc and vibrato */
 	  *yptr++ =
 	    (outputGain * keyCompLevel *
-	     ((*xp++) + (*vp++) + ((*pp++) * percEnvGain)));
-	  percEnvGain *= percEnvGainDecay;
+	     ((*xp++) + (*vp++) + ((*pp++) * t->percEnvGain)));
+	  t->percEnvGain *= t->percEnvGainDecay;
 	  KEYCOMPCHASE();
 	}
       } else {			/* Percussion only */
 	for (i = 0; i < BUFFER_SIZE_SAMPLES; i++) {
 	  *yptr++ =
-	    (outputGain * keyCompLevel * ((*xp++) + ((*pp++) * percEnvGain)));
-	  percEnvGain *= percEnvGainDecay;
+	    (outputGain * keyCompLevel * ((*xp++) + ((*pp++) * t->percEnvGain)));
+	  t->percEnvGain *= t->percEnvGainDecay;
 	  KEYCOMPCHASE();
 	}
       }
 
-    } else if (oldRouting & RT_VIB) { /* No percussion and vibrato */
+    } else if (t->oldRouting & RT_VIB) { /* No percussion and vibrato */
 
       for (i = 0; i < BUFFER_SIZE_SAMPLES; i++) {
 	*yptr++ =
-	  (swellPedalGain * keyCompLevel * ((*xp++) + (*vp++)));
+	  (t->swellPedalGain * keyCompLevel * ((*xp++) + (*vp++)));
 	KEYCOMPCHASE();
       }
     } else {			/* No percussion and no vibrato */
       for (i = 0; i < BUFFER_SIZE_SAMPLES; i++) {
 	*yptr++ =
-	  (swellPedalGain * keyCompLevel * (*xp++));
+	  (t->swellPedalGain * keyCompLevel * (*xp++));
 	KEYCOMPCHASE();
       }
     }
   }
 
-  if (upperKeyCount == 0) {
-    percEnvGain = percEnvGainReset;
+  if (t->upperKeyCount == 0) {
+    t->percEnvGain = t->percEnvGainReset;
   }
 } /* oscGenerateFragment */
+
+
+struct b_tonegen *allocTonegen() {
+  struct b_tonegen *t = (struct b_tonegen*) calloc(1, sizeof(struct b_tonegen));
+  if (!t) return NULL;
+  initValues(t);
+  return (t);
+}
 
 /* vi:set ts=8 sts=2 sw=2: */

@@ -73,7 +73,7 @@ static int distributeParameter (ConfigContext * cfg) {
   n += mainConfig (cfg);
   n += midiConfig (cfg);
   n += pgmConfig (cfg);
-  n += oscConfig (cfg);
+  n += oscConfig (inst_synth, cfg);
   n += scannerConfig (cfg);
   n += ampConfig (cfg);
   n += whirlConfig (inst_whirl, cfg);

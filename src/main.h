@@ -59,5 +59,6 @@ extern int    SampleRateI;
 #include "reverb.h"
 extern struct b_reverb *inst_reverb;
 extern struct b_whirl *inst_whirl;
+extern struct b_tonegen *inst_synth;
 
 #endif /* MAIN_H */

@@ -183,20 +183,20 @@ static void setVibratoFromMIDI (void *d, unsigned char u) {
 static void setVibratoRoutingFromMIDI (void *d, unsigned char uc) {
   switch (uc / 32) {
   case 0:
-    setVibratoUpper (FALSE);
-    setVibratoLower (FALSE);
+    setVibratoUpper (inst_synth, FALSE);
+    setVibratoLower (inst_synth, FALSE);
     break;
   case 1:
-    setVibratoUpper (FALSE);
-    setVibratoLower (TRUE);
+    setVibratoUpper (inst_synth, FALSE);
+    setVibratoLower (inst_synth, TRUE);
     break;
   case 2:
-    setVibratoUpper (TRUE);
-    setVibratoLower (FALSE);
+    setVibratoUpper (inst_synth, TRUE);
+    setVibratoLower (inst_synth, FALSE);
     break;
   case 3:
-    setVibratoUpper (TRUE);
-    setVibratoLower (TRUE);
+    setVibratoUpper (inst_synth, TRUE);
+    setVibratoLower (inst_synth, TRUE);
     break;
   }
 }

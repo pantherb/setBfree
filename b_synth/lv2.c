@@ -62,6 +62,7 @@ typedef struct {
 
   struct b_reverb *inst_reverb;
   struct b_whirl *inst_whirl;
+  struct b_tonegen *inst_synth;
 } B3S;
 
 /* main synth wrappers */
@@ -75,6 +76,7 @@ int SampleRateI = 48000;
 //temp global -- src/cfgParser.c, src/program.c
 struct b_reverb *inst_reverb = NULL;
 struct b_whirl *inst_whirl = NULL;
+struct b_tonegen *inst_synth = NULL;
 
 void initSynth(B3S *b3s, double rate) {
   // equicalent to ../src/main.c main()
@@ -85,18 +87,19 @@ void initSynth(B3S *b3s, double rate) {
 
   /* initAll() */
   initVibrato ();
-  initToneGenerator ();
+  initToneGenerator (inst_synth);
   initPreamp ();
   initReverb (b3s->inst_reverb, rate);
   initWhirl (b3s->inst_whirl, rate);
+  initToneGenerator (b3s->inst_synth);
   /* end - initAll() */
 
   initMidiTables();
 
   setMIDINoteShift (0);
-  setDrawBars (0, defaultPreset);
-  setDrawBars (1, defaultPreset);
-  setDrawBars (2, defaultPreset);
+  setDrawBars (inst_synth, 0, defaultPreset);
+  setDrawBars (inst_synth, 1, defaultPreset);
+  setDrawBars (inst_synth, 2, defaultPreset);
 
 #if 1
   setRevSelect (b3s->inst_whirl, WHIRL_SLOW);
@@ -124,7 +127,7 @@ void synthSound (B3S *instance, uint32_t nframes, float **out) {
 
     if (boffset >= BUFFER_SIZE_SAMPLES)  {
       boffset = 0;
-      oscGenerateFragment (bufA, BUFFER_SIZE_SAMPLES);
+      oscGenerateFragment (instance->inst_synth, bufA, BUFFER_SIZE_SAMPLES);
       preamp (bufA, bufB, BUFFER_SIZE_SAMPLES);
       reverb (instance->inst_reverb, bufB, bufC, BUFFER_SIZE_SAMPLES);
       whirlProc(instance->inst_whirl, bufC, bufJ[0], bufJ[1], BUFFER_SIZE_SAMPLES);
@@ -171,8 +174,10 @@ instantiate(const LV2_Descriptor*     descriptor,
   }
   b3s->inst_reverb = allocReverb();
   b3s->inst_whirl = allocWhirl();
+  b3s->inst_synth = allocTonegen();
   inst_reverb = b3s->inst_reverb; // XXX temp. until src/*.c is updated.
   inst_whirl = b3s->inst_whirl; // XXX temp. until src/*.c is updated.
+  inst_synth = b3s->inst_synth; // XXX temp. until src/*.c is updated.
 
   initSynth(b3s, rate);
 
@@ -239,7 +244,7 @@ cleanup(LV2_Handle instance)
   B3S* b3s = (B3S*)instance;
   freeReverb(b3s->inst_reverb);
   freeWhirl(b3s->inst_whirl);
-  freeToneGenerator();
+  freeToneGenerator(b3s->inst_synth);
   free(instance);
 }
 

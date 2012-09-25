@@ -30,6 +30,7 @@
 #include <limits.h>
 #include <assert.h>
 
+#include "main.h"
 #include "midi.h"
 #include "tonegen.h"
 #include "program.h"
@@ -846,15 +847,15 @@ void process_midi_event(const struct bmidi_event_t *ev) {
     case NOTE_ON:
       if(keyTable[ev->channel] && keyTable[ev->channel][ev->note] != 255) {
 	if (ev->velocity > 0){
-	  oscKeyOn (keyTable[ev->channel][ev->note]);
+	  oscKeyOn (inst_synth, keyTable[ev->channel][ev->note]);
 	} else {
-	  oscKeyOff (keyTable[ev->channel][ev->note]);
+	  oscKeyOff (inst_synth, keyTable[ev->channel][ev->note]);
 	}
       }
       break;
     case NOTE_OFF:
       if(keyTable[ev->channel] && keyTable[ev->channel][ev->note] != 255)
-	oscKeyOff (keyTable[ev->channel][ev->note]);
+	oscKeyOff (inst_synth, keyTable[ev->channel][ev->note]);
       break;
     case PROGRAM_CHANGE:
       installProgram(ev->control_value);

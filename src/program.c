@@ -830,15 +830,15 @@ void installProgram (unsigned char uc) {
       }
 
       if (flags0 & FL_DRAWBR) {
-	setDrawBars (0, PGM->drawbars);
+	setDrawBars (inst_synth, 0, PGM->drawbars);
       }
 
       if (flags0 & FL_LOWDRW) {
-	setDrawBars (1, PGM->lowerDrawbars);
+	setDrawBars (inst_synth, 1, PGM->lowerDrawbars);
       }
 
       if (flags0 & FL_PDLDRW) {
-	setDrawBars (2, PGM->pedalDrawbars);
+	setDrawBars (inst_synth, 2, PGM->pedalDrawbars);
       }
 
       /* Key attack click */
@@ -850,27 +850,27 @@ void installProgram (unsigned char uc) {
       }
 
       if (flags0 & FL_VCRUPR) {
-	setVibratoUpper (PGM->scanner & 0x200);
+	setVibratoUpper (inst_synth, PGM->scanner & 0x200);
       }
 
       if (flags0 & FL_VCRLWR) {
-	setVibratoLower (PGM->scanner & 0x100);
+	setVibratoLower (inst_synth, PGM->scanner & 0x100);
       }
 
       if (flags0 & FL_PRCENA) {
-	setPercussionEnabled (PGM->percussionEnabled);
+	setPercussionEnabled (inst_synth, PGM->percussionEnabled);
       }
 
       if (flags0 & FL_PRCVOL) {
-	setPercussionVolume (PGM->percussionVolume);
+	setPercussionVolume (inst_synth, PGM->percussionVolume);
       }
 
       if (flags0 & FL_PRCSPD) {
-	setPercussionFast (PGM->percussionSpeed);
+	setPercussionFast (inst_synth, PGM->percussionSpeed);
       }
 
       if (flags0 & FL_PRCHRM) {
-	setPercussionFirst (PGM->percussionHarmonic);
+	setPercussionFirst (inst_synth, PGM->percussionHarmonic);
       }
 
       if (flags0 & FL_OVRSEL) {
