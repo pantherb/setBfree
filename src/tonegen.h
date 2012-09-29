@@ -513,6 +513,12 @@ ListElement * keyCrosstalk[MAX_KEYS];
  */
 ListElement * keyContrib[MAX_KEYS];
 
+unsigned short removedList[NOF_WHEELS + 1];
+float swlBuffer[BUFFER_SIZE_SAMPLES];
+float vibBuffer[BUFFER_SIZE_SAMPLES];
+float vibYBuffr[BUFFER_SIZE_SAMPLES];
+float prcBuffer[BUFFER_SIZE_SAMPLES];
+
 };
 
 extern void setToneGeneratorModel (struct b_tonegen *t, int variant);

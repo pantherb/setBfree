@@ -321,8 +321,8 @@ const ConfigDoc *scannerDoc () {
  */
 float * vibratoProc (float * inbuffer, float * outbuffer, size_t bufferLengthSamples)
 {
-  static float fnorm   = 1.0 / 65536.0;
-  static float mixnorm = 0.7071067811865475; /* 1/sqrt(2) */
+  static float fnorm   = 1.0 / 65536.0; // XXX static
+  static float mixnorm = 0.7071067811865475; /* 1/sqrt(2) */ // XXX static
   int i;
   float * xp = inbuffer;
   float * yp = outbuffer;

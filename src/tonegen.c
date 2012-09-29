@@ -1195,8 +1195,8 @@ static void cpmInsert ( struct b_tonegen *t /* XXX terminalMix */,
  */
 static void compilePlayMatrix (struct b_tonegen *t) {
 
-  static unsigned char cpmBus [NOF_WHEELS + 1][NOF_BUSES];
-  static float cpmGain [NOF_WHEELS][NOF_BUSES];
+  unsigned char cpmBus [NOF_WHEELS + 1][NOF_BUSES]; // XXX static
+  float cpmGain [NOF_WHEELS][NOF_BUSES]; // XXX static
 
   short wheelNumber[NOF_WHEELS + 1]; /* For blind tail-insertion */
   short rowLength[NOF_WHEELS];
@@ -1463,7 +1463,7 @@ static void writeSamples (float * buf,
 			  double attenuation,
 			  double f1Hz)
 {
-  static double fullCircle = 2.0 * M_PI;
+  const double fullCircle = 2.0 * M_PI;
   double apl[MAX_PARTIALS];
   double plHz[MAX_PARTIALS];
   double aplSum;
@@ -3159,16 +3159,16 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
   struct _oscillator * osp;
   unsigned int copyDone = 0;
   unsigned int recomputeRouting;
-  static unsigned short removedList[NOF_WHEELS + 1]; /* Flags modified aots */
-  static float swlBuffer[BUFFER_SIZE_SAMPLES];
-  static float vibBuffer[BUFFER_SIZE_SAMPLES];
-  static float vibYBuffr[BUFFER_SIZE_SAMPLES];
-  static float prcBuffer[BUFFER_SIZE_SAMPLES];
   int removedEnd = 0;
+  unsigned short * const removedList = t->removedList;
+  float * const swlBuffer = t->swlBuffer;
+  float * const vibBuffer = t->vibBuffer;
+  float * const vibYBuffr = t->vibYBuffr;
+  float * const prcBuffer = t->prcBuffer;
 
 #ifdef KEYCOMPRESSION
 
-  static float keyCompLevel = KEYCOMP_ZERO_LEVEL;
+  static float keyCompLevel = KEYCOMP_ZERO_LEVEL; // XXX static
   float keyComp = t->keyCompTable[t->keyDownCount];
   float keyCompDelta;
 #define KEYCOMPCHASE() {keyCompLevel += keyCompDelta;}
@@ -3603,11 +3603,11 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
     float * xp = swlBuffer;
     float * vp = vibYBuffr;
     float * pp = prcBuffer;
-    static float outputGain = 1.0;
+    static float outputGain = 1.0; // XXX static
 
 
 #ifdef HIPASS_PERCUSSION
-    static float pz;
+    static float pz; // XXX static
 #endif /* HIPASS_PERCUSSION */
 
     if (t->oldRouting & RT_PERC) {	/* If percussion is on */
