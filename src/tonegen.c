@@ -1647,7 +1647,7 @@ static void initOscillators (struct b_tonegen *t, int variant, double precision)
     wszs = fitWave (osp->frequency,
 		    precision,
 		    3 * BUFFER_SIZE_SAMPLES, /* Was x1 */
-		    2048);
+		    ceil(SampleRateD / 48000.0) * 2048);
 
     /* Compute the number of bytes needed for exactly one wave buffer. */
 
