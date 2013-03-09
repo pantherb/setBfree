@@ -23,6 +23,7 @@ OBJS= \
 
 HEADERS = \
 	cfgParser.h \
+	global_inst.h \
 	main.h \
 	midi.h \
 	pgmParser.h \

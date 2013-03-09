@@ -36,11 +36,7 @@
 #ifndef CFG_MAIN
 
 #include "main.h"
-#include "tonegen.h"
-#include "vibrato.h"
-#include "midi.h"
-#include "whirl.h"
-#include "overdrive.h"
+#include "global_inst.h"
 #include "program.h"
 #ifdef HAVE_ZITACONVOLVE
 #include "convolution.h"
@@ -56,7 +52,7 @@
  * Each configurable module implements this function. The implementation
  * is idempotent. The most recent call defines the parameter's value.
  */
-static int distributeParameter (ConfigContext * cfg) {
+static int distributeParameter (b_instance* inst, ConfigContext * cfg) {
 
   int n = 0;
 
@@ -73,11 +69,11 @@ static int distributeParameter (ConfigContext * cfg) {
   n += mainConfig (cfg);
   n += midiConfig (cfg);
   n += pgmConfig (cfg);
-  n += oscConfig (inst_synth, cfg);
+  n += oscConfig (inst->synth, cfg);
   n += scannerConfig (cfg);
   n += ampConfig (cfg);
-  n += whirlConfig (inst_whirl, cfg);
-  n += reverbConfig (inst_reverb, cfg);
+  n += whirlConfig (inst->whirl, cfg);
+  n += reverbConfig (inst->reverb, cfg);
 #ifdef HAVE_ZITACONVOLVE
   n += convolutionConfig(cfg);
 #endif
@@ -98,7 +94,7 @@ static int distributeParameter (ConfigContext * cfg) {
 /*
  *
  */
-void parseConfigurationLine (char * fname, int lineNumber, char * oneLine) {
+void parseConfigurationLine (void *inst, char * fname, int lineNumber, char * oneLine) {
   char delim[] = "=\n";
   char * s = oneLine;
   char * name;
@@ -140,7 +136,7 @@ void parseConfigurationLine (char * fname, int lineNumber, char * oneLine) {
 	}
 
 	if (strcasecmp (name, "config.read") == 0) {
-	  parseConfigurationFile (value);
+	  parseConfigurationFile (inst, value);
 	}
 	else {
 	  ConfigContext cfg;
@@ -148,7 +144,7 @@ void parseConfigurationLine (char * fname, int lineNumber, char * oneLine) {
 	  cfg.linenr = lineNumber;
 	  cfg.name   = name;
 	  cfg.value  = value;
-	  distributeParameter (& cfg);
+	  distributeParameter ((b_instance*) inst, & cfg);
 	}
       }
 
@@ -220,7 +216,7 @@ void dumpConfigDoc () {
     printf("  %d    %s\n", i, filterTypeNames[i]);
   }
   printf("Note that the gain parameter does not apply to type 0 Low-Pass-Filters.\n\n");
- 
+
   printf(
   "Additional MIDI Control-Command Functions:\n"
   " These properties can not be modified directly, but are meant to be mapped\n"
@@ -264,7 +260,7 @@ void dumpConfigDoc () {
 /*
  *
  */
-int parseConfigurationFile (char * fname) {
+int parseConfigurationFile (void *inst, char * fname) {
   int lineNumber = 0;
   char lineBuf [LINEBUFSZ];
   FILE * fp;
@@ -277,7 +273,7 @@ int parseConfigurationFile (char * fname) {
 
     while (fgets (lineBuf, LINEBUFSZ, fp) != NULL) {
       lineNumber += 1;		/* Increment the linenumber. */
-      parseConfigurationLine (fname, lineNumber, lineBuf);
+      parseConfigurationLine (inst, fname, lineNumber, lineBuf);
     }
 
     fclose (fp);
@@ -602,7 +598,7 @@ int getConfigParameter_fr (char * par,
 #ifdef CFG_MAIN
 int main (int argc, char **argv) {
   if (argc < 2) return -1;
-  parseConfigurationFile (argv[1]);
+  parseConfigurationFile (NULL, argv[1]);
   return 0;
 }
 #endif /* CFG_MAIN */

@@ -38,16 +38,11 @@
 #ifndef _WIN32
 #include <signal.h>
 #endif
-
+#include "global_inst.h"
 #include "vibrato.h"
-#include "reverb.h"
 #include "main.h"
-#include "midi.h"
 #include "pgmParser.h"
-#include "whirl.h"
-#include "tonegen.h"
 #include "program.h"
-#include "overdrive.h"
 
 #ifdef HAVE_ZITACONVOLVE
 #include "convolution.h"
@@ -108,9 +103,11 @@ static jack_default_audio_sample_t bufD [2][BUFFER_SIZE_SAMPLES];
 #endif
 static int synth_ready = 0;
 
-struct b_reverb *inst_reverb = NULL;
-struct b_whirl *inst_whirl = NULL;
-struct b_tonegen *inst_synth = NULL;
+b_instance inst;
+
+//struct b_reverb *inst_reverb = NULL;
+//struct b_whirl *inst_whirl = NULL;
+//struct b_tonegen *inst_synth = NULL;
 
 void mixdown (float **inout, const float **in2, int nchannels, int nsamples) {
   int c,i;
@@ -182,17 +179,17 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
 	  jack_midi_event_t ev;
 	  jack_midi_event_get(&ev, jack_midi_buf, i);
 	  if (ev.time >= written && ev.time < (written + BUFFER_SIZE_SAMPLES))
-	    parse_jack_midi_event(&ev);
+	    parse_jack_midi_event(arg, &ev);
 	}
 	midi_tme_proc = written + BUFFER_SIZE_SAMPLES;
       }
       boffset = 0;
-      oscGenerateFragment (inst_synth, bufA, BUFFER_SIZE_SAMPLES);
+      oscGenerateFragment (inst.synth, bufA, BUFFER_SIZE_SAMPLES);
       preamp (bufA, bufB, BUFFER_SIZE_SAMPLES);
-      reverb (inst_reverb, bufB, bufC, BUFFER_SIZE_SAMPLES);
+      reverb (inst.reverb, bufB, bufC, BUFFER_SIZE_SAMPLES);
 
 #ifdef HAVE_ZITACONVOLVE
-      whirlProc2(inst_whirl, 
+      whirlProc2(inst.whirl,
 	  bufC,
 	  NULL, NULL,
 	  bufH[0], bufH[1],
@@ -206,7 +203,7 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
       convolve(horn, out, 2, BUFFER_SIZE_SAMPLES);
       mixdown(out, drum, AUDIO_CHANNELS, BUFFER_SIZE_SAMPLES);
 #else
-      whirlProc(inst_whirl, bufC, bufJ[0], bufJ[1], BUFFER_SIZE_SAMPLES);
+      whirlProc(inst.whirl, bufC, bufJ[0], bufJ[1], BUFFER_SIZE_SAMPLES);
 #endif
     }
 
@@ -227,7 +224,7 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
       jack_midi_event_t ev;
       jack_midi_event_get(&ev, jack_midi_buf, i);
       if (ev.time >= midi_tme_proc)
-	parse_jack_midi_event(&ev);
+	parse_jack_midi_event(arg, &ev);
     }
   }
 
@@ -244,7 +241,7 @@ int open_jack(void) {
   }
 
   jack_on_shutdown (j_client, jack_shutdown_callback, NULL);
-  jack_set_process_callback(j_client,jack_audio_callback,NULL);
+  jack_set_process_callback(j_client,jack_audio_callback, &inst);
   jack_set_sample_rate_callback (j_client, jack_srate_callback, NULL);
 
   j_output_port= calloc(AUDIO_CHANNELS,sizeof(jack_port_t*));
@@ -322,15 +319,15 @@ static void connect_jack_ports() {
  * Instantiate /classes/.
  */
 static void allocAll () {
-  if (! (inst_reverb = allocReverb())) {
+  if (! (inst.reverb = allocReverb())) {
     fprintf (stderr, "FATAL: memory allocation failed for reverb.\n");
     exit(1);
   }
-  if (! (inst_whirl = allocWhirl())) {
+  if (! (inst.whirl = allocWhirl())) {
     fprintf (stderr, "FATAL: memory allocation failed for whirl.\n");
     exit(1);
   }
-  if (! (inst_synth = allocTonegen())) {
+  if (! (inst.synth = allocTonegen())) {
     fprintf (stderr, "FATAL: memory allocation failed for tonegen.\n");
     exit(1);
   }
@@ -340,10 +337,10 @@ static void allocAll () {
  * delete /class/ instances
  */
 static void freeAll () {
-  freeReverb(inst_reverb);
-  freeWhirl(inst_whirl);
+  freeReverb(inst.reverb);
+  freeWhirl(inst.whirl);
 
-  freeToneGenerator(inst_synth);
+  freeToneGenerator(inst.synth);
 #ifdef HAVE_ZITACONVOLVE
   freeConvolution();
 #endif
@@ -369,7 +366,7 @@ static void initAll () {
 
   fprintf (stderr, "Oscillators : ");
   fflush (stderr);
-  initToneGenerator (inst_synth);
+  initToneGenerator (inst.synth);
 
   fprintf (stderr, "Overdrive : ");
   fflush (stderr);
@@ -377,11 +374,11 @@ static void initAll () {
 
   fprintf (stderr, "Reverb : ");
   fflush (stderr);
-  initReverb (inst_reverb, SampleRateD);
+  initReverb (inst.reverb, SampleRateD);
 
   fprintf (stderr, "Whirl : ");
   fflush (stderr);
-  initWhirl (inst_whirl, SampleRateD);
+  initWhirl (inst.whirl, SampleRateD);
 
 #ifdef HAVE_ZITACONVOLVE
   fprintf (stderr, "Convolve : ");
@@ -581,6 +578,8 @@ int main (int argc, char * argv []) {
   char * alternateProgrammeFile = NULL;
   char * alternateConfigFile = NULL;
 
+  memset(&inst, 0, sizeof(b_instance));
+
   srand ((unsigned int) time (NULL));
 
   for (i=0;i<AUDIO_CHANNELS; i++)
@@ -709,14 +708,14 @@ int main (int argc, char * argv []) {
   if (doDefaultConfig == TRUE && defaultConfigFile) {
     if (access (defaultConfigFile, R_OK) == 0) {
       fprintf(stderr, "loading cfg: %s\n", defaultConfigFile);
-      parseConfigurationFile (defaultConfigFile);
+      parseConfigurationFile (&inst, defaultConfigFile);
     }
   }
 
   if (alternateConfigFile) {
     if (access (alternateConfigFile, R_OK) == 0) {
       fprintf(stderr, "loading cfg: %s\n", alternateConfigFile);
-      parseConfigurationFile (alternateConfigFile);
+      parseConfigurationFile (&inst, alternateConfigFile);
     }
   }
 
@@ -727,7 +726,7 @@ int main (int argc, char * argv []) {
    */
 
   for (i = 0; i < configOverEnd; i++) {
-    parseConfigurationLine ("commandline argument",
+    parseConfigurationLine (&inst, "commandline argument",
 			    0,
 			    configOverride[i]);
   }
@@ -773,7 +772,7 @@ int main (int argc, char * argv []) {
   pthread_t t_midi;
   if (!use_jack_midi) {
     if (!aseq_open(midi_port))
-      k= pthread_create(&t_midi, NULL, aseq_run, &j_client);
+      k= pthread_create(&t_midi, NULL, aseq_run, &inst);
 
     if (k != 0) {
       fprintf (stderr, "%d : %s\n", k, "pthread_create : MIDIInReader thread");
@@ -784,10 +783,10 @@ int main (int argc, char * argv []) {
 
   setMIDINoteShift (0);
 
-  setDrawBars (inst_synth, 0, presetSelect);
+  setDrawBars (inst.synth, 0, presetSelect);
 #if 0 // initial values are assigned in tonegen.c initToneGenerator()
-  setDrawBars (inst_synth, 1, presetSelect); /* 838 000 000 */
-  setDrawBars (inst_synth, 2, presetSelect); /* 86 - */
+  setDrawBars (inst.synth, 1, presetSelect); /* 838 000 000 */
+  setDrawBars (inst.synth, 2, presetSelect); /* 86 - */
 #endif
 
 #ifndef _WIN32

@@ -69,7 +69,7 @@ extern int aseq_open(char *port_name);
 extern void aseq_close(void);
 #endif
 
-extern void parse_jack_midi_event(jack_midi_event_t *ev);
-extern void parse_lv2_midi_event(uint8_t *d, size_t l);
+extern void parse_jack_midi_event(void *inst, jack_midi_event_t *ev);
+extern void parse_lv2_midi_event(void *inst, uint8_t *d, size_t l);
 
 #endif /* MIDI_H */

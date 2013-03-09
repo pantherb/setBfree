@@ -32,9 +32,8 @@
 
 #include "main.h"
 #include "midi.h"
-#include "tonegen.h"
 #include "program.h"
-#include "whirl.h"
+#include "global_inst.h"
 
 /*
  * Symbolic names for functions that can be governed by MIDI controllers.
@@ -65,7 +64,7 @@
  * updated with the controller number <cc>.
  */
 
-char * ccFuncNames[] = {
+static const char * ccFuncNames[] = {
   "upper.drawbar16",
   "upper.drawbar513",
   "upper.drawbar8",
@@ -278,7 +277,7 @@ static void assignMIDIControllerFunction (ctrl_function *vec,
     if ((vec[controller].fn != emptyControlFunction) &&
 	(vec[controller].fn != NULL)) {
       fprintf (stderr,
-	       "midiIn.c:WARNING, multiple allocation of controller %d!\n",
+	       "midi.c:WARNING, multiple allocation of controller %d!\n",
 	       (int) controller);
     }
     vec[controller].fn = f;
@@ -842,23 +841,23 @@ struct bmidi_event_t {
   uint8_t control_value;
 };
 
-void process_midi_event(const struct bmidi_event_t *ev) {
+void process_midi_event(b_instance *inst, const struct bmidi_event_t *ev) {
   switch(ev->type) {
     case NOTE_ON:
       if(keyTable[ev->channel] && keyTable[ev->channel][ev->note] != 255) {
 	if (ev->velocity > 0){
-	  oscKeyOn (inst_synth, keyTable[ev->channel][ev->note]);
+	  oscKeyOn (inst->synth, keyTable[ev->channel][ev->note]);
 	} else {
-	  oscKeyOff (inst_synth, keyTable[ev->channel][ev->note]);
+	  oscKeyOff (inst->synth, keyTable[ev->channel][ev->note]);
 	}
       }
       break;
     case NOTE_OFF:
       if(keyTable[ev->channel] && keyTable[ev->channel][ev->note] != 255)
-	oscKeyOff (inst_synth, keyTable[ev->channel][ev->note]);
+	oscKeyOff (inst->synth, keyTable[ev->channel][ev->note]);
       break;
     case PROGRAM_CHANGE:
-      installProgram(ev->control_value);
+      installProgram(inst, ev->control_value);
       break;
     case CONTROL_CHANGE:
       // TODO params 122-127 are reserved - skip them.
@@ -962,7 +961,7 @@ int aseq_open(char *port_name) {
 /** convert ALSA-sequencer event into  internal MIDI message
  * format  and process the event
  */
-void process_seq_event(const snd_seq_event_t *ev) {
+static void process_seq_event(b_instance *inst, const snd_seq_event_t *ev) {
   // see "snd_seq_event_type" file:///usr/share/doc/libasound2-doc/html/group___seq_events.html
   struct bmidi_event_t bev = {0,0,0,0,0};
 
@@ -992,13 +991,14 @@ void process_seq_event(const snd_seq_event_t *ev) {
     default:
       return;
   }
-  process_midi_event(&bev);
+  process_midi_event(inst, &bev);
 }
 
 void *aseq_run(void *arg) {
   int err;
   int npfds = 0;
   struct pollfd *pfds;
+  b_instance *inst = (b_instance*) arg;
 
   npfds = snd_seq_poll_descriptors_count(seq, POLLIN);
   pfds = alloca(sizeof(*pfds) * npfds);
@@ -1009,7 +1009,7 @@ void *aseq_run(void *arg) {
       snd_seq_event_t *event;
       err = snd_seq_event_input(seq, &event);
       if (err < 0) break;
-      if (event) process_seq_event(event);
+      if (event) process_seq_event(inst, event);
     } while (err > 0);
     if (aseq_stop) break;
   }
@@ -1024,7 +1024,7 @@ void *aseq_run(void *arg) {
 /** convert jack_midi_event (raw MIDI data) into
  *  internal MIDI message format  and process the event
  */
-void parse_jack_midi_event(jack_midi_event_t *ev) {
+void parse_jack_midi_event(void *inst, jack_midi_event_t *ev) {
   struct bmidi_event_t bev = {0,0,0,0,0};
 
   if (ev->size < 2 || ev->size > 3) return;
@@ -1056,14 +1056,14 @@ void parse_jack_midi_event(jack_midi_event_t *ev) {
     default:
       return;
   }
-  process_midi_event(&bev);
+  process_midi_event((b_instance*) inst, &bev);
 }
 
-void parse_lv2_midi_event(uint8_t *d, size_t l) {
+void parse_lv2_midi_event(void *inst, uint8_t *d, size_t l) {
   jack_midi_event_t ev;
   ev.buffer = d;
   ev.size = l;
-  parse_jack_midi_event(&ev);
+  parse_jack_midi_event(inst, &ev);
 }
 
 void dumpCCAssigment(FILE * fp, unsigned char *ctrl, midiccflags_t *flags) {

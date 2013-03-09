@@ -42,14 +42,9 @@
 #include <unistd.h>
 #include <pthread.h>
 
-#include "tonegen.h"
-#include "program.h"
-#include "vibrato.h"
 #include "main.h"
-#include "midi.h"
-
-#include "whirl.h"
-#include "overdrive.h"
+#include "global_inst.h"
+#include "program.h"
 
 #define SET_TRUE 1
 #define SET_NONE 0
@@ -786,8 +781,9 @@ static void randomizeDrawbars (unsigned int drawbars [], char * buf) {
  * This is the routine called by the MIDI parser when it detects
  * a Program Change message.
  */
-void installProgram (unsigned char uc) {
+void installProgram (void *instance, unsigned char uc) {
   int p = (int) uc;
+  b_instance * inst = (b_instance*) instance;
 
   p += MIDIControllerPgmOffset;
 
@@ -830,15 +826,15 @@ void installProgram (unsigned char uc) {
       }
 
       if (flags0 & FL_DRAWBR) {
-	setDrawBars (inst_synth, 0, PGM->drawbars);
+	setDrawBars (inst->synth, 0, PGM->drawbars);
       }
 
       if (flags0 & FL_LOWDRW) {
-	setDrawBars (inst_synth, 1, PGM->lowerDrawbars);
+	setDrawBars (inst->synth, 1, PGM->lowerDrawbars);
       }
 
       if (flags0 & FL_PDLDRW) {
-	setDrawBars (inst_synth, 2, PGM->pedalDrawbars);
+	setDrawBars (inst->synth, 2, PGM->pedalDrawbars);
       }
 
       /* Key attack click */
@@ -850,27 +846,27 @@ void installProgram (unsigned char uc) {
       }
 
       if (flags0 & FL_VCRUPR) {
-	setVibratoUpper (inst_synth, PGM->scanner & 0x200);
+	setVibratoUpper (inst->synth, PGM->scanner & 0x200);
       }
 
       if (flags0 & FL_VCRLWR) {
-	setVibratoLower (inst_synth, PGM->scanner & 0x100);
+	setVibratoLower (inst->synth, PGM->scanner & 0x100);
       }
 
       if (flags0 & FL_PRCENA) {
-	setPercussionEnabled (inst_synth, PGM->percussionEnabled);
+	setPercussionEnabled (inst->synth, PGM->percussionEnabled);
       }
 
       if (flags0 & FL_PRCVOL) {
-	setPercussionVolume (inst_synth, PGM->percussionVolume);
+	setPercussionVolume (inst->synth, PGM->percussionVolume);
       }
 
       if (flags0 & FL_PRCSPD) {
-	setPercussionFast (inst_synth, PGM->percussionSpeed);
+	setPercussionFast (inst->synth, PGM->percussionSpeed);
       }
 
       if (flags0 & FL_PRCHRM) {
-	setPercussionFirst (inst_synth, PGM->percussionHarmonic);
+	setPercussionFirst (inst->synth, PGM->percussionHarmonic);
       }
 
       if (flags0 & FL_OVRSEL) {
@@ -882,11 +878,11 @@ void installProgram (unsigned char uc) {
       }
 
       if (flags0 & FL_ROTSPS) {
-	setRevSelect (inst_whirl, (int) (PGM->rotarySpeedSelect));
+	setRevSelect (inst->whirl, (int) (PGM->rotarySpeedSelect));
       }
 
       if (flags0 & FL_RVBMIX) {
-	setReverbMix (inst_reverb, PGM->reverbMix);
+	setReverbMix (inst->reverb, PGM->reverbMix);
       }
 
       if (flags0 & (FL_KSPLTL|FL_KSPLTP|FL_TRA_PD|FL_TRA_LM|FL_TRA_UM)) {

@@ -181,6 +181,8 @@ static void setVibratoFromMIDI (void *d, unsigned char u) {
  * Vibrato routing.
  */
 static void setVibratoRoutingFromMIDI (void *d, unsigned char uc) {
+  // XXX disabled until globals are gone  TODO
+#if 0
   switch (uc / 32) {
   case 0:
     setVibratoUpper (inst_synth, FALSE);
@@ -199,6 +201,7 @@ static void setVibratoRoutingFromMIDI (void *d, unsigned char uc) {
     setVibratoLower (inst_synth, TRUE);
     break;
   }
+#endif
 }
 
 /*

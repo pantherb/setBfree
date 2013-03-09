@@ -1,8 +1,6 @@
 /* setBfree - DSP tonewheel organ
  *
- * Copyright (C) 2003-2004 Fredrik Kilander <fk@dsv.su.se>
- * Copyright (C) 2008-2012 Robin Gareus <robin@gareus.org>
- * Copyright (C) 2012 Will Panther <pantherb@setbfree.org>
+ * Copyright (C) 2013 Robin Gareus <robin@gareus.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,25 +17,21 @@
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  
  */
 
-#ifndef PROGRAM_H
-#define PROGRAM_H
+#ifndef GLOBAL_INST_H
+#define GLOBAL_INST_H
 
-#include "cfgParser.h"
+#include "tonegen.h"
+#include "vibrato.h"
+#include "midi.h"
+#include "whirl.h"
+#include "overdrive.h"
+#include "reverb.h"
 
-extern int pgmConfig (ConfigContext * cfg);
-extern const ConfigDoc *pgmDoc ();
+typedef struct b_instance {
+	struct b_reverb *reverb;
+	struct b_whirl *whirl;
+	struct b_tonegen *synth;
+	void * midicfg; // TODO
+} b_instance;
 
-extern void installProgram (void *inst, unsigned char uc);
-
-extern void listProgrammes (FILE * fp);
-extern int walkProgrammes (int clear);
-
-extern void setDisplayPgmChanges (int doDisplay);
-
-extern int bindToProgram (char * fileName,
-			  int    lineNumber,
-			  int    pgmnr,
-			  char * sym,
-			  char * val);
-
-#endif /* PROGRAM_H */
+#endif

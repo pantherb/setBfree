@@ -26,16 +26,13 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#include "global_inst.h"
 #include "vibrato.h"
-#include "reverb.h"
 #include "main.h"
 #include "midi.h"
 #include "cfgParser.h"
 #include "pgmParser.h"
-#include "whirl.h"
-#include "tonegen.h"
 #include "program.h"
-#include "overdrive.h"
 
 /* LV2 */
 
@@ -60,9 +57,7 @@ typedef struct {
   float* outR;
   uint32_t event_id;
 
-  struct b_reverb *inst_reverb;
-  struct b_whirl *inst_whirl;
-  struct b_tonegen *inst_synth;
+  struct b_instance inst;
 } B3S;
 
 /* main synth wrappers */
@@ -73,36 +68,31 @@ int mainConfig (ConfigContext * cfg) { return 0; }
 double SampleRateD = 48000.0;
 int SampleRateI = 48000;
 
-//temp global -- src/cfgParser.c, src/program.c
-struct b_reverb *inst_reverb = NULL;
-struct b_whirl *inst_whirl = NULL;
-struct b_tonegen *inst_synth = NULL;
-
 void initSynth(B3S *b3s, double rate) {
   // equicalent to ../src/main.c main()
   unsigned int defaultPreset[9] = {8,8,8, 0,0,0,0, 0,0};
 
   srand ((unsigned int) time (NULL));
+  initControllerTable ();
   midiPrimeControllerMapping ();
 
   /* initAll() */
   initVibrato ();
-  initToneGenerator (inst_synth);
+  initToneGenerator (b3s->inst.synth);
   initPreamp ();
-  initReverb (b3s->inst_reverb, rate);
-  initWhirl (b3s->inst_whirl, rate);
-  initToneGenerator (b3s->inst_synth);
+  initReverb (b3s->inst.reverb, rate);
+  initWhirl (b3s->inst.whirl, rate);
   /* end - initAll() */
 
   initMidiTables();
 
   setMIDINoteShift (0);
-  setDrawBars (inst_synth, 0, defaultPreset);
-  setDrawBars (inst_synth, 1, defaultPreset);
-  setDrawBars (inst_synth, 2, defaultPreset);
+  setDrawBars (b3s->inst.synth, 0, defaultPreset);
+  setDrawBars (b3s->inst.synth, 1, defaultPreset);
+  setDrawBars (b3s->inst.synth, 2, defaultPreset);
 
 #if 1
-  setRevSelect (b3s->inst_whirl, WHIRL_SLOW);
+  setRevSelect (b3s->inst.whirl, WHIRL_SLOW);
 #endif
 }
 
@@ -127,10 +117,10 @@ void synthSound (B3S *instance, uint32_t nframes, float **out) {
 
     if (boffset >= BUFFER_SIZE_SAMPLES)  {
       boffset = 0;
-      oscGenerateFragment (instance->inst_synth, bufA, BUFFER_SIZE_SAMPLES);
+      oscGenerateFragment (instance->inst.synth, bufA, BUFFER_SIZE_SAMPLES);
       preamp (bufA, bufB, BUFFER_SIZE_SAMPLES);
-      reverb (instance->inst_reverb, bufB, bufC, BUFFER_SIZE_SAMPLES);
-      whirlProc(instance->inst_whirl, bufC, bufJ[0], bufJ[1], BUFFER_SIZE_SAMPLES);
+      reverb (instance->inst.reverb, bufB, bufC, BUFFER_SIZE_SAMPLES);
+      whirlProc(instance->inst.whirl, bufC, bufJ[0], bufJ[1], BUFFER_SIZE_SAMPLES);
     }
 
     int nread = MIN(nremain, (BUFFER_SIZE_SAMPLES - boffset));
@@ -172,12 +162,9 @@ instantiate(const LV2_Descriptor*     descriptor,
       }
     }
   }
-  b3s->inst_reverb = allocReverb();
-  b3s->inst_whirl = allocWhirl();
-  b3s->inst_synth = allocTonegen();
-  inst_reverb = b3s->inst_reverb; // XXX temp. until src/*.c is updated.
-  inst_whirl = b3s->inst_whirl; // XXX temp. until src/*.c is updated.
-  inst_synth = b3s->inst_synth; // XXX temp. until src/*.c is updated.
+  b3s->inst.reverb = allocReverb();
+  b3s->inst.whirl = allocWhirl();
+  b3s->inst.synth = allocTonegen();
 
   initSynth(b3s, rate);
 
@@ -223,7 +210,7 @@ run(LV2_Handle instance, uint32_t n_samples)
     LV2_Atom_Event* ev = lv2_atom_sequence_begin(&(b3s->midiin)->body);
     while(!lv2_atom_sequence_is_end(&(b3s->midiin)->body, (b3s->midiin)->atom.size, ev)) {
       if (ev->body.type == b3s->event_id) {
-	parse_lv2_midi_event((uint8_t*)(ev+1), ev->body.size);
+	parse_lv2_midi_event(&b3s->inst, (uint8_t*)(ev+1), ev->body.size);
       }
       ev = lv2_atom_sequence_next(ev);
     }
@@ -242,9 +229,9 @@ static void
 cleanup(LV2_Handle instance)
 {
   B3S* b3s = (B3S*)instance;
-  freeReverb(b3s->inst_reverb);
-  freeWhirl(b3s->inst_whirl);
-  freeToneGenerator(b3s->inst_synth);
+  freeReverb(b3s->inst.reverb);
+  freeWhirl(b3s->inst.whirl);
+  freeToneGenerator(b3s->inst.synth);
   free(instance);
 }
 

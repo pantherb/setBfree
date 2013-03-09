@@ -52,11 +52,13 @@ typedef struct _configDoc {
   char * desc; /**< descition */
 } ConfigDoc;
 
-extern void parseConfigurationLine (char * fname,
+extern void parseConfigurationLine (
+				    void * instance,
+				    char * fname,
 				    int    lineNumber,
 				    char * oneLine);
 
-extern int  parseConfigurationFile (char * fname);
+extern int  parseConfigurationFile (void * instance, char * fname);
 extern void dumpConfigDoc ();
 extern void showConfigfileContext (ConfigContext * cfg, char * msg);
 extern void configIntUnparsable (ConfigContext * cfg);
