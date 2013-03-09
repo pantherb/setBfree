@@ -77,8 +77,8 @@ void initSynth(B3S *b3s, double rate) {
   midiPrimeControllerMapping ();
 
   /* initAll() */
-  initVibrato ();
   initToneGenerator (b3s->inst.synth);
+  initVibrato (b3s->inst.synth);
   initPreamp ();
   initReverb (b3s->inst.reverb, rate);
   initWhirl (b3s->inst.whirl, rate);

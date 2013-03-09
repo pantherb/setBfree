@@ -26,6 +26,7 @@
 #define TONEGEN_H
 
 #include "cfgParser.h"
+#include "vibrato.h"
 
 #define TG_91FB00 0		/* 91 wheels no lower foldback */
 #define TG_82FB09 1		/* 82 wheels, 9 note lower folback */
@@ -519,6 +520,7 @@ float vibBuffer[BUFFER_SIZE_SAMPLES];
 float vibYBuffr[BUFFER_SIZE_SAMPLES];
 float prcBuffer[BUFFER_SIZE_SAMPLES];
 
+struct b_vibrato inst_vibrato;
 };
 
 extern void setToneGeneratorModel (struct b_tonegen *t, int variant);

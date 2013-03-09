@@ -74,39 +74,9 @@
  * will cause nasty clicks or noise, depending on the output DACs.
  */
 
-#define INCTBL_SIZE 2048
 #define INCTBL_MASK 0x07ffffff	/* Fixed point */
-
-#define BUF_SIZE_SAMPLES 1024
-#define BUF_SIZE_BYTES   2048
 #define BUF_MASK_SAMPLES 0x000003FF
 #define BUF_MASK_POSN    0x03FFFFFF /* Fixed-point mask */
-
-static unsigned int offset1Table [INCTBL_SIZE];
-static unsigned int offset2Table [INCTBL_SIZE];
-static unsigned int offset3Table [INCTBL_SIZE];
-
-static unsigned int * offsetTable = offset3Table;
-
-static unsigned int stator = 0;
-static unsigned int statorIncrement = 0;
-
-static unsigned int outPos = BUF_MASK_SAMPLES / 2;
-
-static float vibBuffer [BUF_SIZE_BYTES];
-
-/*
- * Amplitudes of phase shift for the three vibrato settings.
- */
-
-static double vib1OffAmp = 3.0;
-static double vib2OffAmp = 6.0;
-static double vib3OffAmp = 9.0;
-
-static double vibFqHertz = 7.25;
-
-static int mixedBuffers = FALSE;
-static int effectEnabled = FALSE;
 
 /*
  * Sets the scanner frequency. It operates at a fixed frequency beacuse
@@ -114,65 +84,66 @@ static int effectEnabled = FALSE;
  * or 1500 rpm (50 Hz models). The usual frequency is somewhere between
  * 7 or 8 Hz.
  */
-void setScannerFrequency (double Hertz) {
-  vibFqHertz = Hertz;
-  statorIncrement =
-    (unsigned int) (((vibFqHertz * INCTBL_SIZE) / SampleRateD) * 65536.0);
+static void setScannerFrequency (struct b_vibrato *v, double Hertz) {
+  v->vibFqHertz = Hertz;
+  v->statorIncrement =
+    (unsigned int) (((v->vibFqHertz * INCTBL_SIZE) / SampleRateD) * 65536.0);
 }
 
 /*
  * Controls the amount of vibrato to apply by selecting the proper lookup
  * table for the processing routine.
  */
-void setVibrato (int select) {
+void setVibrato (void *t, int select) {
+  struct b_vibrato *v = &(((struct b_tonegen*)t)->inst_vibrato);
 
   switch (select & 3) {
 
   case 0:			/* disable */
-    effectEnabled = FALSE;
+    v->effectEnabled = FALSE;
     break;
 
   case 1:
-    effectEnabled = TRUE;
-    offsetTable = offset1Table;
+    v->effectEnabled = TRUE;
+    v->offsetTable = v->offset1Table;
     break;
 
   case 2:
-    effectEnabled = TRUE;
-    offsetTable = offset2Table;
+    v->effectEnabled = TRUE;
+    v->offsetTable = v->offset2Table;
     break;
 
   case 3:
-    effectEnabled = TRUE;
-    offsetTable = offset3Table;
+    v->effectEnabled = TRUE;
+    v->offsetTable = v->offset3Table;
     break;
   }
 
-  mixedBuffers = select & 0x80;
+  v->mixedBuffers = select & 0x80;
 }
 
 /*
  * Implements the vibrato knob response to a MIDI controller.
  */
-static void setVibratoFromMIDI (void *d, unsigned char u) {
+static void setVibratoFromMIDI (void *t, unsigned char u) {
   switch (u / 22) {
   case 0:
-    setVibrato (VIB1);
+    setVibrato (t, VIB1);
     break;
   case 1:
-    setVibrato (CHO1);
+    setVibrato (t, CHO1);
     break;
   case 2:
-    setVibrato (VIB2);
+    setVibrato (t, VIB2);
     break;
   case 3:
-    setVibrato (CHO2);
+    setVibrato (t, CHO2);
     break;
   case 4:
-    setVibrato (VIB3);
+    setVibrato (t, VIB3);
     break;
   case 5:
-    setVibrato (CHO3);
+    setVibrato (t, CHO3);
     break;
   }
 }
@@ -180,9 +151,8 @@ static void setVibratoFromMIDI (void *d, unsigned char u) {
 /*
  * Vibrato routing.
  */
-static void setVibratoRoutingFromMIDI (void *d, unsigned char uc) {
-  // XXX disabled until globals are gone  TODO
-#if 0
+static void setVibratoRoutingFromMIDI (void *t, unsigned char uc) {
+  struct b_tonegen * inst_synth = (struct b_tonegen *) t;
   switch (uc / 32) {
   case 0:
     setVibratoUpper (inst_synth, FALSE);
@@ -201,24 +171,23 @@ static void setVibratoRoutingFromMIDI (void *d, unsigned char uc) {
     setVibratoLower (inst_synth, TRUE);
     break;
   }
-#endif
 }
 
 /*
  * Initialises tables.
  */
-static void initIncrementTables () {
+static void initIncrementTables (struct b_vibrato *v) {
   int i;
   double S = 65536.0;
   double voff1;
   double voff2;
   double voff3;
 
-  voff1 = vib1OffAmp;
-  voff2 = vib2OffAmp;
-  voff3 = vib3OffAmp;
+  voff1 = v->vib1OffAmp;
+  voff2 = v->vib2OffAmp;
+  voff3 = v->vib3OffAmp;
 
-  for (i = 0; i < BUF_SIZE_BYTES; i++) { vibBuffer[i]=0; }
+  for (i = 0; i < BUF_SIZE_BYTES; i++) { v->vibBuffer[i]=0; }
 
   /*
    * The offset tables contains fixed-point offsets from the writer's
@@ -229,10 +198,10 @@ static void initIncrementTables () {
    */
 
   for (i = 0; i < INCTBL_SIZE; i++) {
-    double v = sin ((2.0 * M_PI * i) / INCTBL_SIZE);
-    offset1Table [i] = (unsigned int) ((1.0 + voff1 + (v * vib1OffAmp)) * S);
-    offset2Table [i] = (unsigned int) ((1.0 + voff2 + (v * vib2OffAmp)) * S);
-    offset3Table [i] = (unsigned int) ((1.0 + voff3 + (v * vib3OffAmp)) * S);
+    double m = sin ((2.0 * M_PI * i) / INCTBL_SIZE);
+    v->offset1Table [i] = (unsigned int) ((1.0 + voff1 + (m * v->vib1OffAmp)) * S);
+    v->offset2Table [i] = (unsigned int) ((1.0 + voff2 + (m * v->vib2OffAmp)) * S);
+    v->offset3Table [i] = (unsigned int) ((1.0 + voff3 + (m * v->vib3OffAmp)) * S);
   }
 
 #ifdef DEBUG
@@ -243,8 +212,8 @@ static void initIncrementTables () {
 
       fprintf (fp,
 	       "statorIncrement = 0x%08x %g\n",
-	       statorIncrement,
-	       ((double) statorIncrement) / S);
+	       v->statorIncrement,
+	       ((double) v->statorIncrement) / S);
 
       fprintf (fp, "voff1 = %g,  voff2 = %g, voff3 = %g\n",
 	       voff1, voff2, voff3);
@@ -254,8 +223,8 @@ static void initIncrementTables () {
 	fprintf (fp,
 		 "%4d 0x%08x %g\n",
 		 i,
-		 offset1Table[i],
-		 ((double) offset1Table[i]) / S);
+		 v->offset1Table[i],
+		 ((double) v->offset1Table[i]) / S);
       }
       fclose (fp);
     }
@@ -270,37 +239,58 @@ static void initIncrementTables () {
 /*
  * Initialises this module.
  */
-void initVibrato () {
-  setScannerFrequency (vibFqHertz);
-  initIncrementTables ();
-  setVibrato (0);
-  useMIDIControlFunction ("vibrato.knob", setVibratoFromMIDI, NULL);
-  useMIDIControlFunction ("vibrato.routing", setVibratoRoutingFromMIDI, NULL);
+void resetVibrato (void *t) {
+  struct b_vibrato *v = &(((struct b_tonegen*)t)->inst_vibrato);
+
+  v->offsetTable = v->offset3Table;
+  v->stator = 0;
+  v->statorIncrement = 0;
+
+  v->outPos =  BUF_MASK_SAMPLES / 2;
+
+  v->vib1OffAmp = 3.0;
+  v->vib2OffAmp = 6.0;
+  v->vib3OffAmp = 9.0;
+
+  v->vibFqHertz = 7.25;
+
+  v->mixedBuffers = FALSE;
+  v->effectEnabled = FALSE;
+}
+
+void initVibrato (void *t) {
+  struct b_vibrato *v = &(((struct b_tonegen*)t)->inst_vibrato);
+  setScannerFrequency (v, v->vibFqHertz);
+  initIncrementTables (v);
+  setVibrato (t, 0);
+  useMIDIControlFunction ("vibrato.knob", setVibratoFromMIDI, t);
+  useMIDIControlFunction ("vibrato.routing", setVibratoRoutingFromMIDI, t);
 }
 
 /*
  * Configuration interface.
  */
-int scannerConfig (ConfigContext * cfg) {
+int scannerConfig (void *t, ConfigContext * cfg) {
+  struct b_vibrato *v = &(((struct b_tonegen*)t)->inst_vibrato);
   int ack = 0;
   double d;
   if ((ack = getConfigParameter_dr ("scanner.hz",
 				    cfg,
 				    &d,
 				    4.0, 22.0)) == 1) {
-    setScannerFrequency (d);
+    setScannerFrequency (v, d);
   }
   else if ((ack = getConfigParameter_dr ("scanner.modulation.v1",
 					 cfg,
-					 &vib1OffAmp,
+					 &v->vib1OffAmp,
 					 0.0, 12.0)) == 1) {}
   else if ((ack = getConfigParameter_dr ("scanner.modulation.v2",
 					 cfg,
-					 &vib2OffAmp,
+					 &v->vib2OffAmp,
 					 0.0, 12.0)) == 1) {}
   else if ((ack = getConfigParameter_dr ("scanner.modulation.v3",
 					 cfg,
-					 &vib3OffAmp,
+					 &v->vib3OffAmp,
 					 0.0, 12.0)) == 1) {}
   return ack;
 } /* scannerConfig */
@@ -322,47 +312,47 @@ const ConfigDoc *scannerDoc () {
  * Since this is a variable delay, delayed samples take a rest in vibBuffer
  * between calls to this function.
  */
-float * vibratoProc (float * inbuffer, float * outbuffer, size_t bufferLengthSamples)
+float * vibratoProc (struct b_vibrato* v, float * inbuffer, float * outbuffer, size_t bufferLengthSamples)
 {
-  static float fnorm   = 1.0 / 65536.0; // XXX static
-  static float mixnorm = 0.7071067811865475; /* 1/sqrt(2) */ // XXX static
+  const float fnorm   = 1.0 / 65536.0;
+  const float mixnorm = 0.7071067811865475; /* 1/sqrt(2) */
   int i;
   float * xp = inbuffer;
   float * yp = outbuffer;
 
   for (i = 0; i < bufferLengthSamples; i++) {
     /* Fetch the next input sample */
-    float x = *xp++;
+    const float x = *xp++;
     /* Determine the fixed point writing position. This is relative to */
     /* the current output position (outpos). */
-    unsigned int j =
-      ((outPos << 16) + offsetTable[stator >> 16]) & BUF_MASK_POSN;
+    const unsigned int j =
+      ((v->outPos << 16) + v->offsetTable[v->stator >> 16]) & BUF_MASK_POSN;
     /* Convert fixpoint writing position to integer sample */
-    int h = j >> 16;
+    const int h = j >> 16;
     /* And the following sample, possibly wrapping the delay buffer. */
-    int k = (h + 1) & BUF_MASK_SAMPLES;
+    const int k = (h + 1) & BUF_MASK_SAMPLES;
     /* Drop the integer part of the fixpoint position. */
-    float f = fnorm * ((float) (j & 0xFFFF));
+    const float f = fnorm * ((float) (j & 0xFFFF));
     /* Amplify incoming sample and normalise */
-    float g = f * x;
+    const float g = f * x;
 
     /* Write to delay buffer */
-    vibBuffer[h] += x - g;
-    vibBuffer[k] += g;
+    v->vibBuffer[h] += x - g;
+    v->vibBuffer[k] += g;
 
-    if (mixedBuffers) {
-      *yp++ = (x + vibBuffer[outPos]) * mixnorm;
+    if (v->mixedBuffers) {
+      *yp++ = (x + v->vibBuffer[v->outPos]) * mixnorm;
     }
     else {
-      *yp++ = vibBuffer[outPos];
+      *yp++ = v->vibBuffer[v->outPos];
     }
 
     /* Zero delay buffer at the reading position. */
-    vibBuffer[outPos] = 0;
+    v->vibBuffer[v->outPos] = 0;
     /* Update the reading position, wrapping back to start if needed. */
-    outPos = (outPos + 1) & BUF_MASK_SAMPLES;
+    v->outPos = (v->outPos + 1) & BUF_MASK_SAMPLES;
     /* Update the delay amount index. */
-    stator = (stator + statorIncrement) & INCTBL_MASK;
+    v->stator = (v->stator + v->statorIncrement) & INCTBL_MASK;
   }
 
   return outbuffer;

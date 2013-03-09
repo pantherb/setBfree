@@ -842,7 +842,7 @@ void installProgram (void *instance, unsigned char uc) {
       /* Key release click */
 
       if (flags0 & FL_SCANNR) {
-	setVibrato (PGM->scanner & 0x00FF);
+	setVibrato (inst->synth, PGM->scanner & 0x00FF);
       }
 
       if (flags0 & FL_VCRUPR) {

@@ -32,15 +32,51 @@
 #define CHO2 0x82
 #define CHO3 0x83
 
-extern void setVibrato (int select);
+#define INCTBL_SIZE 2048
+
+#define BUF_SIZE_BYTES   1024
+
+struct b_vibrato {
+
+unsigned int offset1Table [INCTBL_SIZE];
+unsigned int offset2Table [INCTBL_SIZE];
+unsigned int offset3Table [INCTBL_SIZE];
+
+unsigned int * offsetTable;
+
+unsigned int stator;
+unsigned int statorIncrement;
+
+unsigned int outPos;
+
+float vibBuffer [BUF_SIZE_BYTES];
+
+/*
+ * Amplitudes of phase shift for the three vibrato settings.
+ */
+
+double vib1OffAmp;
+double vib2OffAmp;
+double vib3OffAmp;
+
+double vibFqHertz;
+
+int mixedBuffers;
+int effectEnabled;
+
+};
+
+extern void resetVibrato (void *tonegen);
+
+extern void initVibrato (void *tonegen);
+
+extern void setVibrato (void *t, int select);
 
 extern void setScannerAdvance (int forward);
 
-extern void initVibrato ();
-
-extern int scannerConfig (ConfigContext * cfg);
+extern int scannerConfig (void *t, ConfigContext * cfg);
 extern const ConfigDoc *scannerDoc ();
 
-extern float * vibratoProc (float * inbuffer, float * outbuffer, size_t bufferLengthSamples);
+extern float * vibratoProc (struct b_vibrato* v, float * inbuffer, float * outbuffer, size_t bufferLengthSamples);
 
 #endif /* SCANNER_H */

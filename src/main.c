@@ -360,13 +360,13 @@ static void initAll () {
     exit(1);
   }
 
-  fprintf (stderr, "Scanner : ");
-  fflush (stderr);
-  initVibrato ();
-
   fprintf (stderr, "Oscillators : ");
   fflush (stderr);
   initToneGenerator (inst.synth);
+
+  fprintf (stderr, "Scanner : ");
+  fflush (stderr);
+  initVibrato (inst.synth);
 
   fprintf (stderr, "Overdrive : ");
   fflush (stderr);
