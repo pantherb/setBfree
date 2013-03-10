@@ -22,6 +22,7 @@
 #ifndef MIDI_H
 #define MIDI_H
 
+#include <stdio.h>
 #include <jack/midiport.h>
 #include "cfgParser.h"
 
@@ -63,6 +64,7 @@ extern void setMIDINoteShift (void *mcfg, char offset);
 extern void initMidiTables(void *mcfg);
 extern void initControllerTable (void *mcfg);
 extern int getCCFunctionId (const char * name);
+extern void listCCAssignments(void *mctl, FILE * fp);
 
 extern void *allocMidiCfg();
 extern void freeMidiCfg(void *mcfg);

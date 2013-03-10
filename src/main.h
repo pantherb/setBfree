@@ -35,22 +35,10 @@
 #define FALSE 0
 #endif
 
-#if 0 // drawbar presets -- unused ?
-#define B___16 0
-#define B5_1_3 1
-#define B____8 2
-#define B____4 3
-#define B2_2_3 4
-#define B____2 5
-#define B1_3_5 6
-#define B1_1_3 7
-#define B____1 8
-#endif
 #define B_size 9
 
 extern int mainConfig (ConfigContext * cfg);
 extern const ConfigDoc *mainDoc ();
-extern void listCCAssignments(void *mctl, FILE * fp);
 
 extern double SampleRateD;
 

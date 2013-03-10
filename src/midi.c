@@ -236,7 +236,7 @@ ctrl_function *ctrlvec[16]; /**< control function table per MIDI channel */
 midiccflags_t ctrlflg[16][128]; /**< binary flags for each control  -- binary OR */
 };
 
-void resetMidiCfg(void *mcfg) {
+static void resetMidiCfg(void *mcfg) {
   struct b_midicfg * m = (struct b_midicfg *) mcfg;
 
   m->rcvChA = 0; /* MIDI receive channel */
@@ -897,7 +897,7 @@ struct bmidi_event_t {
   };
 };
 
-void process_midi_event(b_instance *inst, const struct bmidi_event_t *ev) {
+static void process_midi_event(b_instance *inst, const struct bmidi_event_t *ev) {
   struct b_midicfg * m = (struct b_midicfg *) inst->midicfg;
   switch(ev->type) {
     case NOTE_ON:
@@ -917,30 +917,31 @@ void process_midi_event(b_instance *inst, const struct bmidi_event_t *ev) {
       installProgram(inst, ev->control_value);
       break;
     case CONTROL_CHANGE:
-      // TODO params 122-127 are reserved - skip them.
-      // ev->buffer[1] - 0x00 and 0x20 are used for BANK select -- skip
 #if 0 // DEBUG
       {
 	unsigned char * ctrlUse = NULL;
-	char *fn="";
-	int fid=-1;
-	if      (ev->channel == m->rcvChA) ctrlUse=m->ctrlUseA;
-	else if (ev->channel == m->rcvChB) ctrlUse=m->ctrlUseB;
-	else if (ev->channel == m->rcvChC) ctrlUse=m->ctrlUseC;
+	const char *fn="";
+	if      (ev->channel == m->rcvChA) ctrlUse = m->ctrlUseA;
+	else if (ev->channel == m->rcvChB) ctrlUse = m->ctrlUseB;
+	else if (ev->channel == m->rcvChC) ctrlUse = m->ctrlUseC;
 	if (ctrlUse) {
 	  int j;
-	  for (j=0;j<CTRL_USE_MAX;++j) {
+	  for (j=0; j < CTRL_USE_MAX; ++j) {
 	    if (ctrlUse[j] == ev->control_param) {
-	      fn=ccFuncNames[j];
+	      fn = ccFuncNames[j];
 	      break;
 	    }
 	  }
 	}
 	printf("CC: %2d %03d -> %3d (%s) %s\n", ev->channel, ev->control_param, ev->control_value, fn,
-	    (m->ctrlvec[ev->channel] && m->ctrlvec[ev->channel][ev->control_param]!=emptyControlFunction)?"*":"-"
+	    (m->ctrlvec[ev->channel] && m->ctrlvec[ev->channel][ev->control_param].fn != emptyControlFunction) ? "*":"-"
 	  );
       }
 #endif
+      /* params 122-127 are reserved - skip them. */
+      if (ev->control_param >= 122) break;
+      /*  0x00 and 0x20 are used for BANK select */
+      if (ev->control_param == 0x00 || ev->control_param == 0x20) break;
       if (m->ctrlvec[ev->channel] && m->ctrlvec[ev->channel][ev->control_param].fn) {
 	uint8_t val = ev->control_value & 0x7f;
 	if (m->ctrlflg[ev->channel][ev->control_param] & MFLAG_INV) {
@@ -1122,13 +1123,11 @@ void parse_jack_midi_event(void *inst, jack_midi_event_t *ev) {
   parse_raw_midi_data(inst, ev->buffer, ev->size);
 }
 
-void dumpCCAssigment(FILE * fp, unsigned char *ctrl, midiccflags_t *flags) {
+static void dumpCCAssigment(FILE * fp, unsigned char *ctrl, midiccflags_t *flags) {
   int i;
-  //TODO don't print header if no assignments
   fprintf(fp,"  Controller | Function \n");
   for (i=0;i<127;++i) {
     if (ctrl[i] != 255) {
-      // TODO sort by controller ?
       fprintf(fp,"     %03d     | %s %s\n", ctrl[i] ,ccFuncNames[i], (flags[i]&1)?"-":"");
     }
   }
