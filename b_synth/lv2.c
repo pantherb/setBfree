@@ -44,6 +44,7 @@
 #include "lv2/lv2plug.in/ns/ext/event/event-helpers.h"
 
 #define B3S_URI "http://gareus.org/oss/lv2/b_synth"
+#define BUFFER_SIZE_SAMPLES  (128)
 
 typedef enum {
   B3S_MIDIIN   = 0,
@@ -58,6 +59,11 @@ typedef struct {
   uint32_t event_id;
 
   struct b_instance inst;
+
+  float bufA [BUFFER_SIZE_SAMPLES];
+  float bufB [BUFFER_SIZE_SAMPLES];
+  float bufC [BUFFER_SIZE_SAMPLES];
+  float bufJ [2][BUFFER_SIZE_SAMPLES];
 } B3S;
 
 /* main synth wrappers */
@@ -66,7 +72,6 @@ const ConfigDoc *mainDoc () { return NULL;}
 int mainConfig (ConfigContext * cfg) { return 0; }
 
 double SampleRateD = 48000.0;
-int SampleRateI = 48000;
 
 void initSynth(B3S *b3s, double rate) {
   // equicalent to ../src/main.c main()
@@ -100,15 +105,9 @@ void initSynth(B3S *b3s, double rate) {
 #define MIN(A,B) (((A)<(B))?(A):(B))
 #endif
 
-#define BUFFER_SIZE_SAMPLES  (128)
-static float bufA [BUFFER_SIZE_SAMPLES];
-static float bufB [BUFFER_SIZE_SAMPLES];
-static float bufC [BUFFER_SIZE_SAMPLES];
-static float bufJ [2][BUFFER_SIZE_SAMPLES];
-
-
 void synthSound (B3S *instance, uint32_t nframes, float **out) {
   static int boffset = BUFFER_SIZE_SAMPLES;
+  B3S* b3s = (B3S*)instance;
 
   jack_nframes_t written = 0;
 
@@ -117,16 +116,16 @@ void synthSound (B3S *instance, uint32_t nframes, float **out) {
 
     if (boffset >= BUFFER_SIZE_SAMPLES)  {
       boffset = 0;
-      oscGenerateFragment (instance->inst.synth, bufA, BUFFER_SIZE_SAMPLES);
-      preamp (instance->inst.preamp, bufA, bufB, BUFFER_SIZE_SAMPLES);
-      reverb (instance->inst.reverb, bufB, bufC, BUFFER_SIZE_SAMPLES);
-      whirlProc(instance->inst.whirl, bufC, bufJ[0], bufJ[1], BUFFER_SIZE_SAMPLES);
+      oscGenerateFragment (instance->inst.synth, b3s->bufA, BUFFER_SIZE_SAMPLES);
+      preamp (instance->inst.preamp, b3s->bufA, b3s->bufB, BUFFER_SIZE_SAMPLES);
+      reverb (instance->inst.reverb, b3s->bufB, b3s->bufC, BUFFER_SIZE_SAMPLES);
+      whirlProc(instance->inst.whirl, b3s->bufA, b3s->bufJ[0], b3s->bufJ[1], BUFFER_SIZE_SAMPLES);
     }
 
     int nread = MIN(nremain, (BUFFER_SIZE_SAMPLES - boffset));
 
-    memcpy(&out[0][written], &bufJ[0][boffset], nread*sizeof(float));
-    memcpy(&out[1][written], &bufJ[1][boffset], nread*sizeof(float));
+    memcpy(&out[0][written], &b3s->bufJ[0][boffset], nread*sizeof(float));
+    memcpy(&out[1][written], &b3s->bufJ[1][boffset], nread*sizeof(float));
 
     written+=nread;
     boffset+=nread;
@@ -150,7 +149,6 @@ instantiate(const LV2_Descriptor*     descriptor,
   b3s->midiin=NULL;
 
   SampleRateD = rate;
-  SampleRateI = (int) rate;
 
   int i;
   for (i=0; features[i]; ++i) {
@@ -162,6 +160,8 @@ instantiate(const LV2_Descriptor*     descriptor,
       }
     }
   }
+
+  b3s->inst.progs = allocProgs();
   b3s->inst.reverb = allocReverb();
   b3s->inst.whirl = allocWhirl();
   b3s->inst.synth = allocTonegen();
@@ -236,6 +236,7 @@ cleanup(LV2_Handle instance)
   freeToneGenerator(b3s->inst.synth);
   freeMidiCfg(b3s->inst.midicfg);
   freePreamp(b3s->inst.preamp);
+  freeProgs(b3s->inst.progs);
   free(instance);
 }
 

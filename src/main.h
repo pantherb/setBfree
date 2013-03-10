@@ -40,6 +40,6 @@
 extern int mainConfig (ConfigContext * cfg);
 extern const ConfigDoc *mainDoc ();
 
-extern double SampleRateD;
+extern double SampleRateD; // TODO -> tonegen.c, vibrato.c non-global
 
 #endif /* MAIN_H */
