@@ -31,7 +31,7 @@ typedef struct b_instance {
 	struct b_reverb *reverb;
 	struct b_whirl *whirl;
 	struct b_tonegen *synth;
-	void * midicfg; // TODO
+	void * midicfg;
 } b_instance;
 
 #endif

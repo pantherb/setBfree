@@ -31,7 +31,7 @@ extern "C" {
 
 extern void setConvolutionMix (unsigned char u);
 
-extern void initConvolution (const unsigned int channels, const unsigned int buffersize, int sched_pri, int sched_pol);
+extern void initConvolution (void *clv, void *m, const unsigned int channels, const unsigned int buffersize, int sched_pri, int sched_pol);
 extern void freeConvolution ();
 extern void convolve (const float ** inbuf, float ** outbuf, size_t n_channels, size_t n_samples);
 

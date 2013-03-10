@@ -68,7 +68,7 @@ int effectEnabled;
 
 extern void resetVibrato (void *tonegen);
 
-extern void initVibrato (void *tonegen);
+extern void initVibrato (void *tonegen, void *m);
 
 extern void setVibrato (void *t, int select);
 

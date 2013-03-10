@@ -543,7 +543,7 @@ extern void setEnvReleaseClickLevel (struct b_tonegen *t, double u);
 extern void setKeyClick (struct b_tonegen *t, int v);
 extern int  oscConfig (struct b_tonegen *t, ConfigContext * cfg);
 extern const ConfigDoc *oscDoc ();
-extern void initToneGenerator (struct b_tonegen *t);
+extern void initToneGenerator (struct b_tonegen *t, void *m);
 extern void freeToneGenerator (struct b_tonegen *t);
 
 extern void oscKeyOff (struct b_tonegen *t, unsigned char midiNote);

@@ -258,13 +258,13 @@ void resetVibrato (void *t) {
   v->effectEnabled = FALSE;
 }
 
-void initVibrato (void *t) {
+void initVibrato (void *t, void *m) {
   struct b_vibrato *v = &(((struct b_tonegen*)t)->inst_vibrato);
   setScannerFrequency (v, v->vibFqHertz);
   initIncrementTables (v);
   setVibrato (t, 0);
-  useMIDIControlFunction ("vibrato.knob", setVibratoFromMIDI, t);
-  useMIDIControlFunction ("vibrato.routing", setVibratoRoutingFromMIDI, t);
+  useMIDIControlFunction (m, "vibrato.knob", setVibratoFromMIDI, t);
+  useMIDIControlFunction (m, "vibrato.routing", setVibratoRoutingFromMIDI, t);
 }
 
 /*

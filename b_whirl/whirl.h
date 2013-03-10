@@ -199,7 +199,7 @@ extern void freeWhirl(struct b_whirl *w);
 extern int whirlConfig (struct b_whirl *w, ConfigContext * cfg);
 extern const ConfigDoc *whirlDoc ();
 
-extern void initWhirl (struct b_whirl *w, double rate);
+extern void initWhirl (struct b_whirl *w, void *m, double rate);
 
 extern void whirlProc (struct b_whirl *w,
 		       const float * inbuffer,

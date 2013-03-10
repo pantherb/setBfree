@@ -2896,7 +2896,7 @@ static void setSwellPedalFromMIDI (void *d, unsigned char u) {
  * configuration files have already been read, so parameters should already
  * be set.
  */
-void initToneGenerator (struct b_tonegen *t) {
+void initToneGenerator (struct b_tonegen *t, void *m) {
   int i;
 
   /* init global variables */
@@ -2981,42 +2981,42 @@ void initToneGenerator (struct b_tonegen *t) {
   setPercussionFast (t, TRUE);
   setPercussionEnabled (t, FALSE);
 
-  useMIDIControlFunction ("swellpedal1", setSwellPedalFromMIDI, t);
-  useMIDIControlFunction ("swellpedal2", setSwellPedalFromMIDI, t);
+  useMIDIControlFunction (m, "swellpedal1", setSwellPedalFromMIDI, t);
+  useMIDIControlFunction (m, "swellpedal2", setSwellPedalFromMIDI, t);
 
-  useMIDIControlFunction ("upper.drawbar16",  setDrawbar0, t);
-  useMIDIControlFunction ("upper.drawbar513", setDrawbar1, t);
-  useMIDIControlFunction ("upper.drawbar8",   setDrawbar2, t);
-  useMIDIControlFunction ("upper.drawbar4",   setDrawbar3, t);
-  useMIDIControlFunction ("upper.drawbar223", setDrawbar4, t);
-  useMIDIControlFunction ("upper.drawbar2",   setDrawbar5, t);
-  useMIDIControlFunction ("upper.drawbar135", setDrawbar6, t);
-  useMIDIControlFunction ("upper.drawbar113", setDrawbar7, t);
-  useMIDIControlFunction ("upper.drawbar1",   setDrawbar8, t);
+  useMIDIControlFunction (m, "upper.drawbar16",  setDrawbar0, t);
+  useMIDIControlFunction (m, "upper.drawbar513", setDrawbar1, t);
+  useMIDIControlFunction (m, "upper.drawbar8",   setDrawbar2, t);
+  useMIDIControlFunction (m, "upper.drawbar4",   setDrawbar3, t);
+  useMIDIControlFunction (m, "upper.drawbar223", setDrawbar4, t);
+  useMIDIControlFunction (m, "upper.drawbar2",   setDrawbar5, t);
+  useMIDIControlFunction (m, "upper.drawbar135", setDrawbar6, t);
+  useMIDIControlFunction (m, "upper.drawbar113", setDrawbar7, t);
+  useMIDIControlFunction (m, "upper.drawbar1",   setDrawbar8, t);
 
-  useMIDIControlFunction ("lower.drawbar16",  setDrawbar9, t);
-  useMIDIControlFunction ("lower.drawbar513", setDrawbar10, t);
-  useMIDIControlFunction ("lower.drawbar8",   setDrawbar11, t);
-  useMIDIControlFunction ("lower.drawbar4",   setDrawbar12, t);
-  useMIDIControlFunction ("lower.drawbar223", setDrawbar13, t);
-  useMIDIControlFunction ("lower.drawbar2",   setDrawbar14, t);
-  useMIDIControlFunction ("lower.drawbar135", setDrawbar15, t);
-  useMIDIControlFunction ("lower.drawbar113", setDrawbar16, t);
-  useMIDIControlFunction ("lower.drawbar1",   setDrawbar17, t);
+  useMIDIControlFunction (m, "lower.drawbar16",  setDrawbar9, t);
+  useMIDIControlFunction (m, "lower.drawbar513", setDrawbar10, t);
+  useMIDIControlFunction (m, "lower.drawbar8",   setDrawbar11, t);
+  useMIDIControlFunction (m, "lower.drawbar4",   setDrawbar12, t);
+  useMIDIControlFunction (m, "lower.drawbar223", setDrawbar13, t);
+  useMIDIControlFunction (m, "lower.drawbar2",   setDrawbar14, t);
+  useMIDIControlFunction (m, "lower.drawbar135", setDrawbar15, t);
+  useMIDIControlFunction (m, "lower.drawbar113", setDrawbar16, t);
+  useMIDIControlFunction (m, "lower.drawbar1",   setDrawbar17, t);
 
-  useMIDIControlFunction ("pedal.drawbar16",  setDrawbar18, t);
-  useMIDIControlFunction ("pedal.drawbar513", setDrawbar19, t);
-  useMIDIControlFunction ("pedal.drawbar8",   setDrawbar20, t);
-  useMIDIControlFunction ("pedal.drawbar4",   setDrawbar21, t);
-  useMIDIControlFunction ("pedal.drawbar223", setDrawbar22, t);
-  useMIDIControlFunction ("pedal.drawbar2",   setDrawbar23, t);
-  useMIDIControlFunction ("pedal.drawbar135", setDrawbar24, t);
-  useMIDIControlFunction ("pedal.drawbar113", setDrawbar25, t);
-  useMIDIControlFunction ("pedal.drawbar1",   setDrawbar26, t);
+  useMIDIControlFunction (m, "pedal.drawbar16",  setDrawbar18, t);
+  useMIDIControlFunction (m, "pedal.drawbar513", setDrawbar19, t);
+  useMIDIControlFunction (m, "pedal.drawbar8",   setDrawbar20, t);
+  useMIDIControlFunction (m, "pedal.drawbar4",   setDrawbar21, t);
+  useMIDIControlFunction (m, "pedal.drawbar223", setDrawbar22, t);
+  useMIDIControlFunction (m, "pedal.drawbar2",   setDrawbar23, t);
+  useMIDIControlFunction (m, "pedal.drawbar135", setDrawbar24, t);
+  useMIDIControlFunction (m, "pedal.drawbar113", setDrawbar25, t);
+  useMIDIControlFunction (m, "pedal.drawbar1",   setDrawbar26, t);
 
-  useMIDIControlFunction ("percussion.enable",   setPercVolumeFromMIDI, t);
-  useMIDIControlFunction ("percussion.decay",    setPercDecayFromMIDI, t);
-  useMIDIControlFunction ("percussion.harmonic", setPercHarmonicFromMIDI, t);
+  useMIDIControlFunction (m, "percussion.enable",   setPercVolumeFromMIDI, t);
+  useMIDIControlFunction (m, "percussion.decay",    setPercDecayFromMIDI, t);
+  useMIDIControlFunction (m, "percussion.harmonic", setPercHarmonicFromMIDI, t);
 
 #if 0
   dumpOscToText (t, "osc.txt");

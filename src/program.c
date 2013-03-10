@@ -892,7 +892,7 @@ void installProgram (void *instance, unsigned char uc) {
 	b |= (flags0 & FL_TRA_PD) ?  4 : 0;
 	b |= (flags0 & FL_TRA_LM) ?  8 : 0;
 	b |= (flags0 & FL_TRA_UM) ? 16 : 0;
-	setKeyboardSplitMulti (b,
+	setKeyboardSplitMulti (inst->midicfg, b,
 			       PGM->keyboardSplitPedals,
 			       PGM->keyboardSplitLower,
 			       PGM->transpose[TR_CHA_PD],
@@ -901,19 +901,19 @@ void installProgram (void *instance, unsigned char uc) {
       }
 
       if (flags0 & FL_TRANSP) {
-	setKeyboardTranspose (PGM->transpose[TR_TRANSP]);
+	setKeyboardTranspose (inst->midicfg, PGM->transpose[TR_TRANSP]);
       }
 
       if (flags0 & FL_TRCH_A) {
-	setKeyboardTransposeA (PGM->transpose[TR_CHNL_A]);
+	setKeyboardTransposeA (inst->midicfg, PGM->transpose[TR_CHNL_A]);
       }
 
       if (flags0 & FL_TRCH_B) {
-	setKeyboardTransposeB (PGM->transpose[TR_CHNL_B]);
+	setKeyboardTransposeB (inst->midicfg, PGM->transpose[TR_CHNL_B]);
       }
 
       if (flags0 & FL_TRCH_C) {
-	setKeyboardTransposeC (PGM->transpose[TR_CHNL_C]);
+	setKeyboardTransposeC (inst->midicfg, PGM->transpose[TR_CHNL_C]);
       }
 
     }

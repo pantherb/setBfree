@@ -158,6 +158,7 @@ static Convproc *convproc = 0;
  *
  */
 void initConvolution (
+    void *clv, void *m,
     const unsigned int channels,
     const unsigned int buffersize,
     int sched_pri,
@@ -261,7 +262,7 @@ void initConvolution (
     exit (1);
   }
 
-  ::useMIDIControlFunction (_S"convolution.mix", setConvolutionMix, NULL);
+  useMIDIControlFunction (m, _S"convolution.mix", setConvolutionMix, NULL);
 }
 
 void freeConvolution () {

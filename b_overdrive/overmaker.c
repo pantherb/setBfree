@@ -1160,16 +1160,16 @@ void legacyInit () {
   char buf[BUFSZ];
   vspace (3);
   commentln ("Legacy function");
-  codeln ("void initPreamp () {");
+  codeln ("void initPreamp (void *pa, void *m) {");
   pushIndent ();
   codeln ("mixFilterWeights (ipwdef, aaldef);");
 
 
 #ifdef PRE_FILTER_TYPE
   if (generatePreFilter) {
-    codeln ("useMIDIControlFunction (\"xov.prefilter.hz\", setPreFilterHz, NULL);");
-    codeln ("useMIDIControlFunction (\"xov.prefilter.q\", setPreFilterQ, NULL);");
-    codeln ("useMIDIControlFunction(\"xov.prefilter.gain\", setPreFilterG, NULL);");
+    codeln ("useMIDIControlFunction (m, \"xov.prefilter.hz\", setPreFilterHz, NULL);");
+    codeln ("useMIDIControlFunction (m, \"xov.prefilter.q\", setPreFilterQ, NULL);");
+    codeln ("useMIDIControlFunction(m, \"xov.prefilter.gain\", setPreFilterG, NULL);");
     sprintf (buf, "preFilterDefine (%d, pr_F, pr_Q, pr_G);", PRE_FILTER_TYPE);
     codeln (buf);
   }
@@ -1177,9 +1177,9 @@ void legacyInit () {
 
 #ifdef POST_FILTER_TYPE
   if (generatePostFilter) {
-    codeln ("useMIDIControlFunction (\"xov.postfilter.hz\", setPostFilterHz, NULL);");
-    codeln ("useMIDIControlFunction (\"xov.postfilter.q\", setPostFilterQ, NULL);");
-    codeln ("useMIDIControlFunction (\"xov.postfilter.gain\", setPostFilterG, NULL);");
+    codeln ("useMIDIControlFunction (m, \"xov.postfilter.hz\", setPostFilterHz, NULL);");
+    codeln ("useMIDIControlFunction (m, \"xov.postfilter.q\", setPostFilterQ, NULL);");
+    codeln ("useMIDIControlFunction (m, \"xov.postfilter.gain\", setPostFilterG, NULL);");
     sprintf (buf,"postFilterDefine (%d, de_F, de_Q, de_G);", POST_FILTER_TYPE);
     codeln (buf);
   }
@@ -1189,30 +1189,30 @@ void legacyInit () {
   /* ================================================================ */
 
 #ifdef TR_BIASED
-  sprintf (buf, "useMIDIControlFunction (\"xov.ctl_biased\", ctl_biased, NULL);");
+  sprintf (buf, "useMIDIControlFunction (m, \"xov.ctl_biased\", ctl_biased, NULL);");
   codeln (buf);
 
 #ifdef ADWS_PRE_DIFF
   sprintf (buf,
-	   "useMIDIControlFunction (\"xov.ctl_biased_fb\", ctl_biased_fb, NULL);");
+	   "useMIDIControlFunction (m, \"xov.ctl_biased_fb\", ctl_biased_fb, NULL);");
   codeln (buf);
 #endif /* ADWS_PRE_DIFF */
 
 #ifdef ADWS_POST_DIFF
   sprintf (buf,
-	   "useMIDIControlFunction (\"xov.ctl_biased_fb2\", ctl_biased_fb2, NULL);");
+	   "useMIDIControlFunction (m, \"xov.ctl_biased_fb2\", ctl_biased_fb2, NULL);");
   codeln (buf);
 #endif /* ADWS_POST_DIFF */
 
 #ifdef ADWS_GFB
   sprintf (buf,
-	   "useMIDIControlFunction (\"xov.ctl_biased_gfb\", ctl_biased_gfb, NULL);");
+	   "useMIDIControlFunction (m, \"xov.ctl_biased_gfb\", ctl_biased_gfb, NULL);");
   codeln (buf);
 #endif /* ADWS_GFB */
 
 #ifdef SAG_EMULATION
   sprintf (buf,
-	   "useMIDIControlFunction (\"xov.ctl_sagtobias\", ctl_sagtoBias, NULL);");
+	   "useMIDIControlFunction (m, \"xov.ctl_sagtobias\", ctl_sagtoBias, NULL);");
   codeln (buf);
 #endif /* SAG_EMULATION */
 
@@ -1220,7 +1220,7 @@ void legacyInit () {
   sprintf
     (
      buf,
-     "useMIDIControlFunction (\"overdrive.character\", ctl_biased_fat, NULL);"
+     "useMIDIControlFunction (m, \"overdrive.character\", ctl_biased_fat, NULL);"
      );
   codeln (buf);
 #endif /* ADWS_FAT_CTRL */
@@ -1232,28 +1232,28 @@ void legacyInit () {
 
 
 #ifdef INPUT_GAIN
-  sprintf (buf, "useMIDIControlFunction (\"overdrive.inputgain\", setInputGain, NULL);");
+  sprintf (buf, "useMIDIControlFunction (m, \"overdrive.inputgain\", setInputGain, NULL);");
   codeln (buf);
 #endif /* INPUT_GAIN */
 
 #ifdef OUTPUT_GAIN
-  sprintf (buf, "useMIDIControlFunction (\"overdrive.outputgain\", setOutputGain, NULL);");
+  sprintf (buf, "useMIDIControlFunction (m, \"overdrive.outputgain\", setOutputGain, NULL);");
   codeln (buf);
 #endif /* OUTPUT_GAIN */
 
 #ifdef PRE_DC_OFFSET
-  codeln ("useMIDIControlFunction (\"xov.pre_dc_offset\", setPreDCOffset, NULL);");
+  codeln ("useMIDIControlFunction (m, \"xov.pre_dc_offset\", setPreDCOffset, NULL);");
 #endif /* PRE_DC_OFFSET */
 
 #ifdef CLEAN_MIX
-  sprintf (buf, "useMIDIControlFunction (\"xov.mix.dry\", setCleanMix, NULL);");
+  sprintf (buf, "useMIDIControlFunction (m, \"xov.mix.dry\", setCleanMix, NULL);");
   codeln (buf);
 #endif /* CLEAN_MIX */
 
 #ifdef INPUT_COMPRESS
-  codeln ("useMIDIControlFunction (\"xov.compressor.threshold\", setIpcThreshold, NULL);");
-  codeln ("useMIDIControlFunction (\"xov.compressor.attack\", setIpcAttack, NULL);");
-  codeln ("useMIDIControlFunction (\"xov.compressor.release\", setIpcRelease, NULL);");
+  codeln ("useMIDIControlFunction (m, \"xov.compressor.threshold\", setIpcThreshold, NULL);");
+  codeln ("useMIDIControlFunction (m, \"xov.compressor.attack\", setIpcAttack, NULL);");
+  codeln ("useMIDIControlFunction (m, \"xov.compressor.release\", setIpcRelease, NULL);");
 #endif /* INPUT_COMPRESS */
   popIndent ();
   codeln ("}");

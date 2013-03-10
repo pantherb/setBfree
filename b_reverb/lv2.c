@@ -60,7 +60,7 @@ instantiate(const LV2_Descriptor*     descriptor,
     return NULL;
   }
 
-  initReverb(b3r->instance, rate);
+  initReverb(b3r->instance, NULL, rate);
 
   return (LV2_Handle)b3r;
 }

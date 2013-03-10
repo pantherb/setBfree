@@ -163,53 +163,7 @@ enum parserState {
   stProgramChg, dtaProgramChg
 };
 
-/* Used by the MIDI parser to record message bytes */
-
-static unsigned char rcvChA = 0; /* MIDI receive channel */
-static unsigned char rcvChB = 1; /* MIDI receive channel */
-static unsigned char rcvChC = 2; /* MIDI receive channel */
-
-/*
- * The all channel transpose is used to transpose the entire instrument
- * into a different mode and is a common function on synthesizers.
- * The channel- and split-dependent transposes are for adjusting the
- * reach of the user's MIDI controller(s) to the desired range.
- */
-
-static int transpose = 0;	/* All channel transpose */
-
-static int nshA    = 0;		/* Channel A transpose (no split) */
-static int nshA_U  = 0;		/* Channel A upper region transpose */
-static int nshA_PL = 0;		/* Channel A pedal region transpose */
-static int nshA_UL = 0;		/* Channel A lower region transpose */
-static int nshB = 0;		/* Channel B transpose */
-static int nshC = 0;		/* Channel C transpose */
-
-static int splitA_PL = 0;	/* A channel pedal region */
-static int splitA_UL = 0;	/* A channel lower region */
-
-/*
- * This flag controls how to map MIDI input that falls outside of
- * the virtual instrument's manuals. A value of zero means such MIDI notes
- * make no sound. A value of one means that the MIDI notes map back
- * into the nearest octave with a playable key, a mechanism similar to
- * the foldback used in some organ models.
- */
-static int userExcursionStrategy = 0;
-
-static unsigned char keyTableA[128]; /**< MIDI note to key transl. tbl */
-static unsigned char keyTableB[128]; /**< MIDI note to key transl. tbl */
-static unsigned char keyTableC[128]; /**< MIDI note to key transl. tbl */
-
-static unsigned char * keyTable[16]; /**< Tables per MIDI channel */
-
-/* Arrays that map from usage codes to MIDI controller numbers. */
-
 #define CTRL_USE_MAX 128
-
-static unsigned char ctrlUseA[CTRL_USE_MAX];
-static unsigned char ctrlUseB[CTRL_USE_MAX];
-static unsigned char ctrlUseC[CTRL_USE_MAX];
 
 /* Arrays of pointers to functions that handle controller values. */
 
@@ -218,18 +172,103 @@ typedef struct {
   void *d;
 } ctrl_function;
 
-static ctrl_function ctrlvecA[128];
-static ctrl_function ctrlvecB[128];
-static ctrl_function ctrlvecC[128];
-
-static ctrl_function *ctrlvec[16]; /**< control function table per MIDI channel */
-
 typedef uint8_t midiccflags_t;
-static midiccflags_t ctrlflg[16][128]; /**< binary flags for each control  -- binary OR */
 
 enum { // 1,2,4,8,.. - adjust ctrlflg once >8 to uint16_t
   MFLAG_INV = 1,
 };
+
+/* ---------------------------------------------------------------- */
+
+struct b_midicfg {
+
+/* Used by the MIDI parser to record message bytes */
+
+unsigned char rcvChA; /* MIDI receive channel */
+unsigned char rcvChB; /* MIDI receive channel */
+unsigned char rcvChC; /* MIDI receive channel */
+
+/*
+ * The all channel transpose is used to transpose the entire instrument
+ * into a different mode and is a common function on synthesizers.
+ * The channel- and split-dependent transposes are for adjusting the
+ * reach of the user's MIDI controller(s) to the desired range.
+ */
+
+int transpose;	/* All channel transpose */
+
+int nshA;	/* Channel A transpose (no split) */
+int nshA_U;	/* Channel A upper region transpose */
+int nshA_PL;	/* Channel A pedal region transpose */
+int nshA_UL;	/* Channel A lower region transpose */
+int nshB;	/* Channel B transpose */
+int nshC;	/* Channel C transpose */
+
+int splitA_PL;	/* A channel pedal region */
+int splitA_UL;	/* A channel lower region */
+
+/*
+ * This flag controls how to map MIDI input that falls outside of
+ * the virtual instrument's manuals. A value of zero means such MIDI notes
+ * make no sound. A value of one means that the MIDI notes map back
+ * into the nearest octave with a playable key, a mechanism similar to
+ * the foldback used in some organ models.
+ */
+int userExcursionStrategy;
+
+unsigned char keyTableA[128]; /**< MIDI note to key transl. tbl */
+unsigned char keyTableB[128]; /**< MIDI note to key transl. tbl */
+unsigned char keyTableC[128]; /**< MIDI note to key transl. tbl */
+
+unsigned char * keyTable[16]; /**< Tables per MIDI channel */
+
+
+unsigned char ctrlUseA[CTRL_USE_MAX];
+unsigned char ctrlUseB[CTRL_USE_MAX];
+unsigned char ctrlUseC[CTRL_USE_MAX];
+
+ctrl_function ctrlvecA[128];
+ctrl_function ctrlvecB[128];
+ctrl_function ctrlvecC[128];
+
+ctrl_function *ctrlvec[16]; /**< control function table per MIDI channel */
+
+midiccflags_t ctrlflg[16][128]; /**< binary flags for each control  -- binary OR */
+};
+
+void resetMidiCfg(void *mcfg) {
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
+
+  m->rcvChA = 0; /* MIDI receive channel */
+  m->rcvChB = 1; /* MIDI receive channel */
+  m->rcvChC = 2; /* MIDI receive channel */
+
+
+  m->transpose = 0;	/* All channel transpose */
+
+  m->nshA    = 0;	/* Channel A transpose (no split) */
+  m->nshA_U  = 0;	/* Channel A upper region transpose */
+  m->nshA_PL = 0;	/* Channel A pedal region transpose */
+  m->nshA_UL = 0;	/* Channel A lower region transpose */
+  m->nshB = 0;		/* Channel B transpose */
+  m->nshC = 0;		/* Channel C transpose */
+
+  m->splitA_PL = 0;	/* A channel pedal region */
+  m->splitA_UL = 0;	/* A channel lower region */
+
+  m->userExcursionStrategy = 0;
+}
+
+void *allocMidiCfg() {
+  struct b_midicfg * mcfg = calloc(1, sizeof(struct b_midicfg));
+  resetMidiCfg(mcfg);
+  return mcfg;
+}
+
+void freeMidiCfg(void *mcfg) {
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
+  free(m);
+}
 
 /* ---------------------------------------------------------------- */
 
@@ -299,20 +338,21 @@ static void assignMIDIControllerFunction (ctrl_function *vec,
  *                  implemented by the function pointed to by the f parameter.
  * @param f         Pointer to function that acts on the controller message.
  */
-void useMIDIControlFunction (char * cfname, void (* f) (void *, unsigned char), void *d) {
+void useMIDIControlFunction (void *mcfg, char * cfname, void (* f) (void *, unsigned char), void *d) {
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
 
   int x = getCCFunctionId (cfname);
 
   assert (-1 < x);
 
-  if (ctrlUseA[x] < 128) {
-    assignMIDIControllerFunction (ctrlvecA, ctrlUseA[x], f, d);
+  if (m->ctrlUseA[x] < 128) {
+    assignMIDIControllerFunction (m->ctrlvecA, m->ctrlUseA[x], f, d);
   }
-  if (ctrlUseB[x] < 128) {
-    assignMIDIControllerFunction (ctrlvecB, ctrlUseB[x], f, d);
+  if (m->ctrlUseB[x] < 128) {
+    assignMIDIControllerFunction (m->ctrlvecB, m->ctrlUseB[x], f, d);
   }
-  if (ctrlUseC[x] < 128) {
-    assignMIDIControllerFunction (ctrlvecC, ctrlUseC[x], f, d);
+  if (m->ctrlUseC[x] < 128) {
+    assignMIDIControllerFunction (m->ctrlvecC, m->ctrlUseC[x], f, d);
   }
 
 }
@@ -320,19 +360,20 @@ void useMIDIControlFunction (char * cfname, void (* f) (void *, unsigned char), 
 /*
  * This initializes the MIDI controller vector tables.
  */
-void initControllerTable () {
+void initControllerTable (void *mcfg) {
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
   int i;
   for (i = 0; i < 128; i++) {
     int chn;
     for (chn = 0; chn < 16; chn++) {
-      ctrlflg[chn][i] = 0;
+      m->ctrlflg[chn][i] = 0;
     }
-    ctrlvecA[i].fn = emptyControlFunction;
-    ctrlvecB[i].fn = emptyControlFunction;
-    ctrlvecC[i].fn = emptyControlFunction;
-    ctrlvecA[i].d = NULL;
-    ctrlvecB[i].d = NULL;
-    ctrlvecC[i].d = NULL;
+    m->ctrlvecA[i].fn = emptyControlFunction;
+    m->ctrlvecB[i].fn = emptyControlFunction;
+    m->ctrlvecC[i].fn = emptyControlFunction;
+    m->ctrlvecA[i].d = NULL;
+    m->ctrlvecB[i].d = NULL;
+    m->ctrlvecC[i].d = NULL;
   }
 }
 
@@ -393,29 +434,29 @@ static void clearKeyTable (unsigned char * table) {
 /*
  * This function loads the channel A note-to-key translation table.
  */
-static void loadKeyTableA () {
+static void loadKeyTableA (struct b_midicfg * m) {
   int left = 0;
   int first_MIDI_Note;
 
-  clearKeyTable (keyTableA);
+  clearKeyTable (m->keyTableA);
 
-  if (0 < splitA_PL) {
-    loadKeyTableRegion (keyTableA,
-			24, splitA_PL - 1,
+  if (0 < m->splitA_PL) {
+    loadKeyTableRegion (m->keyTableA,
+			24, m->splitA_PL - 1,
 			128, 159,
-			transpose + nshA_PL,
+			m->transpose + m->nshA_PL,
 			0);
-    left = splitA_PL;
+    left = m->splitA_PL;
   }
 
-  if (left < splitA_UL) {
+  if (left < m->splitA_UL) {
     first_MIDI_Note = (36 < left) ? left : 36;
-    loadKeyTableRegion (keyTableA,
-			first_MIDI_Note, splitA_UL - 1,
+    loadKeyTableRegion (m->keyTableA,
+			first_MIDI_Note, m->splitA_UL - 1,
 			64 + (first_MIDI_Note % 12), 124,
-			transpose + nshA_UL,
+			m->transpose + m->nshA_UL,
 			0);
-    left = splitA_UL;
+    left = m->splitA_UL;
   }
 
   first_MIDI_Note = (36 < left) ? left : 36;
@@ -427,10 +468,10 @@ static void loadKeyTableA () {
    * wide controller (e.g. 88 keys).
    */
 
-  loadKeyTableRegion (keyTableA,
+  loadKeyTableRegion (m->keyTableA,
 		      first_MIDI_Note, 127,
 		      0 + (first_MIDI_Note - 36), 60,
-		      transpose + ((0 < left) ? nshA_U : nshA),
+		      m->transpose + ((0 < left) ? m->nshA_U : m->nshA),
 		      0);
 
 } /* loadKeyTableA */
@@ -438,72 +479,78 @@ static void loadKeyTableA () {
 /*
  * Loads the B channel (lower manual) MIDI to key mapping table.
  */
-static void loadKeyTableB () {
+static void loadKeyTableB (struct b_midicfg * m) {
 
-  clearKeyTable (keyTableB);
+  clearKeyTable (m->keyTableB);
 
-  loadKeyTableRegion (keyTableB,
+  loadKeyTableRegion (m->keyTableB,
 		      36, 96,
 		      64, 124,
-		      transpose + nshB,
-		      userExcursionStrategy);
+		      m->transpose + m->nshB,
+		      m->userExcursionStrategy);
 
 }
 
 /*
  * Loads the C channel (pedals) MIDI to key mapping table.
  */
-static void loadKeyTableC () {
+static void loadKeyTableC (struct b_midicfg * m) {
 
-  clearKeyTable (keyTableC);
+  clearKeyTable (m->keyTableC);
 
-  loadKeyTableRegion (keyTableC,
+  loadKeyTableRegion (m->keyTableC,
 		      24, 55,
 		      128, 159,
-		      transpose + nshC,
-		      userExcursionStrategy);
+		      m->transpose + m->nshC,
+		      m->userExcursionStrategy);
 
 }
 
 /*
  * External interface to set and unset the A keyboard split points.
  */
-void setKeyboardSplitMulti (int flags,
+void setKeyboardSplitMulti (void *mcfg,
+			    int flags,
 			    int p_splitA_PL,
 			    int p_splitA_UL,
 			    int p_nshA_PL,
 			    int p_nshA_UL,
 			    int p_nshA_U)
 {
-  if (flags &  1) splitA_PL = p_splitA_PL;
-  if (flags &  2) splitA_UL = p_splitA_UL;
-  if (flags &  4) nshA_PL   = p_nshA_PL;
-  if (flags &  8) nshA_UL   = p_nshA_UL;
-  if (flags & 16) nshA_U    = p_nshA_U;
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
+  if (flags &  1) m->splitA_PL = p_splitA_PL;
+  if (flags &  2) m->splitA_UL = p_splitA_UL;
+  if (flags &  4) m->nshA_PL   = p_nshA_PL;
+  if (flags &  8) m->nshA_UL   = p_nshA_UL;
+  if (flags & 16) m->nshA_U    = p_nshA_U;
 
-  loadKeyTableA ();
+  loadKeyTableA (m);
 }
 
-void setKeyboardTransposeA (int transpose) {
-  nshA = transpose;
-  loadKeyTableA ();
+void setKeyboardTransposeA (void *mcfg, int transpose) {
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
+  m->nshA = transpose;
+  loadKeyTableA (m);
 }
 
-void setKeyboardTransposeB (int transpose) {
-  nshB = transpose;
-  loadKeyTableB ();
+void setKeyboardTransposeB (void *mcfg, int transpose) {
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
+  m->nshB = transpose;
+  loadKeyTableB (m);
 }
 
-void setKeyboardTransposeC (int transpose) {
-  nshC = transpose;
-  loadKeyTableC ();
+void setKeyboardTransposeC (void *mcfg, int transpose) {
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
+  m->nshC = transpose;
+  loadKeyTableC (m);
 }
 
-void setKeyboardTranspose (int trsp) {
-  transpose = trsp;
-  loadKeyTableA ();
-  loadKeyTableB ();
-  loadKeyTableC ();
+void setKeyboardTranspose (void *mcfg, int trsp) {
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
+  m->transpose = trsp;
+  loadKeyTableA (m);
+  loadKeyTableB (m);
+  loadKeyTableC (m);
 }
 
 /*
@@ -512,19 +559,19 @@ void setKeyboardTranspose (int trsp) {
  * to items used in the processing of the data in the message. For example,
  * note on/off messages uses a pointer to a note-to-key translation table.
  */
-static void loadStatusTable () {
+static void loadStatusTable (struct b_midicfg * m) {
   int i;
   for (i = 0; i < 16; i++) {
-    keyTable[i] = NULL;
-    ctrlvec[i]  = NULL;
+    m->keyTable[i] = NULL;
+    m->ctrlvec[i]  = NULL;
   }
-  keyTable[rcvChA] = keyTableA;
-  keyTable[rcvChB] = keyTableB;
-  keyTable[rcvChC] = keyTableC;
+  m->keyTable[m->rcvChA] = m->keyTableA;
+  m->keyTable[m->rcvChB] = m->keyTableB;
+  m->keyTable[m->rcvChC] = m->keyTableC;
 
-  ctrlvec[rcvChA] = (void *) ctrlvecA;
-  ctrlvec[rcvChB] = (void *) ctrlvecB;
-  ctrlvec[rcvChC] = (void *) ctrlvecC;
+  m->ctrlvec[m->rcvChA] = (void *) m->ctrlvecA;
+  m->ctrlvec[m->rcvChB] = (void *) m->ctrlvecB;
+  m->ctrlvec[m->rcvChC] = (void *) m->ctrlvecC;
 }
 
 /*
@@ -553,183 +600,186 @@ static void loadCCMap (char * cfname,
  * when things move around.
  * What we do is that we load the tables ctrlUseA, ctrlUseB and ctrlUseC
  */
-void midiPrimeControllerMapping () {
+void midiPrimeControllerMapping (void *mcfg) {
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
 
   int i;
   for (i = 0; i < CTRL_USE_MAX; i++) {
-    ctrlUseA[i] = 255;
-    ctrlUseB[i] = 255;
-    ctrlUseC[i] = 255;
+    m->ctrlUseA[i] = 255;
+    m->ctrlUseB[i] = 255;
+    m->ctrlUseC[i] = 255;
   }
 
-  loadCCMap ("swellpedal1",  1, ctrlUseA, ctrlUseB, ctrlUseC);
-  loadCCMap ("swellpedal2", 11, ctrlUseA, ctrlUseB, ctrlUseC);
+  loadCCMap ("swellpedal1",  1, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);
+  loadCCMap ("swellpedal2", 11, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);
 
-  loadCCMap ("xov.ctl_biased",      3, ctrlUseA, NULL, NULL);
-  loadCCMap ("xov.ctl_biased_fb",   9, ctrlUseA, NULL, NULL);
-  loadCCMap ("xov.ctl_biased_fb2", 14, ctrlUseA, NULL, NULL);
-  loadCCMap ("xov.ctl_biased_gfb", 15, ctrlUseA, NULL, NULL);
-  loadCCMap ("xov.ctl_sagtobias",  20, ctrlUseA, NULL, NULL);
+  loadCCMap ("xov.ctl_biased",      3, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("xov.ctl_biased_fb",   9, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("xov.ctl_biased_fb2", 14, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("xov.ctl_biased_gfb", 15, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("xov.ctl_sagtobias",  20, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("overdrive.inputgain",      21, ctrlUseA, NULL, NULL);
-  loadCCMap ("overdrive.outputgain",     22, ctrlUseA, NULL, NULL);
+  loadCCMap ("overdrive.inputgain",      21, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("overdrive.outputgain",     22, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("whirl.drum.filter.type", 23, ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.drum.filter.hz",   24, ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.drum.filter.q",    25, ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.drum.filter.gain", 26, ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.drum.filter.type", 23, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.drum.filter.hz",   24, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.drum.filter.q",    25, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.drum.filter.gain", 26, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("whirl.horn.filter.a.type", 27, ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.horn.filter.a.hz",   28, ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.horn.filter.a.q",    29, ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.horn.filter.a.gain", 30, ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.horn.filter.a.type", 27, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.horn.filter.a.hz",   28, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.horn.filter.a.q",    29, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.horn.filter.a.gain", 30, m->ctrlUseA, NULL, NULL);
 
   /* 32-63 are least significant bits of controller 0-31 */
 
-  loadCCMap ("rotary.speed-toggle", 64, ctrlUseA, ctrlUseB, ctrlUseC);
+  loadCCMap ("rotary.speed-toggle", 64, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);
 
-  loadCCMap ("upper.drawbar16",  70, ctrlUseA, NULL, NULL);
-  loadCCMap ("upper.drawbar513", 71, ctrlUseA, NULL, NULL);
-  loadCCMap ("upper.drawbar8",   72, ctrlUseA, NULL, NULL);
-  loadCCMap ("upper.drawbar4",   73, ctrlUseA, NULL, NULL);
-  loadCCMap ("upper.drawbar223", 74, ctrlUseA, NULL, NULL);
-  loadCCMap ("upper.drawbar2",   75, ctrlUseA, NULL, NULL);
-  loadCCMap ("upper.drawbar135", 76, ctrlUseA, NULL, NULL);
-  loadCCMap ("upper.drawbar113", 77, ctrlUseA, NULL, NULL);
-  loadCCMap ("upper.drawbar1",   78, ctrlUseA, NULL, NULL);
+  loadCCMap ("upper.drawbar16",  70, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("upper.drawbar513", 71, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("upper.drawbar8",   72, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("upper.drawbar4",   73, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("upper.drawbar223", 74, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("upper.drawbar2",   75, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("upper.drawbar135", 76, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("upper.drawbar113", 77, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("upper.drawbar1",   78, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("lower.drawbar16",  70, NULL, ctrlUseB, NULL);
-  loadCCMap ("lower.drawbar513", 71, NULL, ctrlUseB, NULL);
-  loadCCMap ("lower.drawbar8",   72, NULL, ctrlUseB, NULL);
-  loadCCMap ("lower.drawbar4",   73, NULL, ctrlUseB, NULL);
-  loadCCMap ("lower.drawbar223", 74, NULL, ctrlUseB, NULL);
-  loadCCMap ("lower.drawbar2",   75, NULL, ctrlUseB, NULL);
-  loadCCMap ("lower.drawbar135", 76, NULL, ctrlUseB, NULL);
-  loadCCMap ("lower.drawbar113", 77, NULL, ctrlUseB, NULL);
-  loadCCMap ("lower.drawbar1",   78, NULL, ctrlUseB, NULL);
+  loadCCMap ("lower.drawbar16",  70, NULL, m->ctrlUseB, NULL);
+  loadCCMap ("lower.drawbar513", 71, NULL, m->ctrlUseB, NULL);
+  loadCCMap ("lower.drawbar8",   72, NULL, m->ctrlUseB, NULL);
+  loadCCMap ("lower.drawbar4",   73, NULL, m->ctrlUseB, NULL);
+  loadCCMap ("lower.drawbar223", 74, NULL, m->ctrlUseB, NULL);
+  loadCCMap ("lower.drawbar2",   75, NULL, m->ctrlUseB, NULL);
+  loadCCMap ("lower.drawbar135", 76, NULL, m->ctrlUseB, NULL);
+  loadCCMap ("lower.drawbar113", 77, NULL, m->ctrlUseB, NULL);
+  loadCCMap ("lower.drawbar1",   78, NULL, m->ctrlUseB, NULL);
 
-  loadCCMap ("pedal.drawbar16",  70, NULL, NULL, ctrlUseC);
-  loadCCMap ("pedal.drawbar513", 71, NULL, NULL, ctrlUseC);
-  loadCCMap ("pedal.drawbar8",   72, NULL, NULL, ctrlUseC);
-  loadCCMap ("pedal.drawbar4",   73, NULL, NULL, ctrlUseC);
-  loadCCMap ("pedal.drawbar223", 74, NULL, NULL, ctrlUseC);
-  loadCCMap ("pedal.drawbar2",   75, NULL, NULL, ctrlUseC);
-  loadCCMap ("pedal.drawbar135", 76, NULL, NULL, ctrlUseC);
-  loadCCMap ("pedal.drawbar113", 77, NULL, NULL, ctrlUseC);
-  loadCCMap ("pedal.drawbar1",   78, NULL, NULL, ctrlUseC);
+  loadCCMap ("pedal.drawbar16",  70, NULL, NULL, m->ctrlUseC);
+  loadCCMap ("pedal.drawbar513", 71, NULL, NULL, m->ctrlUseC);
+  loadCCMap ("pedal.drawbar8",   72, NULL, NULL, m->ctrlUseC);
+  loadCCMap ("pedal.drawbar4",   73, NULL, NULL, m->ctrlUseC);
+  loadCCMap ("pedal.drawbar223", 74, NULL, NULL, m->ctrlUseC);
+  loadCCMap ("pedal.drawbar2",   75, NULL, NULL, m->ctrlUseC);
+  loadCCMap ("pedal.drawbar135", 76, NULL, NULL, m->ctrlUseC);
+  loadCCMap ("pedal.drawbar113", 77, NULL, NULL, m->ctrlUseC);
+  loadCCMap ("pedal.drawbar1",   78, NULL, NULL, m->ctrlUseC);
 
-  loadCCMap ("percussion.enable",   80, ctrlUseA, NULL, NULL);
-  loadCCMap ("percussion.decay",    81, ctrlUseA, NULL, NULL);
-  loadCCMap ("percussion.harmonic", 82, ctrlUseA, NULL, NULL);
+  loadCCMap ("percussion.enable",   80, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("percussion.decay",    81, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("percussion.harmonic", 82, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("vibrato.knob",    83, ctrlUseA, NULL, NULL);
-  loadCCMap ("vibrato.routing", 92, ctrlUseA, NULL, NULL);
+  loadCCMap ("vibrato.knob",    83, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("vibrato.routing", 92, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("whirl.horn.filter.b.type", 85, ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.horn.filter.b.hz",   86, ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.horn.filter.b.q",    87, ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.horn.filter.b.gain", 88, ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.horn.filter.b.type", 85, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.horn.filter.b.hz",   86, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.horn.filter.b.q",    87, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.horn.filter.b.gain", 88, m->ctrlUseA, NULL, NULL);
 
 #ifdef HORN_COMB_FILTER // disabled in b_whirl/whirl.c
-  loadCCMap ("whirl.horn.comb.a.feedback", 89, ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.horn.comb.a.delay",    90, ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.horn.comb.a.feedback", 89, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.horn.comb.a.delay",    90, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("whirl.horn.comb.b.feedback", 102, ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.horn.comb.b.delay",    103, ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.horn.comb.b.feedback", 102, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.horn.comb.b.delay",    103, m->ctrlUseA, NULL, NULL);
 #endif
 
-  loadCCMap ("rotary.speed-preset",   91, ctrlUseA, NULL, NULL);
+  loadCCMap ("rotary.speed-preset",   91, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("overdrive.character",   93, ctrlUseA, NULL, NULL);
+  loadCCMap ("overdrive.character",   93, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("convolution.mix", 94, ctrlUseA, NULL, NULL);
+  loadCCMap ("convolution.mix", 94, m->ctrlUseA, NULL, NULL);
 
 #if 0 // leslie testing
-  loadCCMap ("whirl.horn.breakpos", 34, ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.drum.breakpos", 35, ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.horn.breakpos", 34, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.drum.breakpos", 35, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("whirl.horn.acceleration", 36, ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.horn.deceleration", 37, ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.drum.acceleration", 38, ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.drum.deceleration", 39, ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.horn.acceleration", 36, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.horn.deceleration", 37, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.drum.acceleration", 38, m->ctrlUseA, NULL, NULL);
+  loadCCMap ("whirl.drum.deceleration", 39, m->ctrlUseA, NULL, NULL);
 #endif
 }
 
 /*
  * Sets global transpose (for playing in alternate scales).
  */
-void setMIDINoteShift (char offset) {
-  transpose = offset;
-  loadKeyTableA ();
-  loadKeyTableB ();
-  loadKeyTableC ();
+void setMIDINoteShift (void *mcfg, char offset) {
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
+  m->transpose = offset;
+  loadKeyTableA (m);
+  loadKeyTableB (m);
+  loadKeyTableC (m);
 }
 
 /*
  * This call configures this module.
  */
-int midiConfig (ConfigContext * cfg) {
+int midiConfig (void *mcfg, ConfigContext * cfg) {
   int v;
   int ack = 0;
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
   if ((ack = getConfigParameter_ir ("midi.upper.channel",
 				    cfg,
 				    &v,
 				    1, 16)) == 1) {
-    rcvChA = v - 1;
+    m->rcvChA = v - 1;
   }
   else if ((ack = getConfigParameter_ir ("midi.lower.channel",
 					 cfg,
 					 &v,
 					 1, 16)) == 1) {
-    rcvChB = v - 1;
+    m->rcvChB = v - 1;
   }
   else if ((ack = getConfigParameter_ir ("midi.pedals.channel",
 					 cfg,
 					 &v,
 					 1, 16)) == 1) {
-    rcvChC = v - 1;
+    m->rcvChC = v - 1;
   }
   else if ((ack = getConfigParameter_ir ("midi.transpose",
 					 cfg,
 					 &v,
 					 -127, 127)) == 1) {
-    transpose = v;
+    m->transpose = v;
   }
   else if ((ack = getConfigParameter_ir ("midi.upper.transpose",
 					 cfg,
 					 &v,
 					 -127, 127)) == 1) {
-    nshA = v;
+    m->nshA = v;
   }
   else if ((ack = getConfigParameter_ir ("midi.lower.transpose",
 					 cfg,
 					 &v,
 					 -127, 127)) == 1) {
-    nshB = v;
+    m->nshB = v;
   }
   else if ((ack = getConfigParameter_ir ("midi.pedals.transpose",
 					 cfg,
 					 &v,
 					 -127, 127)) == 1) {
-    nshC = v;
+    m->nshC = v;
   }
   else if ((ack = getConfigParameter_ir ("midi.pedals.transpose.split",
 					 cfg,
 					 &v,
 					 -127, 127)) == 1) {
-    nshA_PL = v;
+    m->nshA_PL = v;
   }
   else if ((ack = getConfigParameter_ir ("midi.lower.transpose.split",
 					 cfg,
 					 &v,
 					 -127, 127)) == 1) {
-    nshA_UL = v;
+    m->nshA_UL = v;
   }
   else if ((ack = getConfigParameter_ir ("midi.upper.transpose.split",
 					 cfg,
 					 &v,
 					 -127, 127)) == 1) {
-    nshA_U = v;
+    m->nshA_U = v;
   }
   /*
    * The syntax for this config option is:
@@ -738,23 +788,23 @@ int midiConfig (ConfigContext * cfg) {
    * <fname> is the symbolic name of a controllable function.
    */
   else if (strncasecmp (cfg->name, "midi.controller.", 16) == 0) {
-    unsigned char * ctrlUse = ctrlUseA;
-    midiccflags_t * flagUse = ctrlflg[rcvChA];
+    unsigned char * ctrlUse = m->ctrlUseA;
+    midiccflags_t * flagUse = m->ctrlflg[m->rcvChA];
 
     int ccIdx = 0;
     if (strncasecmp ((cfg->name) + 16, "upper", 5) == 0) {
-      ctrlUse = ctrlUseA;
-      flagUse = ctrlflg[rcvChA];
+      ctrlUse = m->ctrlUseA;
+      flagUse = m->ctrlflg[m->rcvChA];
       ccIdx = 22;
     }
     else if (strncasecmp ((cfg->name) + 16, "lower", 5) == 0) {
-      ctrlUse = ctrlUseB;
-      flagUse = ctrlflg[rcvChB];
+      ctrlUse = m->ctrlUseB;
+      flagUse = m->ctrlflg[m->rcvChB];
       ccIdx = 22;
     }
     else if (strncasecmp ((cfg->name) + 16, "pedals", 6) == 0) {
-      ctrlUse = ctrlUseC;
-      flagUse = ctrlflg[rcvChC];
+      ctrlUse = m->ctrlUseC;
+      flagUse = m->ctrlflg[m->rcvChC];
       ccIdx = 23;
     }
     else {
@@ -812,11 +862,12 @@ const ConfigDoc *midiDoc () {
   return doc;
 }
 
-void initMidiTables() {
-  loadKeyTableA ();
-  loadKeyTableB ();
-  loadKeyTableC ();
-  loadStatusTable ();
+void initMidiTables(void *mcfg) {
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
+  loadKeyTableA (m);
+  loadKeyTableB (m);
+  loadKeyTableC (m);
+  loadStatusTable (m);
 }
 
 
@@ -842,19 +893,20 @@ struct bmidi_event_t {
 };
 
 void process_midi_event(b_instance *inst, const struct bmidi_event_t *ev) {
+  struct b_midicfg * m = (struct b_midicfg *) inst->midicfg;
   switch(ev->type) {
     case NOTE_ON:
-      if(keyTable[ev->channel] && keyTable[ev->channel][ev->note] != 255) {
+      if(m->keyTable[ev->channel] && m->keyTable[ev->channel][ev->note] != 255) {
 	if (ev->velocity > 0){
-	  oscKeyOn (inst->synth, keyTable[ev->channel][ev->note]);
+	  oscKeyOn (inst->synth, m->keyTable[ev->channel][ev->note]);
 	} else {
-	  oscKeyOff (inst->synth, keyTable[ev->channel][ev->note]);
+	  oscKeyOff (inst->synth, m->keyTable[ev->channel][ev->note]);
 	}
       }
       break;
     case NOTE_OFF:
-      if(keyTable[ev->channel] && keyTable[ev->channel][ev->note] != 255)
-	oscKeyOff (inst->synth, keyTable[ev->channel][ev->note]);
+      if(m->keyTable[ev->channel] && m->keyTable[ev->channel][ev->note] != 255)
+	oscKeyOff (inst->synth, m->keyTable[ev->channel][ev->note]);
       break;
     case PROGRAM_CHANGE:
       installProgram(inst, ev->control_value);
@@ -867,9 +919,9 @@ void process_midi_event(b_instance *inst, const struct bmidi_event_t *ev) {
 	unsigned char * ctrlUse = NULL;
 	char *fn="";
 	int fid=-1;
-	if      (ev->channel == rcvChA) ctrlUse=ctrlUseA;
-	else if (ev->channel == rcvChB) ctrlUse=ctrlUseB;
-	else if (ev->channel == rcvChC) ctrlUse=ctrlUseC;
+	if      (ev->channel == m->rcvChA) ctrlUse=m->ctrlUseA;
+	else if (ev->channel == m->rcvChB) ctrlUse=m->ctrlUseB;
+	else if (ev->channel == m->rcvChC) ctrlUse=m->ctrlUseC;
 	if (ctrlUse) {
 	  int j;
 	  for (j=0;j<CTRL_USE_MAX;++j) {
@@ -880,16 +932,16 @@ void process_midi_event(b_instance *inst, const struct bmidi_event_t *ev) {
 	  }
 	}
 	printf("CC: %2d %03d -> %3d (%s) %s\n", ev->channel, ev->control_param, ev->control_value, fn,
-	    (ctrlvec[ev->channel] && ctrlvec[ev->channel][ev->control_param]!=emptyControlFunction)?"*":"-"
+	    (m->ctrlvec[ev->channel] && m->ctrlvec[ev->channel][ev->control_param]!=emptyControlFunction)?"*":"-"
 	  );
       }
 #endif
-      if (ctrlvec[ev->channel] && ctrlvec[ev->channel][ev->control_param].fn) {
+      if (m->ctrlvec[ev->channel] && m->ctrlvec[ev->channel][ev->control_param].fn) {
 	uint8_t val = ev->control_value & 0x7f;
-	if (ctrlflg[ev->channel][ev->control_param] & MFLAG_INV) {
+	if (m->ctrlflg[ev->channel][ev->control_param] & MFLAG_INV) {
 	  val = 127 - val;
 	}
-	(ctrlvec[ev->channel][ev->control_param].fn)(ctrlvec[ev->channel][ev->control_param].d, val);
+	(m->ctrlvec[ev->channel][ev->control_param].fn)(m->ctrlvec[ev->channel][ev->control_param].d, val);
       }
       break;
     default:
@@ -1078,14 +1130,15 @@ void dumpCCAssigment(FILE * fp, unsigned char *ctrl, midiccflags_t *flags) {
   }
 }
 
-void listCCAssignments(FILE * fp) {
+void listCCAssignments(void *mcfg, FILE * fp) {
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
   fprintf(fp,"MIDI CC Assigments:\n");
-  fprintf(fp,"--- Upper Manual   - Channel %2d ---\n", rcvChA);
-  dumpCCAssigment(fp, ctrlUseA, ctrlflg[rcvChA]);
-  fprintf(fp,"--- Lower Manual   - Channel %2d ---\n", rcvChB);
-  dumpCCAssigment(fp, ctrlUseB, ctrlflg[rcvChB]);
-  fprintf(fp,"--- Pedal          - Channel %2d ---\n", rcvChC);
-  dumpCCAssigment(fp, ctrlUseC, ctrlflg[rcvChC]);
+  fprintf(fp,"--- Upper Manual   - Channel %2d ---\n", m->rcvChA);
+  dumpCCAssigment(fp, m->ctrlUseA, m->ctrlflg[m->rcvChA]);
+  fprintf(fp,"--- Lower Manual   - Channel %2d ---\n", m->rcvChB);
+  dumpCCAssigment(fp, m->ctrlUseB, m->ctrlflg[m->rcvChB]);
+  fprintf(fp,"--- Pedal          - Channel %2d ---\n", m->rcvChC);
+  dumpCCAssigment(fp, m->ctrlUseC, m->ctrlflg[m->rcvChC]);
 }
 
 /* vi:set ts=8 sts=2 sw=2: */

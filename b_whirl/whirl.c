@@ -777,7 +777,7 @@ void setDrumDeceleration (void *d, unsigned char uc) {
 /*
  * This function initialises this module. It is run after whirlConfig.
  */
-void initWhirl (struct b_whirl *w, double rate) {
+void initWhirl (struct b_whirl *w, void *m, double rate) {
 
   w->SampleRateD = rate;
 
@@ -791,26 +791,26 @@ void initWhirl (struct b_whirl *w, double rate) {
 
   w->leakage = w->leakLevel * w->hornLevel;
 
-  useMIDIControlFunction ("rotary.speed-toggle",    setWhirlSustainPedal, (void*)w);
-  useMIDIControlFunction ("rotary.speed-preset",    revControl, (void*)w);
-  useMIDIControlFunction ("rotary.speed-select",    revControlAll, (void*)w);
+  useMIDIControlFunction (m, "rotary.speed-toggle",    setWhirlSustainPedal, (void*)w);
+  useMIDIControlFunction (m, "rotary.speed-preset",    revControl, (void*)w);
+  useMIDIControlFunction (m, "rotary.speed-select",    revControlAll, (void*)w);
 
-  useMIDIControlFunction ("whirl.horn.filter.a.type", setHornFilterAType, (void*)w);
-  useMIDIControlFunction ("whirl.horn.filter.a.hz",   setHornFilterAFrequency, (void*)w);
-  useMIDIControlFunction ("whirl.horn.filter.a.q",    setHornFilterAQ, (void*)w);
-  useMIDIControlFunction ("whirl.horn.filter.a.gain", setHornFilterAGain, (void*)w);
-  useMIDIControlFunction ("whirl.horn.filter.b.type", setHornFilterBType, (void*)w);
-  useMIDIControlFunction ("whirl.horn.filter.b.hz",   setHornFilterBFrequency, (void*)w);
-  useMIDIControlFunction ("whirl.horn.filter.b.q",    setHornFilterBQ, (void*)w);
-  useMIDIControlFunction ("whirl.horn.filter.b.gain", setHornFilterBGain, (void*)w);
+  useMIDIControlFunction (m, "whirl.horn.filter.a.type", setHornFilterAType, (void*)w);
+  useMIDIControlFunction (m, "whirl.horn.filter.a.hz",   setHornFilterAFrequency, (void*)w);
+  useMIDIControlFunction (m, "whirl.horn.filter.a.q",    setHornFilterAQ, (void*)w);
+  useMIDIControlFunction (m, "whirl.horn.filter.a.gain", setHornFilterAGain, (void*)w);
+  useMIDIControlFunction (m, "whirl.horn.filter.b.type", setHornFilterBType, (void*)w);
+  useMIDIControlFunction (m, "whirl.horn.filter.b.hz",   setHornFilterBFrequency, (void*)w);
+  useMIDIControlFunction (m, "whirl.horn.filter.b.q",    setHornFilterBQ, (void*)w);
+  useMIDIControlFunction (m, "whirl.horn.filter.b.gain", setHornFilterBGain, (void*)w);
 
-  useMIDIControlFunction ("whirl.horn.breakpos", setHornBreakPosition, (void*)w);
-  useMIDIControlFunction ("whirl.drum.breakpos", setDrumBreakPosition, (void*)w);
+  useMIDIControlFunction (m, "whirl.horn.breakpos", setHornBreakPosition, (void*)w);
+  useMIDIControlFunction (m, "whirl.drum.breakpos", setDrumBreakPosition, (void*)w);
 
-  useMIDIControlFunction ("whirl.horn.acceleration", setHornAcceleration, (void*)w);
-  useMIDIControlFunction ("whirl.horn.deceleration", setHornDeceleration, (void*)w);
-  useMIDIControlFunction ("whirl.drum.acceleration", setDrumAcceleration, (void*)w);
-  useMIDIControlFunction ("whirl.drum.deceleration", setDrumDeceleration, (void*)w);
+  useMIDIControlFunction (m, "whirl.horn.acceleration", setHornAcceleration, (void*)w);
+  useMIDIControlFunction (m, "whirl.horn.deceleration", setHornDeceleration, (void*)w);
+  useMIDIControlFunction (m, "whirl.drum.acceleration", setDrumAcceleration, (void*)w);
+  useMIDIControlFunction (m, "whirl.drum.deceleration", setDrumDeceleration, (void*)w);
 }
 
 /*

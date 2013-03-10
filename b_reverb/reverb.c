@@ -273,7 +273,7 @@ const ConfigDoc *reverbDoc () {
 /*
  *
  */
-void initReverb (struct b_reverb *r, double rate) {
+void initReverb (struct b_reverb *r, void *m, double rate) {
   int i;
   r->SampleRateD = rate;
   for (i = 0; i < RV_NZ; i++) {

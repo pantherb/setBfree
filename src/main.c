@@ -331,6 +331,10 @@ static void allocAll () {
     fprintf (stderr, "FATAL: memory allocation failed for tonegen.\n");
     exit(1);
   }
+  if (! (inst.midicfg = allocMidiCfg())) {
+    fprintf (stderr, "FATAL: memory allocation failed for midi config.\n");
+    exit(1);
+  }
 }
 
 /*
@@ -341,6 +345,7 @@ static void freeAll () {
   freeWhirl(inst.whirl);
 
   freeToneGenerator(inst.synth);
+  freeMidiCfg(inst.midicfg);
 #ifdef HAVE_ZITACONVOLVE
   freeConvolution();
 #endif
@@ -362,23 +367,23 @@ static void initAll () {
 
   fprintf (stderr, "Oscillators : ");
   fflush (stderr);
-  initToneGenerator (inst.synth);
+  initToneGenerator (inst.synth, inst.midicfg);
 
   fprintf (stderr, "Scanner : ");
   fflush (stderr);
-  initVibrato (inst.synth);
+  initVibrato (inst.synth, inst.midicfg);
 
   fprintf (stderr, "Overdrive : ");
   fflush (stderr);
-  initPreamp ();
+  initPreamp (NULL, inst.midicfg);
 
   fprintf (stderr, "Reverb : ");
   fflush (stderr);
-  initReverb (inst.reverb, SampleRateD);
+  initReverb (inst.reverb, inst.midicfg, SampleRateD);
 
   fprintf (stderr, "Whirl : ");
   fflush (stderr);
-  initWhirl (inst.whirl, SampleRateD);
+  initWhirl (inst.whirl, inst.midicfg, SampleRateD);
 
 #ifdef HAVE_ZITACONVOLVE
   fprintf (stderr, "Convolve : ");
@@ -392,7 +397,7 @@ static void initAll () {
   } else {
     fprintf(stderr, "zita-convolver: not using RT scheduling\n");
   }
-  initConvolution(AUDIO_CHANNELS, BUFFER_SIZE_SAMPLES, s_param.sched_priority, s_policy);
+  initConvolution(NULL, inst.midicfg, AUDIO_CHANNELS, BUFFER_SIZE_SAMPLES, s_param.sched_priority, s_policy);
 #endif
 
   fprintf (stderr, "..done.\n");
@@ -697,8 +702,8 @@ int main (int argc, char * argv []) {
    * static initializations that is not practical to achieve in source code.
    */
 
-  initControllerTable ();
-  midiPrimeControllerMapping ();
+  initControllerTable (inst.midicfg);
+  midiPrimeControllerMapping (inst.midicfg);
 
   /*
    * Commandline arguments are parsed. If we are of a mind to try the
@@ -758,10 +763,10 @@ int main (int argc, char * argv []) {
     listProgrammes (stderr);
   }
 
-  initMidiTables();
+  initMidiTables(inst.midicfg);
 
   if (printCCTable) {
-    listCCAssignments(stderr);
+    listCCAssignments(inst.midicfg, stderr);
   }
 
   /*
@@ -781,7 +786,7 @@ int main (int argc, char * argv []) {
   }
 #endif
 
-  setMIDINoteShift (0);
+  setMIDINoteShift (inst.midicfg, 0);
 
   setDrawBars (inst.synth, 0, presetSelect);
 #if 0 // initial values are assigned in tonegen.c initToneGenerator()

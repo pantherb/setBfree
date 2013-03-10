@@ -73,20 +73,20 @@ void initSynth(B3S *b3s, double rate) {
   unsigned int defaultPreset[9] = {8,8,8, 0,0,0,0, 0,0};
 
   srand ((unsigned int) time (NULL));
-  initControllerTable ();
-  midiPrimeControllerMapping ();
+  initControllerTable (b3s->inst.midicfg);
+  midiPrimeControllerMapping (b3s->inst.midicfg);
 
   /* initAll() */
-  initToneGenerator (b3s->inst.synth);
-  initVibrato (b3s->inst.synth);
-  initPreamp ();
-  initReverb (b3s->inst.reverb, rate);
-  initWhirl (b3s->inst.whirl, rate);
+  initToneGenerator (b3s->inst.synth, b3s->inst.midicfg);
+  initVibrato (b3s->inst.synth, b3s->inst.midicfg);
+  initPreamp (NULL, b3s->inst.midicfg);
+  initReverb (b3s->inst.reverb, b3s->inst.midicfg, rate);
+  initWhirl (b3s->inst.whirl, b3s->inst.midicfg, rate);
   /* end - initAll() */
 
-  initMidiTables();
+  initMidiTables(b3s->inst.midicfg);
 
-  setMIDINoteShift (0);
+  setMIDINoteShift (b3s->inst.midicfg, 0);
   setDrawBars (b3s->inst.synth, 0, defaultPreset);
   setDrawBars (b3s->inst.synth, 1, defaultPreset);
   setDrawBars (b3s->inst.synth, 2, defaultPreset);
@@ -165,6 +165,7 @@ instantiate(const LV2_Descriptor*     descriptor,
   b3s->inst.reverb = allocReverb();
   b3s->inst.whirl = allocWhirl();
   b3s->inst.synth = allocTonegen();
+  b3s->inst.midicfg = allocMidiCfg();
 
   initSynth(b3s, rate);
 
@@ -232,6 +233,7 @@ cleanup(LV2_Handle instance)
   freeReverb(b3s->inst.reverb);
   freeWhirl(b3s->inst.whirl);
   freeToneGenerator(b3s->inst.synth);
+  freeMidiCfg(b3s->inst.midicfg);
   free(instance);
 }
 

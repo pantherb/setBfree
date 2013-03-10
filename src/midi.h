@@ -38,30 +38,34 @@
 #define MIDI_PITCH_BEND		0xE0
 #define MIDI_SYSTEM_PREFIX	0xF0
 
-extern void useMIDIControlFunction (char * cfname, void (* f) (void *, unsigned char), void *d);
+extern void useMIDIControlFunction (void *m, char * cfname, void (* f) (void *, unsigned char), void *d);
 
-extern void setKeyboardSplitMulti (int flags,
+extern void setKeyboardSplitMulti (void *mcfg,
+				   int flags,
 				   int p_splitA_PL,
 				   int p_splitA_UL,
 				   int p_nshA_PL,
 				   int p_nshA_UL,
 				   int p_nshA_U);
 
-extern void setKeyboardTransposeA (int t);
-extern void setKeyboardTransposeB (int t);
-extern void setKeyboardTransposeC (int t);
-extern void setKeyboardTranspose (int t);
+extern void setKeyboardTransposeA (void *mcfg, int t);
+extern void setKeyboardTransposeB (void *mcfg, int t);
+extern void setKeyboardTransposeC (void *mcfg, int t);
+extern void setKeyboardTranspose  (void *mcfg, int t);
 
-extern void midiPrimeControllerMapping ();
+extern void midiPrimeControllerMapping (void *mcfg);
 
-extern int midiConfig (ConfigContext * cfg);
+extern int midiConfig (void *mcfg, ConfigContext * cfg);
 extern const ConfigDoc *midiDoc ();
 
-extern void setMIDINoteShift (char offset);
+extern void setMIDINoteShift (void *mcfg, char offset);
 
-extern void initMidiTables();
-extern void initControllerTable ();
+extern void initMidiTables(void *mcfg);
+extern void initControllerTable (void *mcfg);
 extern int getCCFunctionId (const char * name);
+
+extern void *allocMidiCfg();
+extern void freeMidiCfg(void *mcfg);
 
 #ifdef HAVE_ASEQ
 extern void *aseq_run(void *arg);

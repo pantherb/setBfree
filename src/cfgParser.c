@@ -67,7 +67,7 @@ static int distributeParameter (b_instance* inst, ConfigContext * cfg) {
 #else
 
   n += mainConfig (cfg);
-  n += midiConfig (cfg);
+  n += midiConfig (inst->midicfg, cfg);
   n += pgmConfig (cfg);
   n += oscConfig (inst->synth, cfg);
   n += scannerConfig (inst->synth, cfg);

@@ -45,7 +45,7 @@ float p_globfeed = 0.5826;
 float p_gainin   = 0.3567;
 float p_gainout  = 0.07873;
 
-void useMIDIControlFunction (char * cfname, void (* f) (void *, unsigned char), void *d) {}
+void useMIDIControlFunction (void *m, char * cfname, void (* f) (void *, unsigned char), void *d) {}
 int getConfigParameter_fr (char * par, ConfigContext * cfg, float * fp, float lowInc, float highInc) {return 0;}
 int getConfigParameter_f (char * par, ConfigContext * cfg, float * fp) {return 0;}
 
@@ -223,7 +223,7 @@ float pp(const char *ps) {
 int main (int argc, char**argv) {
   int osc_port=0;
 
-  initPreamp();
+  initPreamp(NULL, NULL);
 
   int c;
   const char *optstring = "hi:o:O:p:V";

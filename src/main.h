@@ -50,7 +50,7 @@
 
 extern int mainConfig (ConfigContext * cfg);
 extern const ConfigDoc *mainDoc ();
-extern void listCCAssignments(FILE * fp);
+extern void listCCAssignments(void *mctl, FILE * fp);
 
 extern double SampleRateD;
 

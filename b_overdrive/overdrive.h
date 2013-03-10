@@ -27,7 +27,7 @@
 extern int ampConfig (ConfigContext * cfg);
 extern const ConfigDoc *ampDoc ();
 
-extern void initPreamp ();
+extern void initPreamp (void *pa, void *m);
 extern void setClean (int useClean);
 
 extern float * preamp (float * inBuf, float * outBuf, size_t bufLengthSamples);

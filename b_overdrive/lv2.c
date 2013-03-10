@@ -70,7 +70,7 @@ instantiate(const LV2_Descriptor*     descriptor,
   B3O* b3o = (B3O*)calloc(1, sizeof(B3O));
   b3o->o_bias = b3o->o_feedback = b3o->o_sagtobias = b3o->o_postfeed = b3o->o_globfeed = b3o->o_gainin = b3o->o_gainout = -1;
 
-  initPreamp();
+  initPreamp(NULL, NULL);
 
   return (LV2_Handle)b3o;
 }
@@ -185,7 +185,7 @@ lv2_descriptor(uint32_t index)
     }
 }
 
-void useMIDIControlFunction (char * cfname, void (* f) (void *, unsigned char), void *d) {}
+void useMIDIControlFunction (void *m, char * cfname, void (* f) (void *, unsigned char), void *d) {}
 int getConfigParameter_fr (char * par, ConfigContext * cfg, float * fp, float lowInc, float highInc) {return 0;}
 int getConfigParameter_f (char * par, ConfigContext * cfg, float * fp) {return 0;}
 /* vi:set ts=8 sts=2 sw=2: */

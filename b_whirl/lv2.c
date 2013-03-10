@@ -102,7 +102,7 @@ instantiate(const LV2_Descriptor*     descriptor,
    * parameters  during deactive/activate cycles..
    */
 
-  initWhirl(b3w->instance, rate);
+  initWhirl(b3w->instance, NULL, rate);
 
   return (LV2_Handle)b3w;
 }
@@ -280,7 +280,7 @@ lv2_descriptor(uint32_t index)
   }
 }
 
-void useMIDIControlFunction (char * cfname, void (* f) (void *d, unsigned char), void *d) { }
+void useMIDIControlFunction (void *m, char * cfname, void (* f) (void *d, unsigned char), void *d) { }
 int getConfigParameter_dr (char * par, ConfigContext * cfg, double * dp, double lowInc, double highInc) { return 0; }
 int getConfigParameter_d (char * par, ConfigContext * cfg, double * dp) { return 0; }
 int getConfigParameter_ir (char * par, ConfigContext * cfg, int * ip, int lowInc, int highInc) { return 0; }
