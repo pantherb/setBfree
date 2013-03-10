@@ -317,6 +317,73 @@ void moduleHeader () {
 	includeLocal ("../b3_whirl/eqcomp.h");
 #endif
 
+  /* -- all constants -- */
+
+  vspace (2);
+
+  /* Decimation filter for downsampling : definition */
+
+  commentln ("Decimation filter definition");
+  sprintf (buf, "static const float aaldef[%d] = {", AAL_LEN);
+  codeln (buf);
+  pushIndent ();
+  for (i = 0; i < (AAL_LEN - 1); i++) {
+    sprintf (buf, "%*.*f,", wpw, wpp, aaldef[i]);
+    codeln (buf);
+  }
+  sprintf (buf, "%*.*f", wpw, wpp, aaldef[i]);
+  codeln (buf);
+  popIndent ();
+  codeln ("};");
+
+  vspace (1);
+
+  /* The number of weights applied from each implementation filter
+     varies between rows. The wiLen vector gives the number. */
+
+  vspace (1);
+
+  commentln ("Weight count for wi[][] above.");
+  sprintf (buf, "static const int wiLen[%d] = {", R);
+  codeln (buf);
+  pushIndent ();
+  for (i = 0; i < (R - 1); i++) {
+    sprintf (buf, "%d,", ipold[i].terms);
+    codeln (buf);
+  }
+  sprintf (buf, "%d", ipold[i].terms);
+  codeln (buf);
+  popIndent ();
+  codeln ("};");
+
+  vspace (1);
+
+  /* The interpolation filter definition */
+
+  commentln ("Interpolation filter definition");
+
+  sprintf (buf, "static const float ipwdef[%d] = {", IPOL_LEN);
+  codeln (buf);
+
+  pushIndent ();
+
+  for (i = 0; i < (IPOL_LEN - 1); i++) {
+    sprintf (buf, "% *.*f,", wpw, wpp, ipwdef[i]);
+    codeln (buf);
+  }
+  sprintf (buf, "% *.*f", wpw, wpp, ipwdef[i]);
+  codeln (buf);
+
+  popIndent ();
+
+  codeln ("};");
+
+  vspace (1);
+
+  /* -- end constants -- */
+#if 0
+  commentln (" *** BEGIN STRUCT ***");
+
   /* Input history buffer */
   vspace (1);
 
@@ -382,28 +449,6 @@ void moduleHeader () {
 
   vspace (1);
 
-  /* The interpolation filter definition */
-
-  commentln ("Interpolation filter definition");
-
-  sprintf (buf, "static const float ipwdef[%d] = {", IPOL_LEN);
-  codeln (buf);
-
-  pushIndent ();
-
-  for (i = 0; i < (IPOL_LEN - 1); i++) {
-    sprintf (buf, "% *.*f,", wpw, wpp, ipwdef[i]);
-    codeln (buf);
-  }
-  sprintf (buf, "% *.*f", wpw, wpp, ipwdef[i]);
-  codeln (buf);
-
-  popIndent ();
-
-  codeln ("};");
-
-  vspace (1);
-
   commentln ("Zero-filled filter of interpolation length");
   sprintf (buf, "float ipolZeros[%d];", IPOL_LEN);
   codeln (buf);
@@ -441,44 +486,6 @@ void moduleHeader () {
   commentln ("Sample-specific runtime interpolation FIRs");
   sprintf (buf, "static float wi[%d][%d];", R, DFQ+1);
   codeln (buf);
-
-
-  /* The number of weights applied from each implementation filter
-     varies between rows. The wiLen vector gives the number. */
-
-  vspace (1);
-
-  commentln ("Weight count for wi[][] above.");
-  sprintf (buf, "static const int wiLen[%d] = {", R);
-  codeln (buf);
-  pushIndent ();
-  for (i = 0; i < (R - 1); i++) {
-    sprintf (buf, "%d,", ipold[i].terms);
-    codeln (buf);
-  }
-  sprintf (buf, "%d", ipold[i].terms);
-  codeln (buf);
-  popIndent ();
-  codeln ("};");
-
-  vspace (1);
-
-  /* Decimation filter for downsampling : definition */
-
-  commentln ("Decimation filter definition");
-  sprintf (buf, "static const float aaldef[%d] = {", AAL_LEN);
-  codeln (buf);
-  pushIndent ();
-  for (i = 0; i < (AAL_LEN - 1); i++) {
-    sprintf (buf, "%*.*f,", wpw, wpp, aaldef[i]);
-    codeln (buf);
-  }
-  sprintf (buf, "%*.*f", wpw, wpp, aaldef[i]);
-  codeln (buf);
-  popIndent ();
-  codeln ("};");
-
-  vspace (1);
 
   /* Decimation filter for downsampling : runtime */
 
@@ -617,6 +624,116 @@ void moduleHeader () {
   sprintf (buf, "static float sagFb = %g;", SAG_FB);
   codeln (buf);
 #endif /* SAG_EMULATION */
+  vspace (2);
+
+#endif
+	////
+
+  vspace (2);
+  codeln ("struct b_preamp {");
+  pushIndent ();
+
+  commentln ("Input history buffer");
+  sprintf (buf, "float xzb[%d];", XZB_SIZE);
+  codeln (buf);
+
+  commentln ("Input history writer");
+  codeln ("float * xzp;");
+  commentln ("Input history end sentinel");
+  codeln ("float * xzpe;");
+  vspace (1);
+  commentln ("Negative index access wrap sentinel");
+  codeln ("float * xzwp;");
+
+  commentln ("Transfer-function output history buffer");
+  sprintf (buf, "float yzb[%d];", YZB_SIZE);
+  codeln (buf);
+  commentln ("Transfer-function output writer");
+  codeln ("float * yzp;");
+  commentln ("Transfer-function output history end sentinel");
+  codeln ("float * yzpe;");
+  commentln ("Transfer-function output history wrap sentinel");
+  codeln ("float * yzwp;");
+
+  commentln ("Zero-filled filter of interpolation length");
+  sprintf (buf, "float ipolZeros[%d];", IPOL_LEN);
+  codeln (buf);
+
+	// skipped //
+
+  commentln ("Sample-specific runtime interpolation FIRs");
+  sprintf (buf, "float wi[%d][%d];", R, DFQ+1);
+  codeln (buf);
+
+  commentln ("Decimation filter runtime");
+  sprintf (buf, "float aal[%d];", AAL_LEN);
+  codeln (buf);
+
+  commentln ("Decimation filter end sentinel");
+  codeln ("float * aalEnd;");
+
+  /* De-emphasis filter definition */
+  /* Maybe we should settle for a size requirement here ... */
+  /* And have the same for the emphasis */
+
+  codeln ("size_t ipolFilterLength;");
+  codeln ("size_t aalFilterLength;");
+
+  commentln ("Zero-filled filter of anti-aliasing length");
+  sprintf (buf, "float aalZeros[%d];", AAL_LEN);
+  codeln (buf);
+
+  commentln ("Clean/overdrive switch");
+  codeln ("int isClean;");
+
+	// skipped generatePreFilter
+	// skipped generatePostFilter
+
+#ifdef OUTPUT_GAIN
+  codeln ("float outputGain;");
+#endif /* OUTPUT_GAIN */
+
+#ifdef CLEAN_MIX
+  vspace (1);
+  commentln ("Clean mix");
+  codeln ("float mixClean;");
+  codeln ("float mixFx;");
+#endif /* CLEAN_MIX */
+
+#ifdef INPUT_GAIN
+  vspace (1);
+  commentln ("Input gain");
+  codeln ("float inputGain;");
+#endif /* INPUT_GAIN */
+
+#ifdef PRE_DC_OFFSET
+  vspace (1);
+  commentln ("Pre DC offset");
+  codeln ("float preDCOffset = 0.0;");
+#endif /* PRE_DC_OFFSET */
+
+#ifdef INPUT_COMPRESS
+  commentln ("Input compressor gain");
+  codeln ("float ipcGain;");
+  codeln ("float ipcThreshold;");
+  codeln ("float ipcGainReduce;");
+  codeln ("float ipcGainRecover;");
+#endif /* INPUT_COMPRESS */
+
+
+#ifdef SAG_EMULATION
+  codeln ("float sagZ;");
+  codeln ("float sagFb;");
+#endif /* SAG_EMULATION */
+
+#ifdef TR_BIASED
+  hdr_biased ();
+#endif /* TR_BIASED */
+
+  popIndent ();
+  codeln ("};");
+  commentln (" *** END STRUCT ***");
+  vspace (2);
 }
 
 /*
@@ -636,8 +753,9 @@ void preIpolMixer () {
   commentln ("ipolDef is the interpolation filter definition");
   commentln ("aalDef is the anti-aliasing filter definition");
 
-  codeln ("void mixFilterWeights (const float * ipolDef, const float * aalDef) {");
+  codeln ("void mixFilterWeights (void *pa, const float * ipolDef, const float * aalDef) {");
   pushIndent ();
+  codeln ("struct b_preamp *pp = (struct b_preamp *) pa;");
   codeln ("int i;");
   codeln ("float sum = 0.0;");
   vspace (1);
@@ -680,7 +798,7 @@ void preIpolMixer () {
   for (row = 0; row < XOVER_RATE; row++) {
     for (column = 0; column < ipold[row].terms; column++) {
       sprintf (buf,
-	       "wi[%d][%d] = mix[%d];",
+	       "pp->wi[%d][%d] = mix[%d];",
 	       row,
 	       column,
 	       ipold[row].weightIndex[column]);
@@ -712,7 +830,7 @@ void preIpolMixer () {
   sprintf (buf, "for (i = 0; i < %d; i++) {", AAL_LEN);
   codeln (buf);
   pushIndent ();
-  codeln ("aal[i] = mix[i] / sum;");
+  codeln ("pp->aal[i] = mix[i] / sum;");
   popIndent ();
   codeln ("}");
 
@@ -733,11 +851,12 @@ void funcHeader (char * funcName) {
   vspace (3);
 
   sprintf (buf,
-	   "float * %s (const float * inBuf, float * outBuf, size_t buflen)",
+	   "float * %s (void *pa, const float * inBuf, float * outBuf, size_t buflen)",
 	   funcName);
   codeln (buf);
   codeln ("{");
   pushIndent ();
+  codeln ("struct b_preamp *pp = (struct b_preamp *) pa;");
 }
 
 /*
@@ -777,62 +896,62 @@ void funcBody (void (* transferdef) (char *, char *)) {
   /* Put the next input sample in the input history */
   vspace (1);
   commentln ("Place the next input sample in the input history.");
-  codeln ("if (++xzp == xzpe) {");
+  codeln ("if (++(pp->xzp) == pp->xzpe) {");
   pushIndent ();
-  codeln ("xzp = xzb;");
+  codeln ("pp->xzp = pp->xzb;");
   popIndent ();
   codeln ("}");
 
   vspace (1);
 
 #ifdef INPUT_GAIN
-  codeln ("xin = inputGain * (*xp++);");
+  codeln ("xin = pp->inputGain * (*xp++);");
 #else
   codeln ("xin = *xp++;");
 #endif /* INPUT_GAIN */
 
 
 #ifdef SAG_EMULATION
-  codeln ("sagZ = (sagFb * sagZ) + fabsf(xin);");
-  codeln ("bias = biasBase - (sagZgb * sagZ);");
-  codeln ("norm = 1.0 - (1.0 / (1.0 + (bias * bias)));");
+  codeln ("pp->sagZ = (pp->sagFb * pp->sagZ) + fabsf(xin);");
+  codeln ("pp->bias = pp->biasBase - (pp->sagZgb * pp->sagZ);");
+  codeln ("pp->norm = 1.0 - (1.0 / (1.0 + (pp->bias * pp->bias)));");
 #endif /* SAG_EMULATION */
 
 #ifdef INPUT_COMPRESS
-  codeln ("xin *= ipcGain;");
-  codeln ("if ((xin < -ipcThreshold) || (ipcThreshold < xin)) {");
+  codeln ("xin *= pp->ipcGain;");
+  codeln ("if ((xin < - pp->ipcThreshold) || (pp->ipcThreshold < xin)) {");
   pushIndent ();
-  codeln ("ipcGain *= ipcGainReduce;");
+  codeln ("pp->ipcGain *= pp->ipcGainReduce;");
   popIndent ();
-  sprintf (buf, "} else if (ipcGain < %g) {", IPC_GAIN_IDLE);
+  sprintf (buf, "} else if (pp->ipcGain < %g) {", IPC_GAIN_IDLE);
   codeln (buf);
   pushIndent ();
   popIndent ();
-  codeln ("ipcGain *= ipcGainRecover;");
+  codeln ("pp->ipcGain *= pp->ipcGainRecover;");
   codeln ("}");
 #endif /* INPUT_COMPRESS */
 
   if (generatePreFilter) {
     codeln ("Z0 = xin - (pr_a1 * pr_z1) - (pr_a2 * pr_z2);");
-    codeln ("*xzp = (Z0 * pr_b0) + (pr_b1 * pr_z1) + (pr_b2 * pr_z2);");
-    codeln ("pr_z2 = pr_z1;");
-    codeln ("pr_z1 = Z0;");
+    codeln ("*(pp->xzp) = (Z0 * pp->pr_b0) + (pp->pr_b1 * pp->pr_z1) + (pp->pr_b2 * pp->pr_z2);");
+    codeln ("pp->pr_z2 = pp->pr_z1;");
+    codeln ("pp->pr_z1 = Z0;");
   }
   else {
-    codeln ("*xzp = xin;");
+    codeln ("*(pp->xzp) = xin;");
   }
 
 
   vspace (1);
 
 #ifdef BASS_SIDECHAIN
-  codeln ("bb = *xzp;");
+  codeln ("bb = *(pp->xzp);");
 #endif /* BASS_SIDECHAIN */
 
   /* Select on wrapping code or not */
 
   commentln ("Check the input history wrap sentinel");
-  codeln ("if (xzwp <= xzp) {");
+  codeln ("if (pp->xzwp <= pp->xzp) {");
   pushIndent ();
 
   /* Loop over oversampled samples */
@@ -844,7 +963,7 @@ void funcBody (void (* transferdef) (char *, char *)) {
   vspace (1);
 
   commentln ("wp is ptr to interpol. filter weights for this sample");
-  codeln ("float * wp = &(wi[i][0]);");
+  codeln ("float * wp = &(pp->wi[i][0]);");
 
   vspace (1);
 
@@ -854,7 +973,7 @@ void funcBody (void (* transferdef) (char *, char *)) {
   vspace (1);
 
   commentln ("xr is ptr to samples in input history");
-  codeln ("float * xr = xzp;");
+  codeln ("float * xr = pp->xzp;");
 
   vspace (1);
 
@@ -890,17 +1009,17 @@ void funcBody (void (* transferdef) (char *, char *)) {
   vspace (1);
 
   commentln ("Interpolation weights for this sample");
-  codeln ("float * wp = &(wi[i][0]);");
+  codeln ("float * wp = &(pp->wi[i][0]);");
 
   commentln ("Weight end sentinel");
   codeln ("float * wpe = wp + wiLen[i];");
 
   commentln ("Input history read pointer");
-  codeln ("float * xr = xzp;");
+  codeln ("float * xr = pp->xzp;");
 
   vspace (1);
 
-  codeln ("while (xzb <= xr) {");
+  codeln ("while (pp->xzb <= xr) {");
   pushIndent ();
   codeln ("u += ((*wp++) * (*xr--));");
   popIndent ();
@@ -908,7 +1027,7 @@ void funcBody (void (* transferdef) (char *, char *)) {
 
   vspace (1);
 
-  sprintf (buf, "xr = &(xzb[%d]);", XZB_SIZE-1);
+  sprintf (buf, "xr = &(pp->xzb[%d]);", XZB_SIZE-1);
   codeln (buf);
 
   vspace (1);
@@ -965,12 +1084,12 @@ void funcBody (void (* transferdef) (char *, char *)) {
   vspace (1);
 
   commentln ("Put transferred sample in output history.");
-  codeln ("if (++yzp == yzpe) {");
+  codeln ("if (++pp->yzp == pp->yzpe) {");
   pushIndent ();
-  codeln ("yzp = yzb;");
+  codeln ("pp->yzp = pp->yzb;");
   popIndent ();
   codeln ("}");
-  codeln ("*yzp = v;");
+  codeln ("*(pp->yzp) = v;");
 
   /*
    * Here we do the downsampling. Do a convolution similar to the one
@@ -980,18 +1099,18 @@ void funcBody (void (* transferdef) (char *, char *)) {
   vspace (1);
 
   commentln ("Decimation");
-  codeln ("if (yzwp <= yzp) {");
+  codeln ("if (pp->yzwp <= pp->yzp) {");
   pushIndent ();
 
   commentln ("No-wrap code");
   commentln ("wp points to weights in the decimation FIR");
-  codeln ("float * wp = aal;");
-  codeln ("float * yr = yzp;");
+  codeln ("float * wp = pp->aal;");
+  codeln ("float * yr = pp->yzp;");
 
   vspace (1);
 
   commentln ("Convolve with decimation filter.");
-  codeln ("while (wp < aalEnd) {");
+  codeln ("while (wp < pp->aalEnd) {");
   pushIndent ();
   codeln ("y += ((*wp++) * (*yr--));");
   popIndent ();
@@ -1004,12 +1123,12 @@ void funcBody (void (* transferdef) (char *, char *)) {
   commentln ("Wrap code");
 
   /* Two pass operation : first is down to zero, second from top */
-  codeln ("float * wp = aal;");
-  codeln ("float * yr = yzp;");
+  codeln ("float * wp = pp->aal;");
+  codeln ("float * yr = pp->yzp;");
 
   vspace (1);
 
-  codeln ("while (yzb <= yr) {");
+  codeln ("while (pp->yzb <= yr) {");
   pushIndent ();
   codeln ("y += ((*wp++) * (*yr--));");
   popIndent ();
@@ -1017,12 +1136,12 @@ void funcBody (void (* transferdef) (char *, char *)) {
 
   vspace (1);
 
-  sprintf (buf, "yr = &(yzb[%d]);", YZB_SIZE-1);
+  sprintf (buf, "yr = &(pp->yzb[%d]);", YZB_SIZE-1);
   codeln (buf);
 
   vspace (1);
 
-  codeln ("while (wp < aalEnd) {");
+  codeln ("while (wp < pp->aalEnd) {");
   pushIndent ();
   codeln ("y += ((*wp++) * (*yr--));");
   popIndent ();
@@ -1059,7 +1178,7 @@ void funcBody (void (* transferdef) (char *, char *)) {
 #endif /* BASS_SIDECHAIN */
 
 #ifdef OUTPUT_GAIN
-  codeln ("*yp++ = outputGain * y;");
+  codeln ("*yp++ = pp->outputGain * y;");
 #else
   codeln ("*yp++ = y;");
 #endif /* OUTPUT_GAIN */
@@ -1137,15 +1256,16 @@ void adapterPreamp (char * funcName) {
   codeln ("                float * outBuf,");
   codeln ("                size_t bufLengthSamples) {");
   pushIndent ();
+  codeln ("struct b_preamp *pp = (struct b_preamp *) pa;");
 
-  codeln ("if (isClean) {");
+  codeln ("if (pp->isClean) {");
   pushIndent ();
   codeln ("memcpy(outBuf, inBuf, bufLengthSamples*sizeof(float));");
   popIndent ();
   codeln ("}");
   codeln ("else {");
   pushIndent ();
-  codeln ("overdrive (inBuf, outBuf, bufLengthSamples);");
+  codeln ("overdrive (pa, inBuf, outBuf, bufLengthSamples);");
   popIndent ();
   codeln ("}");
 
@@ -1159,13 +1279,82 @@ void adapterPreamp (char * funcName) {
   vspace (2);
   codeln ("void * allocPreamp () {");
   pushIndent ();
-  codeln ("return NULL;");
+  codeln ("struct b_preamp *pp = (struct b_preamp *) calloc(1, sizeof(struct b_preamp));");
+
+
+  codeln ("pp->xzp = &(pp->xzb[0]);");
+  sprintf (buf, "pp->xzpe = &(pp->xzb[%d]);", XZB_SIZE);
+  codeln (buf);
+  sprintf (buf, "pp->xzwp = &(pp->xzb[%d]);", DFQ+1);
+  codeln (buf);
+  codeln ("pp->yzp = &(pp->yzb[0]);");
+  sprintf (buf, "pp->yzpe = &(pp->yzb[%d]);", YZB_SIZE);
+  codeln (buf);
+  sprintf (buf, "pp->yzwp = &(pp->yzb[%d]);", AAL_LEN);
+  codeln (buf);
+  sprintf (buf, "pp->aalEnd = &(pp->aal[%d]);", AAL_LEN);
+  codeln (buf);
+
+  sprintf (buf, "pp->ipolFilterLength = %d;", IPOL_LEN);
+  codeln (buf);
+  sprintf (buf, "pp->aalFilterLength = %d;", AAL_LEN);
+  codeln (buf);
+  codeln ("pp->isClean = 1;");
+
+	///generatePreFilter
+  // generatePostFilter
+
+#ifdef OUTPUT_GAIN
+  sprintf (buf, "pp->outputGain = %g;", OUTPUT_GAIN);
+  codeln (buf);
+#endif /* OUTPUT_GAIN */
+
+#ifdef CLEAN_MIX
+  codeln ("pp->mixClean = 0.0;");
+  codeln ("pp->mixFx = 1.0;");
+#endif /* CLEAN_MIX */
+
+#ifdef INPUT_GAIN
+  sprintf (buf, "pp->inputGain = %g;", INPUT_GAIN);
+  codeln (buf);
+#endif /* INPUT_GAIN */
+
+#ifdef PRE_DC_OFFSET
+  codeln ("pp->preDCOffset = 0.0;");
+#endif /* PRE_DC_OFFSET */
+
+#ifdef INPUT_COMPRESS
+  sprintf (buf, "pp->ipcGain = %g;", IPC_GAIN_IDLE);
+  codeln (buf);
+  sprintf (buf, "pp->ipcThreshold = %g;", IPC_THRESHOLD);
+  codeln (buf);
+  sprintf (buf, "pp->ipcGainReduce = %g;", IPC_GAIN_REDUCE);
+  codeln (buf);
+  sprintf (buf, "pp->ipcGainRecover = %g;", IPC_GAIN_RECOVER);
+  codeln (buf);
+#endif /* INPUT_COMPRESS */
+
+#ifdef SAG_EMULATION
+  vspace (3);
+  codeln ("pp->sagZ = 0.0;");
+  sprintf (buf, "pp->sagFb = %g;", SAG_FB);
+  codeln (buf);
+#endif /* SAG_EMULATION */
+
+
+  codeln (buf);
+#ifdef TR_BIASED
+	rst_biased();
+#endif
+
+  codeln ("return pp;");
   popIndent ();
   codeln ("}");
   vspace (2);
   codeln ("void freePreamp (void * pa) {");
   pushIndent ();
-  codeln ("return;");
+  codeln ("struct b_preamp *pp = (struct b_preamp *) pa;");
+  codeln ("free(pp);");
   popIndent ();
   codeln ("}");
 }
@@ -1176,7 +1365,8 @@ void legacyInit () {
   commentln ("Legacy function");
   codeln ("void initPreamp (void *pa, void *m) {");
   pushIndent ();
-  codeln ("mixFilterWeights (ipwdef, aaldef);");
+  codeln ("struct b_preamp *pp = (struct b_preamp *) pa;");
+  codeln ("mixFilterWeights (pa, ipwdef, aaldef);");
 
 
 #ifdef PRE_FILTER_TYPE
@@ -1277,8 +1467,9 @@ void legacyConfig () {
   char buf[BUFSZ];
   vspace (3);
   commentln ("Legacy function");
-  codeln ("int ampConfig (ConfigContext * cfg) {");
+  codeln ("int ampConfig (void *pa, ConfigContext * cfg) {");
   pushIndent ();
+  codeln ("struct b_preamp *pp = (struct b_preamp *) pa;");
   codeln ("int rtn = 1;");
   codeln ("float v = 0;");
 
@@ -1288,12 +1479,12 @@ void legacyConfig () {
 
   sprintf (buf,
 	   "if (getConfigParameter_f (\"%s\", cfg, &%s)) return 1;",
-	   "overdrive.inputgain", "inputGain");
+	   "overdrive.inputgain", "pp->inputGain");
   codeln (buf);
 
   sprintf (buf,
 	   "else if (getConfigParameter_f (\"%s\", cfg, &%s)) return 1;",
-	   "overdrive.outputgain", "outputGain");
+	   "overdrive.outputgain", "pp->outputGain");
   codeln (buf);
 
 #ifdef ADWS_GFB
@@ -1394,9 +1585,10 @@ void legacyGain () {
 void legacyClean () {
   vspace (3);
   commentln  ("Legacy function");
-  codeln ("void setClean (int useClean) {");
+  codeln ("void setClean (void *pa, int useClean) {");
   pushIndent ();
-  codeln ("isClean = useClean;");
+  codeln ("struct b_preamp *pp = (struct b_preamp *) pa;");
+  codeln ("pp->isClean = useClean;");
   popIndent ();
   codeln ("}");
 }
@@ -1572,14 +1764,15 @@ void postFilterControl () {
 void outputGainControl () {
   char buf[BUFSZ];
   vspace (3);
-  codeln ("void setOutputGain (void *d, unsigned char uc) {");
+  codeln ("void setOutputGain (void *pa, unsigned char uc) {");
   pushIndent ();
-  sprintf (buf, "outputGain = %g + ((%g - %g) * (((float) uc) / 127.0));",
+  codeln ("struct b_preamp *pp = (struct b_preamp *) pa;");
+  sprintf (buf, "pp->outputGain = %g + ((%g - %g) * (((float) uc) / 127.0));",
 	   OUTPUT_GAIN_LO,
 	   OUTPUT_GAIN_HI,
 	   OUTPUT_GAIN_LO);
   codeln (buf);
-  codeln ("printf (\"\\rOUT:%10.4lf\", outputGain);");
+  codeln ("printf (\"\\rOUT:%10.4lf\", pp->outputGain);");
   codeln ("fflush (stdout);");
   popIndent ();
   codeln ("}");
@@ -1591,14 +1784,15 @@ void outputGainControl () {
 void inputGainControl () {
   char buf[BUFSZ];
   vspace (3);
-  codeln ("void setInputGain (void *d, unsigned char uc) {");
+  codeln ("void setInputGain (void *pa, unsigned char uc) {");
   pushIndent ();
-  sprintf (buf, "inputGain = %g + ((%g - %g) * (((float) uc) / 127.0));",
+  codeln ("struct b_preamp *pp = (struct b_preamp *) pa;");
+  sprintf (buf, "pp->inputGain = %g + ((%g - %g) * (((float) uc) / 127.0));",
 	   INPUT_GAIN_LO,
 	   INPUT_GAIN_HI,
 	   INPUT_GAIN_LO);
   codeln (buf);
-  codeln ("printf (\"\\rINP:%10.4lf\", inputGain);");
+  codeln ("printf (\"\\rINP:%10.4lf\", pp->inputGain);");
   codeln ("fflush (stdout);");
   popIndent ();
   codeln ("}");
@@ -1700,9 +1894,6 @@ void render (FILE * fp, char * funcName) {
   computeIpolWeights ();
 
   moduleHeader ();
-#ifdef TR_BIASED
-  hdr_biased ();
-#endif /* TR_BIASED */
 
   preIpolMixer ();
 

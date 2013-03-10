@@ -59,6 +59,8 @@ typedef struct {
   float o_globfeed;
   float o_gainin;
   float o_gainout;
+
+  void *pa;
 } B3O;
 
 static LV2_Handle
@@ -70,7 +72,8 @@ instantiate(const LV2_Descriptor*     descriptor,
   B3O* b3o = (B3O*)calloc(1, sizeof(B3O));
   b3o->o_bias = b3o->o_feedback = b3o->o_sagtobias = b3o->o_postfeed = b3o->o_globfeed = b3o->o_gainin = b3o->o_gainout = -1;
 
-  initPreamp(NULL, NULL);
+  b3o->pa = allocPreamp();
+  initPreamp(b3o->pa, NULL);
 
   return (LV2_Handle)b3o;
 }
@@ -142,7 +145,7 @@ run(LV2_Handle instance, uint32_t n_samples)
   SETPARAM(fsetInputGain   ,gainin);
   SETPARAM(fsetOutputGain  ,gainout);
 
-  overdrive(input, output, n_samples);
+  overdrive(b3o->pa, input, output, n_samples);
 }
 
 static void
@@ -153,6 +156,8 @@ deactivate(LV2_Handle instance)
 static void
 cleanup(LV2_Handle instance)
 {
+  B3O* b3o = (B3O*)instance;
+  freePreamp(b3o->pa);
   free(instance);
 }
 

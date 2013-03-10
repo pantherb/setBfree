@@ -870,7 +870,7 @@ void installProgram (void *instance, unsigned char uc) {
       }
 
       if (flags0 & FL_OVRSEL) {
-	setClean (PGM->overdriveSelect);
+	setClean (inst->preamp, PGM->overdriveSelect);
       }
 
       if (flags0 & FL_ROTENA) {

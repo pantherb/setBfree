@@ -71,7 +71,7 @@ static int distributeParameter (b_instance* inst, ConfigContext * cfg) {
   n += pgmConfig (cfg);
   n += oscConfig (inst->synth, cfg);
   n += scannerConfig (inst->synth, cfg);
-  n += ampConfig (cfg);
+  n += ampConfig (inst->preamp, cfg);
   n += whirlConfig (inst->whirl, cfg);
   n += reverbConfig (inst->reverb, cfg);
 #ifdef HAVE_ZITACONVOLVE

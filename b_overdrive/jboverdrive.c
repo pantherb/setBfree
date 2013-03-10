@@ -145,7 +145,7 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
   jack_default_audio_sample_t *in, *out;
   in = jack_port_get_buffer (j_input_port, nframes);
   out = jack_port_get_buffer (j_output_port, nframes);
-  overdrive(in, out, nframes);
+  overdrive(arg, in, out, nframes);
   return(0);
 }
 
@@ -222,8 +222,8 @@ float pp(const char *ps) {
 
 int main (int argc, char**argv) {
   int osc_port=0;
-
-  initPreamp(NULL, NULL);
+  void *pa = allocPreamp();
+  initPreamp(pa, NULL);
 
   int c;
   const char *optstring = "hi:o:O:p:V";
@@ -311,20 +311,20 @@ int main (int argc, char**argv) {
   }
 
   jack_on_shutdown (j_client, jack_shutdown_callback, NULL);
-  jack_set_process_callback(j_client,jack_audio_callback,NULL);
+  jack_set_process_callback(j_client,jack_audio_callback, pa);
 
 #ifndef _WIN32
   signal (SIGHUP, catchsig);
   signal (SIGINT, catchsig);
 #endif
 
-  fctl_biased     (NULL, p_bias);
-  fctl_biased_fb  (NULL, p_feedback);
-  fctl_sagtoBias  (NULL, p_sagtobias);
-  fctl_biased_fb2 (NULL, p_postfeed);
-  fctl_biased_gfb (NULL, p_globfeed);
-  fsetInputGain   (NULL, p_gainin);
-  fsetOutputGain  (NULL, p_gainout);
+  fctl_biased     (pa, p_bias);
+  fctl_biased_fb  (pa, p_feedback);
+  fctl_sagtoBias  (pa, p_sagtobias);
+  fctl_biased_fb2 (pa, p_postfeed);
+  fctl_biased_gfb (pa, p_globfeed);
+  fsetInputGain   (pa, p_gainin);
+  fsetOutputGain  (pa, p_gainout);
 
   jack_activate(j_client);
   connect_jack_ports();
@@ -341,6 +341,7 @@ int main (int argc, char**argv) {
   }
 #endif
 
+  freePreamp(pa);
   return (0);
 }
 /* vi:set ts=8 sts=2 sw=2: */

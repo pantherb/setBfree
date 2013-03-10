@@ -29,6 +29,7 @@ extern void hdr_biased ();
 extern void cfg_biased ();
 extern void ctl_biased ();
 extern void ini_biased ();
+extern void rst_biased ();
 
 extern void xfr_biased ();
 

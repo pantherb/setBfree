@@ -38,51 +38,78 @@ static char buf[BUFSZ];
 
 void hdr_biased () {
   commentln ("Variables for the inverted and biased transfer function");
-  sprintf (buf, "static float biasBase = %g;", BIAS);
-  codeln (buf);
+  codeln ("float biasBase;");
   commentln ("bias and norm are set in function cfg_biased()");
-  codeln ("static float bias;");
-  codeln ("static float norm;");
+  codeln ("float bias;");
+  codeln ("float norm;");
 
 #ifdef ADWS_PRE_DIFF
   commentln ("ovt_biased : One sample memory");
-  codeln ("static float adwZ = 0.0; // initialize to zero");
+  codeln ("float adwZ;");
   commentln ("ovt_biased : Positive feedback");
-  sprintf (buf, "static float adwFb = %g;", ADWS_FB);
+  codeln ("float adwFb;");
   codeln (buf);
 #endif /* ADWS_PRE_DIFF */
 
 #ifdef ADWS_POST_DIFF
-  codeln ("static float adwZ1 = 0.0; // initialize to zero");
+  codeln ("float adwZ1;");
+#if 0
+  codeln ("float adwZ2;");
+#endif
+  codeln ("float adwFb2;");
+#endif /* ADWS_POST_DIFF */
+
+#ifdef ADWS_GFB
+  codeln ("float adwGfb;");
+  codeln ("float adwGfZ;");
+#endif /* ADWS_GFB */
+
+#ifdef SAG_EMULATION
+  codeln("float sagZgb;");
+#endif
+}
+
+void rst_biased () {
+  sprintf (buf, "pp->biasBase = %g;", BIAS);
+  codeln (buf);
+
+#ifdef ADWS_PRE_DIFF
+  codeln ("pp->adwZ = 0.0;");
+  sprintf (buf, "pp->adwFb = %g;", ADWS_FB);
+  codeln (buf);
+#endif /* ADWS_PRE_DIFF */
+
+#ifdef ADWS_POST_DIFF
+  codeln ("pp->adwZ1 = 0.0;");
 #if 0
   codeln ("static float adwZ2;");
 #endif
-  sprintf (buf, "static float adwFb2 = %g;", ADWS_FB2);
+  sprintf (buf, "pp->adwFb2 = %g;", ADWS_FB2);
   codeln (buf);
 #endif /* ADWS_POST_DIFF */
 
 #ifdef ADWS_GFB
-  codeln ("static float adwGfb = -0.6214;");
-  codeln ("static float adwGfZ = 0.0;");
+  codeln ("pp->adwGfb = -0.6214;");
+  codeln ("pp->adwGfZ = 0.0;");
 #endif /* ADWS_GFB */
 
 #ifdef SAG_EMULATION
-  sprintf (buf, "static float sagZgb = %g;", SAG_ZGB);
+  sprintf (buf, "pp->sagZgb = %g;", SAG_ZGB);
   codeln (buf);
-#endif /* SAG_EMULATION */
-
+#endif
 }
 
 void cfg_biased () {
   commentln ("Computes the constants for transfer curve");
-  codeln ("void cfg_biased (void *d, float new_bias) {");
+  codeln ("void cfg_biased (void *pa, float new_bias) {");
   pushIndent ();
+  codeln ("struct b_preamp *pp = (struct b_preamp *) pa;");
   codeln ("if (0.0 < new_bias) {");
   pushIndent ();
-  codeln ("biasBase = new_bias;");
+  codeln ("pp->biasBase = new_bias;");
   commentln ("If power sag emulation is enabled bias is set there.");
-  codeln ("bias = biasBase;");
-  codeln ("norm = 1.0 - (1.0 / (1.0 + (bias * bias)));");
+  codeln ("pp->bias = pp->biasBase;");
+  codeln ("pp->norm = 1.0 - (1.0 / (1.0 + (pp->bias * pp->bias)));");
 #if 0
   codeln ("printf (\"\\rBIAS=%10.4fNORM=%10.4f\", bias, norm);");
   codeln ("fflush (stdout);");
@@ -94,14 +121,14 @@ void cfg_biased () {
 }
 
 void ctl_biased () {
-  codeln ("void fctl_biased (void *d, float u) {");
+  codeln ("void fctl_biased (void *pa, float u) {");
   pushIndent ();
   sprintf (buf, "float v = %g + ((%g - %g) * (u * u));",
 	   BIAS_LO,
 	   BIAS_HI,
 	   BIAS_LO);
   codeln (buf);
-  codeln ("cfg_biased (NULL, v);");
+  codeln ("cfg_biased (pa, v);");
   popIndent ();
   codeln ("}");
 	FLOATWRAP("ctl_biased")
@@ -109,11 +136,12 @@ void ctl_biased () {
 #ifdef ADWS_PRE_DIFF
   vspace (3);
   commentln ("ovt_biased:Sets the positive feedback");
-  codeln ("void fctl_biased_fb (void *d, float u) {");
+  codeln ("void fctl_biased_fb (void *pa, float u) {");
   pushIndent ();
-  sprintf (buf, "adwFb = %g * u;", ADWS_FB_MAX);
+  codeln ("struct b_preamp *pp = (struct b_preamp *) pa;");
+  sprintf (buf, "pp->adwFb = %g * u;", ADWS_FB_MAX);
   codeln (buf);
-  codeln ("printf (\"\\rFbk=%10.4f\", adwFb);");
+  codeln ("printf (\"\\rFbk=%10.4f\", pp->adwFb);");
   codeln ("fflush (stdout);");
   popIndent ();
   codeln ("}");
@@ -124,14 +152,15 @@ void ctl_biased () {
 #ifdef SAG_EMULATION
   vspace (3);
   commentln ("ovt_biased: Sets sag impact");
-  codeln ("void fctl_sagtoBias (void *d, float u) {");
+  codeln ("void fctl_sagtoBias (void *pa, float u) {");
   pushIndent ();
-  sprintf (buf, "sagZgb = %g + ((%g - %g) * u);",
+  codeln ("struct b_preamp *pp = (struct b_preamp *) pa;");
+  sprintf (buf, "pp->sagZgb = %g + ((%g - %g) * u);",
 	   SAG_ZGB_LO,
 	   SAG_ZGB_HI,
 	   SAG_ZGB_LO);
   codeln (buf);
-  codeln ("printf (\"\\rZGB=%10.4f\", sagZgb);");
+  codeln ("printf (\"\\rpp->ZGB=%10.4f\", pp->sagZgb);");
   codeln ("fflush (stdout);");
   popIndent ();
   codeln ("}");
@@ -141,11 +170,12 @@ void ctl_biased () {
 #ifdef ADWS_POST_DIFF
   vspace (3);
   commentln ("ovt_biased: Postdiff feedback control");
-  codeln ("void fctl_biased_fb2 (void *d, float u) {");
+  codeln ("void fctl_biased_fb2 (void *pa, float u) {");
   pushIndent ();
-  sprintf (buf, "adwFb2 = %g * u;", ADWS_FB2_MAX);
+  codeln ("struct b_preamp *pp = (struct b_preamp *) pa;");
+  sprintf (buf, "pp->adwFb2 = %g * u;", ADWS_FB2_MAX);
   codeln (buf);
-  codeln ("printf (\"\\rFb2=%10.4f\", adwFb2);");
+  codeln ("printf (\"\\rFb2=%10.4f\", pp->adwFb2);");
   codeln ("fflush (stdout);");
   popIndent ();
   codeln ("}");
@@ -155,11 +185,12 @@ void ctl_biased () {
 #ifdef ADWS_GFB
   vspace (3);
   commentln ("ovt_biased: Global feedback control");
-  codeln ("void fctl_biased_gfb (void *d, float u) {");
+  codeln ("void fctl_biased_gfb (void *pa, float u) {");
   pushIndent ();
-  sprintf (buf, "adwGfb = %g * u;", ADWS_GFB_MAX);
+  codeln ("struct b_preamp *pp = (struct b_preamp *) pa;");
+  sprintf (buf, "pp->adwGfb = %g * u;", ADWS_GFB_MAX);
   codeln (buf);
-  codeln ("printf (\"\\rGfb=%10.4f\", adwGfb);");
+  codeln ("printf (\"\\rGfb=%10.4f\", pp->adwGfb);");
   codeln ("fflush (stdout);");
   popIndent ();
   codeln ("}");
@@ -169,24 +200,25 @@ void ctl_biased () {
 #ifdef ADWS_FAT_CTRL
   vspace (3);
   commentln ("ovt_biased: Fat control");
-  codeln ("void ctl_biased_fat (void *d, unsigned char uc) {");
+  codeln ("void ctl_biased_fat (void *pa, unsigned char uc) {");
   pushIndent ();
+  codeln ("struct b_preamp *pp = (struct b_preamp *) pa;");
   codeln ("if (uc < 64) {");
   pushIndent ();
   codeln ("if (uc < 32) {");
   pushIndent ();
-  sprintf (buf, "adwFb = %g;", ADWS_FB);
+  sprintf (buf, "pp->adwFb = %g;", ADWS_FB);
   codeln (buf);
-  sprintf (buf, "adwFb2 = %g + ((%g - %g) * (((float) uc) / 31.0));",
+  sprintf (buf, "pp->adwFb2 = %g + ((%g - %g) * (((float) uc) / 31.0));",
 	   ADWS_FB2, ADWS_FB, ADWS_FB2);
   codeln (buf);
   popIndent ();
   codeln ("} else {");
   pushIndent ();
-  sprintf (buf, "adwFb = %g + ((%g - %g) * (((float) (uc - 32)) / 31.0));",
+  sprintf (buf, "pp->adwFb = %g + ((%g - %g) * (((float) (uc - 32)) / 31.0));",
 	   ADWS_FB, ADWS_FB_MAX, ADWS_FB);
   codeln (buf);
-  sprintf (buf, "adwFb2 = %g;", ADWS_FB);
+  sprintf (buf, "pp->adwFb2 = %g;", ADWS_FB);
   codeln (buf);
   popIndent ();
   codeln ("}");
@@ -194,9 +226,9 @@ void ctl_biased () {
   popIndent ();
   codeln ("} else {");
   pushIndent ();
-  sprintf (buf, "adwFb = %g;", ADWS_FB_MAX);
+  sprintf (buf, "pp->adwFb = %g;", ADWS_FB_MAX);
   codeln (buf);
-  sprintf (buf, "adwFb2 = %g + ((%g - %g) * (((float) (uc - 64)) / 63.0));",
+  sprintf (buf, "pp->adwFb2 = %g + ((%g - %g) * (((float) (uc - 64)) / 63.0));",
 	   ADWS_FB, ADWS_FB_MAX, ADWS_FB);
   codeln (buf);
   popIndent ();
@@ -212,23 +244,23 @@ void ctl_biased () {
 /*
  *
  */
-void configSection (int i, void * vp) {
+void configSection (int i, void * pa) {
   sprintf (buf,
-	   "if (getConfigParameter_fr (\"%s\", cfg, &adwFb, %g, %g));",
+	   "if (getConfigParameter_fr (\"%s\", cfg, &pp->adwFb, %g, %g));",
 	   "xov.ctl_biased_fb",
 	   0.0,
 	   ADWS_FB_MAX);
   codeln (buf);
 
   sprintf (buf,
-	   "else if (getConfigParameter_fr (\"%s\", cfg, &adwFb2, %g, %g));",
+	   "else if (getConfigParameter_fr (\"%s\", cfg, &pp->adwFb2, %g, %g));",
 	   "xov.ctl_biased_fb2",
 	   0.0,
 	   ADWS_FB2_MAX);
   codeln (buf);
 
   sprintf (buf,
-	   "else if (getConfigParameter_f (\"%s\", cfg, &sagFb));",
+	   "else if (getConfigParameter_f (\"%s\", cfg, &pp->sagFb));",
 	   "xov.ctl_sagtobias");
   codeln (buf);
 
@@ -243,11 +275,11 @@ void configDoc (int i, void * vp) {
 }
 
 void ini_biased () {
-  sprintf (buf, "cfg_biased (NULL, %g);", BIAS);
+  sprintf (buf, "cfg_biased (pa, %g);", BIAS);
   codeln (buf);
 #ifdef ADWS_PRE_DIFF
   /* This is redundant if we have initialized the static var correctly */
-  sprintf (buf, "adwFb = %g;", ADWS_FB);
+  sprintf (buf, "pp->adwFb = %g;", ADWS_FB);
   codeln (buf);
 #endif /* ADWS_PRE_DIFF */
 }
@@ -257,16 +289,16 @@ void xfr_biased (char * xs, char * ys) {
 
 #ifdef ADWS_GFB
   commentln ("Global negative feedback");
-  sprintf (buf, "%s -= (adwGfb * adwGfZ);", xs);
+  sprintf (buf, "%s -= (pp->adwGfb * pp->adwGfZ);", xs);
   codeln (buf);
 #endif /* ADWS_GFB */
 
 #ifdef ADWS_PRE_DIFF
   codeln ("{");
   pushIndent ();
-  sprintf (buf, "float temp = %s - adwZ;", xs);
+  sprintf (buf, "float temp = %s - pp->adwZ;", xs);
   codeln (buf);
-  sprintf (buf, "adwZ = %s + (adwZ * adwFb);", xs);
+  sprintf (buf, "pp->adwZ = %s + (pp->adwZ * pp->adwFb);", xs);
   codeln (buf);
   sprintf (buf, "%s = temp;", xs);
   codeln (buf);
@@ -281,10 +313,10 @@ void xfr_biased (char * xs, char * ys) {
   pushIndent ();
 
   /* Temp var to hold value to be squared */
-  sprintf (buf, "float x2 = %s - bias;", xs);
+  sprintf (buf, "float x2 = %s - pp->bias;", xs);
   codeln (buf);
 
-  sprintf (buf, "%s = (1.0 / (1.0 + (x2 * x2))) - 1.0 + norm;", ys);
+  sprintf (buf, "%s = (1.0 / (1.0 + (x2 * x2))) - 1.0 + pp->norm;", ys);
   codeln (buf);
 
   popIndent ();
@@ -292,10 +324,10 @@ void xfr_biased (char * xs, char * ys) {
   pushIndent ();
 
   /* Temp var to hold value to be squared */
-  sprintf (buf, "float x2 = %s + bias;", xs);
+  sprintf (buf, "float x2 = %s + pp->bias;", xs);
   codeln (buf);
 
-  sprintf (buf, "%s = 1.0 - norm - (1.0 / (1.0 + (x2 * x2)));", ys);
+  sprintf (buf, "%s = 1.0 - pp->norm - (1.0 / (1.0 + (x2 * x2)));", ys);
   codeln (buf);
 
   popIndent ();
@@ -306,11 +338,11 @@ void xfr_biased (char * xs, char * ys) {
   codeln ("{");
   pushIndent ();
 
-  sprintf (buf, "float temp = %s + (adwFb2 * adwZ1);", ys);
+  sprintf (buf, "float temp = %s + (pp->adwFb2 * pp->adwZ1);", ys);
   codeln (buf);
-  sprintf (buf, "%s = temp - adwZ1;", ys);
+  sprintf (buf, "%s = temp - pp->adwZ1;", ys);
   codeln (buf);
-  codeln ("adwZ1 = temp;");
+  codeln ("pp->adwZ1 = temp;");
 
   popIndent ();
   codeln ("}");
@@ -318,7 +350,7 @@ void xfr_biased (char * xs, char * ys) {
  
 #ifdef ADWS_GFB
   commentln ("Global negative feedback");
-  sprintf (buf, "adwGfZ = %s;", ys);
+  sprintf (buf, "pp->adwGfZ = %s;", ys);
   codeln (buf);
 #endif /* ADWS_GFB */
 }
