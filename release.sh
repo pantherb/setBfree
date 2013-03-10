@@ -57,11 +57,3 @@ if test "$a" != "n" -a "$a" != "N"; then
 fi
 
 ls -l "setbfree-${VERSION}.tar.gz"
-
-# TODO - upload programatically
-# http://developer.github.com/v3/repos/downloads/
-# https://github.com/typester/net-github-upload-perl
-# https://github.com/Constellation/ruby-net-github-upload
-
-GITREPO="pantherb/setBfree"
-x-www-browser https://github.com/${GITREPO}/downloads
