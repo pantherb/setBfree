@@ -3039,6 +3039,7 @@ void freeToneGenerator (struct b_tonegen *t) {
   for (i=1; i <= NOF_WHEELS; i++) {
     if (t->oscillators[i].wave) free(t->oscillators[i].wave);
   }
+  free(t);
 }
 
 
