@@ -26,11 +26,13 @@
 #include "whirl.h"
 #include "overdrive.h"
 #include "reverb.h"
+#include "program.h"
 
 typedef struct b_instance {
 	struct b_reverb *reverb;
 	struct b_whirl *whirl;
 	struct b_tonegen *synth;
+	struct b_programme *progs;
 	void * midicfg;
 	void * preamp;
 } b_instance;

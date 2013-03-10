@@ -48,6 +48,7 @@ typedef int TokenType;
 typedef int ParseReturnCode;
 
 typedef struct _parserstate {
+  void * p;
   char * fileName;
   FILE * fp;
   int    lineNumber;
@@ -281,7 +282,7 @@ static ParseReturnCode parseAssignmentList (ParserState * ps, int pgmNr) {
       return stateMessage (ps, R, msg);
     }
 
-    if (bindToProgram (ps->fileName, ps->lineNumber, pgmNr, symbol, value)) {
+    if (bindToProgram (ps->p, ps->fileName, ps->lineNumber, pgmNr, symbol, value)) {
       return P_ERROR;
     }
 
@@ -328,8 +329,9 @@ static ParseReturnCode parseProgramDefinitionList (ParserState * ps) {
  * fileName  The path to the programme file.
  * return    0 if the file was successfully read, non-zero otherwise.
  */
-int loadProgrammeFile (char * fileName) {
+int loadProgrammeFile (void *p, char * fileName) {
   ParserState ps;
+  ps.p = p;
   if ((ps.fp = fopen (fileName, "r")) != NULL) {
     int rtn;
     ps.fileName = fileName;

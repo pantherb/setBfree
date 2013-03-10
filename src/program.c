@@ -16,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  
+ * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
 /*
@@ -53,9 +53,6 @@
 #define MESSAGEBUFFERSIZE 256
 
 #define FILE_BUFFER_SIZE 2048
-#define NAMESZ 22
-
-#define NFLAGS 1		/* The nof flag fields in Programme struct */
 
 
 
@@ -119,32 +116,6 @@
 #define TR_CHA_LM 5		/* Channel A lower split region */
 #define TR_CHA_PD 6		/* Channel A pedal split region */
 
-typedef struct _programme {
-  char name [NAMESZ];
-  unsigned int flags[NFLAGS];
-  unsigned int drawbars[9];
-  unsigned int lowerDrawbars[9];
-  unsigned int pedalDrawbars[9];
-  short        keyAttackEnvelope;
-  float        keyAttackClickLevel;
-  float        keyAttackClickDuration;
-  short        keyReleaseEnvelope;
-  float        keyReleaseClickLevel;
-  float        keyReleaseClickDuration;
-  short        scanner;
-  short        percussionEnabled;
-  short        percussionVolume;
-  short        percussionSpeed;
-  short        percussionHarmonic;
-  short        overdriveSelect;
-  short        rotaryEnabled;
-  short        rotarySpeedSelect;
-  float        reverbMix;
-  short        keyboardSplitLower;
-  short        keyboardSplitPedals;
-  short        transpose[7];
-} Programme;
-
 /*
  * The   short scanner   field has the following bit assignments:
  *
@@ -161,14 +132,9 @@ typedef struct _programme {
  *                     1                            upper manual to vib/cho
  */
 
-#ifdef PRG_MAIN
-#define MAXPROGS 129		/* To cover 1-128 */
-static Programme programmes[MAXPROGS];
-#else
+#ifndef PRG_MAIN
 #include "defaultpgm.h"
 #endif
-
-static int displayPgmChanges = FALSE;
 
 /* Property codes; used internally to identity the parameter controlled. */
 
@@ -216,7 +182,7 @@ typedef struct _symbolmap {
  * to the internal property symbols.
  */
 
-static SymbolMap propertySymbols [] = {
+static const SymbolMap propertySymbols [] = {
   {"name",           pr_Name},
   {"drawbars",       pr_Drawbars},
   {"drawbarsupper",  pr_Drawbars},
@@ -249,15 +215,6 @@ static SymbolMap propertySymbols [] = {
   {NULL, pr_void}
 };
 
-/**
- * This is to compensate for MIDI controllers that number the programs
- * from 1 to 128 on their interface. Internally we use 0-127, as does
- * MIDI.
- */
-#ifndef PRG_MAIN
-static int MIDIControllerPgmOffset = 1;
-#endif
-
 /* ---------------------------------------------------------------- */
 
 /**
@@ -271,14 +228,6 @@ static int getPropertyIndex (char * sym) {
     }
   }
   return -1;
-}
-
-/**
- * Controls if the name of a new program is displayed or not.
- * doDisplay   TRUE = display changes, FALSE = do not display changes.
- */
-void setDisplayPgmChanges (int doDisplay) {
-  displayPgmChanges = doDisplay;
 }
 
 /* ======================================================================== */
@@ -389,13 +338,14 @@ static int parseTranspose (char * val, int * vp, char * msg) {
  * This function is called from the syntax parser in file pgmParser.c.
  * Return: 0 OK, non-zero error.
  */
-int bindToProgram (char * fileName,
+int bindToProgram (void * pp,
+		   char * fileName,
 		   int    lineNumber,
 		   int    pgmnr,
 		   char * sym,
 		   char * val)
 {
-  static int previousPgmNr = -1;
+  struct b_programme *p = (struct b_programme *)pp;
   int prop;
   char msg[MESSAGEBUFFERSIZE];
   float fv;
@@ -410,13 +360,13 @@ int bindToProgram (char * fileName,
     return stateMessage (fileName, lineNumber, msg, -1);
   }
 
-  PGM = &(programmes[pgmnr]);
+  PGM = &(p->programmes[pgmnr]);
 
   /* If this is a new program number, clear the property flags */
 
-  if (pgmnr != previousPgmNr) {
+  if (pgmnr != p->previousPgmNr) {
     PGM->flags[0] = 0;
-    previousPgmNr = pgmnr;
+    p->previousPgmNr = pgmnr;
   }
 
   /* Scan for a matching property symbol */
@@ -785,11 +735,11 @@ void installProgram (void *instance, unsigned char uc) {
   int p = (int) uc;
   b_instance * inst = (b_instance*) instance;
 
-  p += MIDIControllerPgmOffset;
+  p += inst->progs->MIDIControllerPgmOffset;
 
   if ((0 < p) && (p < MAXPROGS)) {
 
-    Programme * PGM = &(programmes[p]);
+    Programme * PGM = &(inst->progs->programmes[p]);
     unsigned int flags0 = PGM->flags[0];
     char display[128];
 
@@ -819,11 +769,11 @@ void installProgram (void *instance, unsigned char uc) {
 	}
       }
 
-      if (displayPgmChanges) {
-/*	fprintf (stderr, "%22c\r%s\r", ' ', PGM->name); */
-	fprintf (stdout, "\r%s\r", display);
-	fflush (stdout);
-      }
+#ifdef DEBUG_PROGRAM_CHANGES
+      /* this is not RT safe */
+      fprintf (stdout, "\r%s\r", display);
+      fflush (stdout);
+#endif
 
       if (flags0 & FL_DRAWBR) {
 	setDrawBars (inst->synth, 0, PGM->drawbars);
@@ -920,21 +870,17 @@ void installProgram (void *instance, unsigned char uc) {
   }
 }
 
-static void setMIDIControllerPgmOffset (int offset) {
-  if (offset<0 || offset>1) return;
-  MIDIControllerPgmOffset = offset;
-}
-
 
 /**
  * Configures this modules.
  */
-int pgmConfig (ConfigContext * cfg) {
+int pgmConfig (struct b_programme *p, ConfigContext * cfg) {
   int ack = 0;
   int ival;
   if ((ack = getConfigParameter_i ("pgm.controller.offset",
 				   cfg, &ival)) == 1) {
-    setMIDIControllerPgmOffset (ival);
+    if (ival == 0 || ival == 1)
+      p->MIDIControllerPgmOffset = ival;
   }
 
   return ack;
@@ -958,7 +904,7 @@ const ConfigDoc *pgmDoc () {
  * Displays the number and names of the loaded programmes in a multicolumn
  * list on the given output stream.
  */
-void listProgrammes (FILE * fp) {
+void listProgrammes (struct b_programme *p, FILE * fp) {
   int matrix [MAXROWS][MAXCOLS];
   int row;
   int col;
@@ -975,7 +921,7 @@ void listProgrammes (FILE * fp) {
   }
 
   for (i = row = col = 0; i < MAXPROGS; i++) {
-    if (programmes[i].flags[0] & FL_INUSE) {
+    if (p->programmes[i].flags[0] & FL_INUSE) {
       if (mxUse < mxLimit) {
 	matrix[row][col] = i;
 	mxUse++;
@@ -993,7 +939,7 @@ void listProgrammes (FILE * fp) {
     for (col = 0; col < MAXCOLS; col++) {
       int x = matrix[row][col];
       if (-1 < x) {
-	fprintf (fp, "%3d:%-15.15s", x, programmes[x].name);
+	fprintf (fp, "%3d:%-15.15s", x, p->programmes[x].name);
       }
       else {
 	fprintf (fp, "%19s", " ");
@@ -1013,55 +959,69 @@ void listProgrammes (FILE * fp) {
  *
  * @param clear if set, all programs are erased
  */
-int walkProgrammes (int clear) {
+int walkProgrammes (struct b_programme *p, int clear) {
   int cnt=0;
   int i;
   for (i=0;i<MAXPROGS;++i) {
-    if (clear) programmes[i].flags[0] &=~FL_INUSE;
-    if (programmes[i].flags[0] & FL_INUSE) cnt++;
+    if (clear) p->programmes[i].flags[0] &=~FL_INUSE;
+    if (p->programmes[i].flags[0] & FL_INUSE) cnt++;
   }
   return cnt;
 }
 
+#ifndef PRG_MAIN
+struct b_programme *allocProgs() {
+  struct b_programme *p = (struct b_programme*) calloc(1, sizeof(struct b_programme));
+  if (!p) return NULL;
+  p->previousPgmNr = -1;
+  memcpy(p->programmes, defaultprogrammes, sizeof(Programme) * MAXPROGS);
+  return (p);
+}
+
+void freeProgs(struct b_programme *p) {
+  free(p);
+}
+#endif
+
+
 #ifdef PRG_MAIN
 #include "pgmParser.h"
 
-void hardcode_program (FILE * fp) {
+void hardcode_program (struct b_programme *p, FILE * fp) {
   int i;
   fprintf(fp, "/* generated by programd */\n");
-  fprintf(fp, "#define MAXPROGS (%d)\n", MAXPROGS);
-  fprintf(fp, "static Programme programmes[MAXPROGS] = {\n");
+  fprintf(fp, "static const Programme defaultprogrammes[MAXPROGS] = {\n");
   for (i=0;i<MAXPROGS;++i) {
     int j;
     fprintf(fp,"  {");
-    fprintf(fp,"\"%s\", {", programmes[i].name);
-    for (j=0;j<1;++j) fprintf(fp,"%u, ", programmes[i].flags[j]);
+    fprintf(fp,"\"%s\", {", p->programmes[i].name);
+    for (j=0;j<1;++j) fprintf(fp,"%u, ", p->programmes[i].flags[j]);
     fprintf(fp,"}, {");
-    for (j=0;j<9;++j) fprintf(fp,"%u, ", programmes[i].drawbars[j]);
+    for (j=0;j<9;++j) fprintf(fp,"%u, ", p->programmes[i].drawbars[j]);
     fprintf(fp,"}, {");
-    for (j=0;j<9;++j) fprintf(fp,"%u, ", programmes[i].lowerDrawbars[j]);
+    for (j=0;j<9;++j) fprintf(fp,"%u, ", p->programmes[i].lowerDrawbars[j]);
     fprintf(fp,"}, {");
-    for (j=0;j<9;++j) fprintf(fp,"%u, ", programmes[i].pedalDrawbars[j]);
+    for (j=0;j<9;++j) fprintf(fp,"%u, ", p->programmes[i].pedalDrawbars[j]);
     fprintf(fp,"}, ");
-    fprintf(fp,"%d, ", programmes[i].keyAttackEnvelope);
-    fprintf(fp,"%f, ", programmes[i].keyAttackClickLevel);
-    fprintf(fp,"%f, ", programmes[i].keyAttackClickDuration);
-    fprintf(fp,"%d, ", programmes[i].keyReleaseEnvelope);
-    fprintf(fp,"%f, ", programmes[i].keyReleaseClickLevel);
-    fprintf(fp,"%f, ", programmes[i].keyReleaseClickDuration);
-    fprintf(fp,"%d, ", programmes[i].scanner);
-    fprintf(fp,"%d, ", programmes[i].percussionEnabled);
-    fprintf(fp,"%d, ", programmes[i].percussionVolume);
-    fprintf(fp,"%d, ", programmes[i].percussionSpeed);
-    fprintf(fp,"%d, ", programmes[i].percussionHarmonic);
-    fprintf(fp,"%d, ", programmes[i].overdriveSelect);
-    fprintf(fp,"%d, ", programmes[i].rotaryEnabled);
-    fprintf(fp,"%d, ", programmes[i].rotarySpeedSelect);
-    fprintf(fp,"%f, ", programmes[i].reverbMix);
-    fprintf(fp,"%d, ", programmes[i].keyboardSplitLower);
-    fprintf(fp,"%d, ", programmes[i].keyboardSplitPedals);
+    fprintf(fp,"%d, ", p->programmes[i].keyAttackEnvelope);
+    fprintf(fp,"%f, ", p->programmes[i].keyAttackClickLevel);
+    fprintf(fp,"%f, ", p->programmes[i].keyAttackClickDuration);
+    fprintf(fp,"%d, ", p->programmes[i].keyReleaseEnvelope);
+    fprintf(fp,"%f, ", p->programmes[i].keyReleaseClickLevel);
+    fprintf(fp,"%f, ", p->programmes[i].keyReleaseClickDuration);
+    fprintf(fp,"%d, ", p->programmes[i].scanner);
+    fprintf(fp,"%d, ", p->programmes[i].percussionEnabled);
+    fprintf(fp,"%d, ", p->programmes[i].percussionVolume);
+    fprintf(fp,"%d, ", p->programmes[i].percussionSpeed);
+    fprintf(fp,"%d, ", p->programmes[i].percussionHarmonic);
+    fprintf(fp,"%d, ", p->programmes[i].overdriveSelect);
+    fprintf(fp,"%d, ", p->programmes[i].rotaryEnabled);
+    fprintf(fp,"%d, ", p->programmes[i].rotarySpeedSelect);
+    fprintf(fp,"%f, ", p->programmes[i].reverbMix);
+    fprintf(fp,"%d, ", p->programmes[i].keyboardSplitLower);
+    fprintf(fp,"%d, ", p->programmes[i].keyboardSplitPedals);
     fprintf(fp,"{");
-    for (j=0;j<7;++j) fprintf(fp,"%d, ", programmes[i].transpose[j]);
+    for (j=0;j<7;++j) fprintf(fp,"%d, ", p->programmes[i].transpose[j]);
     fprintf(fp,"}");
 
     fprintf(fp,"},\n");
@@ -1069,11 +1029,16 @@ void hardcode_program (FILE * fp) {
   fprintf(fp,"};\n");
 }
 
+
 int main (int argc, char **argv) {
+  struct b_programme p;
+  memset(&p, 0, sizeof(struct b_programme));
+  p.previousPgmNr = -1;
+
   if (argc < 2) return -1;
-  if (loadProgrammeFile (argv[1]) != 0 /* P_OK */) return -1;
-  listProgrammes(stderr);
-  hardcode_program(stdout);
+  if (loadProgrammeFile (&p, argv[1]) != 0 /* P_OK */) return -1;
+  listProgrammes(&p, stderr);
+  hardcode_program(&p, stdout);
   return 0;
 }
 #endif

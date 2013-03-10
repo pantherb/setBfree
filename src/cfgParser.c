@@ -37,7 +37,7 @@
 
 #include "main.h"
 #include "global_inst.h"
-#include "program.h"
+
 #ifdef HAVE_ZITACONVOLVE
 #include "convolution.h"
 #endif
@@ -68,7 +68,7 @@ static int distributeParameter (b_instance* inst, ConfigContext * cfg) {
 
   n += mainConfig (cfg);
   n += midiConfig (inst->midicfg, cfg);
-  n += pgmConfig (cfg);
+  n += pgmConfig (inst->progs, cfg);
   n += oscConfig (inst->synth, cfg);
   n += scannerConfig (inst->synth, cfg);
   n += ampConfig (inst->preamp, cfg);

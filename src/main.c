@@ -319,6 +319,10 @@ static void connect_jack_ports() {
  * Instantiate /classes/.
  */
 static void allocAll () {
+  if (! (inst.progs = allocProgs())) {
+    fprintf (stderr, "FATAL: memory allocation failed for program config.\n");
+    exit(1);
+  }
   if (! (inst.reverb = allocReverb())) {
     fprintf (stderr, "FATAL: memory allocation failed for reverb.\n");
     exit(1);
@@ -335,9 +339,9 @@ static void allocAll () {
     fprintf (stderr, "FATAL: memory allocation failed for midi config.\n");
     exit(1);
   }
-  if (! (inst.preamp = allocPreamp())) { // XXX TODO
-    //fprintf (stderr, "FATAL: memory allocation failed for midi config.\n");
-    //exit(1);
+  if (! (inst.preamp = allocPreamp())) {
+    fprintf (stderr, "FATAL: memory allocation failed for midi config.\n");
+    exit(1);
   }
 }
 
@@ -351,6 +355,7 @@ static void freeAll () {
   freeToneGenerator(inst.synth);
   freeMidiCfg(inst.midicfg);
   freePreamp(inst.preamp);
+  freeProgs(inst.progs);
 #ifdef HAVE_ZITACONVOLVE
   freeConvolution();
 #endif
@@ -686,8 +691,6 @@ int main (int argc, char * argv []) {
    * evaluate configuration
    */
 
-  setDisplayPgmChanges (FALSE); /* not RT safe -- user may override*/
-
   if (getenv("XDG_CONFIG_HOME")) {
     size_t hl = strlen(getenv("XDG_CONFIG_HOME"));
     defaultConfigFile=(char*) malloc(hl+32);
@@ -757,15 +760,15 @@ int main (int argc, char * argv []) {
 
   if (doDefaultProgram == TRUE && defaultProgrammeFile) {
     if (access (defaultProgrammeFile, R_OK) == 0)
-      loadProgrammeFile (defaultProgrammeFile);
+      loadProgrammeFile (inst.progs, defaultProgrammeFile);
   } else {
-    walkProgrammes(1); // clear built-in default program
+    walkProgrammes(inst.progs, 1); // clear built-in default program
   }
   if (alternateProgrammeFile != NULL)
-    loadProgrammeFile (alternateProgrammeFile);
+    loadProgrammeFile (inst.progs, alternateProgrammeFile);
 
-  if (walkProgrammes(0)) {
-    listProgrammes (stderr);
+  if (walkProgrammes(inst.progs, 0)) {
+    listProgrammes (inst.progs, stderr);
   }
 
   initMidiTables(inst.midicfg);

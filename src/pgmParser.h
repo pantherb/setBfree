@@ -23,6 +23,6 @@
 #ifndef PGMPARSER_H
 #define PGMPARSER_H
 
-extern int loadProgrammeFile (char * fileName);
+extern int loadProgrammeFile (void *p, char * fileName);
 
 #endif /* PGMPARSER_H */

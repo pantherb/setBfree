@@ -16,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  
+ * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
 #ifndef PROGRAM_H
@@ -24,17 +24,60 @@
 
 #include "cfgParser.h"
 
-extern int pgmConfig (ConfigContext * cfg);
+#define MAXPROGS (129)
+
+#define NAMESZ 22
+#define NFLAGS 1		/* The nof flag fields in Programme struct */
+typedef struct _programme {
+  char name [NAMESZ];
+  unsigned int flags[NFLAGS];
+  unsigned int drawbars[9];
+  unsigned int lowerDrawbars[9];
+  unsigned int pedalDrawbars[9];
+  short        keyAttackEnvelope;
+  float        keyAttackClickLevel;
+  float        keyAttackClickDuration;
+  short        keyReleaseEnvelope;
+  float        keyReleaseClickLevel;
+  float        keyReleaseClickDuration;
+  short        scanner;
+  short        percussionEnabled;
+  short        percussionVolume;
+  short        percussionSpeed;
+  short        percussionHarmonic;
+  short        overdriveSelect;
+  short        rotaryEnabled;
+  short        rotarySpeedSelect;
+  float        reverbMix;
+  short        keyboardSplitLower;
+  short        keyboardSplitPedals;
+  short        transpose[7];
+} Programme;
+
+struct b_programme {
+/**
+ * This is to compensate for MIDI controllers that number the programs
+ * from 1 to 128 on their interface. Internally we use 0-127, as does
+ * MIDI.
+ */
+	int MIDIControllerPgmOffset;
+	int previousPgmNr;
+	Programme programmes[MAXPROGS];
+};
+
+extern int pgmConfig (struct b_programme *p, ConfigContext * cfg);
 extern const ConfigDoc *pgmDoc ();
 
 extern void installProgram (void *inst, unsigned char uc);
 
-extern void listProgrammes (FILE * fp);
-extern int walkProgrammes (int clear);
+extern void listProgrammes (struct b_programme *p, FILE * fp);
+extern int walkProgrammes (struct b_programme *p, int clear);
 
-extern void setDisplayPgmChanges (int doDisplay);
+extern struct b_programme *allocProgs ();
+extern void freeProgs (struct b_programme *p);
 
-extern int bindToProgram (char * fileName,
+extern int bindToProgram (void * pp,
+			  char * fileName,
 			  int    lineNumber,
 			  int    pgmnr,
 			  char * sym,
