@@ -2024,6 +2024,7 @@ static void initKeyCompTable (struct b_tonegen *t) {
 
 #endif /* KEYCOMPRESSION */
 
+#if DEBUG_TONEGEN_OSC
 /**
  * Dumps the configuration lists to a text file.
  */
@@ -2216,6 +2217,7 @@ static int dumpOscToText (struct b_tonegen *t, char * fname) {
   fclose (fp);
   return 0;
 }
+#endif
 
 /**
  * This routine configures this module.
@@ -2935,13 +2937,13 @@ void initToneGenerator (struct b_tonegen *t, void *m) {
 
   applyDefaultConfiguration (t);
 
-#if 0
+#if DEBUG_TONEGEN_OSC
   dumpConfigLists (t, "osc_cfglists.txt");
 #endif
 
   compilePlayMatrix (t);
 
-#if 0
+#if DEBUG_TONEGEN_OSC
   dumpRuntimeData (t, "osc_runtime.txt");
 #endif
 
@@ -3018,7 +3020,7 @@ void initToneGenerator (struct b_tonegen *t, void *m) {
   useMIDIControlFunction (m, "percussion.decay",    setPercDecayFromMIDI, t);
   useMIDIControlFunction (m, "percussion.harmonic", setPercHarmonicFromMIDI, t);
 
-#if 0
+#if DEBUG_TONEGEN_OSC
   dumpOscToText (t, "osc.txt");
 #endif
 }

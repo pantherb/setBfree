@@ -105,10 +105,6 @@ static int synth_ready = 0;
 
 b_instance inst;
 
-//struct b_reverb *inst_reverb = NULL;
-//struct b_whirl *inst_whirl = NULL;
-//struct b_tonegen *inst_synth = NULL;
-
 void mixdown (float **inout, const float **in2, int nchannels, int nsamples) {
   int c,i;
   for (c=0; c < nchannels; c++)

@@ -1289,7 +1289,7 @@ void whirlProc2 (struct b_whirl *w,
   w->outpos = outpos;
 }
 
-extern void whirlProc (struct b_whirl *w,
+void whirlProc (struct b_whirl *w,
 		       const float * inbuffer,
 		       float * outbL,
 		       float * outbR,
