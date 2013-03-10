@@ -917,7 +917,7 @@ static void process_midi_event(b_instance *inst, const struct bmidi_event_t *ev)
       installProgram(inst, ev->control_value);
       break;
     case CONTROL_CHANGE:
-#if 0 // DEBUG
+#ifdef DEBUG_MIDI_CC
       {
 	unsigned char * ctrlUse = NULL;
 	const char *fn="";

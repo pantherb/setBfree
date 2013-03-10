@@ -769,7 +769,7 @@ void installProgram (void *instance, unsigned char uc) {
 	}
       }
 
-#ifdef DEBUG_PROGRAM_CHANGES
+#ifdef DEBUG_MIDI_PROGRAM_CHANGES
       /* this is not RT safe */
       fprintf (stdout, "\r%s\r", display);
       fflush (stdout);

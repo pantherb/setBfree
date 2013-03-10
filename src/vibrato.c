@@ -204,7 +204,7 @@ static void initIncrementTables (struct b_vibrato *v) {
     v->offset3Table [i] = (unsigned int) ((1.0 + voff3 + (m * v->vib3OffAmp)) * S);
   }
 
-#ifdef DEBUG
+#ifdef DEBUG_DUMP_SCANNER
   {
     FILE * fp;
     char * debugfile = "scanner.log";
