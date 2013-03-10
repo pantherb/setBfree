@@ -30,7 +30,10 @@ extern const ConfigDoc *ampDoc ();
 extern void initPreamp (void *pa, void *m);
 extern void setClean (int useClean);
 
-extern float * preamp (float * inBuf, float * outBuf, size_t bufLengthSamples);
+extern void *allocPreamp ();
+extern void freePreamp (void *pa);
+
+extern float * preamp (void *pa, float * inBuf, float * outBuf, size_t bufLengthSamples);
 extern float * overdrive (const float * inBuf, float * outBuf, size_t buflen);
 
 

@@ -79,7 +79,7 @@ void initSynth(B3S *b3s, double rate) {
   /* initAll() */
   initToneGenerator (b3s->inst.synth, b3s->inst.midicfg);
   initVibrato (b3s->inst.synth, b3s->inst.midicfg);
-  initPreamp (NULL, b3s->inst.midicfg);
+  initPreamp (b3s->inst.preamp, b3s->inst.midicfg);
   initReverb (b3s->inst.reverb, b3s->inst.midicfg, rate);
   initWhirl (b3s->inst.whirl, b3s->inst.midicfg, rate);
   /* end - initAll() */
@@ -118,7 +118,7 @@ void synthSound (B3S *instance, uint32_t nframes, float **out) {
     if (boffset >= BUFFER_SIZE_SAMPLES)  {
       boffset = 0;
       oscGenerateFragment (instance->inst.synth, bufA, BUFFER_SIZE_SAMPLES);
-      preamp (bufA, bufB, BUFFER_SIZE_SAMPLES);
+      preamp (instance->inst.preamp, bufA, bufB, BUFFER_SIZE_SAMPLES);
       reverb (instance->inst.reverb, bufB, bufC, BUFFER_SIZE_SAMPLES);
       whirlProc(instance->inst.whirl, bufC, bufJ[0], bufJ[1], BUFFER_SIZE_SAMPLES);
     }
@@ -166,6 +166,7 @@ instantiate(const LV2_Descriptor*     descriptor,
   b3s->inst.whirl = allocWhirl();
   b3s->inst.synth = allocTonegen();
   b3s->inst.midicfg = allocMidiCfg();
+  b3s->inst.preamp = allocPreamp();
 
   initSynth(b3s, rate);
 
@@ -234,6 +235,7 @@ cleanup(LV2_Handle instance)
   freeWhirl(b3s->inst.whirl);
   freeToneGenerator(b3s->inst.synth);
   freeMidiCfg(b3s->inst.midicfg);
+  freePreamp(b3s->inst.preamp);
   free(instance);
 }
 

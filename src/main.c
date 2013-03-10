@@ -185,7 +185,7 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
       }
       boffset = 0;
       oscGenerateFragment (inst.synth, bufA, BUFFER_SIZE_SAMPLES);
-      preamp (bufA, bufB, BUFFER_SIZE_SAMPLES);
+      preamp (inst.preamp, bufA, bufB, BUFFER_SIZE_SAMPLES);
       reverb (inst.reverb, bufB, bufC, BUFFER_SIZE_SAMPLES);
 
 #ifdef HAVE_ZITACONVOLVE
@@ -335,6 +335,10 @@ static void allocAll () {
     fprintf (stderr, "FATAL: memory allocation failed for midi config.\n");
     exit(1);
   }
+  if (! (inst.preamp = allocPreamp())) { // XXX TODO
+    //fprintf (stderr, "FATAL: memory allocation failed for midi config.\n");
+    //exit(1);
+  }
 }
 
 /*
@@ -346,6 +350,7 @@ static void freeAll () {
 
   freeToneGenerator(inst.synth);
   freeMidiCfg(inst.midicfg);
+  freePreamp(inst.preamp);
 #ifdef HAVE_ZITACONVOLVE
   freeConvolution();
 #endif
@@ -375,7 +380,7 @@ static void initAll () {
 
   fprintf (stderr, "Overdrive : ");
   fflush (stderr);
-  initPreamp (NULL, inst.midicfg);
+  initPreamp (inst.preamp, inst.midicfg);
 
   fprintf (stderr, "Reverb : ");
   fflush (stderr);

@@ -32,6 +32,7 @@ typedef struct b_instance {
 	struct b_whirl *whirl;
 	struct b_tonegen *synth;
 	void * midicfg;
+	void * preamp;
 } b_instance;
 
 #endif
