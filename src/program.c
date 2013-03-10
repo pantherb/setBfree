@@ -974,6 +974,7 @@ struct b_programme *allocProgs() {
   struct b_programme *p = (struct b_programme*) calloc(1, sizeof(struct b_programme));
   if (!p) return NULL;
   p->previousPgmNr = -1;
+  p->MIDIControllerPgmOffset = 1;
   memcpy(p->programmes, defaultprogrammes, sizeof(Programme) * MAXPROGS);
   return (p);
 }
@@ -1034,6 +1035,7 @@ int main (int argc, char **argv) {
   struct b_programme p;
   memset(&p, 0, sizeof(struct b_programme));
   p.previousPgmNr = -1;
+  p.MIDIControllerPgmOffset = 1;
 
   if (argc < 2) return -1;
   if (loadProgrammeFile (&p, argv[1]) != 0 /* P_OK */) return -1;
