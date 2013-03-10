@@ -124,7 +124,7 @@ activate(LV2_Handle instance)
 #define SETPARAM(FN, NAME) \
   if (b3o->NAME) { \
     if (b3o->o_##NAME != *(b3o->NAME)) { \
-      FN (NULL, *(b3o->NAME)); \
+      FN (b3o->pa, *(b3o->NAME)); \
       b3o->o_##NAME = *(b3o->NAME); \
     } \
   }
