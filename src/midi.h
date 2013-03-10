@@ -74,6 +74,6 @@ extern void aseq_close(void);
 #endif
 
 extern void parse_jack_midi_event(void *inst, jack_midi_event_t *ev);
-extern void parse_lv2_midi_event(void *inst, uint8_t *d, size_t l);
+extern void parse_raw_midi_data(void *inst, uint8_t *buffer, size_t size);
 
 #endif /* MIDI_H */

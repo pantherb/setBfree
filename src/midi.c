@@ -884,12 +884,17 @@ enum BMIDI_EV_TYPE {
 /** internal MIDI event abstraction */
 struct bmidi_event_t {
   enum BMIDI_EV_TYPE type;
-  // TODO: make those unions
   uint8_t channel; /**< the MIDI channel number 0-15 */
-  uint8_t note;
-  uint8_t velocity;
-  uint8_t control_param;
-  uint8_t control_value;
+  union {
+    struct {
+      uint8_t note;
+      uint8_t velocity;
+    };
+    struct {
+      uint8_t control_param;
+      uint8_t control_value;
+    };
+  };
 };
 
 void process_midi_event(b_instance *inst, const struct bmidi_event_t *ev) {
@@ -1015,7 +1020,8 @@ int aseq_open(char *port_name) {
  */
 static void process_seq_event(b_instance *inst, const snd_seq_event_t *ev) {
   // see "snd_seq_event_type" file:///usr/share/doc/libasound2-doc/html/group___seq_events.html
-  struct bmidi_event_t bev = {0,0,0,0,0};
+  struct bmidi_event_t bev;
+  memset(&bev, 0, sizeof(struct bmidi_event_t));
 
   switch(ev->type) {
     case SND_SEQ_EVENT_NOTEON:
@@ -1076,34 +1082,35 @@ void *aseq_run(void *arg) {
 /** convert jack_midi_event (raw MIDI data) into
  *  internal MIDI message format  and process the event
  */
-void parse_jack_midi_event(void *inst, jack_midi_event_t *ev) {
-  struct bmidi_event_t bev = {0,0,0,0,0};
+void parse_raw_midi_data(void *inst, uint8_t *buffer, size_t size) {
+  struct bmidi_event_t bev;
+  memset(&bev, 0, sizeof(struct bmidi_event_t));
 
-  if (ev->size < 2 || ev->size > 3) return;
+  if (size < 2 || size > 3) return;
   // All messages need to be 3 bytes; except program-changes: 2bytes.
-  if (ev->size == 2 && (ev->buffer[0] & 0xf0)  != 0xC0) return;
+  if (size == 2 && (buffer[0] & 0xf0)  != 0xC0) return;
 
-  bev.channel=ev->buffer[0]&0x0f;
+  bev.channel=buffer[0]&0x0f;
 
-  switch (ev->buffer[0] & 0xf0) {
+  switch (buffer[0] & 0xf0) {
     case 0x80:
       bev.type=NOTE_OFF;
-      bev.note=ev->buffer[1]&0x7f;
-      bev.velocity=ev->buffer[2]&0x7f;
+      bev.note=buffer[1]&0x7f;
+      bev.velocity=buffer[2]&0x7f;
       break;
     case 0x90:
       bev.type=NOTE_ON;
-      bev.note=ev->buffer[1]&0x7f;
-      bev.velocity=ev->buffer[2]&0x7f;
+      bev.note=buffer[1]&0x7f;
+      bev.velocity=buffer[2]&0x7f;
       break;
     case 0xB0:
       bev.type=CONTROL_CHANGE;
-      bev.control_param=ev->buffer[1]&0x7f;
-      bev.control_value=ev->buffer[2]&0x7f;
+      bev.control_param=buffer[1]&0x7f;
+      bev.control_value=buffer[2]&0x7f;
       break;
     case 0xC0:
       bev.type=PROGRAM_CHANGE;
-      bev.control_value=ev->buffer[1]&0x7f;
+      bev.control_value=buffer[1]&0x7f;
       break;
     default:
       return;
@@ -1111,11 +1118,8 @@ void parse_jack_midi_event(void *inst, jack_midi_event_t *ev) {
   process_midi_event((b_instance*) inst, &bev);
 }
 
-void parse_lv2_midi_event(void *inst, uint8_t *d, size_t l) {
-  jack_midi_event_t ev;
-  ev.buffer = d;
-  ev.size = l;
-  parse_jack_midi_event(inst, &ev);
+void parse_jack_midi_event(void *inst, jack_midi_event_t *ev) {
+  parse_raw_midi_data(inst, ev->buffer, ev->size);
 }
 
 void dumpCCAssigment(FILE * fp, unsigned char *ctrl, midiccflags_t *flags) {

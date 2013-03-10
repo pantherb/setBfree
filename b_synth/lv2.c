@@ -212,7 +212,7 @@ run(LV2_Handle instance, uint32_t n_samples)
     LV2_Atom_Event* ev = lv2_atom_sequence_begin(&(b3s->midiin)->body);
     while(!lv2_atom_sequence_is_end(&(b3s->midiin)->body, (b3s->midiin)->atom.size, ev)) {
       if (ev->body.type == b3s->event_id) {
-	parse_lv2_midi_event(&b3s->inst, (uint8_t*)(ev+1), ev->body.size);
+	parse_raw_midi_data(&b3s->inst, (uint8_t*)(ev+1), ev->body.size);
       }
       ev = lv2_atom_sequence_next(ev);
     }
