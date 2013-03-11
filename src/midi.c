@@ -938,10 +938,30 @@ static void process_midi_event(b_instance *inst, const struct bmidi_event_t *ev)
 	  );
       }
 #endif
-      /* params 122-127 are reserved - skip them. */
-      if (ev->control_param >= 122) break;
       /*  0x00 and 0x20 are used for BANK select */
-      if (ev->control_param == 0x00 || ev->control_param == 0x20) break;
+      if (ev->control_param == 0x00 || ev->control_param == 0x20) {
+	break;
+      }
+
+      if (ev->control_param == 121) {
+	/* TODO - reset all controller */
+	break;
+      }
+
+      if (ev->control_param == 120 || ev->control_param == 123) {
+	/* Midi panic: 120: all sound off, 123: all notes off*/
+	int i;
+	for (i=0; i < MAX_KEYS; ++i) {
+	  oscKeyOff (inst->synth, i);
+	}
+	break;
+      }
+
+      if (ev->control_param >= 120) {
+	/* params 122-127 are reserved - skip them. */
+	break;
+      }
+
       if (m->ctrlvec[ev->channel] && m->ctrlvec[ev->channel][ev->control_param].fn) {
 	uint8_t val = ev->control_value & 0x7f;
 	if (m->ctrlflg[ev->channel][ev->control_param] & MFLAG_INV) {
