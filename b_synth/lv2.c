@@ -23,6 +23,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <sys/time.h>
 #include <unistd.h>
 
@@ -109,7 +110,7 @@ void synthSound (B3S *instance, uint32_t nframes, float **out) {
   static int boffset = BUFFER_SIZE_SAMPLES;
   B3S* b3s = (B3S*)instance;
 
-  jack_nframes_t written = 0;
+  uint32_t written = 0;
 
   while (written < nframes) {
     int nremain = nframes - written;

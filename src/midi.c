@@ -1143,10 +1143,6 @@ void parse_raw_midi_data(void *inst, uint8_t *buffer, size_t size) {
   process_midi_event((b_instance*) inst, &bev);
 }
 
-void parse_jack_midi_event(void *inst, jack_midi_event_t *ev) {
-  parse_raw_midi_data(inst, ev->buffer, ev->size);
-}
-
 static void dumpCCAssigment(FILE * fp, unsigned char *ctrl, midiccflags_t *flags) {
   int i;
   fprintf(fp,"  Controller | Function \n");

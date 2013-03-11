@@ -175,7 +175,7 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
 	  jack_midi_event_t ev;
 	  jack_midi_event_get(&ev, jack_midi_buf, i);
 	  if (ev.time >= written && ev.time < (written + BUFFER_SIZE_SAMPLES))
-	    parse_jack_midi_event(arg, &ev);
+	    parse_raw_midi_data(arg, ev.buffer, ev.size);
 	}
 	midi_tme_proc = written + BUFFER_SIZE_SAMPLES;
       }
@@ -220,7 +220,7 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
       jack_midi_event_t ev;
       jack_midi_event_get(&ev, jack_midi_buf, i);
       if (ev.time >= midi_tme_proc)
-	parse_jack_midi_event(arg, &ev);
+	parse_raw_midi_data(arg, ev.buffer, ev.size);
     }
   }
 
