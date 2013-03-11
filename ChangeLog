@@ -1,3 +1,9 @@
+2013-03-11 (0.6.1)  Robin Gareus <robin@gareus.org>
+* added MIDI-panic (all notes off)
+* merged patches from akapelrud:
+* break out alsa and jack midi backends
+* clean up midi code
+
 2013-03-10 (0.6.0)  Robin Gareus <robin@gareus.org>
 * honor $XDG_CONFIG_HOME
 * updated default speed of Leslie choral-baffle (.6 Hz)

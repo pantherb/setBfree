@@ -11,7 +11,7 @@ Build-Depends: debhelper (>= 8),
  lv2-dev (>=1.0.0~dfsg2-2),
  tcl-dev,
  tk-dev
-Homepage: https://setbfree.org
+Homepage: http://setbfree.org
 Standards-Version: 3.9.2
 
 Package: setbfree

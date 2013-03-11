@@ -1,5 +1,10 @@
-setbfree (0.6.0-1) unstable; urgency=low
+setbfree (0.6.1-1) unstable; urgency=low
 
-  * dummy entry -- this is not an official debian package
+  * dummy entry -- this is a package for upstream testing
 
- -- Robin Gareus <robin@gareus.org>  Mon, 11 Mar 2013 12:29:15 +0100
+  * the official debian package can be found at
+    http://packages.debian.org/search?searchon=names&keywords=setbfree
+    => http://packages.debian.org/sid/setbfree and
+    => http://anonscm.debian.org/gitweb/?p=pkg-multimedia/setbfree.git
+
+ -- Robin Gareus <robin@gareus.org>  Mon, 11 Mar 2013 17:01:18 +0100
