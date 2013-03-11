@@ -53,11 +53,11 @@ struct bmidi_event_t {
     struct {
       uint8_t note;
       uint8_t velocity;
-    };
+    } tone;
     struct {
-      uint8_t control_param;
-      uint8_t control_value;
-    };
+      uint8_t param;
+      uint8_t value;
+    } control;
   };
 };
 
