@@ -44,6 +44,10 @@
 #include "pgmParser.h"
 #include "program.h"
 
+#ifdef HAVE_ASEQ
+#include "midi_aseq.h"
+#endif
+
 #ifdef HAVE_ZITACONVOLVE
 #include "convolution.h"
 #endif

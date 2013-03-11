@@ -10,6 +10,7 @@ BXCC=$(CC)
 
 OBJS= \
 	midi.o \
+	midi_aseq.o \
 	vibrato.o \
 	tonegen.o \
 	program.o \
@@ -26,6 +27,8 @@ HEADERS = \
 	global_inst.h \
 	main.h \
 	midi.h \
+	midi_aseq.h \
+	midi_types.h \
 	pgmParser.h \
 	program.h \
 	vibrato.h \
