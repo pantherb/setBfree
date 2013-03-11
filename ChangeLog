@@ -1,9 +1,9 @@
-2013-03-10 (unreleased)  Robin Gareus <robin@gareus.org>
+2013-03-10 (0.6.0)  Robin Gareus <robin@gareus.org>
 * honor $XDG_CONFIG_HOME
 * updated default speed of Leslie choral-baffle (.6 Hz)
 * use jack midi timestamps
 * allow to invert MIDI value ranges (inverse controllers)
-* remove all static globals
+* remove all static globals:
 	- multiple LV2 instances in same host
 	- will allow to reconfigure organ on the fly
 * adjust wave-table size according to samplerate
