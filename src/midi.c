@@ -376,6 +376,12 @@ void initControllerTable (void *mcfg) {
     m->ctrlvecB[i].d = NULL;
     m->ctrlvecC[i].d = NULL;
   }
+
+  for (i = 0; i < CTRL_USE_MAX; i++) {
+    m->ctrlUseA[i] = 255;
+    m->ctrlUseB[i] = 255;
+    m->ctrlUseC[i] = 255;
+  }
 }
 
 /*
@@ -603,13 +609,6 @@ static void loadCCMap (char * cfname,
  */
 void midiPrimeControllerMapping (void *mcfg) {
   struct b_midicfg * m = (struct b_midicfg *) mcfg;
-
-  int i;
-  for (i = 0; i < CTRL_USE_MAX; i++) {
-    m->ctrlUseA[i] = 255;
-    m->ctrlUseB[i] = 255;
-    m->ctrlUseC[i] = 255;
-  }
 
   loadCCMap ("swellpedal1",  1, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);
   loadCCMap ("swellpedal2", 11, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);

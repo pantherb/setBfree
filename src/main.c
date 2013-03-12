@@ -434,6 +434,7 @@ static void Usage (int configdoc) {
   "  -C, --noconfig    Do not read the default configuration file\n"
   "                    the equivalent built-in defaults are still set\n"
   "  -d, --dumpcc      Print a list of MIDI-CC mappings on startup\n"
+  "  -D, --noCC        do not load default CC map on startup\n"
   "  -h                Print short help text\n"
   "  -H, --help        Print complete help text with parameter list\n"
   "  -p <filename>, --program <filename>\n"
@@ -584,6 +585,7 @@ int main (int argc, char * argv []) {
   int doDefaultConfig = TRUE;
   int doDefaultProgram = TRUE;
   int printCCTable = FALSE;
+  int doDefaultCC = TRUE;
   char * configOverride [NOF_CFG_OVERS];
   size_t configOverEnd = 0;
   unsigned int randomPreset[9];
@@ -601,13 +603,14 @@ int main (int argc, char * argv []) {
     jack_port[i] = NULL;
   jack_ports = strdup("system:playback_");
 
-  const char *optstring = "c:CdhHp:PrV";
+  const char *optstring = "c:CdDhHp:PrV";
   struct option long_options[] = {
     { "help",       no_argument,       0, 'H' },
     { "program",    required_argument, 0, 'p' },
     { "config",     required_argument, 0, 'c' },
     { "noconfig",   no_argument,       0, 'C' },
     { "dumpcc",     no_argument,       0, 'd' },
+    { "noCC",       no_argument,       0, 'D' },
     { "noprogram",  no_argument,       0, 'P' },
     { "randomize",  no_argument,       0, 'r' },
     { "version",    no_argument,       0, 'V' },
@@ -624,6 +627,9 @@ int main (int argc, char * argv []) {
 	break;
       case 'd':
 	printCCTable = TRUE;
+	break;
+      case 'D':
+	doDefaultCC = FALSE;
 	break;
       case 'h':
 	Usage(0);
@@ -711,7 +717,9 @@ int main (int argc, char * argv []) {
    */
 
   initControllerTable (inst.midicfg);
-  midiPrimeControllerMapping (inst.midicfg);
+  if (doDefaultCC) {
+    midiPrimeControllerMapping (inst.midicfg);
+  }
 
   /*
    * Commandline arguments are parsed. If we are of a mind to try the
