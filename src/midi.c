@@ -141,6 +141,7 @@ static const char * ccFuncNames[] = {
   "whirl.drum.acceleration",
   "whirl.drum.deceleration",
 
+  "overdrive.enable",
   "overdrive.character",
   "overdrive.inputgain",
   "overdrive.outputgain",

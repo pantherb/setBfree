@@ -250,6 +250,8 @@ void dumpConfigDoc () {
   "    <64: fast-decay, >=64 slow decay\n"
   "  percussion.harmonic                        I* (0)\n"
   "    <64: third harmonic, >=64 second harmonic\n"
+  "  overdrive.enable                           I* (0)\n"
+  "    <64: disable overdrive, >=64 enable overdrive\n"
 
   );
 

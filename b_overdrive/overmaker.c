@@ -1434,6 +1434,8 @@ void legacyInit () {
 
   /* ================================================================ */
 
+  sprintf (buf, "useMIDIControlFunction (m, \"overdrive.enable\", setCleanCC, pa);");
+  codeln (buf);
 
 #ifdef INPUT_GAIN
   sprintf (buf, "useMIDIControlFunction (m, \"overdrive.inputgain\", setInputGain, pa);");
@@ -1584,11 +1586,15 @@ void legacyGain () {
 
 void legacyClean () {
   vspace (3);
-  commentln  ("Legacy function");
   codeln ("void setClean (void *pa, int useClean) {");
   pushIndent ();
   codeln ("struct b_preamp *pp = (struct b_preamp *) pa;");
-  codeln ("pp->isClean = useClean;");
+  codeln ("pp->isClean = useClean ? 1: 0;");
+  popIndent ();
+  codeln ("}");
+  codeln ("void setCleanCC (void *pa, unsigned char uc) {");
+  pushIndent ();
+  codeln ("setClean(pa, uc > 63 ? 1 : 0);");
   popIndent ();
   codeln ("}");
 }
