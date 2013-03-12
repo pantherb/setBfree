@@ -4,3 +4,4 @@ debian export-ignore
 build-deb.sh export-ignore
 build-osx.sh export-ignore
 release.sh export-ignore
+examples export-ignore
