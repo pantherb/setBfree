@@ -51,9 +51,11 @@ read -n1 a
 echo
 
 if test "$a" != "n" -a "$a" != "N"; then
-	git push origin || exit 1
-	#git push --tags ## would push ALL existing tags,
-	git push origin "refs/tags/v${VERSION}:refs/tags/v${VERSION}" || exit 1
+	for remote in $(git remote); do
+		git push $remote || exit 1
+		#git push --tags ## would push ALL existing tags,
+		git push $remote "refs/tags/v${VERSION}:refs/tags/v${VERSION}" || exit 1
+	done
 fi
 
 ls -l "setbfree-${VERSION}.tar.gz"
