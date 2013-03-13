@@ -172,6 +172,7 @@ enum parserState {
 typedef struct {
   void (*fn)(void *, unsigned char);
   void *d;
+  int8_t id; //< reverse mapping to ccFuncNames[]
 } ctrl_function;
 
 typedef uint8_t midiccflags_t;
@@ -311,7 +312,7 @@ static void emptyControlFunction (void *d, unsigned char uc) {}
  * @param f          Pointer to control function to assign to controller
  */
 static void assignMIDIControllerFunction (ctrl_function *vec,
-					  unsigned char controller,
+					  unsigned char controller, int fn_id,
 					  void (*f) (void *, unsigned char),
 					  void *d) {
   assert (vec != NULL);
@@ -323,12 +324,14 @@ static void assignMIDIControllerFunction (ctrl_function *vec,
 	       (int) controller);
     }
     vec[controller].fn = f;
-    vec[controller].d = d;
+    vec[controller].d  = d;
+    vec[controller].id = fn_id;
 
   }
   else {
     vec[controller].fn = emptyControlFunction;
-    vec[controller].d = NULL;
+    vec[controller].d  = NULL;
+    vec[controller].id = -1;
   }
 }
 
@@ -349,28 +352,34 @@ void useMIDIControlFunction (void *mcfg, char * cfname, void (* f) (void *, unsi
   assert (-1 < x);
 
   if (m->ctrlUseA[x] < 128) {
-    assignMIDIControllerFunction (m->ctrlvecA, m->ctrlUseA[x], f, d);
+    assignMIDIControllerFunction (m->ctrlvecA, m->ctrlUseA[x], x, f, d);
   }
   if (m->ctrlUseB[x] < 128) {
-    assignMIDIControllerFunction (m->ctrlvecB, m->ctrlUseB[x], f, d);
+    assignMIDIControllerFunction (m->ctrlvecB, m->ctrlUseB[x], x, f, d);
   }
   if (m->ctrlUseC[x] < 128) {
-    assignMIDIControllerFunction (m->ctrlvecC, m->ctrlUseC[x], f, d);
+    assignMIDIControllerFunction (m->ctrlvecC, m->ctrlUseC[x], x, f, d);
   }
 
   if ((m->ctrlvecF[x].fn == emptyControlFunction) ||
       (m->ctrlvecF[x].fn == NULL)) {
     m->ctrlvecF[x].fn = f;
-    m->ctrlvecF[x].d = d;
+    m->ctrlvecF[x].d  = d;
+    m->ctrlvecF[x].id = x;
   }
+}
+
+static inline void execControlFunction (void *mcfg, ctrl_function *ctrlF, unsigned char val) {
+  (ctrlF->fn)(ctrlF->d, val & 0x7f);
+  // TODO call 'cfg canged' hooks here.
+  //printf("fn: %d (%s)-> %d\n", ctrlF->id, ccFuncNames[ctrlF->id], val);
 }
 
 void callMIDIControlFunction (void *mcfg, char * cfname, unsigned char val) {
   struct b_midicfg * m = (struct b_midicfg *) mcfg;
   int x = getCCFunctionId (cfname);
   if (x >= 0 && m->ctrlvecF[x].fn) {
-    //printf("fn: %d (%s)-> %d\n", x, ccFuncNames[x], val);
-    (m->ctrlvecF[x].fn)(m->ctrlvecF[x].d, val & 0x7f);
+    execControlFunction(m, &m->ctrlvecF[x], val);
   }
 }
 
@@ -393,6 +402,10 @@ void initControllerTable (void *mcfg) {
     m->ctrlvecB[i].d = NULL;
     m->ctrlvecC[i].d = NULL;
     m->ctrlvecF[i].d = NULL;
+    m->ctrlvecA[i].id = -1;
+    m->ctrlvecB[i].id = -1;
+    m->ctrlvecC[i].id = -1;
+    m->ctrlvecF[i].id = -1;
   }
 
   for (i = 0; i < CTRL_USE_MAX; i++) {
@@ -964,7 +977,7 @@ void process_midi_event(void *instp, const struct bmidi_event_t *ev) {
 	if (m->ctrlflg[ev->channel][ev->control.param] & MFLAG_INV) {
 	  val = 127 - val;
 	}
-	(m->ctrlvec[ev->channel][ev->control.param].fn)(m->ctrlvec[ev->channel][ev->control.param].d, val);
+	execControlFunction(m, &m->ctrlvec[ev->channel][ev->control.param], val);
       }
       break;
     default:
