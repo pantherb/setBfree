@@ -61,6 +61,8 @@ typedef struct {
 
   struct b_instance inst;
 
+  int boffset;
+
   float bufA [BUFFER_SIZE_SAMPLES];
   float bufB [BUFFER_SIZE_SAMPLES];
   float bufC [BUFFER_SIZE_SAMPLES];
@@ -107,7 +109,6 @@ void initSynth(B3S *b3s, double rate) {
 #endif
 
 void synthSound (B3S *instance, uint32_t nframes, float **out) {
-  static int boffset = BUFFER_SIZE_SAMPLES;
   B3S* b3s = (B3S*)instance;
 
   uint32_t written = 0;
@@ -115,21 +116,21 @@ void synthSound (B3S *instance, uint32_t nframes, float **out) {
   while (written < nframes) {
     int nremain = nframes - written;
 
-    if (boffset >= BUFFER_SIZE_SAMPLES)  {
-      boffset = 0;
+    if (b3s->boffset >= BUFFER_SIZE_SAMPLES)  {
+      b3s->boffset = 0;
       oscGenerateFragment (instance->inst.synth, b3s->bufA, BUFFER_SIZE_SAMPLES);
       preamp (instance->inst.preamp, b3s->bufA, b3s->bufB, BUFFER_SIZE_SAMPLES);
       reverb (instance->inst.reverb, b3s->bufB, b3s->bufC, BUFFER_SIZE_SAMPLES);
       whirlProc(instance->inst.whirl, b3s->bufA, b3s->bufJ[0], b3s->bufJ[1], BUFFER_SIZE_SAMPLES);
     }
 
-    int nread = MIN(nremain, (BUFFER_SIZE_SAMPLES - boffset));
+    int nread = MIN(nremain, (BUFFER_SIZE_SAMPLES - b3s->boffset));
 
-    memcpy(&out[0][written], &b3s->bufJ[0][boffset], nread*sizeof(float));
-    memcpy(&out[1][written], &b3s->bufJ[1][boffset], nread*sizeof(float));
+    memcpy(&out[0][written], &b3s->bufJ[0][b3s->boffset], nread*sizeof(float));
+    memcpy(&out[1][written], &b3s->bufJ[1][b3s->boffset], nread*sizeof(float));
 
     written+=nread;
-    boffset+=nread;
+    b3s->boffset+=nread;
   }
 }
 
@@ -168,6 +169,7 @@ instantiate(const LV2_Descriptor*     descriptor,
   b3s->inst.synth = allocTonegen();
   b3s->inst.midicfg = allocMidiCfg();
   b3s->inst.preamp = allocPreamp();
+  b3s->boffset = BUFFER_SIZE_SAMPLES;
 
   initSynth(b3s, rate);
 
