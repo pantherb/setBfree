@@ -232,6 +232,7 @@ unsigned char ctrlUseC[CTRL_USE_MAX];
 ctrl_function ctrlvecA[128];
 ctrl_function ctrlvecB[128];
 ctrl_function ctrlvecC[128];
+ctrl_function ctrlvecF[128];
 
 ctrl_function *ctrlvec[16]; /**< control function table per MIDI channel */
 
@@ -357,6 +358,20 @@ void useMIDIControlFunction (void *mcfg, char * cfname, void (* f) (void *, unsi
     assignMIDIControllerFunction (m->ctrlvecC, m->ctrlUseC[x], f, d);
   }
 
+  if ((m->ctrlvecF[x].fn == emptyControlFunction) ||
+      (m->ctrlvecF[x].fn == NULL)) {
+    m->ctrlvecF[x].fn = f;
+    m->ctrlvecF[x].d = d;
+  }
+}
+
+void callMIDIControlFunction (void *mcfg, char * cfname, unsigned char val) {
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
+  int x = getCCFunctionId (cfname);
+  if (x >= 0 && m->ctrlvecF[x].fn) {
+    //printf("fn: %d (%s)-> %d\n", x, ccFuncNames[x], val);
+    (m->ctrlvecF[x].fn)(m->ctrlvecF[x].d, val & 0x7f);
+  }
 }
 
 /*
@@ -373,9 +388,11 @@ void initControllerTable (void *mcfg) {
     m->ctrlvecA[i].fn = emptyControlFunction;
     m->ctrlvecB[i].fn = emptyControlFunction;
     m->ctrlvecC[i].fn = emptyControlFunction;
+    m->ctrlvecF[i].fn = emptyControlFunction;
     m->ctrlvecA[i].d = NULL;
     m->ctrlvecB[i].d = NULL;
     m->ctrlvecC[i].d = NULL;
+    m->ctrlvecF[i].d = NULL;
   }
 
   for (i = 0; i < CTRL_USE_MAX; i++) {
