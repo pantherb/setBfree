@@ -205,6 +205,18 @@ unsigned short * msgQueueWriter; /**< message-queue srite pointer */
 unsigned short * msgQueueReader; /**< message-queue read pointer */
 unsigned short * msgQueueEnd;
 
+/*
+ * When HIPASS_PERCUSSION is defined it will do two things:
+ *  - Insert a high-pass filter in the percussion signal
+ *  - Initialise the variable percEnvScaling to a higher value to compensate
+ *    for the psycho-acoustic drop in percussion volume when there is less
+ *    bass in the signal.
+ */
+
+#define HIPASS_PERCUSSION
+
+
+
 /* Keycompression */
 
 #define KEYCOMPRESSION
@@ -519,6 +531,16 @@ float swlBuffer[BUFFER_SIZE_SAMPLES];
 float vibBuffer[BUFFER_SIZE_SAMPLES];
 float vibYBuffr[BUFFER_SIZE_SAMPLES];
 float prcBuffer[BUFFER_SIZE_SAMPLES];
+
+float outputGain;
+
+#ifdef HIPASS_PERCUSSION
+float pz;
+#endif
+
+#ifdef KEYCOMPRESSION
+  float keyCompLevel;
+#endif
 
 struct b_vibrato inst_vibrato;
 };

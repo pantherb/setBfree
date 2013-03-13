@@ -228,18 +228,6 @@
 #include "midi.h"
 #include "vibrato.h"
 
-/*
- * When HIPASS_PERCUSSION is defined it will do two things:
- *  - Insert a high-pass filter in the percussion signal (at the end of this
- *    file)
- *  - Initialise the variable percEnvScaling to a higher value to compensate
- *    for the psycho-acoustic drop in percussion volume when there is less
- *    bass in the signal.
- */
-
-#define HIPASS_PERCUSSION
-
-
 /* These are assertion support macros. */
 /* In range? : A <= V < B  */
 #define inRng(A,V,B) (((A) <= (V)) && ((V) < (B)))
@@ -444,6 +432,15 @@ static void initValues (struct b_tonegen *t) {
     t->wheel_Harmonics[i]  = 0;
   t->wheel_Harmonics[0]  = 1.0;
   //t->wheel_Harmonics  = { 1.0 }; /** < amplitudes of tonewheel harmonics */
+
+  t->outputGain = 1.0;
+
+#ifdef HIPASS_PERCUSSION
+  t->pz = 0;
+#endif
+#ifdef KEYCOMPRESSION
+  t->keyCompLevel = KEYCOMP_ZERO_LEVEL;
+#endif
 }
 
 /**
@@ -1194,9 +1191,8 @@ static void cpmInsert ( struct b_tonegen *t /* XXX terminalMix */,
  * to runtime list elements.
  */
 static void compilePlayMatrix (struct b_tonegen *t) {
-
-  unsigned char cpmBus [NOF_WHEELS + 1][NOF_BUSES]; // XXX static
-  float cpmGain [NOF_WHEELS][NOF_BUSES]; // XXX static
+  unsigned char cpmBus [NOF_WHEELS + 1][NOF_BUSES];
+  float cpmGain [NOF_WHEELS][NOF_BUSES];
 
   short wheelNumber[NOF_WHEELS + 1]; /* For blind tail-insertion */
   short rowLength[NOF_WHEELS];
@@ -3170,14 +3166,13 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
   float * const prcBuffer = t->prcBuffer;
 
 #ifdef KEYCOMPRESSION
-
-  static float keyCompLevel = KEYCOMP_ZERO_LEVEL; // XXX static
   float keyComp = t->keyCompTable[t->keyDownCount];
   float keyCompDelta;
-#define KEYCOMPCHASE() {keyCompLevel += keyCompDelta;}
+#define KEYCOMPCHASE() {t->keyCompLevel += keyCompDelta;}
 
 #else
 
+#define keyCompLevel (1.0)
 #define KEYCOMPCHASE()
 
 #endif /* KEYCOMPRESSION */
@@ -3186,7 +3181,7 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
 
 #ifdef KEYCOMPRESSION
 
-  keyCompDelta = (keyComp - keyCompLevel) / (float) BUFFER_SIZE_SAMPLES;
+  keyCompDelta = (keyComp - t->keyCompLevel) / (float) BUFFER_SIZE_SAMPLES;
 
 #endif /* KEYCOMPRESSION */
 
@@ -3606,12 +3601,7 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
     float * xp = swlBuffer;
     float * vp = vibYBuffr;
     float * pp = prcBuffer;
-    static float outputGain = 1.0; // XXX static
 
-
-#ifdef HIPASS_PERCUSSION
-    static float pz; // XXX static
-#endif /* HIPASS_PERCUSSION */
 
     if (t->oldRouting & RT_PERC) {	/* If percussion is on */
 #ifdef HIPASS_PERCUSSION
@@ -3623,15 +3613,15 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
 	tp--;
 	pp--;
       }
-      *tp = pz - *tp;
-      pz = temp;
+      *tp = t->pz - *tp;
+      t->pz = temp;
       pp = prcBuffer;
 #endif /* HIPASS_PERCUSSION */
-      outputGain = t->swellPedalGain * t->percDrawbarGain;
+      t->outputGain = t->swellPedalGain * t->percDrawbarGain;
       if (t->oldRouting & RT_VIB) { /* If vibrato is on */
 	for (i = 0; i < BUFFER_SIZE_SAMPLES; i++) { /* Perc and vibrato */
 	  *yptr++ =
-	    (outputGain * keyCompLevel *
+	    (t->outputGain * t->keyCompLevel *
 	     ((*xp++) + (*vp++) + ((*pp++) * t->percEnvGain)));
 	  t->percEnvGain *= t->percEnvGainDecay;
 	  KEYCOMPCHASE();
@@ -3639,7 +3629,7 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
       } else {			/* Percussion only */
 	for (i = 0; i < BUFFER_SIZE_SAMPLES; i++) {
 	  *yptr++ =
-	    (outputGain * keyCompLevel * ((*xp++) + ((*pp++) * t->percEnvGain)));
+	    (t->outputGain * t->keyCompLevel * ((*xp++) + ((*pp++) * t->percEnvGain)));
 	  t->percEnvGain *= t->percEnvGainDecay;
 	  KEYCOMPCHASE();
 	}
@@ -3649,13 +3639,13 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
 
       for (i = 0; i < BUFFER_SIZE_SAMPLES; i++) {
 	*yptr++ =
-	  (t->swellPedalGain * keyCompLevel * ((*xp++) + (*vp++)));
+	  (t->swellPedalGain * t->keyCompLevel * ((*xp++) + (*vp++)));
 	KEYCOMPCHASE();
       }
     } else {			/* No percussion and no vibrato */
       for (i = 0; i < BUFFER_SIZE_SAMPLES; i++) {
 	*yptr++ =
-	  (t->swellPedalGain * keyCompLevel * (*xp++));
+	  (t->swellPedalGain * t->keyCompLevel * (*xp++));
 	KEYCOMPCHASE();
       }
     }

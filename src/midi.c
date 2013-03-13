@@ -999,7 +999,7 @@ static void dumpCCAssigment(FILE * fp, unsigned char *ctrl, midiccflags_t *flags
   fprintf(fp,"  Controller | Function \n");
   for (i=0;i<127;++i) {
     if (ctrl[i] != 255) {
-      fprintf(fp,"     %03d     | %s %s\n", ctrl[i] ,ccFuncNames[i], (flags[i]&1)?"-":"");
+      fprintf(fp,"     %03d     | %s %s\n", ctrl[i], ccFuncNames[i], (flags[i]&1)?"-":"");
     }
   }
 }
