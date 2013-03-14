@@ -99,6 +99,7 @@ static const char * ccFuncNames[] = {
   "percussion.enable",		/* off/normal/soft/off */
   "percussion.decay",		/* fast/slow */
   "percussion.harmonic",	/* 3rd/2nd */
+  "percussion.volume",
 
   "vibrato.knob",		/* off/v1/c1/v2/c2/v3/c3 */
   "vibrato.routing",		/* off/lower/upper/both */
@@ -151,6 +152,8 @@ static const char * ccFuncNames[] = {
   "xov.ctl_biased_gfb",
   "xov.ctl_biased", // XXX should be unique prefix code
   "xov.ctl_sagtobias",
+
+  "reverb.mix",
 
   "convolution.mix",
 
@@ -369,10 +372,15 @@ void useMIDIControlFunction (void *mcfg, char * cfname, void (* f) (void *, unsi
   }
 }
 
+static inline void controlFunctionHook (void *mcfg, ctrl_function *ctrlF, unsigned char val) {
+#if 0 // debug hook
+  printf("fn: %d (%s)-> %d\n", ctrlF->id, ccFuncNames[ctrlF->id], val);
+#endif
+}
+
 static inline void execControlFunction (void *mcfg, ctrl_function *ctrlF, unsigned char val) {
   (ctrlF->fn)(ctrlF->d, val & 0x7f);
-  // TODO call 'cfg canged' hooks here.
-  //printf("fn: %d (%s)-> %d\n", ctrlF->id, ccFuncNames[ctrlF->id], val);
+  controlFunctionHook(mcfg, ctrlF, val);
 }
 
 void callMIDIControlFunction (void *mcfg, char * cfname, unsigned char val) {
@@ -380,6 +388,21 @@ void callMIDIControlFunction (void *mcfg, char * cfname, unsigned char val) {
   int x = getCCFunctionId (cfname);
   if (x >= 0 && m->ctrlvecF[x].fn) {
     execControlFunction(m, &m->ctrlvecF[x], val);
+  }
+}
+
+void notifyControlChangeByName (void *mcfg, char * cfname, unsigned char val) {
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
+  int x = getCCFunctionId (cfname);
+  if (x >= 0 && m->ctrlvecF[x].fn) {
+    controlFunctionHook(m, &m->ctrlvecF[x], val);
+  }
+}
+
+void notifyControlChangeById (void *mcfg, int id, unsigned char val) {
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
+  if (id >= 0 && id < 128 && m->ctrlvecF[id].fn) {
+    controlFunctionHook(m, &m->ctrlvecF[id], val);
   }
 }
 

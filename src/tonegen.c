@@ -224,9 +224,7 @@
 #include <assert.h>
 
 #include "main.h"
-#include "tonegen.h"
-#include "midi.h"
-#include "vibrato.h"
+#include "global_inst.h"
 
 /* These are assertion support macros. */
 /* In range? : A <= V < B  */
@@ -1730,6 +1728,15 @@ void setVibratoLower (struct b_tonegen *t, int isEnabled) {
   }
 }
 
+int getVibratoRouting (struct b_tonegen *t) {
+  int rv = 0;
+  if ((t->oldRouting & RT_LOWRVIB) || (t->newRouting & RT_LOWRVIB))
+    rv |=1;
+  if ((t->oldRouting & RT_UPPRVIB) || (t->newRouting & RT_UPPRVIB))
+    rv |=2;
+  return rv;
+}
+
 /**
  * This routine sets percussion on or off.
  *
@@ -2758,7 +2765,8 @@ static void setDrawBar (struct b_tonegen *t, int bus, unsigned int setting) {
  * @param manual   0=upper, 1=lower, 2=pedals
  * @param setting  Array of 9 integers.
  */
-void setDrawBars (struct b_tonegen *t, unsigned int manual, unsigned int setting []) {
+void setDrawBars (void *inst, unsigned int manual, unsigned int setting []) {
+  struct b_tonegen *t = ((b_instance*)inst)->synth;
   int i;
   int offset;
   if (manual == 0) {
@@ -2772,9 +2780,9 @@ void setDrawBars (struct b_tonegen *t, unsigned int manual, unsigned int setting
   }
   for (i = 0; i < 9; i++) {
     setDrawBar (t, offset + i, setting[i]);
+    notifyControlChangeById(((b_instance*)inst)->midicfg, offset + i, 127 - (setting[i] * 127 / 8));
   }
 }
-
 
 
 /*
@@ -2833,24 +2841,9 @@ static void setDrawbar26 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_
  * 0---16-------------64-------------112------127
  *
  */
-static void setPercVolumeFromMIDI (void *d, unsigned char u) {
+static void setPercEnableFromMIDI (void *d, unsigned char u) {
   struct b_tonegen *t = (struct b_tonegen *) d;
-  if (u < 64) {
-    if (u < 16) {
-      setPercussionEnabled (t, FALSE); /* off */
-    }
-    else {
-      setPercussionEnabled (t, TRUE); /* on */
-      setPercussionVolume (t, FALSE); /* normal volume */
-    }
-  }
-  else if (u < 112) {
-    setPercussionEnabled (t, TRUE); /* on */
-    setPercussionVolume (t, TRUE);	/* soft volume */
-  }
-  else {
-    setPercussionEnabled (t, FALSE); /* off */
-  }
+  setPercussionEnabled (t, u < 64 ? FALSE : TRUE);
 }
 
 /**
@@ -2873,12 +2866,12 @@ static void setPercDecayFromMIDI (void *d, unsigned char u) {
  */
 static void setPercHarmonicFromMIDI (void *d, unsigned char u) {
   struct b_tonegen *t = (struct b_tonegen *) d;
-  if (u < 64) {
-    setPercussionFirst (t, FALSE);
-  }
-  else {
-    setPercussionFirst (t, TRUE);
-  }
+  setPercussionFirst (t, u < 64 ? FALSE : TRUE);
+}
+
+static void setPercVolumeFromMIDI (void *d, unsigned char u) {
+  struct b_tonegen *t = (struct b_tonegen *) d;
+  setPercussionVolume (t, u < 64 ? FALSE : TRUE);
 }
 
 /**
@@ -3012,9 +3005,10 @@ void initToneGenerator (struct b_tonegen *t, void *m) {
   useMIDIControlFunction (m, "pedal.drawbar113", setDrawbar25, t);
   useMIDIControlFunction (m, "pedal.drawbar1",   setDrawbar26, t);
 
-  useMIDIControlFunction (m, "percussion.enable",   setPercVolumeFromMIDI, t);
+  useMIDIControlFunction (m, "percussion.enable",   setPercEnableFromMIDI, t);
   useMIDIControlFunction (m, "percussion.decay",    setPercDecayFromMIDI, t);
   useMIDIControlFunction (m, "percussion.harmonic", setPercHarmonicFromMIDI, t);
+  useMIDIControlFunction (m, "percussion.volume",   setPercVolumeFromMIDI, t);
 
 #if DEBUG_TONEGEN_OSC
   dumpOscToText (t, "osc.txt");

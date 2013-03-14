@@ -29,6 +29,8 @@
 
 extern void useMIDIControlFunction (void *m, char * cfname, void (* f) (void *, unsigned char), void *d);
 extern void callMIDIControlFunction (void *m, char * cfname, unsigned char val);
+extern void notifyControlChangeByName (void *mcfg, char * cfname, unsigned char val);
+extern void notifyControlChangeById (void *mcfg, int id, unsigned char val);
 
 extern void setKeyboardSplitMulti (void *mcfg,
 				   int flags,

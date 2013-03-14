@@ -804,10 +804,10 @@ int main (int argc, char * argv []) {
 
   setMIDINoteShift (inst.midicfg, 0);
 
-  setDrawBars (inst.synth, 0, presetSelect);
+  setDrawBars (&inst, 0, presetSelect);
 #if 0 // initial values are assigned in tonegen.c initToneGenerator()
-  setDrawBars (inst.synth, 1, presetSelect); /* 838 000 000 */
-  setDrawBars (inst.synth, 2, presetSelect); /* 86 - */
+  setDrawBars (&inst, 1, presetSelect); /* 838 000 000 */
+  setDrawBars (&inst, 2, presetSelect); /* 86 - */
 #endif
 
 #ifndef _WIN32

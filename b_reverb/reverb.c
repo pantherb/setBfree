@@ -93,6 +93,7 @@
 #include <string.h>
 
 #include "reverb.h"
+#include "../src/midi.h" // useMIDIControlFunction
 
 struct b_reverb *allocReverb() {
   int i;
@@ -184,6 +185,12 @@ void setReverbMix (struct b_reverb *r, float g) {
   r->wet = g * u;
   r->dry = u - (g * u);
 }
+
+void setReverbMixFromMIDI (void *rev, unsigned char v) {
+  struct b_reverb *r = (struct b_reverb *) rev;
+  setReverbMix(r, (float)v/127.0);
+}
+
 
 #if 0 // unused
 /*
@@ -280,6 +287,7 @@ void initReverb (struct b_reverb *r, void *m, double rate) {
     setReverbPointers (r, i);
   }
   setReverbInputGain (r, r->inputGain);
+  useMIDIControlFunction (m, "reverb.mix", setReverbMixFromMIDI, r);
 }
 
 /*

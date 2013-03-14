@@ -41,6 +41,7 @@
 #include <sys/time.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <assert.h>
 
 #include "main.h"
 #include "global_inst.h"
@@ -134,6 +135,7 @@
 
 #ifndef PRG_MAIN
 #include "defaultpgm.h"
+#include "midi.h"
 #endif
 
 /* Property codes; used internally to identity the parameter controlled. */
@@ -429,27 +431,27 @@ int bindToProgram (void * pp,
 
   case pr_Scanner:
     if (!strcasecmp (val, "v1")) {
-      PGM->scanner = (PGM->scanner & 0xFF00) | VIB1;	/* in scanner.h */
+      PGM->scanner = (PGM->scanner & 0xFF00) | VIB1;	/* in vibrato.h */
       PGM->flags[0] |= (FL_INUSE|FL_SCANNR);
     }
     else if (!strcasecmp (val, "v2")) {
-      PGM->scanner = (PGM->scanner & 0xFF00) | VIB2;	/* in scanner.h */
+      PGM->scanner = (PGM->scanner & 0xFF00) | VIB2;	/* in vibrato.h */
       PGM->flags[0] |= (FL_INUSE|FL_SCANNR);
     }
     else if (!strcasecmp (val, "v3")) {
-      PGM->scanner = (PGM->scanner & 0xFF00) | VIB3;	/* in scanner.h */
+      PGM->scanner = (PGM->scanner & 0xFF00) | VIB3;	/* in vibrato.h */
       PGM->flags[0] |= (FL_INUSE|FL_SCANNR);
     }
     else if (!strcasecmp (val, "c1")) {
-      PGM->scanner = (PGM->scanner & 0xFF00) | CHO1;	/* in scanner.h */
+      PGM->scanner = (PGM->scanner & 0xFF00) | CHO1;	/* in vibrato.h */
       PGM->flags[0] |= (FL_INUSE|FL_SCANNR);
     }
     else if (!strcasecmp (val, "c2")) {
-      PGM->scanner = (PGM->scanner & 0xFF00) | CHO2;	/* in scanner.h */
+      PGM->scanner = (PGM->scanner & 0xFF00) | CHO2;	/* in vibrato.h */
       PGM->flags[0] |= (FL_INUSE|FL_SCANNR);
     }
     else if (!strcasecmp (val, "c3")) {
-      PGM->scanner = (PGM->scanner & 0xFF00) | CHO3;	/* in scanner.h */
+      PGM->scanner = (PGM->scanner & 0xFF00) | CHO3;	/* in vibrato.h */
       PGM->flags[0] |= (FL_INUSE|FL_SCANNR);
     }
     else {
@@ -771,20 +773,20 @@ void installProgram (void *instance, unsigned char uc) {
 
 #ifdef DEBUG_MIDI_PROGRAM_CHANGES
       /* this is not RT safe */
-      fprintf (stdout, "\r%s\r", display);
-      fflush (stdout);
+      //fprintf (stdout, "\rPGM: %s           \r", display); fflush (stdout);
+      fprintf (stdout, "PGM: %s\n", display);
 #endif
 
       if (flags0 & FL_DRAWBR) {
-	setDrawBars (inst->synth, 0, PGM->drawbars);
+	setDrawBars (inst, 0, PGM->drawbars);
       }
 
       if (flags0 & FL_LOWDRW) {
-	setDrawBars (inst->synth, 1, PGM->lowerDrawbars);
+	setDrawBars (inst, 1, PGM->lowerDrawbars);
       }
 
       if (flags0 & FL_PDLDRW) {
-	setDrawBars (inst->synth, 2, PGM->pedalDrawbars);
+	setDrawBars (inst, 2, PGM->pedalDrawbars);
       }
 
       /* Key attack click */
@@ -792,35 +794,49 @@ void installProgram (void *instance, unsigned char uc) {
       /* Key release click */
 
       if (flags0 & FL_SCANNR) {
-	setVibrato (inst->synth, PGM->scanner & 0x00FF);
+	//setVibrato (inst->synth, PGM->scanner & 0x00FF);
+	assert((PGM->scanner & 0xff) > 0);
+	int knob = ((PGM->scanner & 0xf) << 1) - ((PGM->scanner & CHO_) ? 1 : 2);
+	callMIDIControlFunction(inst->midicfg, "vibrato.knob", knob * 22);
       }
 
       if (flags0 & FL_VCRUPR) {
-	setVibratoUpper (inst->synth, PGM->scanner & 0x200);
+	//setVibratoUpper (inst->synth, PGM->scanner & 0x200);
+	int rt = getVibratoRouting(inst->synth) & ~0x2;
+	rt |= (PGM->scanner & 0x200) ? 2 : 0;
+	callMIDIControlFunction(inst->midicfg, "vibrato.routing", rt << 5);
       }
 
       if (flags0 & FL_VCRLWR) {
-	setVibratoLower (inst->synth, PGM->scanner & 0x100);
+	//setVibratoLower (inst->synth, PGM->scanner & 0x100);
+	int rt = getVibratoRouting(inst->synth) & ~0x1;
+	rt |= (PGM->scanner & 0x100) ? 1 : 0;
+	callMIDIControlFunction(inst->midicfg, "vibrato.routing", rt << 5);
       }
 
       if (flags0 & FL_PRCENA) {
 	setPercussionEnabled (inst->synth, PGM->percussionEnabled);
+	callMIDIControlFunction(inst->midicfg, "percussion.enable", PGM->percussionEnabled ? 127 : 0);
       }
 
       if (flags0 & FL_PRCVOL) {
-	setPercussionVolume (inst->synth, PGM->percussionVolume);
+	//setPercussionVolume (inst->synth, PGM->percussionVolume);
+	callMIDIControlFunction(inst->midicfg, "percussion.volume", PGM->percussionVolume ? 127 : 0);
       }
 
       if (flags0 & FL_PRCSPD) {
-	setPercussionFast (inst->synth, PGM->percussionSpeed);
+	//setPercussionFast (inst->synth, PGM->percussionSpeed);
+	callMIDIControlFunction(inst->midicfg, "percussion.decay", PGM->percussionSpeed ? 127 : 0);
       }
 
       if (flags0 & FL_PRCHRM) {
-	setPercussionFirst (inst->synth, PGM->percussionHarmonic);
+	//setPercussionFirst (inst->synth, PGM->percussionHarmonic);
+	callMIDIControlFunction(inst->midicfg, "percussion.harmonic", PGM->percussionHarmonic ? 127 : 0);
       }
 
       if (flags0 & FL_OVRSEL) {
-	setClean (inst->preamp, PGM->overdriveSelect);
+	//setClean (inst->preamp, PGM->overdriveSelect);
+	callMIDIControlFunction(inst->midicfg, "overdrive.enable", PGM->overdriveSelect ? 127 : 0);
       }
 
       if (flags0 & FL_ROTENA) {
@@ -828,11 +844,13 @@ void installProgram (void *instance, unsigned char uc) {
       }
 
       if (flags0 & FL_ROTSPS) {
-	setRevSelect (inst->whirl, (int) (PGM->rotarySpeedSelect));
+	// setRevSelect (inst->whirl, (int) (PGM->rotarySpeedSelect));
+	callMIDIControlFunction(inst->midicfg, "rotary.speed-preset", PGM->rotarySpeedSelect * 32);
       }
 
       if (flags0 & FL_RVBMIX) {
-	setReverbMix (inst->reverb, PGM->reverbMix);
+	//setReverbMix (inst->reverb, PGM->reverbMix);
+	callMIDIControlFunction(inst->midicfg, "reverb.mix-preset", (PGM->reverbMix * 127.0));
       }
 
       if (flags0 & (FL_KSPLTL|FL_KSPLTP|FL_TRA_PD|FL_TRA_LM|FL_TRA_UM)) {

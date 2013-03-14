@@ -550,6 +550,7 @@ extern void setWavePrecision (struct b_tonegen *t, double precision);
 extern void setTuning (struct b_tonegen *t, double refA_Hz);
 extern void setVibratoUpper (struct b_tonegen *t, int isEnabled);
 extern void setVibratoLower (struct b_tonegen *t, int isEnabled);
+extern int  getVibratoRouting (struct b_tonegen *t);
 extern void setPercussionEnabled (struct b_tonegen *t, int isEnabled);
 extern void setPercussionVolume (struct b_tonegen *t, int isSoft);
 extern void setPercussionFast (struct b_tonegen *t, int isFast);
@@ -570,7 +571,7 @@ extern void freeToneGenerator (struct b_tonegen *t);
 
 extern void oscKeyOff (struct b_tonegen *t, unsigned char midiNote);
 extern void oscKeyOn (struct b_tonegen *t, unsigned char midiNote);
-extern void setDrawBars (struct b_tonegen *t, unsigned int manual, unsigned int setting []);
+extern void setDrawBars (void *inst, unsigned int manual, unsigned int setting []);
 extern void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples);
 
 struct b_tonegen *allocTonegen();

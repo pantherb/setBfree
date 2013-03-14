@@ -119,7 +119,7 @@ void setVibrato (void *t, int select) {
     break;
   }
 
-  v->mixedBuffers = select & 0x80;
+  v->mixedBuffers = select & CHO_;
 }
 
 /*

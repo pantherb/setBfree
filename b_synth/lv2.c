@@ -61,8 +61,7 @@ typedef struct {
 
   struct b_instance inst;
 
-  int boffset;
-
+  int   boffset;
   float bufA [BUFFER_SIZE_SAMPLES];
   float bufB [BUFFER_SIZE_SAMPLES];
   float bufC [BUFFER_SIZE_SAMPLES];
@@ -95,9 +94,9 @@ void initSynth(B3S *b3s, double rate) {
   initMidiTables(b3s->inst.midicfg);
 
   setMIDINoteShift (b3s->inst.midicfg, 0);
-  setDrawBars (b3s->inst.synth, 0, defaultPreset);
-  setDrawBars (b3s->inst.synth, 1, defaultPreset);
-  setDrawBars (b3s->inst.synth, 2, defaultPreset);
+  setDrawBars (&b3s->inst, 0, defaultPreset);
+  setDrawBars (&b3s->inst, 1, defaultPreset);
+  setDrawBars (&b3s->inst, 2, defaultPreset);
 
 #if 1
   setRevSelect (b3s->inst.whirl, WHIRL_SLOW);
