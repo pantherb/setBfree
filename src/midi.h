@@ -68,4 +68,12 @@ extern void aseq_close(void);
 
 extern void parse_raw_midi_data(void *inst, uint8_t *buffer, size_t size);
 
+typedef struct _midicc {
+	struct _midicc *next;
+  uint8_t channel; /**< the MIDI channel number 0-15 for CC (NYI: PGM changes maybe >16 or < 0)*/
+	uint8_t param;
+} midiCCmap;
+
+void setControlFunctionCallback(void *mcfg, void (* fn) (int, const char *, unsigned char, midiCCmap *, void *), void *d);
+
 #endif /* MIDI_H */

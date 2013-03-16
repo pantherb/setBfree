@@ -16,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  
+ * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
 #include <stdlib.h>
@@ -176,6 +176,7 @@ typedef struct {
   void (*fn)(void *, unsigned char);
   void *d;
   int8_t id; //< reverse mapping to ccFuncNames[]
+  midiCCmap *mm; //< linked list of mapped MIDI CCs
 } ctrl_function;
 
 typedef uint8_t midiccflags_t;
@@ -241,6 +242,9 @@ ctrl_function ctrlvecF[128];
 ctrl_function *ctrlvec[16]; /**< control function table per MIDI channel */
 
 midiccflags_t ctrlflg[16][128]; /**< binary flags for each control  -- binary OR */
+
+void (*hookfn)(int, const char *, unsigned char, midiCCmap *, void *);
+void *hookarg;
 };
 
 static void resetMidiCfg(void *mcfg) {
@@ -264,6 +268,9 @@ static void resetMidiCfg(void *mcfg) {
   m->splitA_UL = 0;	/* A channel lower region */
 
   m->userExcursionStrategy = 0;
+
+  m->hookfn = NULL;
+  m->hookarg = NULL;
 }
 
 void *allocMidiCfg() {
@@ -274,6 +281,17 @@ void *allocMidiCfg() {
 
 void freeMidiCfg(void *mcfg) {
   struct b_midicfg * m = (struct b_midicfg *) mcfg;
+  int i;
+  for (i=0; i < 128; ++i) {
+    midiCCmap *t1, *t2;
+    if (!m->ctrlvecF[i].mm) continue;
+    t1 = m->ctrlvecF[i].mm;
+    do {
+      t2 = t1->next;
+      free(t1);
+      t1 = t2;
+    } while (t1);
+  }
   free(m);
 }
 
@@ -372,10 +390,38 @@ void useMIDIControlFunction (void *mcfg, char * cfname, void (* f) (void *, unsi
   }
 }
 
+void reverse_cc_map(struct b_midicfg *m, int x, uint8_t chn, uint8_t param) {
+  midiCCmap *newmm, *tmp;
+
+  newmm = malloc(sizeof(midiCCmap));
+  newmm->next = NULL;
+  newmm->channel = chn;
+  newmm->param = param;
+
+  if (!m->ctrlvecF[x].mm) {
+    m->ctrlvecF[x].mm = newmm;
+    return;
+  }
+  tmp = m->ctrlvecF[x].mm;
+  while (tmp && tmp->next) { tmp = tmp->next; }
+  tmp->next = newmm;
+}
+
+
 static inline void controlFunctionHook (void *mcfg, ctrl_function *ctrlF, unsigned char val) {
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
 #if 0 // debug hook
   printf("fn: %d (%s)-> %d\n", ctrlF->id, ccFuncNames[ctrlF->id], val);
 #endif
+  if (m->hookfn) {
+    m->hookfn(ctrlF->id, ccFuncNames[ctrlF->id], val, ctrlF->mm, m->hookarg);
+  }
+}
+
+void setControlFunctionCallback(void *mcfg, void (* fn) (int, const char *, unsigned char, midiCCmap *, void *), void *d){
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
+  m->hookfn = fn;
+  m->hookarg = d;
 }
 
 static inline void execControlFunction (void *mcfg, ctrl_function *ctrlF, unsigned char val) {
@@ -429,6 +475,10 @@ void initControllerTable (void *mcfg) {
     m->ctrlvecB[i].id = -1;
     m->ctrlvecC[i].id = -1;
     m->ctrlvecF[i].id = -1;
+    m->ctrlvecA[i].mm = NULL;
+    m->ctrlvecB[i].mm = NULL;
+    m->ctrlvecC[i].mm = NULL;
+    m->ctrlvecF[i].mm = NULL;
   }
 
   for (i = 0; i < CTRL_USE_MAX; i++) {
@@ -638,7 +688,8 @@ static void loadStatusTable (struct b_midicfg * m) {
 /*
  * Auxillary function to midiPrimeControllerMapping below.
  */
-static void loadCCMap (char * cfname,
+static void loadCCMap (struct b_midicfg * m,
+		       char * cfname,
 		       int ccn,
 		       unsigned char * A,
 		       unsigned char * B,
@@ -648,9 +699,18 @@ static void loadCCMap (char * cfname,
     fprintf (stderr, "Unrecognized controller function name:'%s'\n", cfname);
     assert (-1 < x);
   }
-  if (A != NULL) A[x] = (unsigned char) ccn;
-  if (B != NULL) B[x] = (unsigned char) ccn;
-  if (C != NULL) C[x] = (unsigned char) ccn;
+  if (A != NULL) {
+    A[x] = (unsigned char) ccn;
+    reverse_cc_map(m, x, m->rcvChA, ccn);
+  }
+  if (B != NULL) {
+    B[x] = (unsigned char) ccn;
+    reverse_cc_map(m, x, m->rcvChB, ccn);
+  }
+  if (C != NULL) {
+    C[x] = (unsigned char) ccn;
+    reverse_cc_map(m, x, m->rcvChC, ccn);
+  }
 }
 
 /*
@@ -664,96 +724,96 @@ static void loadCCMap (char * cfname,
 void midiPrimeControllerMapping (void *mcfg) {
   struct b_midicfg * m = (struct b_midicfg *) mcfg;
 
-  loadCCMap ("swellpedal1",  1, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);
-  loadCCMap ("swellpedal2", 11, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);
+  loadCCMap (m, "swellpedal1",  1, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);
+  loadCCMap (m, "swellpedal2", 11, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);
 
-  loadCCMap ("xov.ctl_biased",      3, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("xov.ctl_biased_fb",   9, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("xov.ctl_biased_fb2", 14, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("xov.ctl_biased_gfb", 15, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("xov.ctl_sagtobias",  20, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "xov.ctl_biased",      3, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "xov.ctl_biased_fb",   9, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "xov.ctl_biased_fb2", 14, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "xov.ctl_biased_gfb", 15, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "xov.ctl_sagtobias",  20, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("overdrive.inputgain",      21, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("overdrive.outputgain",     22, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "overdrive.inputgain",      21, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "overdrive.outputgain",     22, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("whirl.drum.filter.type", 23, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.drum.filter.hz",   24, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.drum.filter.q",    25, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.drum.filter.gain", 26, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.drum.filter.type", 23, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.drum.filter.hz",   24, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.drum.filter.q",    25, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.drum.filter.gain", 26, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("whirl.horn.filter.a.type", 27, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.horn.filter.a.hz",   28, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.horn.filter.a.q",    29, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.horn.filter.a.gain", 30, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.horn.filter.a.type", 27, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.horn.filter.a.hz",   28, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.horn.filter.a.q",    29, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.horn.filter.a.gain", 30, m->ctrlUseA, NULL, NULL);
 
   /* 32-63 are least significant bits of controller 0-31 */
 
-  loadCCMap ("rotary.speed-toggle", 64, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);
+  loadCCMap (m, "rotary.speed-toggle", 64, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);
 
-  loadCCMap ("upper.drawbar16",  70, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("upper.drawbar513", 71, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("upper.drawbar8",   72, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("upper.drawbar4",   73, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("upper.drawbar223", 74, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("upper.drawbar2",   75, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("upper.drawbar135", 76, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("upper.drawbar113", 77, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("upper.drawbar1",   78, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "upper.drawbar16",  70, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "upper.drawbar513", 71, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "upper.drawbar8",   72, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "upper.drawbar4",   73, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "upper.drawbar223", 74, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "upper.drawbar2",   75, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "upper.drawbar135", 76, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "upper.drawbar113", 77, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "upper.drawbar1",   78, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("lower.drawbar16",  70, NULL, m->ctrlUseB, NULL);
-  loadCCMap ("lower.drawbar513", 71, NULL, m->ctrlUseB, NULL);
-  loadCCMap ("lower.drawbar8",   72, NULL, m->ctrlUseB, NULL);
-  loadCCMap ("lower.drawbar4",   73, NULL, m->ctrlUseB, NULL);
-  loadCCMap ("lower.drawbar223", 74, NULL, m->ctrlUseB, NULL);
-  loadCCMap ("lower.drawbar2",   75, NULL, m->ctrlUseB, NULL);
-  loadCCMap ("lower.drawbar135", 76, NULL, m->ctrlUseB, NULL);
-  loadCCMap ("lower.drawbar113", 77, NULL, m->ctrlUseB, NULL);
-  loadCCMap ("lower.drawbar1",   78, NULL, m->ctrlUseB, NULL);
+  loadCCMap (m, "lower.drawbar16",  70, NULL, m->ctrlUseB, NULL);
+  loadCCMap (m, "lower.drawbar513", 71, NULL, m->ctrlUseB, NULL);
+  loadCCMap (m, "lower.drawbar8",   72, NULL, m->ctrlUseB, NULL);
+  loadCCMap (m, "lower.drawbar4",   73, NULL, m->ctrlUseB, NULL);
+  loadCCMap (m, "lower.drawbar223", 74, NULL, m->ctrlUseB, NULL);
+  loadCCMap (m, "lower.drawbar2",   75, NULL, m->ctrlUseB, NULL);
+  loadCCMap (m, "lower.drawbar135", 76, NULL, m->ctrlUseB, NULL);
+  loadCCMap (m, "lower.drawbar113", 77, NULL, m->ctrlUseB, NULL);
+  loadCCMap (m, "lower.drawbar1",   78, NULL, m->ctrlUseB, NULL);
 
-  loadCCMap ("pedal.drawbar16",  70, NULL, NULL, m->ctrlUseC);
-  loadCCMap ("pedal.drawbar513", 71, NULL, NULL, m->ctrlUseC);
-  loadCCMap ("pedal.drawbar8",   72, NULL, NULL, m->ctrlUseC);
-  loadCCMap ("pedal.drawbar4",   73, NULL, NULL, m->ctrlUseC);
-  loadCCMap ("pedal.drawbar223", 74, NULL, NULL, m->ctrlUseC);
-  loadCCMap ("pedal.drawbar2",   75, NULL, NULL, m->ctrlUseC);
-  loadCCMap ("pedal.drawbar135", 76, NULL, NULL, m->ctrlUseC);
-  loadCCMap ("pedal.drawbar113", 77, NULL, NULL, m->ctrlUseC);
-  loadCCMap ("pedal.drawbar1",   78, NULL, NULL, m->ctrlUseC);
+  loadCCMap (m, "pedal.drawbar16",  70, NULL, NULL, m->ctrlUseC);
+  loadCCMap (m, "pedal.drawbar513", 71, NULL, NULL, m->ctrlUseC);
+  loadCCMap (m, "pedal.drawbar8",   72, NULL, NULL, m->ctrlUseC);
+  loadCCMap (m, "pedal.drawbar4",   73, NULL, NULL, m->ctrlUseC);
+  loadCCMap (m, "pedal.drawbar223", 74, NULL, NULL, m->ctrlUseC);
+  loadCCMap (m, "pedal.drawbar2",   75, NULL, NULL, m->ctrlUseC);
+  loadCCMap (m, "pedal.drawbar135", 76, NULL, NULL, m->ctrlUseC);
+  loadCCMap (m, "pedal.drawbar113", 77, NULL, NULL, m->ctrlUseC);
+  loadCCMap (m, "pedal.drawbar1",   78, NULL, NULL, m->ctrlUseC);
 
-  loadCCMap ("percussion.enable",   80, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("percussion.decay",    81, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("percussion.harmonic", 82, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "percussion.enable",   80, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "percussion.decay",    81, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "percussion.harmonic", 82, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("vibrato.knob",    83, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("vibrato.routing", 92, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "vibrato.knob",    83, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "vibrato.routing", 92, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("whirl.horn.filter.b.type", 85, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.horn.filter.b.hz",   86, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.horn.filter.b.q",    87, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.horn.filter.b.gain", 88, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.horn.filter.b.type", 85, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.horn.filter.b.hz",   86, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.horn.filter.b.q",    87, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.horn.filter.b.gain", 88, m->ctrlUseA, NULL, NULL);
 
 #ifdef HORN_COMB_FILTER // disabled in b_whirl/whirl.c
-  loadCCMap ("whirl.horn.comb.a.feedback", 89, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.horn.comb.a.delay",    90, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.horn.comb.a.feedback", 89, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.horn.comb.a.delay",    90, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("whirl.horn.comb.b.feedback", 102, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.horn.comb.b.delay",    103, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.horn.comb.b.feedback", 102, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.horn.comb.b.delay",    103, m->ctrlUseA, NULL, NULL);
 #endif
 
-  loadCCMap ("rotary.speed-preset",   91, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "rotary.speed-preset",   91, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("overdrive.character",   93, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "overdrive.character",   93, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("convolution.mix", 94, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "convolution.mix", 94, m->ctrlUseA, NULL, NULL);
 
 #if 0 // leslie testing
-  loadCCMap ("whirl.horn.breakpos", 34, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.drum.breakpos", 35, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.horn.breakpos", 34, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.drum.breakpos", 35, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap ("whirl.horn.acceleration", 36, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.horn.deceleration", 37, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.drum.acceleration", 38, m->ctrlUseA, NULL, NULL);
-  loadCCMap ("whirl.drum.deceleration", 39, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.horn.acceleration", 36, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.horn.deceleration", 37, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.drum.acceleration", 38, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "whirl.drum.deceleration", 39, m->ctrlUseA, NULL, NULL);
 #endif
 }
 
@@ -843,23 +903,23 @@ int midiConfig (void *mcfg, ConfigContext * cfg) {
    */
   else if (strncasecmp (cfg->name, "midi.controller.", 16) == 0) {
     unsigned char * ctrlUse = m->ctrlUseA;
-    midiccflags_t * flagUse = m->ctrlflg[m->rcvChA];
 
     int ccIdx = 0;
+    int ccChn = 0;
     if (strncasecmp ((cfg->name) + 16, "upper", 5) == 0) {
       ctrlUse = m->ctrlUseA;
-      flagUse = m->ctrlflg[m->rcvChA];
       ccIdx = 22;
+      ccChn = m->rcvChA;
     }
     else if (strncasecmp ((cfg->name) + 16, "lower", 5) == 0) {
       ctrlUse = m->ctrlUseB;
-      flagUse = m->ctrlflg[m->rcvChB];
       ccIdx = 22;
+      ccChn = m->rcvChB;
     }
     else if (strncasecmp ((cfg->name) + 16, "pedals", 6) == 0) {
       ctrlUse = m->ctrlUseC;
-      flagUse = m->ctrlflg[m->rcvChC];
       ccIdx = 23;
+      ccChn = m->rcvChC;
     }
     else {
       showConfigfileContext (cfg, "directive 'upper', 'lower' or 'pedals' expected");
@@ -876,7 +936,8 @@ int midiConfig (void *mcfg, ConfigContext * cfg) {
 	  if (-1 < i) {
 	    /* Store the controller number indexed by abstract function id */
 	    ctrlUse[i] = ccn;
-	    parseCCFlags(&(flagUse[ccn]), cfg->value);
+	    parseCCFlags(&(m->ctrlflg[ccChn][ccn]), cfg->value);
+	    reverse_cc_map(m, i, ccChn, ccn);
 	    ack++;
 	  }
 	  else {

@@ -133,6 +133,12 @@ void synthSound (B3S *instance, uint32_t nframes, float **out) {
   }
 }
 
+void mctl_cb(int fnid, const char *fn, unsigned char val, midiCCmap *mm, void *arg) {
+#if 0
+  printf("xfn: %d (%s)-> %d\n", fnid, fn, val);
+#endif
+}
+
 /* LV2 */
 
 static LV2_Handle
@@ -165,8 +171,11 @@ instantiate(const LV2_Descriptor*     descriptor,
   b3s->inst.progs = allocProgs();
   b3s->inst.reverb = allocReverb();
   b3s->inst.whirl = allocWhirl();
-  b3s->inst.synth = allocTonegen();
   b3s->inst.midicfg = allocMidiCfg();
+
+  setControlFunctionCallback(b3s->inst.midicfg, mctl_cb, NULL);
+
+  b3s->inst.synth = allocTonegen();
   b3s->inst.preamp = allocPreamp();
   b3s->boffset = BUFFER_SIZE_SAMPLES;
 
