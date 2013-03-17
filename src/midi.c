@@ -426,7 +426,9 @@ void setControlFunctionCallback(void *mcfg, void (* fn) (int, const char *, unsi
 
 static inline void execControlFunction (void *mcfg, ctrl_function *ctrlF, unsigned char val) {
   (ctrlF->fn)(ctrlF->d, val & 0x7f);
-  controlFunctionHook(mcfg, ctrlF, val);
+  if (ctrlF->id >= 0) {
+    controlFunctionHook(mcfg, ctrlF, val);
+  }
 }
 
 void callMIDIControlFunction (void *mcfg, char * cfname, unsigned char val) {
