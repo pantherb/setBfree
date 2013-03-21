@@ -2958,7 +2958,11 @@ void initToneGenerator (struct b_tonegen *t, void *m) {
   }
 
 #if 1
-  /* Gives the lower drawbars a temporary initial value */
+  /* Gives the drawbars a temporary initial value */
+  setMIDIDrawBar (t,  0, 8);
+  setMIDIDrawBar (t,  1, 8);
+  setMIDIDrawBar (t,  2, 6);
+
   setMIDIDrawBar (t,  9, 8);
   setMIDIDrawBar (t, 10, 3);
   setMIDIDrawBar (t, 11, 8);
