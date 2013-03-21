@@ -126,7 +126,7 @@ void setVibrato (void *t, int select) {
  * Implements the vibrato knob response to a MIDI controller.
  */
 static void setVibratoFromMIDI (void *t, unsigned char u) {
-  switch (u / 22) {
+  switch (u / 23) {
   case 0:
     setVibrato (t, VIB1);
     break;
