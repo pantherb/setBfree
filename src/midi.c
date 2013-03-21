@@ -414,7 +414,7 @@ static inline void controlFunctionHook (void *mcfg, ctrl_function *ctrlF, unsign
   printf("fn: %d (%s)-> %d\n", ctrlF->id, ccFuncNames[ctrlF->id], val);
 #endif
   if (m->hookfn) {
-    m->hookfn(ctrlF->id, ccFuncNames[ctrlF->id], val, ctrlF->mm, m->hookarg);
+    m->hookfn(ctrlF->id, ccFuncNames[ctrlF->id], val & 0x7f, ctrlF->mm, m->hookarg);
   }
 }
 
@@ -435,6 +435,8 @@ void callMIDIControlFunction (void *mcfg, char * cfname, unsigned char val) {
   struct b_midicfg * m = (struct b_midicfg *) mcfg;
   int x = getCCFunctionId (cfname);
   if (x >= 0 && m->ctrlvecF[x].fn) {
+    if (val > 127) val = 127;
+    if (val < 0) val = 0;
     execControlFunction(m, &m->ctrlvecF[x], val);
   }
 }
