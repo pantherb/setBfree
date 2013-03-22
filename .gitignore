@@ -4,21 +4,28 @@ tags
 cscope.files
 cscope.out
 
-b_overdrive/overmaker
-b_overdrive/overdrive.c
-b_overdrive/jboverdrive
-b_overdrive/b_overdrive.so
-b_overdrive/manifest.ttl
-b_whirl/b_whirl.so
-b_whirl/manifest.ttl
-b_reverb/b_reverb.so
-b_reverb/manifest.ttl
-b_synth/b_synth.so
-b_synth/manifest.ttl
-src/setBfree
-src/configd
-src/programd
-src/defaultpgm.h
-vb3kb/vb3kb
+/b_*/*.so
+/b_*/*.dylib
 
-doc/html
+# binaries
+/src/setBfree
+/src/configd
+/src/programd
+/vb3kb/vb3kb
+/b_overdrive/jboverdrive
+/b_overdrive/overmaker
+
+# generated files
+/src/defaultpgm.h
+/b_overdrive/overdrive.c
+
+# generated LV2 metadata
+/b_overdrive/manifest.ttl
+/b_whirl/manifest.ttl
+/b_reverb/manifest.ttl
+/b_synth/manifest.ttl
+/b_synth/manifest.ttl
+/b_synth/b_synth.ttl
+
+/*.tar.gz
+/doc/html

@@ -6,7 +6,6 @@ targets=overdrive.o
 
 ifeq ($(LV2AVAIL), yes)
   targets+=lv2
-  LIB_EXT=.so
   LV2NAME=b_overdrive
 endif
 
@@ -37,7 +36,7 @@ manifest.ttl:
 	sed "s/@LV2NAME@/$(LV2NAME)/;s/@LIB_EXT@/$(LIB_EXT)/" manifest.ttl.in > manifest.ttl
 
 $(LV2NAME)$(LIB_EXT): lv2.c overdrive.o
-	$(CC) -o $(LV2NAME)$(LIB_EXT) $(CFLAGS) -shared -Wl,-Bstatic -Wl,-Bdynamic lv2.c overdrive.o
+	$(CC) -o $(LV2NAME)$(LIB_EXT) $(CFLAGS) -shared $(LV2LDFLAGS) lv2.c overdrive.o
 
 overdrive.o: overmaker overdrive.h ../src/cfgParser.h ../src/midi.h
 	./overmaker > overdrive.c

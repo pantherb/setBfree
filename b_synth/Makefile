@@ -9,7 +9,6 @@ HAVE_UI=yes
 targets=
 
 ifeq ($(LV2AVAIL), yes)
-  LIB_EXT=.so
   LV2NAME=b_synth
   targets+=lv2
 
@@ -20,9 +19,15 @@ ifeq ($(LV2AVAIL), yes)
     UIDEPS=../pugl/pugl.h ../pugl/pugl_internal.h ui_model.h
     UIDEPS+=button1.c drawbar.c wood.c dial.c
     LV2GUI=b_synthUI
+    ifeq ($(IS_OSX), yes)
+      UILIBS=../pugl/pugl_osx.m -framework Cocoa -framework OpenGL
+      UIDEPS+=../pugl/pugl_osx.m
+      UI_TYPE=CocoaUI
+    else
       UILIBS=../pugl/pugl_x11.c -lX11 -lGL -lGLU
       UIDEPS+=../pugl/pugl_x11.c
       UI_TYPE=X11UI
+    endif
     targets+=$(LV2GUI)$(LIB_EXT)
   endif
 endif

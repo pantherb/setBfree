@@ -6,7 +6,6 @@ targets=whirl.o eqcomp.o
 
 ifeq ($(LV2AVAIL), yes)
   targets+=lv2
-  LIB_EXT=.so
   LV2NAME=b_whirl
 endif
 
@@ -18,7 +17,7 @@ manifest.ttl:
 	sed "s/@LV2NAME@/$(LV2NAME)/;s/@LIB_EXT@/$(LIB_EXT)/" manifest.ttl.in > manifest.ttl
 
 $(LV2NAME)$(LIB_EXT): lv2.c whirl.o eqcomp.o whirl.h eqcomp.h ../src/cfgParser.h
-	$(CC) -o $(LV2NAME)$(LIB_EXT) $(CFLAGS) -shared -Wl,-Bstatic -Wl,-Bdynamic lv2.c whirl.o eqcomp.o
+	$(CC) -o $(LV2NAME)$(LIB_EXT) $(CFLAGS) -shared $(LV2LDFLAGS) lv2.c whirl.o eqcomp.o
 
 install: $(targets)
 ifneq ($(strip $(LV2NAME)),)

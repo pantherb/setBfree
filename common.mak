@@ -42,6 +42,8 @@ UNAME=$(shell uname)
 ifeq ($(UNAME),Darwin)
   IS_OSX=yes
   LV2LDFLAGS=-dynamiclib
+  LIB_EXT=.dylib
 else
   LV2LDFLAGS=-Wl,-Bstatic -Wl,-Bdynamic
+  LIB_EXT=.so
 endif
