@@ -397,7 +397,7 @@ static bool invertMatrix(const double m[16], double invOut[16]) {
 
 #ifdef DEBUG_ROTATION_MATRIX
 static void print4x4(GLdouble *m) {
-  printf(
+  fprintf(stderr,
       "%+0.3lf %+0.3lf %+0.3lf %+0.3lf\n"
       "%+0.3lf %+0.3lf %+0.3lf %+0.3lf\n"
       "%+0.3lf %+0.3lf %+0.3lf %+0.3lf\n"
@@ -975,7 +975,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
   int i;
   float fx, fy;
   project_mouse(view, x, y, &fx, &fy);
-  //printf("Mouse %d %s at %.3f,%.3f\n", button, press ? "down" : "up", fx, fy);
+  //fprintf(stderr, "Mouse %d %s at %.3f,%.3f\n", button, press ? "down" : "up", fx, fy);
 
   if (!press) { /* mouse up */
     ui->dndid = -1;
@@ -1046,10 +1046,11 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   LV2UI_Resize*    resize = NULL;
   int i;
 
-  ui->show_help  = 0;
-  ui->width      = 960;
-  ui->height     = 320;
-  ui->dndid      = -1;
+  ui->show_help   = 0;
+  ui->width       = 960;
+  ui->height      = 320;
+  ui->dndid       = -1;
+  ui->initialized = 0;
 
   ui->rot[0]     = -20;
   ui->rot[1]     = -20;

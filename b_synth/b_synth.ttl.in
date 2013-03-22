@@ -22,7 +22,7 @@ rg:bsynth-out a pg:Group ;
 <http://gareus.org/oss/lv2/b_synth>
 	a lv2:Plugin, lv2:InstrumentPlugin;
 	doap:maintainer <http://gareus.org/> ;
-	doap:name "setBfree DSP tonewheel Organ";
+	doap:name "setBfree DSP Tonewheel Organ";
 	doap:license <http://usefulinc.com/doap/licenses/gpl> ;
 	lv2:optionalFeature lv2:hardRTCapable ;
 	lv2:requiredFeature urid:map ;
