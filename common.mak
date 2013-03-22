@@ -28,3 +28,20 @@ $(foreach tprefix,$(TCLPREFIX), \
 
 # check for LV2
 LV2AVAIL=$(shell pkg-config --exists lv2 lv2core && echo yes)
+
+LV2UIREQ=
+# check for LV2 idle thread -- requires 'lv2', atleast_version='1.4.1
+ifeq ($(shell pkg-config --atleast-version=1.4.1 lv2 || echo no), no)
+  CFLAGS+=-DOLD_SUIL
+else
+  LV2UIREQ=lv2:requiredFeature ui:idle;\\n\\tlv2:extensionData ui:idle;
+endif
+
+IS_OSX=
+UNAME=$(shell uname)
+ifeq ($(UNAME),Darwin)
+  IS_OSX=yes
+  LV2LDFLAGS=-dynamiclib
+else
+  LV2LDFLAGS=-Wl,-Bstatic -Wl,-Bdynamic
+endif

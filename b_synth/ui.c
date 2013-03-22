@@ -1,0 +1,1102 @@
+/* setBfree - LV2 GUI
+ *
+ * Copyright 2011-2012 David Robillard <d@drobilla.net>
+ * Copyright (C) 2013 Robin Gareus <robin@gareus.org>
+ *
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ */
+
+#define _GNU_SOURCE
+#define GL_GLEXT_PROTOTYPES
+
+#define OBJ_BUF_SIZE 1024
+
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <math.h>
+#include <pthread.h>
+
+#include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
+#include "pugl/pugl.h"
+#ifdef __APPLE__
+#include "OpenGL/glu.h"
+#else
+#include <glu.h>
+#endif
+
+
+#include "uris.h"
+#include "ui_model.h"
+
+#define TOTAL_OBJ (23)
+
+#define SCALE (0.05f)
+#define CTRLWIDTH2(ctrl) (SCALE * (ctrl).w / 2.0)
+#define CTRLHEIGHT2(ctrl) (SCALE * (ctrl).h / 2.0)
+
+#define MOUSEOVER(ctrl, mousex, mousey) \
+  (   (mousex) >= (ctrl).x - CTRLWIDTH2(ctrl) \
+   && (mousex) <= (ctrl).x + CTRLWIDTH2(ctrl) \
+   && (mousey) >= (ctrl).y - CTRLHEIGHT2(ctrl) \
+   && (mousey) <= (ctrl).y + CTRLHEIGHT2(ctrl) )
+
+
+/* names from src/midi.c -  mapped to widgets */
+static const char *obj_control[] = {
+  "upper.drawbar16", // 0
+  "upper.drawbar513",
+  "upper.drawbar8",
+  "upper.drawbar4",
+  "upper.drawbar223",
+  "upper.drawbar2",
+  "upper.drawbar135",
+  "upper.drawbar113",
+  "upper.drawbar1", // 8
+
+  "lower.drawbar16",
+  "lower.drawbar513",
+  "lower.drawbar8",
+  "lower.drawbar4",
+  "lower.drawbar223",
+  "lower.drawbar2",
+  "lower.drawbar135",
+  "lower.drawbar113",
+  "lower.drawbar1", // 17
+
+  "pedal.drawbar16",
+  "pedal.drawbar8",
+
+  "percussion.enable",// 20
+  "vibrato.routing",// 21
+  "vibrato.knob"  // 22
+};
+
+
+typedef struct {
+  int type; // 1: drawbar, 2: button, 0: dial -- corresponds to ui_model.h mesh
+  float min, max, cur; // mapped to midi 0..127
+  float x,y; // matrix position
+  float w,h; // bounding box
+} b3widget;
+
+typedef struct {
+  LV2_Atom_Forge forge;
+
+  LV2_URID_Map* map;
+  setBfreeURIs  uris;
+
+  LV2UI_Write_Function write;
+  LV2UI_Controller     controller;
+
+  PuglView*            view;
+  int                  width;
+  int                  height;
+  int                  initialized;
+
+#ifdef OLD_SUIL
+  pthread_t            thread;
+  int                  exit;
+#endif
+
+  /* Mashes */
+  GLuint * vbo;
+  GLuint * vinx;
+
+  /* Textures */
+  GLuint texID[4];
+
+  GLdouble matrix[16]; // used for mouse mapping
+
+  b3widget ctrls[TOTAL_OBJ];
+  int dndid;
+  float dndval;
+  float dndx, dndy;
+} B3ui;
+
+/******************************************************************************
+ * Value mapping
+ */
+
+static void vmap_midi_to_val(PuglView* view, int elem, int mval) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  ui->ctrls[elem].cur = ui->ctrls[elem].min + rint((ui->ctrls[elem].max - ui->ctrls[elem].min) * mval / 127.0);
+}
+
+static int vmap_val_to_midi(PuglView* view, int elem) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  return (int)floor( rint(ui->ctrls[elem].cur - ui->ctrls[elem].min) * 127.0 / (ui->ctrls[elem].max - ui->ctrls[elem].min));
+}
+
+static void notifyPlugin(PuglView* view, int elem) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  uint8_t obj_buf[OBJ_BUF_SIZE];
+  const int val = vmap_val_to_midi(view, elem);
+  lv2_atom_forge_set_buffer(&ui->forge, obj_buf, OBJ_BUF_SIZE);
+  LV2_Atom* msg = write_cc_key_value(&ui->forge, &ui->uris, obj_control[elem], val);
+  ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
+}
+
+#define SIGNUM(a) (a < 0 ? -1 : 1)
+
+static void processMotion(PuglView* view, int elem, float dx, float dy) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  if (elem < 0 || elem >= TOTAL_OBJ) return;
+
+  const float dist = -2.0 * dy;
+  const int oldval = vmap_val_to_midi(view, elem);
+
+  switch (ui->ctrls[elem].type) {
+    case OBJ_DIAL:
+      ui->ctrls[elem].cur = ui->dndval + dist * (ui->ctrls[elem].max - ui->ctrls[elem].min);
+      if (ui->ctrls[elem].cur > ui->ctrls[elem].max || ui->ctrls[elem].cur < ui->ctrls[elem].min) {
+	const float r = (ui->ctrls[elem].max - ui->ctrls[elem].min);
+	ui->ctrls[elem].cur -= floor(ui->ctrls[elem].cur / r) * r;
+      }
+      //while (ui->ctrls[elem].cur < ui->ctrls[elem].min) ui->ctrls[elem].cur += (ui->ctrls[elem].max - ui->ctrls[elem].min);
+      //if (ui->ctrls[elem].cur >= ui->ctrls[elem].max) ui->ctrls[elem].cur = ui->ctrls[elem].max;
+      //if (ui->ctrls[elem].cur < ui->ctrls[elem].min) ui->ctrls[elem].cur = ui->ctrls[elem].min;
+      break;
+    case OBJ_DRAWBAR:
+      ui->ctrls[elem].cur = ui->dndval + dist * (ui->ctrls[elem].max - ui->ctrls[elem].min);
+      if (ui->ctrls[elem].cur > ui->ctrls[elem].max) ui->ctrls[elem].cur = ui->ctrls[elem].max;
+      if (ui->ctrls[elem].cur < ui->ctrls[elem].min) ui->ctrls[elem].cur = ui->ctrls[elem].min;
+      break;
+    default:
+      break;
+  }
+
+  if (vmap_val_to_midi(view, elem) != oldval) {
+    puglPostRedisplay(view);
+    notifyPlugin(view, elem);
+  }
+}
+
+/******************************************************************************
+ * 3D projection
+ */
+
+static bool invertMatrix(const double m[16], double invOut[16]) {
+    double inv[16], det;
+    int i;
+
+    inv[0] = m[5]  * m[10] * m[15] -
+	     m[5]  * m[11] * m[14] -
+	     m[9]  * m[6]  * m[15] +
+	     m[9]  * m[7]  * m[14] +
+	     m[13] * m[6]  * m[11] -
+	     m[13] * m[7]  * m[10];
+
+    inv[4] = -m[4]  * m[10] * m[15] +
+	      m[4]  * m[11] * m[14] +
+	      m[8]  * m[6]  * m[15] -
+	      m[8]  * m[7]  * m[14] -
+	      m[12] * m[6]  * m[11] +
+	      m[12] * m[7]  * m[10];
+
+    inv[8] = m[4]  * m[9]  * m[15] -
+	     m[4]  * m[11] * m[13] -
+	     m[8]  * m[5]  * m[15] +
+	     m[8]  * m[7]  * m[13] +
+	     m[12] * m[5]  * m[11] -
+	     m[12] * m[7]  * m[9];
+
+    inv[12] = -m[4]  * m[9]  * m[14] +
+	       m[4]  * m[10] * m[13] +
+	       m[8]  * m[5]  * m[14] -
+	       m[8]  * m[6]  * m[13] -
+	       m[12] * m[5]  * m[10] +
+	       m[12] * m[6]  * m[9];
+
+    inv[1] = -m[1]  * m[10] * m[15] +
+	      m[1]  * m[11] * m[14] +
+	      m[9]  * m[2]  * m[15] -
+	      m[9]  * m[3]  * m[14] -
+	      m[13] * m[2]  * m[11] +
+	      m[13] * m[3]  * m[10];
+
+    inv[5] = m[0]  * m[10] * m[15] -
+	     m[0]  * m[11] * m[14] -
+	     m[8]  * m[2]  * m[15] +
+	     m[8]  * m[3]  * m[14] +
+	     m[12] * m[2]  * m[11] -
+	     m[12] * m[3]  * m[10];
+
+    inv[9] = -m[0]  * m[9]  * m[15] +
+	      m[0]  * m[11] * m[13] +
+	      m[8]  * m[1]  * m[15] -
+	      m[8]  * m[3]  * m[13] -
+	      m[12] * m[1]  * m[11] +
+	      m[12] * m[3]  * m[9];
+
+    inv[13] = m[0]  * m[9]  * m[14] -
+	      m[0]  * m[10] * m[13] -
+	      m[8]  * m[1]  * m[14] +
+	      m[8]  * m[2]  * m[13] +
+	      m[12] * m[1]  * m[10] -
+	      m[12] * m[2]  * m[9];
+
+    inv[2] = m[1]  * m[6] * m[15] -
+	     m[1]  * m[7] * m[14] -
+	     m[5]  * m[2] * m[15] +
+	     m[5]  * m[3] * m[14] +
+	     m[13] * m[2] * m[7] -
+	     m[13] * m[3] * m[6];
+
+    inv[6] = -m[0]  * m[6] * m[15] +
+	      m[0]  * m[7] * m[14] +
+	      m[4]  * m[2] * m[15] -
+	      m[4]  * m[3] * m[14] -
+	      m[12] * m[2] * m[7] +
+	      m[12] * m[3] * m[6];
+
+    inv[10] = m[0]  * m[5] * m[15] -
+	      m[0]  * m[7] * m[13] -
+	      m[4]  * m[1] * m[15] +
+	      m[4]  * m[3] * m[13] +
+	      m[12] * m[1] * m[7] -
+	      m[12] * m[3] * m[5];
+
+    inv[14] = -m[0]  * m[5] * m[14] +
+	       m[0]  * m[6] * m[13] +
+	       m[4]  * m[1] * m[14] -
+	       m[4]  * m[2] * m[13] -
+	       m[12] * m[1] * m[6] +
+	       m[12] * m[2] * m[5];
+
+    inv[3] = -m[1] * m[6] * m[11] +
+	      m[1] * m[7] * m[10] +
+	      m[5] * m[2] * m[11] -
+	      m[5] * m[3] * m[10] -
+	      m[9] * m[2] * m[7] +
+	      m[9] * m[3] * m[6];
+
+    inv[7] = m[0] * m[6] * m[11] -
+	     m[0] * m[7] * m[10] -
+	     m[4] * m[2] * m[11] +
+	     m[4] * m[3] * m[10] +
+	     m[8] * m[2] * m[7] -
+	     m[8] * m[3] * m[6];
+
+    inv[11] = -m[0] * m[5] * m[11] +
+	       m[0] * m[7] * m[9] +
+	       m[4] * m[1] * m[11] -
+	       m[4] * m[3] * m[9] -
+	       m[8] * m[1] * m[7] +
+	       m[8] * m[3] * m[5];
+
+    inv[15] = m[0] * m[5] * m[10] -
+	      m[0] * m[6] * m[9] -
+	      m[4] * m[1] * m[10] +
+	      m[4] * m[2] * m[9] +
+	      m[8] * m[1] * m[6] -
+	      m[8] * m[2] * m[5];
+
+    det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
+
+    if (det == 0) return false;
+
+    det = 1.0 / det;
+
+    for (i = 0; i < 16; i++)
+      invOut[i] = inv[i] * det;
+
+    return true;
+}
+
+static void project_mouse(PuglView* view, int mx, int my, float *x, float *y) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  const double fx =  2.0 * (float)mx / ui->width  - 1.0;
+  const double fy = -2.0 * (float)my / ui->height + 1.0;
+  const double fz = -(fx * ui->matrix[2] + fy * ui->matrix[6]) / ui->matrix[10];
+
+  *x = fx * ui->matrix[0] + fy * ui->matrix[4] + fz * ui->matrix[8] + ui->matrix[12];
+  *y = fx * ui->matrix[1] + fy * ui->matrix[5] + fz * ui->matrix[9] + ui->matrix[13];
+
+  //printf(" %.3fx%.3f (%.3f) -> %.3fx%.3f\n", fx, fy, fz, *x, *y);
+}
+
+static void print4x4(GLdouble *m) {
+  printf(
+      "%+0.3lf %+0.3lf %+0.3lf %+0.3lf\n"
+      "%+0.3lf %+0.3lf %+0.3lf %+0.3lf\n"
+      "%+0.3lf %+0.3lf %+0.3lf %+0.3lf\n"
+      "%+0.3lf %+0.3lf %+0.3lf %+0.3lf;\n\n"
+      , m[0] , m[1] , m[2] , m[3]
+      , m[4] , m[5] , m[6] , m[7]
+      , m[8] , m[9] , m[10] , m[11]
+      , m[12] , m[13] , m[14] , m[15]
+      );
+}
+
+/******************************************************************************
+ * 3D model loading
+ * see http://ksolek.fm.interia.pl/Blender/
+ */
+
+static void initMesh(PuglView* view) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  int i;
+
+  glGenBuffers(OBJECTS_COUNT, ui->vbo);
+
+  for (i = 0; i < OBJECTS_COUNT; i++) {
+    glBindBuffer(GL_ARRAY_BUFFER, ui->vbo[i]);
+    glBufferData(GL_ARRAY_BUFFER, sizeof (struct vertex_struct) * vertex_count[i], &vertices[vertex_offset_table[i]], GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+  }
+
+  glGenBuffers(OBJECTS_COUNT, ui->vinx);
+  for (i = 0; i < OBJECTS_COUNT; i++) {
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ui->vinx[i]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof (indexes[0]) * faces_count[i] * 3, &indexes[indices_offset_table[i]], GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+  }
+}
+
+#define BUFFER_OFFSET(x)((char *)NULL+(x))
+
+static void drawMesh(PuglView* view, unsigned int index, int apply_transformations) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+
+  if (apply_transformations) {
+    glPushMatrix();
+    glMultMatrixf(transformations[index]);
+  }
+
+  glBindBuffer(GL_ARRAY_BUFFER, ui->vbo[index]);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ui->vinx[index]);
+
+  glEnableClientState(GL_VERTEX_ARRAY);
+  glVertexPointer(3, GL_FLOAT, sizeof (struct vertex_struct), BUFFER_OFFSET(0));
+
+  glEnableClientState(GL_NORMAL_ARRAY);
+  glNormalPointer(GL_FLOAT, sizeof (struct vertex_struct), BUFFER_OFFSET(3 * sizeof (float)));
+
+  glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+  glTexCoordPointer(2, GL_FLOAT, sizeof (struct vertex_struct), BUFFER_OFFSET(6 * sizeof (float)));
+
+  glDrawElements(GL_TRIANGLES, faces_count[index] * 3, INX_TYPE, BUFFER_OFFSET(0));
+
+  glBindBuffer(GL_ARRAY_BUFFER, 0);
+  glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+  glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+  glDisableClientState(GL_NORMAL_ARRAY);
+  glDisableClientState(GL_VERTEX_ARRAY);
+
+  if (apply_transformations) {
+    glPopMatrix();
+  }
+}
+
+/******************************************************************************
+ * OpenGL settings & textures
+ */
+
+#include "wood.c"
+#include "dial.c"
+#include "drawbar.c"
+#include "button1.c"
+
+static void initTextures(PuglView* view) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+
+  glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+
+  glGenTextures(1, &ui->texID[0]);
+  glBindTexture(GL_TEXTURE_2D, ui->texID[0]);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wood_image.width, wood_image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, wood_image.pixel_data);
+  glGenerateMipmap(GL_TEXTURE_2D);
+
+  glGenTextures(1, &ui->texID[1]);
+  glBindTexture(GL_TEXTURE_2D, ui->texID[1]);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, drawbar_image.width, drawbar_image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, drawbar_image.pixel_data);
+  glGenerateMipmap(GL_TEXTURE_2D);
+
+  glGenTextures(1, &ui->texID[2]);
+  glBindTexture(GL_TEXTURE_2D, ui->texID[2]);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, btn1_image.width, btn1_image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, btn1_image.pixel_data);
+  glGenerateMipmap(GL_TEXTURE_2D);
+
+  glGenTextures(1, &ui->texID[3]);
+  glBindTexture(GL_TEXTURE_2D, ui->texID[3]);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dial_image.width, dial_image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, dial_image.pixel_data);
+  glGenerateMipmap(GL_TEXTURE_2D);
+}
+
+static void setupOpenGL() {
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LEQUAL);
+  glFrontFace(GL_CCW);
+  glEnable(GL_CULL_FACE);
+  glEnable(GL_DITHER);
+  glEnable(GL_MULTISAMPLE);
+  glEnable(GL_NORMALIZE);
+#if 1
+  glEnable(GL_POLYGON_SMOOTH);
+  glEnable (GL_LINE_SMOOTH);
+  glShadeModel(GL_SMOOTH);
+#endif
+  //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // test
+
+  glEnable(GL_BLEND);
+  //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA_SATURATE);
+
+#if 1
+  glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+  glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+  glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+  glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+  glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
+  glHint(GL_FOG_HINT, GL_NICEST);
+#endif
+}
+
+static void setupLight() {
+
+  GLfloat global_ambient[]  = { 0.2, 0.2, 0.2, 1.0 };
+  GLfloat light0_ambient[]  = { 0.3, 0.3, 0.3, 1.0 };
+  GLfloat light0_diffuse[]  = { 1.0, 1.0, 1.0, 1.0 };
+  GLfloat light0_specular[] = { 1.0, 0.9, 1.0, 1.0 };
+  GLfloat light0_position[] = {  3.0,  2.5, -12.0, 0 };
+  GLfloat spot_direction[]  = { -4.0, -2.5,  12.0 };
+
+  glLightfv(GL_LIGHT0, GL_AMBIENT, light0_ambient);
+  glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
+  glLightfv(GL_LIGHT0, GL_SPECULAR, light0_specular);
+  glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
+  glLightf(GL_LIGHT0,  GL_SPOT_CUTOFF, 15.0f);
+  glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, spot_direction);
+#if 0
+  glLightf(GL_LIGHT0,  GL_CONSTANT_ATTENUATION, 1.5);
+  glLightf(GL_LIGHT0,  GL_LINEAR_ATTENUATION, 0.5);
+  glLightf(GL_LIGHT0,  GL_QUADRATIC_ATTENUATION, 0.2);
+  glLightf(GL_LIGHT0,  GL_SPOT_EXPONENT, 2.0);
+#endif
+
+  glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
+  glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+
+  glEnable(GL_COLOR_MATERIAL);
+  glEnable(GL_LIGHTING);
+  glEnable(GL_LIGHT0);
+
+
+}
+
+/******************************************************************************
+ * GUI callbacks
+ */
+
+static void
+onReshape(PuglView* view, int width, int height)
+{
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  float invaspect = (float) height / (float) width;
+  //printf("onReshape\n");
+
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  glOrtho(-1.0, 1.0, invaspect, -invaspect, 1.0, -1.0);
+
+#if 0
+  glRotatef(50, 1, 0, 0);
+  glRotatef(25, 0, 1, 0);
+  glRotatef(30, 0, 0, 1);
+#endif
+
+  // global viewpoint
+#if 1
+  glRotatef(-20, 0, 1, 0); // 10
+  glRotatef(-20, 1, 0, 0); // -30
+  glScalef(0.9f, 0.9f, 0.9f);
+  glTranslatef(0.0f, -0.15f, 0.0f);
+#else
+  glScalef(0.5f, 0.5f, 0.5f);
+#endif
+
+  GLdouble matrix[16];
+  glGetDoublev(GL_PROJECTION_MATRIX, matrix);
+  invertMatrix(matrix, ui->matrix);
+
+#if 0 // debug rotation matrices
+  print4x4(matrix);
+  print4x4(ui->matrix);
+#endif
+
+  glViewport(0, 0, width, height);
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+}
+
+static void
+onDisplay(PuglView* view)
+{
+  int i;
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  //printf("onDisplay\n");
+
+  if (!ui->initialized) {
+    ui->initialized = 1;
+    setupOpenGL();
+    initMesh(ui->view);
+    setupLight();
+    initTextures(ui->view);
+  }
+
+#if 1
+  const GLfloat no_mat[] = { 0.0, 0.0, 0.0, 1.0 };
+  const GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+  const GLfloat no_shininess[] = { 128.0 };
+  const GLfloat high_shininess[] = { 5.0 };
+
+  const GLfloat mat_organ[] = { 0.5, 0.25, 0.1, 1.0 };
+  const GLfloat mat_dial[] = { 0.1, 0.1, 0.1, 1.0 };
+  const GLfloat mat_switch[] = { 1.0, 1.0, 0.94, 1.0 };
+  const GLfloat glow_red[] = { 1.0, 0.0, 0.00, 0.3 };
+  const GLfloat mat_drawbar_diff[] = { 0.5, 0.5, 0.5, 1.0 };
+  const GLfloat mat_drawbar_white[] = { 1.0, 1.0, 1.0, 1.0 };
+  const GLfloat mat_drawbar_brown[] = { 0.39, 0.25, 0.1, 1.0 };
+  const GLfloat mat_drawbar_black[] = { 0.0, 0.0, 0.0, 1.0 };
+
+  /** step 1 - draw background -- fixed objects */
+
+  glPushMatrix();
+  glLoadIdentity();
+  glRotatef(180, 1, 0, 0);
+  glScalef(SCALE, SCALE, SCALE);
+
+  /* organ - background */
+  glMaterialfv(GL_FRONT, GL_AMBIENT, no_mat);
+  glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_organ);
+  glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+  glMaterialfv(GL_FRONT, GL_SHININESS, no_shininess);
+  glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
+
+  glEnable(GL_TEXTURE_2D);
+  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
+  glBindTexture(GL_TEXTURE_2D, ui->texID[0]);
+
+  drawMesh(view, OBJ_ORGANBG, 1);
+
+  glDisable(GL_TEXTURE_2D);
+  glPopMatrix();
+
+  /* dial - background  -- TODO move to dial below..*/
+  glPushMatrix();
+  glLoadIdentity();
+  glRotatef(180, 1, 0, 0);
+
+  glTranslatef(.825, -.2, 0);
+  glScalef(SCALE, SCALE, SCALE);
+
+  glMaterialfv(GL_FRONT, GL_AMBIENT, mat_dial);
+  glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_dial);
+  glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+  glMaterialfv(GL_FRONT, GL_SHININESS, high_shininess);
+  glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
+  drawMesh(view, OBJ_DIALBG, 1);
+  glPopMatrix();
+
+
+  /** step 2 - draw /movable/ objects **/
+
+  /* base material of moveable objects */
+  glMaterialfv(GL_FRONT, GL_AMBIENT, no_mat);
+  glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+  glMaterialfv(GL_FRONT, GL_SHININESS, high_shininess);
+  glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
+
+  for (i = 0; i < TOTAL_OBJ; ++i) {
+    float y = ui->ctrls[i].y;
+    if (ui->ctrls[i].type == OBJ_DRAWBAR) { /* drawbar */
+      y -= (float) vmap_val_to_midi(view, i) / 127.0 / 2.0; // XXX
+    }
+
+    glPushMatrix();
+    glLoadIdentity();
+    glTranslatef(ui->ctrls[i].x, y, 0.0f);
+    glScalef(SCALE, SCALE, SCALE);
+    glRotatef(180, 0, 1, 0);
+
+    switch(ui->ctrls[i].type) {
+      case OBJ_DIAL:
+	glMaterialfv(GL_FRONT, GL_AMBIENT, mat_dial);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_dial);
+	glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
+	glRotatef(
+	    240.0 - (360.0 * rint(ui->ctrls[i].cur - ui->ctrls[i].min) / (1.0 + ui->ctrls[i].max - ui->ctrls[i].min))
+	    , 0, 0, 1);
+	glEnable(GL_TEXTURE_2D);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+	glBindTexture(GL_TEXTURE_2D, ui->texID[3]);
+	break;
+      case OBJ_SWITCH:
+	glMaterialfv(GL_FRONT, GL_AMBIENT, no_mat);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_switch);
+	if (ui->ctrls[i].cur == ui->ctrls[i].max) {
+	  glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
+	} else {
+	  glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
+	}
+	glRotatef((vmap_val_to_midi(view, i) < 64 ? -12 : 12.0), 1, 0, 0); // XXX
+	glEnable(GL_TEXTURE_2D);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glBindTexture(GL_TEXTURE_2D, ui->texID[2]);
+	break;
+      case OBJ_DRAWBAR:
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_drawbar_diff);
+	glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
+	switch(i) {
+	  case 0:
+	  case 1:
+	  case 9:
+	  case 10:
+	  case 18:
+	  case 19:
+	    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_drawbar_brown);
+	    break;
+	  case 4:
+	  case 6:
+	  case 7:
+	  case 13:
+	  case 15:
+	  case 16:
+	    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_drawbar_black);
+	    break;
+	  default:
+	    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_drawbar_white);
+	    break;
+	}
+	glEnable(GL_TEXTURE_2D);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
+	glBindTexture(GL_TEXTURE_2D, ui->texID[1]);
+	break;
+      default:
+	break;
+    }
+
+    drawMesh(view, ui->ctrls[i].type, 1);
+    glDisable(GL_TEXTURE_2D);
+    glPopMatrix();
+  }
+
+#else // debug -- unity square
+  glBegin(GL_QUADS);
+  glColor3f(0, 0, .5); glVertex3f(-1, -1,  0);
+  glColor3f(0, 1, .5); glVertex3f(-1,  1,  0);
+  glColor3f(1, 1, .5); glVertex3f( 1,  1,  0);
+  glColor3f(1, 0, .5); glVertex3f( 1, -1,  0);
+  glEnd();
+
+  glLineWidth(3.0);
+  glBegin(GL_LINES);
+  glColor3f(1.0, 1.0, 1.0);
+  glVertex3f(-1, 0, 0);
+  glVertex3f(1, 0, 0);
+  glVertex2f(0, -1);
+  glVertex2f(0, 1);
+
+  glVertex2f(-1, -0.75);
+  glVertex2f( 0, -0.75);
+  glVertex2f(-0.75, -1);
+  glVertex2f(-0.75,  0);
+
+  glColor3f(0.0, 1.0, 1.0);
+  glVertex3f(0, 0, -1);
+  glVertex3f(0, 0, 0);
+
+  glColor3f(1.0, 1.0, 0.0);
+  glVertex3f(0, 0, 0);
+  glVertex3f(0, 0, 1);
+  glEnd();
+#endif
+}
+
+static void
+onKeyboard(PuglView* view, bool press, uint32_t key)
+{
+  if (press) {
+    fprintf(stderr, "Keyboard press %c\n", key);
+  } else {
+    fprintf(stderr, "Keyboard release %c\n", key);
+  }
+}
+
+
+static void
+onMotion(PuglView* view, int x, int y)
+{
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  float fx, fy;
+
+  if (ui->dndid < 0) return;
+
+  project_mouse(view, x, y, &fx, &fy);
+
+  const float dx = (fx - ui->dndx);
+  const float dy = (fy - ui->dndy);
+
+  processMotion(view, ui->dndid, dx, dy);
+}
+
+static void
+onMouse(PuglView* view, int button, bool press, int x, int y)
+{
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  int i;
+  float fx, fy;
+  project_mouse(view, x, y, &fx, &fy);
+
+  //printf("Mouse %d %s at %.3f,%.3f\n", button, press ? "down" : "up", fx, fy);
+
+  if (!press) { /* mouse up */
+    ui->dndid = -1;
+    return;
+  }
+
+  for (i = 0; i < TOTAL_OBJ; ++i) {
+    if (MOUSEOVER(ui->ctrls[i], fx, fy)) {
+      //printf("CTRL: %d\n", i);
+      switch (ui->ctrls[i].type) {
+	case OBJ_DRAWBAR:
+	case OBJ_DIAL:
+	  ui->dndid = i;
+	  ui->dndx = fx;
+	  ui->dndy = fy;
+	  ui->dndval = ui->ctrls[i].cur;
+	  break;
+	case OBJ_SWITCH:
+	  if (press) {
+	    if (ui->ctrls[i].cur == ui->ctrls[i].max)
+	      ui->ctrls[i].cur = ui->ctrls[i].min;
+	    else
+	      ui->ctrls[i].cur = ui->ctrls[i].max;
+	    puglPostRedisplay(view);
+	    notifyPlugin(view, i);
+	  }
+	  break;
+	default:
+	  break;
+      }
+      break;
+    }
+  }
+}
+
+static void
+onScroll(PuglView* view, int x, int y, float dx, float dy)
+{
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  float fx, fy;
+  project_mouse(view, x, y, &fx, &fy);
+  int i;
+  for (i = 0; i < TOTAL_OBJ ; ++i) {
+    if (MOUSEOVER(ui->ctrls[i], fx, fy)) {
+      ui->dndval = ui->ctrls[i].cur + SIGNUM(dy); //  / (ui->ctrls[i].max - ui->ctrls[i].min);
+      processMotion(view, i, 0, 0);
+    }
+  }
+}
+
+/******************************************************************************
+ * misc - used for LV2 init/operation
+ */
+
+#ifdef OLD_SUIL
+static void* ui_thread(void* ptr)
+{
+  B3ui* ui = (B3ui*)ptr;
+  while (!ui->exit) {
+    usleep(1000000 / 25);  // 25 FPS
+    puglProcessEvents(ui->view);
+  }
+  return NULL;
+}
+#else
+static int idle(LV2UI_Handle handle) {
+  B3ui* ui = (B3ui*)handle;
+  puglProcessEvents(ui->view);
+  return 0;
+}
+#endif
+
+static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
+  PuglNativeWindow parent = 0;
+  LV2UI_Resize*    resize = NULL;
+  int i;
+
+  ui->width      = 800;
+  ui->height     = 260;
+  ui->dndid      = -1;
+
+  for (int i = 0; features && features[i]; ++i) {
+    if (!strcmp(features[i]->URI, LV2_UI__parent)) {
+      parent = (PuglNativeWindow)features[i]->data;
+    } else if (!strcmp(features[i]->URI, LV2_UI__resize)) {
+      resize = (LV2UI_Resize*)features[i]->data;
+    }
+  }
+
+  if (!parent) {
+      fprintf(stderr, "error: glamp_ui: No parent window provided.\n");
+    return -1;
+  }
+
+  /* prepare meshes */
+  ui->vbo = (GLuint *)malloc(OBJECTS_COUNT * sizeof(GLuint));
+  ui->vinx = (GLuint *)malloc(OBJECTS_COUNT * sizeof(GLuint));
+
+  /* Set up GL UI */
+  ui->view = puglCreate(parent, "setBfree", ui->width, ui->height, true);
+  puglSetHandle(ui->view, ui);
+  puglSetDisplayFunc(ui->view, onDisplay);
+  puglSetReshapeFunc(ui->view, onReshape);
+  puglSetKeyboardFunc(ui->view, onKeyboard);
+  puglSetMotionFunc(ui->view, onMotion);
+  puglSetMouseFunc(ui->view, onMouse);
+  puglSetScrollFunc(ui->view, onScroll);
+
+  if (resize) {
+    resize->ui_resize(resize->handle, ui->width, ui->height);
+  }
+
+  /* interaction -- moveable GUI objects */
+  /* drawbars */
+  for (i = 0; i < 9; ++i) {
+    ui->ctrls[i].type = OBJ_DRAWBAR;
+    ui->ctrls[i].min = 0;
+    ui->ctrls[i].max = 8;
+    ui->ctrls[i].cur = 0;
+    ui->ctrls[i].x = -.07 + .07 * i;
+    ui->ctrls[i].y = .35;
+    ui->ctrls[i].w = 1.2;
+    ui->ctrls[i].h = 25;
+  }
+  for (; i < 18; ++i) {
+    ui->ctrls[i].type = OBJ_DRAWBAR;
+    ui->ctrls[i].min = 0;
+    ui->ctrls[i].max = 8;
+    ui->ctrls[i].cur = 0;
+    ui->ctrls[i].x = -0.77 + .07 * (i-9);
+    ui->ctrls[i].y = .35;
+    ui->ctrls[i].w = 1.2;
+    ui->ctrls[i].h = 48;
+  }
+  for (; i < 20; ++i) {
+    ui->ctrls[i].type = OBJ_DRAWBAR;
+    ui->ctrls[i].min = 0;
+    ui->ctrls[i].max = 8;
+    ui->ctrls[i].cur = 0;
+    ui->ctrls[i].x = -0.98 + .07 * (i-18);
+    ui->ctrls[i].y = .35;
+    ui->ctrls[i].w = 1.2;
+    ui->ctrls[i].h = 48;
+  }
+  /* btn */
+  for (; i < 22; ++i) {
+    ui->ctrls[i].type = OBJ_SWITCH;
+    ui->ctrls[i].min = 0;
+    ui->ctrls[i].max = 1;
+    ui->ctrls[i].cur = i%2;
+    ui->ctrls[i].x = .9 - .15 * (i-20);
+    ui->ctrls[i].y = -.075;
+    ui->ctrls[i].w = 2;
+    ui->ctrls[i].h = 4;
+  }
+  /* dial */
+  for (; i < 23; ++i) {
+    ui->ctrls[i].type = OBJ_DIAL;
+    ui->ctrls[i].min = 0;
+    ui->ctrls[i].max = 5;
+    ui->ctrls[i].cur = 0;
+    ui->ctrls[i].x = .825;
+    ui->ctrls[i].y = .2;
+    ui->ctrls[i].w = 4;
+    ui->ctrls[i].h = 4;
+  }
+
+#ifdef OLD_SUIL
+  ui->exit = false;
+  pthread_create(&ui->thread, NULL, ui_thread, ui);
+#endif
+
+  return 0;
+}
+
+/******************************************************************************
+ * LV2 callbacks
+ */
+
+static LV2UI_Handle
+instantiate(const LV2UI_Descriptor*   descriptor,
+            const char*               plugin_uri,
+            const char*               bundle_path,
+            LV2UI_Write_Function      write_function,
+            LV2UI_Controller          controller,
+            LV2UI_Widget*             widget,
+            const LV2_Feature* const* features)
+{
+  int i;
+  B3ui* ui = (B3ui*)malloc(sizeof(B3ui));
+
+  ui->map        = NULL;
+  ui->write      = write_function;
+  ui->controller = controller;
+
+  for (i = 0; features[i]; ++i) {
+    if (!strcmp(features[i]->URI, LV2_URID_URI "#map")) {
+      ui->map = (LV2_URID_Map*)features[i]->data;
+    }
+  }
+
+  if (!ui->map) {
+    fprintf(stderr, "UI: Host does not support urid:map\n");
+    free(ui);
+    return NULL;
+  }
+
+  map_setbfree_uris(ui->map, &ui->uris);
+  lv2_atom_forge_init(&ui->forge, ui->map);
+
+  if (sb3_gui_setup(ui, features)) {
+    free(ui);
+    return NULL;
+  }
+  *widget = (void*)puglGetNativeWindow(ui->view);
+
+
+  /* ask plugin about current state */
+  uint8_t obj_buf[OBJ_BUF_SIZE];
+  lv2_atom_forge_set_buffer(&ui->forge, obj_buf, OBJ_BUF_SIZE);
+
+  LV2_Atom_Forge_Frame set_frame;
+  LV2_Atom* msg = (LV2_Atom*)lv2_atom_forge_blank(&ui->forge, &set_frame, 1, ui->uris.sb3_uiinit);
+  lv2_atom_forge_pop(&ui->forge, &set_frame);
+  ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
+
+  return ui;
+}
+
+static void
+cleanup(LV2UI_Handle handle)
+{
+  B3ui* ui = (B3ui*)handle;
+#ifdef OLD_SUIL
+  ui->exit = true;
+  pthread_join(ui->thread, NULL);
+#endif
+  puglDestroy(ui->view);
+  free(ui);
+}
+
+static void
+port_event(LV2UI_Handle handle,
+    uint32_t     port_index,
+    uint32_t     buffer_size,
+    uint32_t     format,
+    const void*  buffer)
+{
+  B3ui* ui = (B3ui*)handle;
+  if (format == ui->uris.atom_eventTransfer) {
+    LV2_Atom* atom = (LV2_Atom*)buffer;
+
+    if (atom->type == ui->uris.atom_Blank) {
+      LV2_Atom_Object* obj      = (LV2_Atom_Object*)atom;
+      char *k; int v, i;
+      get_cc_key_value(&ui->uris, obj, &k, &v);
+      for (i = 0; i < TOTAL_OBJ; ++i) {
+	if (!strcmp(obj_control[i], k)) {
+	  /* override drags/modifications of current object */
+	  if (ui->dndid == i) {
+	    ui->dndid = -1;
+	  }
+	  vmap_midi_to_val(ui->view, i, v);
+	  puglPostRedisplay(ui->view);
+	  break;
+	}
+      }
+    } else {
+      /* for whatever reason JALV also sends us midi msgs
+       * from the midi_out port
+       */
+      //fprintf(stderr, "B3LV2UI: Unknown message type.\n");
+    }
+  } else {
+    fprintf(stderr, "B3LV2UI: Unknown message format.\n");
+  }
+}
+
+/******************************************************************************
+ * LV2 setup
+ */
+
+#ifndef OLD_SUIL
+static const LV2UI_Idle_Interface idle_iface = { idle };
+#endif
+
+static const void*
+extension_data(const char* uri)
+{
+#ifndef OLD_SUIL
+  if (!strcmp(uri, LV2_UI__idleInterface)) {
+    return &idle_iface;
+  }
+#endif
+  return NULL;
+}
+
+static const LV2UI_Descriptor descriptor = {
+  SB3_URI "#ui",
+  instantiate,
+  cleanup,
+  port_event,
+  extension_data
+};
+
+LV2_SYMBOL_EXPORT
+const LV2UI_Descriptor*
+lv2ui_descriptor(uint32_t index)
+{
+  switch (index) {
+  case 0:
+    return &descriptor;
+  default:
+    return NULL;
+  }
+}
+
+/* vi:set ts=8 sts=2 sw=2: */

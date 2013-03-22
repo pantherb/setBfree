@@ -1,0 +1,17 @@
+
+@prefix ui:    <http://lv2plug.in/ns/extensions/ui#> .
+
+<http://gareus.org/oss/lv2/b_synth>
+	ui:ui <http://gareus.org/oss/lv2/b_synth#ui> ;
+	.
+
+<http://gareus.org/oss/lv2/b_synth#ui>
+	a ui:@UI_TYPE@;
+	lv2:requiredFeature urid:map ;
+	@UI_REQ@
+	ui:portNotification [
+		ui:plugin <http://gareus.org/oss/lv2/b_synth> ;
+		lv2:symbol "notify";
+		ui:notifyType atom:Blank
+	]
+	.

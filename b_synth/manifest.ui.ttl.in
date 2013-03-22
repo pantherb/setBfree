@@ -1,0 +1,5 @@
+
+<http://gareus.org/oss/lv2/@LV2NAME@#ui>
+	a ui:@UI_TYPE@;
+	ui:binary <@LV2GUI@@LIB_EXT@> ;
+	rdfs:seeAlso <@LV2NAME@.ttl> .

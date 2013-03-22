@@ -2,13 +2,29 @@ include ../common.mak
 
 LOADLIBES = -lm
 CFLAGS+= -I../src -I../b_overdrive -I../b_reverb -I../b_whirl -std=c99
+CFLAGS+=`pkg-config --cflags lv2 lv2core`
+
+HAVE_UI=yes
 
 targets=
 
 ifeq ($(LV2AVAIL), yes)
-  targets+=lv2
   LIB_EXT=.so
   LV2NAME=b_synth
+  targets+=lv2
+
+  ifeq ($(HAVE_UI), yes)
+    #UICFLAGS=`pkg-config --cflags pugl-0`
+    #UILIBS=`pkg-config --libs pugl-0`
+    UICFLAGS=-I..
+    UIDEPS=../pugl/pugl.h ../pugl/pugl_internal.h ui_model.h
+    UIDEPS+=button1.c drawbar.c wood.c dial.c
+    LV2GUI=b_synthUI
+      UILIBS=../pugl/pugl_x11.c -lX11 -lGL -lGLU
+      UIDEPS+=../pugl/pugl_x11.c
+      UI_TYPE=X11UI
+    targets+=$(LV2GUI)$(LIB_EXT)
+  endif
 endif
 
 #NOTE: midi.c and cfgParser.c needs to be re-compiled w/o HAVE_ASEQ
@@ -27,13 +43,27 @@ OBJ= \
 
 all: $(targets)
 
-lv2: manifest.ttl $(LV2NAME)$(LIB_EXT) 
+lv2: manifest.ttl $(LV2NAME)$(LIB_EXT) $(LV2NAME).ttl
 
-manifest.ttl: manifest.ttl.in
+manifest.ttl: manifest.ttl.in manifest.ui.ttl.in
 	sed "s/@LV2NAME@/$(LV2NAME)/;s/@LIB_EXT@/$(LIB_EXT)/" manifest.ttl.in > manifest.ttl
+ifeq ($(HAVE_UI), yes)
+	sed "s/@LV2NAME@/$(LV2NAME)/;s/@LV2GUI@/$(LV2GUI)/;s/@LIB_EXT@/$(LIB_EXT)/;s/@UI_TYPE@/$(UI_TYPE)/" manifest.ui.ttl.in >> manifest.ttl
+endif
 
-$(LV2NAME)$(LIB_EXT): lv2.c $(OBJ)  ../src/cfgParser.h ../src/midi.h
-	$(CC) -o $(LV2NAME)$(LIB_EXT) $(CFLAGS) -shared -Wl,-Bstatic -Wl,-Bdynamic lv2.c $(OBJ)
+$(LV2NAME).ttl: $(LV2NAME).ttl.in $(LV2NAME).ui.ttl.in
+	cat $(LV2NAME).ttl.in > $(LV2NAME).ttl
+ifeq ($(HAVE_UI), yes)
+	sed "s/@UI_TYPE@/$(UI_TYPE)/;s/@UI_REQ@/$(LV2UIREQ)/;" $(LV2NAME).ui.ttl.in >> $(LV2NAME).ttl
+endif
+
+$(LV2NAME)$(LIB_EXT): lv2.c $(OBJ) uris.h ../src/cfgParser.h ../src/midi.h
+	$(CC) -o $(LV2NAME)$(LIB_EXT) $(CFLAGS) -shared $(LV2LDFLAGS) lv2.c $(OBJ)
+
+$(LV2GUI)$(LIB_EXT): ui.c uris.h $(UIDEPS)
+	$(CC) $(CFLAGS) \
+		-o $(LV2GUI)$(LIB_EXT) ui.c \
+		$(LDFLAGS) $(UICFLAGS) $(UILIBS) -shared $(LV2LDFLAGS)
 
 %.o: %.c %.h
 	+$(MAKE) -C ../src $(subst ../src/,,$@)
@@ -43,14 +73,20 @@ ifneq ($(strip $(LV2NAME)),)
 	install -d $(DESTDIR)$(lv2dir)/$(LV2NAME)
 	install -m755 $(LV2NAME)$(LIB_EXT) $(DESTDIR)$(lv2dir)/$(LV2NAME)
 	install -m644 manifest.ttl $(LV2NAME).ttl $(DESTDIR)$(lv2dir)/$(LV2NAME)
+  ifeq ($(HAVE_UI), yes)
+	install -m755 $(LV2GUI)$(LIB_EXT) $(DESTDIR)$(lv2dir)/$(LV2NAME)
+  endif
 endif
 
 uninstall:
 	rm -f $(DESTDIR)$(lv2dir)/$(LV2NAME)/*.ttl
 	rm -f $(DESTDIR)$(lv2dir)/$(LV2NAME)/$(LV2NAME)$(LIB_EXT)
+	rm -f $(DESTDIR)$(lv2dir)/$(LV2NAME)/$(LV2GUI)$(LIB_EXT)
 	-rmdir $(DESTDIR)$(lv2dir)/$(LV2NAME)
 
 clean:
-	rm -f *.o manifest.ttl $(LV2NAME)$(LIB_EXT)
+	rm -f *.o manifest.ttl b_synth.ttl
+	rm -f $(LV2NAME)$(LIB_EXT)
+	rm -f $(LV2GUI)$(LIB_EXT)
 
 .PHONY: clean all install uninstall lv2
