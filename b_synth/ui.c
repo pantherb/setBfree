@@ -132,6 +132,7 @@ typedef struct {
 
   GLdouble matrix[16]; // used for mouse mapping
   double rot[3], off[3], scale;
+  int show_help;
 
   b3widget ctrls[TOTAL_OBJ];
   int dndid;
@@ -449,13 +450,15 @@ static void drawMesh(PuglView* view, unsigned int index, int apply_transformatio
 #include "btn_perc_harmonic.c"
 #include "btn_perc_volume.c"
 
+#include "btn_overdrive.c"
+
 #include "bg_right_ctrl.c"
 #include "bg_left_ctrl.c"
 
 #include "bg_leslie_drum.c"
 #include "bg_leslie_horn.c"
 
-#include "btn_overdrive.c"
+#include "help_screen_image.c"
 
 #define CIMAGE(ID, VARNAME) \
   glGenTextures(1, &ui->texID[ID]); \
@@ -500,8 +503,7 @@ static void initTextures(PuglView* view) {
   CIMAGE(11, bg_left_ctrl_image);
   CIMAGE(12, bg_leslie_drum_image);
   CIMAGE(13, bg_leslie_horn_image);
-  //CIMAGE(14, help_screen_image);
-
+  CIMAGE(14, help_screen_image);
 }
 
 static void setupOpenGL() {
@@ -573,12 +575,16 @@ static void
 onReshape(PuglView* view, int width, int height)
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
-  float invaspect = (float) height / (float) width;
+  const float invaspect = (float) height / (float) width;
   //printf("onReshape\n");
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   glOrtho(-1.0, 1.0, invaspect, -invaspect, 1.0, -1.0);
+  if (ui->show_help) {
+    glMatrixMode(GL_MODELVIEW);
+    return;
+  }
 
 #if 0
   glRotatef(50, 1, 0, 0);
@@ -639,6 +645,24 @@ onDisplay(PuglView* view)
   const GLfloat mat_drawbar_white[] = { 1.0, 1.0, 1.0, 1.0 };
   const GLfloat mat_drawbar_brown[] = { 0.39, 0.25, 0.1, 1.0 };
   const GLfloat mat_drawbar_black[] = { 0.0, 0.0, 0.0, 1.0 };
+
+  if (ui->show_help) {
+    const float invaspect = (float) ui->height / (float) ui->width;
+    glLoadIdentity();
+    glEnable(GL_TEXTURE_2D);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+    glBindTexture(GL_TEXTURE_2D, ui->texID[14]);
+    glBegin(GL_QUADS);
+    glColor3f(1.0, 1.0, 1.0);
+    glTexCoord2f (0.0, 0.0); glVertex3f(-1, -invaspect, 0);
+    glTexCoord2f (0.0, 1.0); glVertex3f(-1,  invaspect, 0);
+    glTexCoord2f (1.0, 1.0); glVertex3f( 1,  invaspect, 0);
+    glTexCoord2f (1.0, 0.0); glVertex3f( 1, -invaspect, 0);
+    glEnd();
+    glDisable(GL_TEXTURE_2D);
+    return;
+  }
+
 
   /** step 1 - draw background -- fixed objects */
 
@@ -900,14 +924,15 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       ui->rot[2] = 0;
       queue_reshape = 1;
       break;
+    case '?':
     default:
-      //fprintf(stderr, "Keyboard press (%x) '%c'\n", key, key);
+      ui->show_help = !ui->show_help;
+      queue_reshape = 1;
       break;
   }
 
   if (queue_reshape) {
     onReshape(view, ui->width, ui->height);
-    //puglPostReshape(view);
     puglPostRedisplay(view);
   }
 }
@@ -1016,6 +1041,7 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   LV2UI_Resize*    resize = NULL;
   int i;
 
+  ui->show_help  = 0;
   ui->width      = 960;
   ui->height     = 320;
   ui->dndid      = -1;
