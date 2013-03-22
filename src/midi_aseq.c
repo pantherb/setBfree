@@ -95,24 +95,24 @@ static void process_seq_event(void *inst, const snd_seq_event_t *ev) {
     case SND_SEQ_EVENT_NOTEON:
       bev.channel=ev->data.note.channel;
       bev.type=NOTE_ON;
-      bev.tone.note=ev->data.note.note;
-      bev.tone.velocity=ev->data.note.velocity;
+      bev.d.tone.note=ev->data.note.note;
+      bev.d.tone.velocity=ev->data.note.velocity;
       break;
     case SND_SEQ_EVENT_NOTEOFF:
       bev.channel=ev->data.note.channel;
       bev.type=NOTE_OFF;
-      bev.tone.note=ev->data.note.note;
-      bev.tone.velocity=0;
+      bev.d.tone.note=ev->data.note.note;
+      bev.d.tone.velocity=0;
       break;
     case SND_SEQ_EVENT_PGMCHANGE:
       bev.type=PROGRAM_CHANGE;
-      bev.control.value=ev->data.control.value;
+      bev.d.control.value=ev->data.control.value;
       break;
     case SND_SEQ_EVENT_CONTROLLER:
       bev.type=CONTROL_CHANGE;
       bev.channel=ev->data.note.channel;
-      bev.control.param=ev->data.control.param;
-      bev.control.value=ev->data.control.value;
+      bev.d.control.param=ev->data.control.param;
+      bev.d.control.value=ev->data.control.value;
       break;
     default:
       return;

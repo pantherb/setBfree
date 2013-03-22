@@ -58,7 +58,7 @@ struct bmidi_event_t {
       uint8_t param;
       uint8_t value;
     } control;
-  };
+  } d;
 };
 
 extern void process_midi_event(void *inst, const struct bmidi_event_t *ev);

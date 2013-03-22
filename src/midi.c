@@ -436,7 +436,6 @@ void callMIDIControlFunction (void *mcfg, char * cfname, unsigned char val) {
   int x = getCCFunctionId (cfname);
   if (x >= 0 && m->ctrlvecF[x].fn) {
     if (val > 127) val = 127;
-    if (val < 0) val = 0;
     execControlFunction(m, &m->ctrlvecF[x], val);
   }
 }
@@ -995,20 +994,20 @@ void process_midi_event(void *instp, const struct bmidi_event_t *ev) {
   struct b_midicfg * m = (struct b_midicfg *) inst->midicfg;
   switch(ev->type) {
     case NOTE_ON:
-      if(m->keyTable[ev->channel] && m->keyTable[ev->channel][ev->tone.note] != 255) {
-	if (ev->tone.velocity > 0){
-	  oscKeyOn (inst->synth, m->keyTable[ev->channel][ev->tone.note]);
+      if(m->keyTable[ev->channel] && m->keyTable[ev->channel][ev->d.tone.note] != 255) {
+	if (ev->d.tone.velocity > 0){
+	  oscKeyOn (inst->synth, m->keyTable[ev->channel][ev->d.tone.note]);
 	} else {
-	  oscKeyOff (inst->synth, m->keyTable[ev->channel][ev->tone.note]);
+	  oscKeyOff (inst->synth, m->keyTable[ev->channel][ev->d.tone.note]);
 	}
       }
       break;
     case NOTE_OFF:
-      if(m->keyTable[ev->channel] && m->keyTable[ev->channel][ev->tone.note] != 255)
-	oscKeyOff (inst->synth, m->keyTable[ev->channel][ev->tone.note]);
+      if(m->keyTable[ev->channel] && m->keyTable[ev->channel][ev->d.tone.note] != 255)
+	oscKeyOff (inst->synth, m->keyTable[ev->channel][ev->d.tone.note]);
       break;
     case PROGRAM_CHANGE:
-      installProgram(inst, ev->control.value);
+      installProgram(inst, ev->d.control.value);
       break;
     case CONTROL_CHANGE:
 #ifdef DEBUG_MIDI_CC
@@ -1021,14 +1020,14 @@ void process_midi_event(void *instp, const struct bmidi_event_t *ev) {
 	if (ctrlUse) {
 	  int j;
 	  for (j=0; j < CTRL_USE_MAX; ++j) {
-	    if (ctrlUse[j] == ev->control.param) {
+	    if (ctrlUse[j] == ev->d.control.param) {
 	      fn = ccFuncNames[j];
 	      break;
 	    }
 	  }
 	}
-	printf("CC: %2d %03d -> %3d (%s) %s\n", ev->channel, ev->control.param, ev->control.value, fn,
-	    (m->ctrlvec[ev->channel] && m->ctrlvec[ev->channel][ev->control.param].fn != emptyControlFunction) ? "*":"-"
+	printf("CC: %2d %03d -> %3d (%s) %s\n", ev->channel, ev->d.control.param, ev->d.control.value, fn,
+	    (m->ctrlvec[ev->channel] && m->ctrlvec[ev->channel][ev->d.control.param].fn != emptyControlFunction) ? "*":"-"
 	  );
       }
 #endif
@@ -1037,16 +1036,16 @@ void process_midi_event(void *instp, const struct bmidi_event_t *ev) {
        */
 
       /*  0x00 and 0x20 are used for BANK select */
-      if (ev->control.param == 0x00 || ev->control.param == 0x20) {
+      if (ev->d.control.param == 0x00 || ev->d.control.param == 0x20) {
 	break;
       } else
 
-      if (ev->control.param == 121) {
+      if (ev->d.control.param == 121) {
 	/* TODO - reset all controller */
 	break;
       } else
 
-      if (ev->control.param == 120 || ev->control.param == 123) {
+      if (ev->d.control.param == 120 || ev->d.control.param == 123) {
 	/* Midi panic: 120: all sound off, 123: all notes off*/
 	int i;
 	for (i=0; i < MAX_KEYS; ++i) {
@@ -1055,17 +1054,17 @@ void process_midi_event(void *instp, const struct bmidi_event_t *ev) {
 	break;
       } else
 
-      if (ev->control.param >= 120) {
+      if (ev->d.control.param >= 120) {
 	/* params 122-127 are reserved - skip them. */
 	break;
       } else
 
-      if (m->ctrlvec[ev->channel] && m->ctrlvec[ev->channel][ev->control.param].fn) {
-	uint8_t val = ev->control.value & 0x7f;
-	if (m->ctrlflg[ev->channel][ev->control.param] & MFLAG_INV) {
+      if (m->ctrlvec[ev->channel] && m->ctrlvec[ev->channel][ev->d.control.param].fn) {
+	uint8_t val = ev->d.control.value & 0x7f;
+	if (m->ctrlflg[ev->channel][ev->d.control.param] & MFLAG_INV) {
 	  val = 127 - val;
 	}
-	execControlFunction(m, &m->ctrlvec[ev->channel][ev->control.param], val);
+	execControlFunction(m, &m->ctrlvec[ev->channel][ev->d.control.param], val);
       }
       break;
     default:
@@ -1089,22 +1088,22 @@ void parse_raw_midi_data(void *inst, uint8_t *buffer, size_t size) {
   switch (buffer[0] & 0xf0) {
     case 0x80:
       bev.type=NOTE_OFF;
-      bev.tone.note=buffer[1]&0x7f;
-      bev.tone.velocity=buffer[2]&0x7f;
+      bev.d.tone.note=buffer[1]&0x7f;
+      bev.d.tone.velocity=buffer[2]&0x7f;
       break;
     case 0x90:
       bev.type=NOTE_ON;
-      bev.tone.note=buffer[1]&0x7f;
-      bev.tone.velocity=buffer[2]&0x7f;
+      bev.d.tone.note=buffer[1]&0x7f;
+      bev.d.tone.velocity=buffer[2]&0x7f;
       break;
     case 0xB0:
       bev.type=CONTROL_CHANGE;
-      bev.control.param=buffer[1]&0x7f;
-      bev.control.value=buffer[2]&0x7f;
+      bev.d.control.param=buffer[1]&0x7f;
+      bev.d.control.value=buffer[2]&0x7f;
       break;
     case 0xC0:
       bev.type=PROGRAM_CHANGE;
-      bev.control.value=buffer[1]&0x7f;
+      bev.d.control.value=buffer[1]&0x7f;
       break;
     default:
       return;
