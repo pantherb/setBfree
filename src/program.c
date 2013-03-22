@@ -836,7 +836,7 @@ void installProgram (void *instance, unsigned char uc) {
 
       if (flags0 & FL_OVRSEL) {
 	//setClean (inst->preamp, PGM->overdriveSelect);
-	callMIDIControlFunction(inst->midicfg, "overdrive.enable", PGM->overdriveSelect ? 127 : 0);
+	callMIDIControlFunction(inst->midicfg, "overdrive.enable", PGM->overdriveSelect ? 0 : 127);
       }
 
       if (flags0 & FL_ROTENA) {

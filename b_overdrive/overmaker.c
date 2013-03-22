@@ -1594,7 +1594,7 @@ void legacyClean () {
   codeln ("}");
   codeln ("void setCleanCC (void *pa, unsigned char uc) {");
   pushIndent ();
-  codeln ("setClean(pa, uc > 63 ? 1 : 0);");
+  codeln ("setClean(pa, uc > 63 ? 0 : 1);");
   popIndent ();
   codeln ("}");
 }
