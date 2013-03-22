@@ -31,20 +31,21 @@
 
 #include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
 #include "pugl/pugl.h"
+
 #ifdef __APPLE__
 #include "OpenGL/glu.h"
 #else
 #include <GL/glu.h>
 #endif
 
-
 #include "uris.h"
 #include "ui_model.h"
 
-#define TOTAL_OBJ (33)
-
+/* ui-model scale -- on screen we use [-1..+1] orthogonal projection */
 #define SCALE (0.04f)
 
+
+#define SIGNUM(a) (a < 0 ? -1 : 1)
 #define CTRLWIDTH2(ctrl) (SCALE * (ctrl).w / 2.0)
 #define CTRLHEIGHT2(ctrl) (SCALE * (ctrl).h / 2.0)
 
@@ -55,7 +56,10 @@
    && (mousey) <= (ctrl).y * SCALE + CTRLHEIGHT2(ctrl) )
 
 
-/* names from src/midi.c -  mapped to widgets */
+/* total number of interactive objects */
+#define TOTAL_OBJ (33)
+
+/* names from src/midi.c -  mapped to object IDs */
 static const char *obj_control[] = {
   "upper.drawbar16", // 0
   "upper.drawbar513",
@@ -97,11 +101,11 @@ static const char *obj_control[] = {
 
 
 typedef struct {
-  int type; // 1: drawbar, 2: button, 0: dial -- corresponds to ui_model.h mesh
-  float min, max, cur; // mapped to midi 0..127
+  int type; // type ID from ui_model.h
+  float min, max, cur;  // value range and current value
   float x,y; // matrix position
   float w,h; // bounding box
-  int texID;
+  int texID; // texture ID
 } b3widget;
 
 typedef struct {
@@ -123,25 +127,27 @@ typedef struct {
   int                  exit;
 #endif
 
-  /* Mashes */
+  /* OpenGL */
   GLuint * vbo;
   GLuint * vinx;
-
-  /* Textures */
-  GLuint texID[15];
-
+  GLuint texID[15]; // textures
   GLdouble matrix[16]; // used for mouse mapping
-  double rot[3], off[3], scale;
+  double rot[3], off[3], scale; // global projection
   int show_help;
 
+  /* interactive control objexts */
   b3widget ctrls[TOTAL_OBJ];
+
+  /* mouse drag status */
   int dndid;
   float dndval;
   float dndx, dndy;
+
 } B3ui;
 
+
 /******************************************************************************
- * Value mapping
+ * Value mapping, MIDI <> internal min/max <> mouse
  */
 
 static void vmap_midi_to_val(PuglView* view, int elem, int mval) {
@@ -154,13 +160,15 @@ static int vmap_val_to_midi(PuglView* view, int elem) {
   return (int)floor( rint(ui->ctrls[elem].cur - ui->ctrls[elem].min) * 127.0 / (ui->ctrls[elem].max - ui->ctrls[elem].min));
 }
 
+/* call lv2 plugin if value has changed */
 static void notifyPlugin(PuglView* view, int elem) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   uint8_t obj_buf[OBJ_BUF_SIZE];
   int val;
 
-  /* special */
+  /* special cases */
   if (elem == 24 || elem == 25) {
+    // two in one
     val = ((ui->ctrls[24].cur ? 1 : 0) | (ui->ctrls[25].cur ? 2 : 0) ) << 5;
   } else if (elem == 31 || elem == 32) {
     // map: tremolo/fast 2 << off:1 >> chorale/slow:0  ->  off:0, slow:1, fast:2
@@ -170,6 +178,7 @@ static void notifyPlugin(PuglView* view, int elem) {
     if (bf != 2) bf = (bf == 1) ? 0 : 1;
     val = bf * 15 + hr * 45;
   } else {
+    // default MIDI-CC range 0..127
     val = vmap_val_to_midi(view, elem);
   }
 
@@ -178,8 +187,44 @@ static void notifyPlugin(PuglView* view, int elem) {
   ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
 }
 
-#define SIGNUM(a) (a < 0 ? -1 : 1)
+/* called from port_event -- plugin tells GUI a new value */
+static void processCCevent(B3ui* ui, const char *k, int v) {
+  int i;
+  /* special cases */
+  if (!strcmp("vibrato.routing", k)) {
+    ui->ctrls[24].cur = ((v>>5) & 1 ) ? 1 : 0;
+    ui->ctrls[25].cur = ((v>>5) & 2 ) ? 1 : 0;
+    puglPostRedisplay(ui->view);
+    return;
+  } else
+  if (!strcmp("rotary.speed-select", k)) {
+    // see setRevOption() -- value 0..8
+    // map: off:0, slow:1, fast:2  ->  tremolo/fast 2 << off:1 >> chorale/slow:0
+    int hr = (v / 45) % 3; // horn 0:off, 1:chorale  2:tremolo
+    int bf = (v / 15) % 3; // drum 0:off, 1:chorale  2:tremolo
+    if (hr != 2) hr = (hr == 1) ? 0 : 1;
+    if (bf != 2) bf = (bf == 1) ? 0 : 1;
+    ui->ctrls[31].cur = hr; // horn 0:chorale, 1:off, 2:tremolo
+    ui->ctrls[32].cur = bf; // drum 0:chorale, 1:off, 2:tremolo
+    puglPostRedisplay(ui->view);
+    return;
+  }
 
+  for (i = 0; i < TOTAL_OBJ; ++i) {
+    if (!strcmp(obj_control[i], k)) {
+      /* override drags/modifications of current object */
+      if (ui->dndid == i) {
+	ui->dndid = -1;
+      }
+      vmap_midi_to_val(ui->view, i, v);
+      puglPostRedisplay(ui->view);
+      break;
+    }
+  }
+}
+
+
+/* process mouse motion, update value */
 static void processMotion(PuglView* view, int elem, float dx, float dy) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   if (elem < 0 || elem >= TOTAL_OBJ) return;
@@ -216,150 +261,141 @@ static void processMotion(PuglView* view, int elem, float dx, float dy) {
   }
 }
 
+
 /******************************************************************************
  * 3D projection
  */
 
+/* invert projection matrix -- code from GLU */
 static bool invertMatrix(const double m[16], double invOut[16]) {
-    double inv[16], det;
-    int i;
+  double inv[16], det;
+  int i;
 
-    inv[0] = m[5]  * m[10] * m[15] -
-	     m[5]  * m[11] * m[14] -
-	     m[9]  * m[6]  * m[15] +
-	     m[9]  * m[7]  * m[14] +
-	     m[13] * m[6]  * m[11] -
-	     m[13] * m[7]  * m[10];
+  inv[0] = m[5]  * m[10] * m[15] -
+	   m[5]  * m[11] * m[14] -
+	   m[9]  * m[6]  * m[15] +
+	   m[9]  * m[7]  * m[14] +
+	   m[13] * m[6]  * m[11] -
+	   m[13] * m[7]  * m[10];
 
-    inv[4] = -m[4]  * m[10] * m[15] +
-	      m[4]  * m[11] * m[14] +
-	      m[8]  * m[6]  * m[15] -
-	      m[8]  * m[7]  * m[14] -
-	      m[12] * m[6]  * m[11] +
-	      m[12] * m[7]  * m[10];
+  inv[4] = -m[4]  * m[10] * m[15] +
+	    m[4]  * m[11] * m[14] +
+	    m[8]  * m[6]  * m[15] -
+	    m[8]  * m[7]  * m[14] -
+	    m[12] * m[6]  * m[11] +
+	    m[12] * m[7]  * m[10];
 
-    inv[8] = m[4]  * m[9]  * m[15] -
-	     m[4]  * m[11] * m[13] -
-	     m[8]  * m[5]  * m[15] +
-	     m[8]  * m[7]  * m[13] +
-	     m[12] * m[5]  * m[11] -
-	     m[12] * m[7]  * m[9];
+  inv[8] = m[4]  * m[9]  * m[15] -
+	   m[4]  * m[11] * m[13] -
+	   m[8]  * m[5]  * m[15] +
+	   m[8]  * m[7]  * m[13] +
+	   m[12] * m[5]  * m[11] -
+	   m[12] * m[7]  * m[9];
 
-    inv[12] = -m[4]  * m[9]  * m[14] +
-	       m[4]  * m[10] * m[13] +
-	       m[8]  * m[5]  * m[14] -
-	       m[8]  * m[6]  * m[13] -
-	       m[12] * m[5]  * m[10] +
-	       m[12] * m[6]  * m[9];
+  inv[12] = -m[4]  * m[9]  * m[14] +
+	     m[4]  * m[10] * m[13] +
+	     m[8]  * m[5]  * m[14] -
+	     m[8]  * m[6]  * m[13] -
+	     m[12] * m[5]  * m[10] +
+	     m[12] * m[6]  * m[9];
 
-    inv[1] = -m[1]  * m[10] * m[15] +
-	      m[1]  * m[11] * m[14] +
-	      m[9]  * m[2]  * m[15] -
-	      m[9]  * m[3]  * m[14] -
-	      m[13] * m[2]  * m[11] +
-	      m[13] * m[3]  * m[10];
+  inv[1] = -m[1]  * m[10] * m[15] +
+	    m[1]  * m[11] * m[14] +
+	    m[9]  * m[2]  * m[15] -
+	    m[9]  * m[3]  * m[14] -
+	    m[13] * m[2]  * m[11] +
+	    m[13] * m[3]  * m[10];
 
-    inv[5] = m[0]  * m[10] * m[15] -
-	     m[0]  * m[11] * m[14] -
-	     m[8]  * m[2]  * m[15] +
-	     m[8]  * m[3]  * m[14] +
-	     m[12] * m[2]  * m[11] -
-	     m[12] * m[3]  * m[10];
+  inv[5] = m[0]  * m[10] * m[15] -
+	   m[0]  * m[11] * m[14] -
+	   m[8]  * m[2]  * m[15] +
+	   m[8]  * m[3]  * m[14] +
+	   m[12] * m[2]  * m[11] -
+	   m[12] * m[3]  * m[10];
 
-    inv[9] = -m[0]  * m[9]  * m[15] +
-	      m[0]  * m[11] * m[13] +
-	      m[8]  * m[1]  * m[15] -
-	      m[8]  * m[3]  * m[13] -
-	      m[12] * m[1]  * m[11] +
-	      m[12] * m[3]  * m[9];
+  inv[9] = -m[0]  * m[9]  * m[15] +
+	    m[0]  * m[11] * m[13] +
+	    m[8]  * m[1]  * m[15] -
+	    m[8]  * m[3]  * m[13] -
+	    m[12] * m[1]  * m[11] +
+	    m[12] * m[3]  * m[9];
 
-    inv[13] = m[0]  * m[9]  * m[14] -
-	      m[0]  * m[10] * m[13] -
-	      m[8]  * m[1]  * m[14] +
-	      m[8]  * m[2]  * m[13] +
-	      m[12] * m[1]  * m[10] -
-	      m[12] * m[2]  * m[9];
+  inv[13] = m[0]  * m[9]  * m[14] -
+	    m[0]  * m[10] * m[13] -
+	    m[8]  * m[1]  * m[14] +
+	    m[8]  * m[2]  * m[13] +
+	    m[12] * m[1]  * m[10] -
+	    m[12] * m[2]  * m[9];
 
-    inv[2] = m[1]  * m[6] * m[15] -
-	     m[1]  * m[7] * m[14] -
-	     m[5]  * m[2] * m[15] +
-	     m[5]  * m[3] * m[14] +
-	     m[13] * m[2] * m[7] -
-	     m[13] * m[3] * m[6];
+  inv[2] = m[1]  * m[6] * m[15] -
+	   m[1]  * m[7] * m[14] -
+	   m[5]  * m[2] * m[15] +
+	   m[5]  * m[3] * m[14] +
+	   m[13] * m[2] * m[7] -
+	   m[13] * m[3] * m[6];
 
-    inv[6] = -m[0]  * m[6] * m[15] +
-	      m[0]  * m[7] * m[14] +
-	      m[4]  * m[2] * m[15] -
-	      m[4]  * m[3] * m[14] -
-	      m[12] * m[2] * m[7] +
-	      m[12] * m[3] * m[6];
+  inv[6] = -m[0]  * m[6] * m[15] +
+	    m[0]  * m[7] * m[14] +
+	    m[4]  * m[2] * m[15] -
+	    m[4]  * m[3] * m[14] -
+	    m[12] * m[2] * m[7] +
+	    m[12] * m[3] * m[6];
 
-    inv[10] = m[0]  * m[5] * m[15] -
-	      m[0]  * m[7] * m[13] -
-	      m[4]  * m[1] * m[15] +
-	      m[4]  * m[3] * m[13] +
-	      m[12] * m[1] * m[7] -
-	      m[12] * m[3] * m[5];
+  inv[10] = m[0]  * m[5] * m[15] -
+	    m[0]  * m[7] * m[13] -
+	    m[4]  * m[1] * m[15] +
+	    m[4]  * m[3] * m[13] +
+	    m[12] * m[1] * m[7] -
+	    m[12] * m[3] * m[5];
 
-    inv[14] = -m[0]  * m[5] * m[14] +
-	       m[0]  * m[6] * m[13] +
-	       m[4]  * m[1] * m[14] -
-	       m[4]  * m[2] * m[13] -
-	       m[12] * m[1] * m[6] +
-	       m[12] * m[2] * m[5];
+  inv[14] = -m[0]  * m[5] * m[14] +
+	     m[0]  * m[6] * m[13] +
+	     m[4]  * m[1] * m[14] -
+	     m[4]  * m[2] * m[13] -
+	     m[12] * m[1] * m[6] +
+	     m[12] * m[2] * m[5];
 
-    inv[3] = -m[1] * m[6] * m[11] +
-	      m[1] * m[7] * m[10] +
-	      m[5] * m[2] * m[11] -
-	      m[5] * m[3] * m[10] -
-	      m[9] * m[2] * m[7] +
-	      m[9] * m[3] * m[6];
+  inv[3] = -m[1] * m[6] * m[11] +
+	    m[1] * m[7] * m[10] +
+	    m[5] * m[2] * m[11] -
+	    m[5] * m[3] * m[10] -
+	    m[9] * m[2] * m[7] +
+	    m[9] * m[3] * m[6];
 
-    inv[7] = m[0] * m[6] * m[11] -
-	     m[0] * m[7] * m[10] -
-	     m[4] * m[2] * m[11] +
-	     m[4] * m[3] * m[10] +
-	     m[8] * m[2] * m[7] -
-	     m[8] * m[3] * m[6];
+  inv[7] = m[0] * m[6] * m[11] -
+	   m[0] * m[7] * m[10] -
+	   m[4] * m[2] * m[11] +
+	   m[4] * m[3] * m[10] +
+	   m[8] * m[2] * m[7] -
+	   m[8] * m[3] * m[6];
 
-    inv[11] = -m[0] * m[5] * m[11] +
-	       m[0] * m[7] * m[9] +
-	       m[4] * m[1] * m[11] -
-	       m[4] * m[3] * m[9] -
-	       m[8] * m[1] * m[7] +
-	       m[8] * m[3] * m[5];
+  inv[11] = -m[0] * m[5] * m[11] +
+	     m[0] * m[7] * m[9] +
+	     m[4] * m[1] * m[11] -
+	     m[4] * m[3] * m[9] -
+	     m[8] * m[1] * m[7] +
+	     m[8] * m[3] * m[5];
 
-    inv[15] = m[0] * m[5] * m[10] -
-	      m[0] * m[6] * m[9] -
-	      m[4] * m[1] * m[10] +
-	      m[4] * m[2] * m[9] +
-	      m[8] * m[1] * m[6] -
-	      m[8] * m[2] * m[5];
+  inv[15] = m[0] * m[5] * m[10] -
+	    m[0] * m[6] * m[9] -
+	    m[4] * m[1] * m[10] +
+	    m[4] * m[2] * m[9] +
+	    m[8] * m[1] * m[6] -
+	    m[8] * m[2] * m[5];
 
-    det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
+  det = m[0] * inv[0] + m[1] * inv[4] + m[2] * inv[8] + m[3] * inv[12];
 
-    if (det == 0) return false;
+  if (det == 0) return false;
 
-    det = 1.0 / det;
+  det = 1.0 / det;
 
-    for (i = 0; i < 16; i++)
-      invOut[i] = inv[i] * det;
+  for (i = 0; i < 16; i++)
+    invOut[i] = inv[i] * det;
 
-    return true;
+  return true;
 }
 
-static void project_mouse(PuglView* view, int mx, int my, float *x, float *y) {
-  B3ui* ui = (B3ui*)puglGetHandle(view);
-  const double fx =  2.0 * (float)mx / ui->width  - 1.0;
-  const double fy = -2.0 * (float)my / ui->height + 1.0;
-  const double fz = -(fx * ui->matrix[2] + fy * ui->matrix[6]) / ui->matrix[10];
-
-  *x = fx * ui->matrix[0] + fy * ui->matrix[4] + fz * ui->matrix[8] + ui->matrix[12];
-  *y = fx * ui->matrix[1] + fy * ui->matrix[5] + fz * ui->matrix[9] + ui->matrix[13];
-
-  //printf(" %.3fx%.3f (%.3f) -> %.3fx%.3f\n", fx, fy, fz, *x, *y);
-}
-
+#ifdef DEBUG_ROTATION_MATRIX
 static void print4x4(GLdouble *m) {
   printf(
       "%+0.3lf %+0.3lf %+0.3lf %+0.3lf\n"
@@ -372,6 +408,19 @@ static void print4x4(GLdouble *m) {
       , m[12] , m[13] , m[14] , m[15]
       );
 }
+#endif
+
+/* apply reverse projection to mouse-pointer, project Z-axis to screen. */
+static void project_mouse(PuglView* view, int mx, int my, float *x, float *y) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  const double fx =  2.0 * (float)mx / ui->width  - 1.0;
+  const double fy = -2.0 * (float)my / ui->height + 1.0;
+  const double fz = -(fx * ui->matrix[2] + fy * ui->matrix[6]) / ui->matrix[10];
+
+  *x = fx * ui->matrix[0] + fy * ui->matrix[4] + fz * ui->matrix[8] + ui->matrix[12];
+  *y = fx * ui->matrix[1] + fy * ui->matrix[5] + fz * ui->matrix[9] + ui->matrix[13];
+}
+
 
 /******************************************************************************
  * 3D model loading
@@ -435,7 +484,7 @@ static void drawMesh(PuglView* view, unsigned int index, int apply_transformatio
 }
 
 /******************************************************************************
- * OpenGL settings & textures
+ * OpenGL textures
  */
 
 #include "wood.c"
@@ -444,17 +493,14 @@ static void drawMesh(PuglView* view, unsigned int index, int apply_transformatio
 
 #include "btn_vibl.c"
 #include "btn_vibu.c"
-
 #include "btn_perc.c"
 #include "btn_perc_decay.c"
 #include "btn_perc_harmonic.c"
 #include "btn_perc_volume.c"
-
 #include "btn_overdrive.c"
 
 #include "bg_right_ctrl.c"
 #include "bg_left_ctrl.c"
-
 #include "bg_leslie_drum.c"
 #include "bg_leslie_horn.c"
 
@@ -472,6 +518,7 @@ static void drawMesh(PuglView* view, unsigned int index, int apply_transformatio
       (VARNAME.bytes_per_pixel == 3 ? GL_RGB : GL_RGBA), \
       GL_UNSIGNED_BYTE, VARNAME.pixel_data); \
   glGenerateMipmap(GL_TEXTURE_2D);
+
 
 static void initTextures(PuglView* view) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
@@ -506,6 +553,11 @@ static void initTextures(PuglView* view) {
   CIMAGE(14, help_screen_image);
 }
 
+
+/******************************************************************************
+ * OpenGL settings
+ */
+
 static void setupOpenGL() {
   glEnable(GL_DEPTH_TEST);
   glDepthFunc(GL_LEQUAL);
@@ -514,35 +566,30 @@ static void setupOpenGL() {
   glEnable(GL_DITHER);
   glEnable(GL_MULTISAMPLE);
   glEnable(GL_NORMALIZE);
-#if 1
   glEnable(GL_POLYGON_SMOOTH);
   glEnable (GL_LINE_SMOOTH);
   glShadeModel(GL_SMOOTH);
-#endif
-  //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // test
 
   glEnable(GL_BLEND);
-  //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
   glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA_SATURATE);
 
-#if 1
   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
   glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
   glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
   glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
   glHint(GL_GENERATE_MIPMAP_HINT, GL_NICEST);
   glHint(GL_FOG_HINT, GL_NICEST);
-#endif
+
+  //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); // test & debug
 }
 
 static void setupLight() {
-
-  GLfloat global_ambient[]  = { 0.2, 0.2, 0.2, 1.0 };
-  GLfloat light0_ambient[]  = { 0.3, 0.3, 0.3, 1.0 };
-  GLfloat light0_diffuse[]  = { 1.0, 1.0, 1.0, 1.0 };
-  GLfloat light0_specular[] = { 1.0, 0.9, 1.0, 1.0 };
-  GLfloat light0_position[] = {  3.0,  2.5, -12.0, 0 };
-  GLfloat spot_direction[]  = { -4.0, -2.5,  12.0 };
+  const GLfloat global_ambient[]  = { 0.2, 0.2, 0.2, 1.0 };
+  const GLfloat light0_ambient[]  = { 0.3, 0.3, 0.3, 1.0 };
+  const GLfloat light0_diffuse[]  = { 1.0, 1.0, 1.0, 1.0 };
+  const GLfloat light0_specular[] = { 1.0, 0.9, 1.0, 1.0 };
+  const GLfloat light0_position[] = {  3.0,  2.5, -12.0, 0 };
+  const GLfloat spot_direction[]  = { -4.0, -2.5,  12.0 };
 
   glLightfv(GL_LIGHT0, GL_AMBIENT, light0_ambient);
   glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
@@ -563,12 +610,10 @@ static void setupLight() {
   glEnable(GL_COLOR_MATERIAL);
   glEnable(GL_LIGHTING);
   glEnable(GL_LIGHT0);
-
-
 }
 
 /******************************************************************************
- * GUI callbacks
+ * puGL callbacks
  */
 
 static void
@@ -576,7 +621,6 @@ onReshape(PuglView* view, int width, int height)
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   const float invaspect = (float) height / (float) width;
-  //printf("onReshape\n");
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
@@ -586,27 +630,17 @@ onReshape(PuglView* view, int width, int height)
     return;
   }
 
-#if 0
-  glRotatef(50, 1, 0, 0);
-  glRotatef(25, 0, 1, 0);
-  glRotatef(30, 0, 0, 1);
-#endif
-
-#if 1 /* global viewpoint */
   glRotatef(ui->rot[0], 0, 1, 0);
   glRotatef(ui->rot[1], 1, 0, 0);
   glRotatef(ui->rot[2], 0, 0, 1);
   glScalef(ui->scale, ui->scale, ui->scale);
   glTranslatef(ui->off[0], ui->off[1], ui->off[2]);
-#else
-  glScalef(0.5f, 0.5f, 0.5f);
-#endif
 
   GLdouble matrix[16];
   glGetDoublev(GL_PROJECTION_MATRIX, matrix);
   invertMatrix(matrix, ui->matrix);
 
-#if 0 // debug rotation matrices
+#ifdef DEBUG_ROTATION_MATRIX
   print4x4(matrix);
   print4x4(ui->matrix);
 #endif
@@ -621,9 +655,12 @@ onDisplay(PuglView* view)
 {
   int i;
   B3ui* ui = (B3ui*)puglGetHandle(view);
-  //printf("onDisplay\n");
 
   if (!ui->initialized) {
+    /* initialization needs to happen from event context
+     * after pugl set glXMakeCurrent() - this /should/ otherwise
+     * be done during initialization()
+     */
     ui->initialized = 1;
     setupOpenGL();
     initMesh(ui->view);
@@ -631,7 +668,6 @@ onDisplay(PuglView* view)
     initTextures(ui->view);
   }
 
-#if 1
   const GLfloat no_mat[] = { 0.0, 0.0, 0.0, 1.0 };
   const GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
   const GLfloat no_shininess[] = { 128.0 };
@@ -664,7 +700,7 @@ onDisplay(PuglView* view)
   }
 
 
-  /** step 1 - draw background -- fixed objects */
+  /** step 1 - draw background -- fixed objects **/
 
   glPushMatrix();
   glLoadIdentity();
@@ -716,7 +752,7 @@ onDisplay(PuglView* view)
   drawMesh(view, OBJ_INSET, 1);
   glDisable(GL_TEXTURE_2D);
 
-  /* leslie drum */
+  /* leslie drum box */
   glTranslatef(-2.8, -5.50485, 0);
   glEnable(GL_TEXTURE_2D);
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
@@ -724,7 +760,7 @@ onDisplay(PuglView* view)
   drawMesh(view, OBJ_GEARBOX, 1);
   glDisable(GL_TEXTURE_2D);
 
-  /* leslie horn */
+  /* leslie horn box */
   glTranslatef(5.6, 0, 0);
   glEnable(GL_TEXTURE_2D);
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
@@ -733,7 +769,6 @@ onDisplay(PuglView* view)
   glDisable(GL_TEXTURE_2D);
   glPopMatrix();
 
-  /* sideboard */
 
   /** step 2 - draw /movable/ objects **/
 
@@ -741,7 +776,6 @@ onDisplay(PuglView* view)
   glMaterialfv(GL_FRONT, GL_AMBIENT, no_mat);
   glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
   glMaterialfv(GL_FRONT, GL_SHININESS, high_shininess);
-  glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
 
   for (i = 0; i < TOTAL_OBJ; ++i) {
     float y = ui->ctrls[i].y;
@@ -815,14 +849,11 @@ onDisplay(PuglView* view)
 	glRotatef(
 	    (-40.0 + 80.0 * rint(ui->ctrls[i].cur - ui->ctrls[i].min) / (ui->ctrls[i].max - ui->ctrls[i].min))
 	    , 0, 1, 0);
-#if 0
-	glEnable(GL_TEXTURE_2D);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
-#endif
 	break;
       default:
 	break;
     }
+
     if (ui->ctrls[i].texID > 0) {
       glEnable(GL_TEXTURE_2D);
       glBindTexture(GL_TEXTURE_2D, ui->texID[ui->ctrls[i].texID]);
@@ -832,37 +863,6 @@ onDisplay(PuglView* view)
     glDisable(GL_TEXTURE_2D);
     glPopMatrix();
   }
-
-#else // debug -- unity square
-  glBegin(GL_QUADS);
-  glColor3f(0, 0, .5); glVertex3f(-1, -1,  0);
-  glColor3f(0, 1, .5); glVertex3f(-1,  1,  0);
-  glColor3f(1, 1, .5); glVertex3f( 1,  1,  0);
-  glColor3f(1, 0, .5); glVertex3f( 1, -1,  0);
-  glEnd();
-
-  glLineWidth(3.0);
-  glBegin(GL_LINES);
-  glColor3f(1.0, 1.0, 1.0);
-  glVertex3f(-1, 0, 0);
-  glVertex3f(1, 0, 0);
-  glVertex2f(0, -1);
-  glVertex2f(0, 1);
-
-  glVertex2f(-1, -0.75);
-  glVertex2f( 0, -0.75);
-  glVertex2f(-0.75, -1);
-  glVertex2f(-0.75,  0);
-
-  glColor3f(0.0, 1.0, 1.0);
-  glVertex3f(0, 0, -1);
-  glVertex3f(0, 0, 0);
-
-  glColor3f(1.0, 1.0, 0.0);
-  glVertex3f(0, 0, 0);
-  glVertex3f(0, 0, 1);
-  glEnd();
-#endif
 }
 
 static void
@@ -937,6 +937,20 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
   }
 }
 
+static void
+onScroll(PuglView* view, int x, int y, float dx, float dy)
+{
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  float fx, fy;
+  project_mouse(view, x, y, &fx, &fy);
+  int i;
+  for (i = 0; i < TOTAL_OBJ ; ++i) {
+    if (MOUSEOVER(ui->ctrls[i], fx, fy)) {
+      ui->dndval = ui->ctrls[i].cur + SIGNUM(dy);
+      processMotion(view, i, 0, 0);
+    }
+  }
+}
 
 static void
 onMotion(PuglView* view, int x, int y)
@@ -961,7 +975,6 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
   int i;
   float fx, fy;
   project_mouse(view, x, y, &fx, &fy);
-
   //printf("Mouse %d %s at %.3f,%.3f\n", button, press ? "down" : "up", fx, fy);
 
   if (!press) { /* mouse up */
@@ -970,49 +983,36 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
   }
 
   for (i = 0; i < TOTAL_OBJ; ++i) {
-    if (MOUSEOVER(ui->ctrls[i], fx, fy)) {
-      //printf("CTRL: %d\n", i);
-      switch (ui->ctrls[i].type) {
-	case OBJ_DRAWBAR:
-	case OBJ_DIAL:
-	case OBJ_LEVER:
-	  ui->dndid = i;
-	  ui->dndx = fx;
-	  ui->dndy = fy;
-	  ui->dndval = ui->ctrls[i].cur;
-	  break;
-	case OBJ_SWITCH:
-	  if (press) {
-	    if (ui->ctrls[i].cur == ui->ctrls[i].max)
-	      ui->ctrls[i].cur = ui->ctrls[i].min;
-	    else
-	      ui->ctrls[i].cur = ui->ctrls[i].max;
-	    puglPostRedisplay(view);
-	    notifyPlugin(view, i);
-	  }
-	  break;
-	default:
-	  break;
-      }
-      break;
+    if (!MOUSEOVER(ui->ctrls[i], fx, fy)) {
+      continue;
     }
+
+    switch (ui->ctrls[i].type) {
+      case OBJ_DRAWBAR:
+      case OBJ_DIAL:
+      case OBJ_LEVER:
+	ui->dndid = i;
+	ui->dndx = fx;
+	ui->dndy = fy;
+	ui->dndval = ui->ctrls[i].cur;
+	break;
+      case OBJ_SWITCH:
+	if (press) {
+	  if (ui->ctrls[i].cur == ui->ctrls[i].max)
+	    ui->ctrls[i].cur = ui->ctrls[i].min;
+	  else
+	    ui->ctrls[i].cur = ui->ctrls[i].max;
+	  puglPostRedisplay(view);
+	  notifyPlugin(view, i);
+	}
+	break;
+      default:
+	break;
+    }
+    break;
   }
 }
 
-static void
-onScroll(PuglView* view, int x, int y, float dx, float dy)
-{
-  B3ui* ui = (B3ui*)puglGetHandle(view);
-  float fx, fy;
-  project_mouse(view, x, y, &fx, &fy);
-  int i;
-  for (i = 0; i < TOTAL_OBJ ; ++i) {
-    if (MOUSEOVER(ui->ctrls[i], fx, fy)) {
-      ui->dndval = ui->ctrls[i].cur + SIGNUM(dy);
-      processMotion(view, i, 0, 0);
-    }
-  }
-}
 
 /******************************************************************************
  * misc - used for LV2 init/operation
@@ -1035,6 +1035,11 @@ static int idle(LV2UI_Handle handle) {
   return 0;
 }
 #endif
+
+
+/******************************************************************************
+ * main GUI setup
+ */
 
 static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   PuglNativeWindow parent = 0;
@@ -1085,6 +1090,8 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
     resize->ui_resize(resize->handle, ui->width, ui->height);
   }
 
+  /** add control elements **/
+
 #define CTRLELEM(ID, TYPE, VMIN, VMAX, VCUR, PX, PY, W, H, TEXID) \
   {\
     ui->ctrls[ID].type = TYPE; \
@@ -1098,7 +1105,6 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
     ui->ctrls[ID].texID = TEXID; \
   }
 
-  /* interaction -- moveable GUI objects */
   /* drawbars */
   for (i = 0; i < 9; ++i)
     CTRLELEM(i, OBJ_DRAWBAR, 0, 8, 0, 3.6 + 1.4 * i, 7, 1.2, 25, 1);
@@ -1118,15 +1124,17 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   /* btn -- overdrive */
   CTRLELEM(26, OBJ_SWITCH, 0, 1, 0, -25.375, -1, 2, 4, 5);
 
+  /* dials */
   CTRLELEM(27, OBJ_DIAL,  0, 127, -5,  -25.375, 3.5, 4, 4, 2); // overdrive
   CTRLELEM(28, OBJ_DIAL, -5, 0,   -5,  -20.375, 3.5, 4, 4, 2); // vibrato
 
   CTRLELEM(29, OBJ_DIAL,  0, 127,  0,   25.375, 3.5, 4, 4, 2); // volume
   CTRLELEM(30, OBJ_DIAL,  0, 127,  0,   20.375, 3.5, 4, 4, 2); // reverb
 
-  // leslie
+  /* Leslie levers */
   CTRLELEM(31, OBJ_LEVER, 0, 2, 2, -25.675, 8, 4, 3, -1);
   CTRLELEM(32, OBJ_LEVER, 0, 2, 0, -20.075, 8, 4, 3, -1);
+
 
 #ifdef OLD_SUIL
   ui->exit = false;
@@ -1135,6 +1143,7 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
 
   return 0;
 }
+
 
 /******************************************************************************
  * LV2 callbacks
@@ -1175,6 +1184,7 @@ instantiate(const LV2UI_Descriptor*   descriptor,
     free(ui);
     return NULL;
   }
+
   *widget = (void*)puglGetNativeWindow(ui->view);
 
 
@@ -1199,6 +1209,8 @@ cleanup(LV2UI_Handle handle)
   pthread_join(ui->thread, NULL);
 #endif
   puglDestroy(ui->view);
+  free(ui->vbo);
+  free(ui->vinx);
   free(ui);
 }
 
@@ -1210,6 +1222,8 @@ port_event(LV2UI_Handle handle,
     const void*  buffer)
 {
   B3ui* ui = (B3ui*)handle;
+  char *k; int v;
+
   if (format != ui->uris.atom_eventTransfer) {
     fprintf(stderr, "B3LV2UI: Unknown message format.\n");
     return;
@@ -1226,40 +1240,9 @@ port_event(LV2UI_Handle handle,
   }
 
   LV2_Atom_Object* obj      = (LV2_Atom_Object*)atom;
-  char *k; int v, i;
   get_cc_key_value(&ui->uris, obj, &k, &v);
 
-  /* special */
-  if (!strcmp("vibrato.routing", k)) {
-    ui->ctrls[24].cur = ((v>>5) & 1 ) ? 1 : 0;
-    ui->ctrls[25].cur = ((v>>5) & 2 ) ? 1 : 0;
-    puglPostRedisplay(ui->view);
-    return;
-  } else
-  if (!strcmp("rotary.speed-select", k)) {
-    // see setRevOption() -- value 0..8
-    // map: off:0, slow:1, fast:2  ->  tremolo/fast 2 << off:1 >> chorale/slow:0
-    int hr = (v / 45) % 3; // horn 0:off, 1:chorale  2:tremolo
-    int bf = (v / 15) % 3; // drum 0:off, 1:chorale  2:tremolo
-    if (hr != 2) hr = (hr == 1) ? 0 : 1;
-    if (bf != 2) bf = (bf == 1) ? 0 : 1;
-    ui->ctrls[31].cur = hr; // horn 0:chorale, 1:off, 2:tremolo
-    ui->ctrls[32].cur = bf; // drum 0:chorale, 1:off, 2:tremolo
-    puglPostRedisplay(ui->view);
-    return;
-  }
-
-  for (i = 0; i < TOTAL_OBJ; ++i) {
-    if (!strcmp(obj_control[i], k)) {
-      /* override drags/modifications of current object */
-      if (ui->dndid == i) {
-	ui->dndid = -1;
-      }
-      vmap_midi_to_val(ui->view, i, v);
-      puglPostRedisplay(ui->view);
-      break;
-    }
-  }
+  processCCevent(ui, k, v);
 }
 
 /******************************************************************************
