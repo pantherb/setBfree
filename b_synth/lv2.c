@@ -111,6 +111,13 @@ void initSynth(B3S *b3s, double rate) {
   setDrawBars (&b3s->inst, 2, defaultPreset);
 #endif
 
+#if 0
+  if (walkProgrammes(b3s->inst.progs, 0)) {
+    listProgrammes (b3s->inst.progs, stderr);
+  }
+  listCCAssignments(b3s->inst.midicfg, stderr);
+#endif
+
 #if 1
   setRevSelect (b3s->inst.whirl, WHIRL_SLOW);
 #endif
@@ -133,7 +140,7 @@ void synthSound (B3S *instance, uint32_t nframes, float **out) {
       oscGenerateFragment (instance->inst.synth, b3s->bufA, BUFFER_SIZE_SAMPLES);
       preamp (instance->inst.preamp, b3s->bufA, b3s->bufB, BUFFER_SIZE_SAMPLES);
       reverb (instance->inst.reverb, b3s->bufB, b3s->bufC, BUFFER_SIZE_SAMPLES);
-      whirlProc(instance->inst.whirl, b3s->bufA, b3s->bufJ[0], b3s->bufJ[1], BUFFER_SIZE_SAMPLES);
+      whirlProc(instance->inst.whirl, b3s->bufC, b3s->bufJ[0], b3s->bufJ[1], BUFFER_SIZE_SAMPLES);
     }
 
     int nread = MIN(nremain, (BUFFER_SIZE_SAMPLES - b3s->boffset));
@@ -307,7 +314,22 @@ run(LV2_Handle instance, uint32_t n_samples)
 	write_cc_key_value(&b3s->notify_forge, uris, "lower.drawbar1", 127);
 	write_cc_key_value(&b3s->notify_forge, uris, "pedal.drawbar16", 0);
 	write_cc_key_value(&b3s->notify_forge, uris, "pedal.drawbar8", 32);
-	// TODO add vibrato, percussion,...
+
+	write_cc_key_value(&b3s->notify_forge, uris, "vibrato.routing", 0);
+	write_cc_key_value(&b3s->notify_forge, uris, "vibrato.knob", 0);
+
+	write_cc_key_value(&b3s->notify_forge, uris, "percussion.enable", 0);
+	write_cc_key_value(&b3s->notify_forge, uris, "percussion.volume", 0);
+	write_cc_key_value(&b3s->notify_forge, uris, "percussion.decay", 0);
+	write_cc_key_value(&b3s->notify_forge, uris, "percussion.harmonic", 0);
+
+	write_cc_key_value(&b3s->notify_forge, uris, "overdrive.enable", 0);
+	write_cc_key_value(&b3s->notify_forge, uris, "overdrive.character", 0);
+
+	write_cc_key_value(&b3s->notify_forge, uris, "reverb.mix", 38);
+	write_cc_key_value(&b3s->notify_forge, uris, "swellpedal1", 127);
+
+	write_cc_key_value(&b3s->notify_forge, uris, "rotary.speed-select", 4*15);
 #endif
       } else if (obj->body.otype == uris->sb3_control) {
 	char *k; int v;

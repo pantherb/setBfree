@@ -34,24 +34,25 @@
 #ifdef __APPLE__
 #include "OpenGL/glu.h"
 #else
-#include <glu.h>
+#include <GL/glu.h>
 #endif
 
 
 #include "uris.h"
 #include "ui_model.h"
 
-#define TOTAL_OBJ (23)
+#define TOTAL_OBJ (33)
 
-#define SCALE (0.05f)
+#define SCALE (0.04f)
+
 #define CTRLWIDTH2(ctrl) (SCALE * (ctrl).w / 2.0)
 #define CTRLHEIGHT2(ctrl) (SCALE * (ctrl).h / 2.0)
 
 #define MOUSEOVER(ctrl, mousex, mousey) \
-  (   (mousex) >= (ctrl).x - CTRLWIDTH2(ctrl) \
-   && (mousex) <= (ctrl).x + CTRLWIDTH2(ctrl) \
-   && (mousey) >= (ctrl).y - CTRLHEIGHT2(ctrl) \
-   && (mousey) <= (ctrl).y + CTRLHEIGHT2(ctrl) )
+  (   (mousex) >= (ctrl).x * SCALE - CTRLWIDTH2(ctrl) \
+   && (mousex) <= (ctrl).x * SCALE + CTRLWIDTH2(ctrl) \
+   && (mousey) >= (ctrl).y * SCALE - CTRLHEIGHT2(ctrl) \
+   && (mousey) <= (ctrl).y * SCALE + CTRLHEIGHT2(ctrl) )
 
 
 /* names from src/midi.c -  mapped to widgets */
@@ -80,8 +81,18 @@ static const char *obj_control[] = {
   "pedal.drawbar8",
 
   "percussion.enable",// 20
-  "vibrato.routing",// 21
-  "vibrato.knob"  // 22
+  "percussion.volume",
+  "percussion.decay",
+  "percussion.harmonic",
+  "vibrato.routing",  // 24  SPECIAL -- lower
+  "vibrato.routing",  // 25  SPECIAL -- upper
+  "overdrive.enable", // 26
+  "overdrive.character",
+  "vibrato.knob", // 28
+  "swellpedal1",
+  "reverb.mix", // 30
+  "rotary.speed-select", // SPECIAL leslie horn  // rotary.speed-select 2^3
+  "rotary.speed-select"  // SPECIAL leslie baffle
 };
 
 
@@ -90,6 +101,7 @@ typedef struct {
   float min, max, cur; // mapped to midi 0..127
   float x,y; // matrix position
   float w,h; // bounding box
+  int texID;
 } b3widget;
 
 typedef struct {
@@ -116,9 +128,10 @@ typedef struct {
   GLuint * vinx;
 
   /* Textures */
-  GLuint texID[4];
+  GLuint texID[15];
 
   GLdouble matrix[16]; // used for mouse mapping
+  double rot[3], off[3], scale;
 
   b3widget ctrls[TOTAL_OBJ];
   int dndid;
@@ -143,7 +156,22 @@ static int vmap_val_to_midi(PuglView* view, int elem) {
 static void notifyPlugin(PuglView* view, int elem) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   uint8_t obj_buf[OBJ_BUF_SIZE];
-  const int val = vmap_val_to_midi(view, elem);
+  int val;
+
+  /* special */
+  if (elem == 24 || elem == 25) {
+    val = ((ui->ctrls[24].cur ? 1 : 0) | (ui->ctrls[25].cur ? 2 : 0) ) << 5;
+  } else if (elem == 31 || elem == 32) {
+    // map: tremolo/fast 2 << off:1 >> chorale/slow:0  ->  off:0, slow:1, fast:2
+    int hr = rint(ui->ctrls[32].cur);
+    int bf = rint(ui->ctrls[31].cur);
+    if (hr != 2) hr = (hr == 1) ? 0 : 1;
+    if (bf != 2) bf = (bf == 1) ? 0 : 1;
+    val = bf * 15 + hr * 45;
+  } else {
+    val = vmap_val_to_midi(view, elem);
+  }
+
   lv2_atom_forge_set_buffer(&ui->forge, obj_buf, OBJ_BUF_SIZE);
   LV2_Atom* msg = write_cc_key_value(&ui->forge, &ui->uris, obj_control[elem], val);
   ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
@@ -155,20 +183,23 @@ static void processMotion(PuglView* view, int elem, float dx, float dy) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   if (elem < 0 || elem >= TOTAL_OBJ) return;
 
-  const float dist = -2.0 * dy;
+  const float dist = -2.0 * (ui->ctrls[elem].type == OBJ_LEVER ? 2.5 * dx : dy);
   const int oldval = vmap_val_to_midi(view, elem);
 
   switch (ui->ctrls[elem].type) {
     case OBJ_DIAL:
       ui->ctrls[elem].cur = ui->dndval + dist * (ui->ctrls[elem].max - ui->ctrls[elem].min);
-      if (ui->ctrls[elem].cur > ui->ctrls[elem].max || ui->ctrls[elem].cur < ui->ctrls[elem].min) {
-	const float r = (ui->ctrls[elem].max - ui->ctrls[elem].min);
-	ui->ctrls[elem].cur -= floor(ui->ctrls[elem].cur / r) * r;
+      if (ui->ctrls[elem].max == 0) {
+	if (ui->ctrls[elem].cur > ui->ctrls[elem].max || ui->ctrls[elem].cur < ui->ctrls[elem].min) {
+	  const float r = (ui->ctrls[elem].max - ui->ctrls[elem].min);
+	  ui->ctrls[elem].cur -= floor(ui->ctrls[elem].cur / r) * r;
+	}
+      } else {
+	if (ui->ctrls[elem].cur > ui->ctrls[elem].max) ui->ctrls[elem].cur = ui->ctrls[elem].max;
+	if (ui->ctrls[elem].cur < ui->ctrls[elem].min) ui->ctrls[elem].cur = ui->ctrls[elem].min;
       }
-      //while (ui->ctrls[elem].cur < ui->ctrls[elem].min) ui->ctrls[elem].cur += (ui->ctrls[elem].max - ui->ctrls[elem].min);
-      //if (ui->ctrls[elem].cur >= ui->ctrls[elem].max) ui->ctrls[elem].cur = ui->ctrls[elem].max;
-      //if (ui->ctrls[elem].cur < ui->ctrls[elem].min) ui->ctrls[elem].cur = ui->ctrls[elem].min;
       break;
+    case OBJ_LEVER:
     case OBJ_DRAWBAR:
       ui->ctrls[elem].cur = ui->dndval + dist * (ui->ctrls[elem].max - ui->ctrls[elem].min);
       if (ui->ctrls[elem].cur > ui->ctrls[elem].max) ui->ctrls[elem].cur = ui->ctrls[elem].max;
@@ -409,7 +440,35 @@ static void drawMesh(PuglView* view, unsigned int index, int apply_transformatio
 #include "wood.c"
 #include "dial.c"
 #include "drawbar.c"
-#include "button1.c"
+
+#include "btn_vibl.c"
+#include "btn_vibu.c"
+
+#include "btn_perc.c"
+#include "btn_perc_decay.c"
+#include "btn_perc_harmonic.c"
+#include "btn_perc_volume.c"
+
+#include "bg_right_ctrl.c"
+#include "bg_left_ctrl.c"
+
+#include "bg_leslie_drum.c"
+#include "bg_leslie_horn.c"
+
+#include "btn_overdrive.c"
+
+#define CIMAGE(ID, VARNAME) \
+  glGenTextures(1, &ui->texID[ID]); \
+  glBindTexture(GL_TEXTURE_2D, ui->texID[ID]); \
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER); \
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER); \
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER); \
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); \
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); \
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, VARNAME.width, VARNAME.height, 0, \
+      (VARNAME.bytes_per_pixel == 3 ? GL_RGB : GL_RGBA), \
+      GL_UNSIGNED_BYTE, VARNAME.pixel_data); \
+  glGenerateMipmap(GL_TEXTURE_2D);
 
 static void initTextures(PuglView* view) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
@@ -425,35 +484,24 @@ static void initTextures(PuglView* view) {
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wood_image.width, wood_image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, wood_image.pixel_data);
   glGenerateMipmap(GL_TEXTURE_2D);
 
-  glGenTextures(1, &ui->texID[1]);
-  glBindTexture(GL_TEXTURE_2D, ui->texID[1]);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, drawbar_image.width, drawbar_image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, drawbar_image.pixel_data);
-  glGenerateMipmap(GL_TEXTURE_2D);
+  CIMAGE(1, drawbar_image);
+  CIMAGE(2, dial_image);
 
-  glGenTextures(1, &ui->texID[2]);
-  glBindTexture(GL_TEXTURE_2D, ui->texID[2]);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_BORDER);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, btn1_image.width, btn1_image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, btn1_image.pixel_data);
-  glGenerateMipmap(GL_TEXTURE_2D);
+  CIMAGE(3, btn_vibl_image);
+  CIMAGE(4, btn_vibu_image);
+  CIMAGE(5, btn_overdrive_image);
 
-  glGenTextures(1, &ui->texID[3]);
-  glBindTexture(GL_TEXTURE_2D, ui->texID[3]);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_NEAREST);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dial_image.width, dial_image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, dial_image.pixel_data);
-  glGenerateMipmap(GL_TEXTURE_2D);
+  CIMAGE(6, btn_perc_image);
+  CIMAGE(7, btn_perc_vol_image);
+  CIMAGE(8, btn_perc_decay_image);
+  CIMAGE(9, btn_perc_harm_image);
+
+  CIMAGE(10, bg_right_ctrl_image);
+  CIMAGE(11, bg_left_ctrl_image);
+  CIMAGE(12, bg_leslie_drum_image);
+  CIMAGE(13, bg_leslie_horn_image);
+  //CIMAGE(14, help_screen_image);
+
 }
 
 static void setupOpenGL() {
@@ -538,12 +586,12 @@ onReshape(PuglView* view, int width, int height)
   glRotatef(30, 0, 0, 1);
 #endif
 
-  // global viewpoint
-#if 1
-  glRotatef(-20, 0, 1, 0); // 10
-  glRotatef(-20, 1, 0, 0); // -30
-  glScalef(0.9f, 0.9f, 0.9f);
-  glTranslatef(0.0f, -0.15f, 0.0f);
+#if 1 /* global viewpoint */
+  glRotatef(ui->rot[0], 0, 1, 0);
+  glRotatef(ui->rot[1], 1, 0, 0);
+  glRotatef(ui->rot[2], 0, 0, 1);
+  glScalef(ui->scale, ui->scale, ui->scale);
+  glTranslatef(ui->off[0], ui->off[1], ui->off[2]);
 #else
   glScalef(0.5f, 0.5f, 0.5f);
 #endif
@@ -615,22 +663,53 @@ onDisplay(PuglView* view)
   glDisable(GL_TEXTURE_2D);
   glPopMatrix();
 
-  /* dial - background  -- TODO move to dial below..*/
+  /* insets */
   glPushMatrix();
   glLoadIdentity();
   glRotatef(180, 1, 0, 0);
 
-  glTranslatef(.825, -.2, 0);
   glScalef(SCALE, SCALE, SCALE);
+  glTranslatef(22.875, -1.49067, 0);
 
   glMaterialfv(GL_FRONT, GL_AMBIENT, mat_dial);
   glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_dial);
   glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
   glMaterialfv(GL_FRONT, GL_SHININESS, high_shininess);
   glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
-  drawMesh(view, OBJ_DIALBG, 1);
+
+  /* right ctrl */
+  glEnable(GL_TEXTURE_2D);
+  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
+  glBindTexture(GL_TEXTURE_2D, ui->texID[10]);
+  drawMesh(view, OBJ_INSET, 1);
+  glDisable(GL_TEXTURE_2D);
+
+  /* left ctrl */
+  glTranslatef(-22.875 * 2.0, 0, 0);
+  glEnable(GL_TEXTURE_2D);
+  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
+  glBindTexture(GL_TEXTURE_2D, ui->texID[11]);
+  drawMesh(view, OBJ_INSET, 1);
+  glDisable(GL_TEXTURE_2D);
+
+  /* leslie drum */
+  glTranslatef(-2.8, -5.50485, 0);
+  glEnable(GL_TEXTURE_2D);
+  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
+  glBindTexture(GL_TEXTURE_2D, ui->texID[12]);
+  drawMesh(view, OBJ_GEARBOX, 1);
+  glDisable(GL_TEXTURE_2D);
+
+  /* leslie horn */
+  glTranslatef(5.6, 0, 0);
+  glEnable(GL_TEXTURE_2D);
+  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
+  glBindTexture(GL_TEXTURE_2D, ui->texID[13]);
+  drawMesh(view, OBJ_GEARBOX, 1);
+  glDisable(GL_TEXTURE_2D);
   glPopMatrix();
 
+  /* sideboard */
 
   /** step 2 - draw /movable/ objects **/
 
@@ -643,13 +722,13 @@ onDisplay(PuglView* view)
   for (i = 0; i < TOTAL_OBJ; ++i) {
     float y = ui->ctrls[i].y;
     if (ui->ctrls[i].type == OBJ_DRAWBAR) { /* drawbar */
-      y -= (float) vmap_val_to_midi(view, i) / 127.0 / 2.0; // XXX
+      y -= (float) vmap_val_to_midi(view, i) / 12.7;
     }
 
     glPushMatrix();
     glLoadIdentity();
-    glTranslatef(ui->ctrls[i].x, y, 0.0f);
     glScalef(SCALE, SCALE, SCALE);
+    glTranslatef(ui->ctrls[i].x, y, 0.0f);
     glRotatef(180, 0, 1, 0);
 
     switch(ui->ctrls[i].type) {
@@ -657,12 +736,16 @@ onDisplay(PuglView* view)
 	glMaterialfv(GL_FRONT, GL_AMBIENT, mat_dial);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_dial);
 	glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
-	glRotatef(
-	    240.0 - (360.0 * rint(ui->ctrls[i].cur - ui->ctrls[i].min) / (1.0 + ui->ctrls[i].max - ui->ctrls[i].min))
-	    , 0, 0, 1);
-	glEnable(GL_TEXTURE_2D);
+	if (ui->ctrls[i].max == 0) {
+	  glRotatef(
+	      240.0 - (360.0 * rint(ui->ctrls[i].cur - ui->ctrls[i].min) / (1.0 + ui->ctrls[i].max - ui->ctrls[i].min))
+	      , 0, 0, 1);
+	} else {
+	  glRotatef(
+	      150.0 - (300.0 * rint(ui->ctrls[i].cur - ui->ctrls[i].min) / (ui->ctrls[i].max - ui->ctrls[i].min))
+	      , 0, 0, 1);
+	}
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
-	glBindTexture(GL_TEXTURE_2D, ui->texID[3]);
 	break;
       case OBJ_SWITCH:
 	glMaterialfv(GL_FRONT, GL_AMBIENT, no_mat);
@@ -673,9 +756,7 @@ onDisplay(PuglView* view)
 	  glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
 	}
 	glRotatef((vmap_val_to_midi(view, i) < 64 ? -12 : 12.0), 1, 0, 0); // XXX
-	glEnable(GL_TEXTURE_2D);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	glBindTexture(GL_TEXTURE_2D, ui->texID[2]);
 	break;
       case OBJ_DRAWBAR:
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_drawbar_diff);
@@ -701,12 +782,26 @@ onDisplay(PuglView* view)
 	    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_drawbar_white);
 	    break;
 	}
-	glEnable(GL_TEXTURE_2D);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
-	glBindTexture(GL_TEXTURE_2D, ui->texID[1]);
+	break;
+      case OBJ_LEVER:
+	glMaterialfv(GL_FRONT, GL_AMBIENT, mat_dial);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_dial);
+	glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
+	glRotatef(
+	    (-40.0 + 80.0 * rint(ui->ctrls[i].cur - ui->ctrls[i].min) / (ui->ctrls[i].max - ui->ctrls[i].min))
+	    , 0, 1, 0);
+#if 0
+	glEnable(GL_TEXTURE_2D);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+#endif
 	break;
       default:
 	break;
+    }
+    if (ui->ctrls[i].texID > 0) {
+      glEnable(GL_TEXTURE_2D);
+      glBindTexture(GL_TEXTURE_2D, ui->texID[ui->ctrls[i].texID]);
     }
 
     drawMesh(view, ui->ctrls[i].type, 1);
@@ -749,10 +844,71 @@ onDisplay(PuglView* view)
 static void
 onKeyboard(PuglView* view, bool press, uint32_t key)
 {
-  if (press) {
-    fprintf(stderr, "Keyboard press %c\n", key);
-  } else {
-    fprintf(stderr, "Keyboard release %c\n", key);
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  int queue_reshape = 0;
+  if (!press) {
+    return;
+  }
+  switch (key) {
+    case 'a':
+      if (ui->rot[0] > -55) { ui->rot[0] -= 5; queue_reshape = 1; }
+      break;
+    case 'd':
+      if (ui->rot[0] <  55) { ui->rot[0] += 5; queue_reshape = 1; }
+      break;
+    case 'w':
+      if (ui->rot[1] > -80) { ui->rot[1] -= 5; queue_reshape = 1; }
+      break;
+    case 'x':
+      if (ui->rot[1] <  0)  { ui->rot[1] += 5; queue_reshape = 1; }
+      break;
+    case 'z':
+      if (ui->rot[2] > -30) { ui->rot[2] -= 5; queue_reshape = 1; }
+      break;
+    case 'c':
+      if (ui->rot[2] <  30) { ui->rot[2] += 5; queue_reshape = 1; }
+      break;
+    case '+':
+      if (ui->scale < 1.5) { ui->scale += .025; queue_reshape = 1; }
+      break;
+    case '-':
+      if (ui->scale > 0.5) { ui->scale -= .025; queue_reshape = 1; }
+      break;
+    case 'h':
+      if (ui->off[0] > -.5) { ui->off[0] -= .025; queue_reshape = 1; }
+      break;
+    case 'l':
+      if (ui->off[0] <  .5) { ui->off[0] += .025; queue_reshape = 1; }
+      break;
+    case 'j':
+      if (ui->off[1] > -.5) { ui->off[1] -= .025; queue_reshape = 1; }
+      break;
+    case 'k':
+      if (ui->off[1] <  .5) { ui->off[1] += .025; queue_reshape = 1; }
+      break;
+    case 's':
+      ui->rot[0] = ui->rot[1] = ui->rot[2] = 0.0;
+      ui->scale = 0.9;
+      ui->off[0] = ui->off[1] = ui->off[2] = 0.0;
+      queue_reshape = 1;
+      break;
+    case 'e':
+      ui->scale = 0.9;
+      ui->rot[0] = ui->rot[1] = -20;
+      ui->off[0] = ui->off[2] = 0.0;
+      ui->off[1] = -0.1f;
+      ui->rot[2] = 0;
+      queue_reshape = 1;
+      break;
+    default:
+      //fprintf(stderr, "Keyboard press (%x) '%c'\n", key, key);
+      break;
+  }
+
+  if (queue_reshape) {
+    onReshape(view, ui->width, ui->height);
+    //puglPostReshape(view);
+    puglPostRedisplay(view);
   }
 }
 
@@ -794,6 +950,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
       switch (ui->ctrls[i].type) {
 	case OBJ_DRAWBAR:
 	case OBJ_DIAL:
+	case OBJ_LEVER:
 	  ui->dndid = i;
 	  ui->dndx = fx;
 	  ui->dndy = fy;
@@ -826,7 +983,7 @@ onScroll(PuglView* view, int x, int y, float dx, float dy)
   int i;
   for (i = 0; i < TOTAL_OBJ ; ++i) {
     if (MOUSEOVER(ui->ctrls[i], fx, fy)) {
-      ui->dndval = ui->ctrls[i].cur + SIGNUM(dy); //  / (ui->ctrls[i].max - ui->ctrls[i].min);
+      ui->dndval = ui->ctrls[i].cur + SIGNUM(dy);
       processMotion(view, i, 0, 0);
     }
   }
@@ -859,9 +1016,17 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   LV2UI_Resize*    resize = NULL;
   int i;
 
-  ui->width      = 800;
-  ui->height     = 260;
+  ui->width      = 960;
+  ui->height     = 320;
   ui->dndid      = -1;
+
+  ui->rot[0]     = -20;
+  ui->rot[1]     = -20;
+  ui->rot[2]     =  0.0;
+  ui->scale      =  0.9;
+  ui->off[0]     =  0.0f;
+  ui->off[1]     = -0.1f;
+  ui->off[2]     =  0.0f;
 
   for (int i = 0; features && features[i]; ++i) {
     if (!strcmp(features[i]->URI, LV2_UI__parent)) {
@@ -894,60 +1059,48 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
     resize->ui_resize(resize->handle, ui->width, ui->height);
   }
 
+#define CTRLELEM(ID, TYPE, VMIN, VMAX, VCUR, PX, PY, W, H, TEXID) \
+  {\
+    ui->ctrls[ID].type = TYPE; \
+    ui->ctrls[ID].min = VMIN; \
+    ui->ctrls[ID].max = VMAX; \
+    ui->ctrls[ID].cur = VCUR; \
+    ui->ctrls[ID].x = PX; \
+    ui->ctrls[ID].y = PY; \
+    ui->ctrls[ID].w = W; \
+    ui->ctrls[ID].h = H; \
+    ui->ctrls[ID].texID = TEXID; \
+  }
+
   /* interaction -- moveable GUI objects */
   /* drawbars */
-  for (i = 0; i < 9; ++i) {
-    ui->ctrls[i].type = OBJ_DRAWBAR;
-    ui->ctrls[i].min = 0;
-    ui->ctrls[i].max = 8;
-    ui->ctrls[i].cur = 0;
-    ui->ctrls[i].x = -.07 + .07 * i;
-    ui->ctrls[i].y = .35;
-    ui->ctrls[i].w = 1.2;
-    ui->ctrls[i].h = 25;
-  }
-  for (; i < 18; ++i) {
-    ui->ctrls[i].type = OBJ_DRAWBAR;
-    ui->ctrls[i].min = 0;
-    ui->ctrls[i].max = 8;
-    ui->ctrls[i].cur = 0;
-    ui->ctrls[i].x = -0.77 + .07 * (i-9);
-    ui->ctrls[i].y = .35;
-    ui->ctrls[i].w = 1.2;
-    ui->ctrls[i].h = 48;
-  }
-  for (; i < 20; ++i) {
-    ui->ctrls[i].type = OBJ_DRAWBAR;
-    ui->ctrls[i].min = 0;
-    ui->ctrls[i].max = 8;
-    ui->ctrls[i].cur = 0;
-    ui->ctrls[i].x = -0.98 + .07 * (i-18);
-    ui->ctrls[i].y = .35;
-    ui->ctrls[i].w = 1.2;
-    ui->ctrls[i].h = 48;
-  }
-  /* btn */
-  for (; i < 22; ++i) {
-    ui->ctrls[i].type = OBJ_SWITCH;
-    ui->ctrls[i].min = 0;
-    ui->ctrls[i].max = 1;
-    ui->ctrls[i].cur = i%2;
-    ui->ctrls[i].x = .9 - .15 * (i-20);
-    ui->ctrls[i].y = -.075;
-    ui->ctrls[i].w = 2;
-    ui->ctrls[i].h = 4;
-  }
-  /* dial */
-  for (; i < 23; ++i) {
-    ui->ctrls[i].type = OBJ_DIAL;
-    ui->ctrls[i].min = 0;
-    ui->ctrls[i].max = 5;
-    ui->ctrls[i].cur = 0;
-    ui->ctrls[i].x = .825;
-    ui->ctrls[i].y = .2;
-    ui->ctrls[i].w = 4;
-    ui->ctrls[i].h = 4;
-  }
+  for (i = 0; i < 9; ++i)
+    CTRLELEM(i, OBJ_DRAWBAR, 0, 8, 0, 3.6 + 1.4 * i, 7, 1.2, 25, 1);
+  for (; i < 18; ++i)
+    CTRLELEM(i, OBJ_DRAWBAR, 0, 8, 0, -10.5 + 1.4 * (i-9), 7, 1.2, 25, 1);
+  for (; i < 20; ++i)
+    CTRLELEM(i, OBJ_DRAWBAR, 0, 8, 0, -14.8 + 1.4 * (i-18), 7, 1.2, 25, 1);
+
+  /* btn - perc 20 - 23*/
+  for (; i < 24; ++i)
+    CTRLELEM(i, OBJ_SWITCH, 0, 1, 0, 18.75 + 2.75 * (i-20), -1, 2, 4, i-14);
+
+  /* btn - vib 24, 25*/
+  CTRLELEM(24, OBJ_SWITCH, 0, 1, 0, -21.50, -1, 2, 4, 3);
+  CTRLELEM(25, OBJ_SWITCH, 0, 1, 0, -18.75, -1, 2, 4, 4);
+
+  /* btn -- overdrive */
+  CTRLELEM(26, OBJ_SWITCH, 0, 1, 0, -25.375, -1, 2, 4, 5);
+
+  CTRLELEM(27, OBJ_DIAL,  0, 127, -5,  -25.375, 3.5, 4, 4, 2); // overdrive
+  CTRLELEM(28, OBJ_DIAL, -5, 0,   -5,  -20.375, 3.5, 4, 4, 2); // vibrato
+
+  CTRLELEM(29, OBJ_DIAL,  0, 127,  0,   25.375, 3.5, 4, 4, 2); // volume
+  CTRLELEM(30, OBJ_DIAL,  0, 127,  0,   20.375, 3.5, 4, 4, 2); // reverb
+
+  // leslie
+  CTRLELEM(31, OBJ_LEVER, 0, 2, 2, -25.675, 8, 4, 3, -1);
+  CTRLELEM(32, OBJ_LEVER, 0, 2, 0, -20.075, 8, 4, 3, -1);
 
 #ifdef OLD_SUIL
   ui->exit = false;
@@ -1031,32 +1184,55 @@ port_event(LV2UI_Handle handle,
     const void*  buffer)
 {
   B3ui* ui = (B3ui*)handle;
-  if (format == ui->uris.atom_eventTransfer) {
-    LV2_Atom* atom = (LV2_Atom*)buffer;
-
-    if (atom->type == ui->uris.atom_Blank) {
-      LV2_Atom_Object* obj      = (LV2_Atom_Object*)atom;
-      char *k; int v, i;
-      get_cc_key_value(&ui->uris, obj, &k, &v);
-      for (i = 0; i < TOTAL_OBJ; ++i) {
-	if (!strcmp(obj_control[i], k)) {
-	  /* override drags/modifications of current object */
-	  if (ui->dndid == i) {
-	    ui->dndid = -1;
-	  }
-	  vmap_midi_to_val(ui->view, i, v);
-	  puglPostRedisplay(ui->view);
-	  break;
-	}
-      }
-    } else {
-      /* for whatever reason JALV also sends us midi msgs
-       * from the midi_out port
-       */
-      //fprintf(stderr, "B3LV2UI: Unknown message type.\n");
-    }
-  } else {
+  if (format != ui->uris.atom_eventTransfer) {
     fprintf(stderr, "B3LV2UI: Unknown message format.\n");
+    return;
+  }
+
+  LV2_Atom* atom = (LV2_Atom*)buffer;
+
+  if (atom->type != ui->uris.atom_Blank) {
+    /* for whatever reason JALV also sends midi msgs
+     * from the midi_out port of this plugin to the UI..
+     */
+    //fprintf(stderr, "B3LV2UI: Unknown message type.\n");
+    return;
+  }
+
+  LV2_Atom_Object* obj      = (LV2_Atom_Object*)atom;
+  char *k; int v, i;
+  get_cc_key_value(&ui->uris, obj, &k, &v);
+
+  /* special */
+  if (!strcmp("vibrato.routing", k)) {
+    ui->ctrls[24].cur = ((v>>5) & 1 ) ? 1 : 0;
+    ui->ctrls[25].cur = ((v>>5) & 2 ) ? 1 : 0;
+    puglPostRedisplay(ui->view);
+    return;
+  } else
+  if (!strcmp("rotary.speed-select", k)) {
+    // see setRevOption() -- value 0..8
+    // map: off:0, slow:1, fast:2  ->  tremolo/fast 2 << off:1 >> chorale/slow:0
+    int hr = (v / 45) % 3; // horn 0:off, 1:chorale  2:tremolo
+    int bf = (v / 15) % 3; // drum 0:off, 1:chorale  2:tremolo
+    if (hr != 2) hr = (hr == 1) ? 0 : 1;
+    if (bf != 2) bf = (bf == 1) ? 0 : 1;
+    ui->ctrls[31].cur = hr; // horn 0:chorale, 1:off, 2:tremolo
+    ui->ctrls[32].cur = bf; // drum 0:chorale, 1:off, 2:tremolo
+    puglPostRedisplay(ui->view);
+    return;
+  }
+
+  for (i = 0; i < TOTAL_OBJ; ++i) {
+    if (!strcmp(obj_control[i], k)) {
+      /* override drags/modifications of current object */
+      if (ui->dndid == i) {
+	ui->dndid = -1;
+      }
+      vmap_midi_to_val(ui->view, i, v);
+      puglPostRedisplay(ui->view);
+      break;
+    }
   }
 }
 

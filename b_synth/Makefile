@@ -17,7 +17,11 @@ ifeq ($(LV2AVAIL), yes)
     #UILIBS=`pkg-config --libs pugl-0`
     UICFLAGS=-I..
     UIDEPS=../pugl/pugl.h ../pugl/pugl_internal.h ui_model.h
-    UIDEPS+=button1.c drawbar.c wood.c dial.c
+    UIDEPS+=drawbar.c wood.c dial.c
+    UIDEPS+=btn_vibl.c btn_vibu.c
+    UIDEPS+=btn_perc.c btn_perc_decay.c btn_perc_harmonic.c btn_perc_volume.c
+    UIDEPS+=btn_overdrive.c
+    UIDEPS+=bg_right_ctrl.c bg_left_ctrl.c bg_leslie_drum.c bg_leslie_horn.c
     LV2GUI=b_synthUI
     ifeq ($(IS_OSX), yes)
       UILIBS=../pugl/pugl_osx.m -framework Cocoa -framework OpenGL
