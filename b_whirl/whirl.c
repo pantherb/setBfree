@@ -241,6 +241,7 @@ void useRevOption (struct b_whirl *w, int n) {
     w->drumAcDc = -1;
   }
 
+  notifyControlChangeByName(w->midi_cfg_ptr, "rotary.speed-select", n * 15);
 }
 
 void advanceRevSelect (struct b_whirl *w) {
@@ -780,6 +781,7 @@ void setDrumDeceleration (void *d, unsigned char uc) {
 void initWhirl (struct b_whirl *w, void *m, double rate) {
 
   w->SampleRateD = rate;
+  w->midi_cfg_ptr = m; // used for notify -- translate "rotary.speed-*"
 
   initTables (w);
   computeRotationSpeeds(w);

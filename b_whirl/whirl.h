@@ -192,6 +192,8 @@ struct b_whirl {
   float leakLevel;
   float leakage;
 
+  void *midi_cfg_ptr;
+
 };
 
 extern struct b_whirl *allocWhirl();
