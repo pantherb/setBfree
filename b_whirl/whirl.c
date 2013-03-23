@@ -783,9 +783,6 @@ void initWhirl (struct b_whirl *w, void *m, double rate) {
   w->SampleRateD = rate;
   w->midi_cfg_ptr = m; // used for notify -- translate "rotary.speed-*"
 
-  initTables (w);
-  computeRotationSpeeds(w);
-
   memset(w->HLbuf, 0, BUF_SIZE_SAMPLES);
   memset(w->HRbuf, 0, BUF_SIZE_SAMPLES);
   memset(w->DLbuf, 0, BUF_SIZE_SAMPLES);
@@ -813,6 +810,9 @@ void initWhirl (struct b_whirl *w, void *m, double rate) {
   useMIDIControlFunction (m, "whirl.horn.deceleration", setHornDeceleration, (void*)w);
   useMIDIControlFunction (m, "whirl.drum.acceleration", setDrumAcceleration, (void*)w);
   useMIDIControlFunction (m, "whirl.drum.deceleration", setDrumDeceleration, (void*)w);
+
+  initTables (w);
+  computeRotationSpeeds(w);
 }
 
 /*
