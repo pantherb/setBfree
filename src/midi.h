@@ -60,7 +60,7 @@ extern void initControllerTable (void *mcfg);
 extern int getCCFunctionId (const char * name);
 extern void listCCAssignments(void *mctl, FILE * fp);
 
-extern void *allocMidiCfg();
+extern void *allocMidiCfg(void *stateptr);
 extern void freeMidiCfg(void *mcfg);
 
 #ifdef HAVE_ASEQ

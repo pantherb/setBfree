@@ -38,6 +38,7 @@
 #include "vibrato.h"
 #include "main.h"
 #include "midi.h"
+#include "state.h"
 #include "cfgParser.h"
 #include "pgmParser.h"
 #include "program.h"
@@ -100,6 +101,7 @@ void initSynth(B3S *b3s, double rate) {
   initPreamp (b3s->inst.preamp, b3s->inst.midicfg);
   initReverb (b3s->inst.reverb, b3s->inst.midicfg, rate);
   initWhirl (b3s->inst.whirl, b3s->inst.midicfg, rate);
+  initRunningConfig(b3s->inst.state, b3s->inst.midicfg);
   /* end - initAll() */
 
   initMidiTables(b3s->inst.midicfg);
@@ -153,7 +155,7 @@ void synthSound (B3S *instance, uint32_t nframes, float **out) {
   }
 }
 
-void mctl_cb(int fnid, const char *fn, unsigned char val, midiCCmap *mm, void *arg) {
+static void mctl_cb(int fnid, const char *fn, unsigned char val, midiCCmap *mm, void *arg) {
   B3S* b3s = (B3S*)arg;
 #if 0
   printf("xfn: %d (\"%s\", %d)\n", fnid, fn, val);
@@ -170,6 +172,11 @@ void mctl_cb(int fnid, const char *fn, unsigned char val, midiCCmap *mm, void *a
   if (b3s->notify_port && fn && !b3s->suspend_ui_msg) {
     write_cc_key_value(&b3s->notify_forge, &b3s->uris, fn, val);
   }
+}
+
+static void rc_cb(int fnid, const char *fn, unsigned char val, void *arg) {
+  B3S* b3s = (B3S*)arg;
+  write_cc_key_value(&b3s->notify_forge, &b3s->uris, fn, val);
 }
 
 /* LV2 */
@@ -203,10 +210,12 @@ instantiate(const LV2_Descriptor*     descriptor,
 
   b3s->suspend_ui_msg = 1;
 
+  // todo check if any alloc fails
+  b3s->inst.state = allocRunningConfig();
   b3s->inst.progs = allocProgs();
   b3s->inst.reverb = allocReverb();
   b3s->inst.whirl = allocWhirl();
-  b3s->inst.midicfg = allocMidiCfg();
+  b3s->inst.midicfg = allocMidiCfg(b3s->inst.state);
   setControlFunctionCallback(b3s->inst.midicfg, mctl_cb, b3s);
   b3s->inst.synth = allocTonegen();
   b3s->inst.preamp = allocPreamp();
@@ -278,59 +287,7 @@ run(LV2_Handle instance, uint32_t n_samples)
       const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;
       setBfreeURIs* uris = &b3s->uris;
       if (obj->body.otype == uris->sb3_uiinit) {
-	// TODO request current config dump from setBfree
-	// ..but setBfree does not support that, yet
-	//
-	// Solution 1: [probably best, needed anyway]
-	//   setBfree will send callbacks during initialiazation
-	//   load the synth in a worker-thread -> info received
-	//   can be sent to the UI and MIDI devices
-	// Solution 2: [nope]
-	//   hack setBfree; function that parses ConfigDoc structs and extracts defaults
-	// Solution 3: [mmh, might be needed to save/restore state]
-	//   setBfree; add a getValue function for each ccFuncNames[]
-	//   require  useMIDIControlFunction() to return a lookup-function
-	//   implement lookup-function callbacks in all parts of setBfree that use CtrlFuns.
-	//
-#if 1
-	/* hardcoded defaults - we don't read a cfg, so we can do that :) */
-	write_cc_key_value(&b3s->notify_forge, uris, "upper.drawbar16", 0);
-	write_cc_key_value(&b3s->notify_forge, uris, "upper.drawbar513", 0);
-	write_cc_key_value(&b3s->notify_forge, uris, "upper.drawbar8", 32);
-	write_cc_key_value(&b3s->notify_forge, uris, "upper.drawbar4", 127);
-	write_cc_key_value(&b3s->notify_forge, uris, "upper.drawbar223", 127);
-	write_cc_key_value(&b3s->notify_forge, uris, "upper.drawbar2", 127);
-	write_cc_key_value(&b3s->notify_forge, uris, "upper.drawbar135", 127);
-	write_cc_key_value(&b3s->notify_forge, uris, "upper.drawbar113", 127);
-	write_cc_key_value(&b3s->notify_forge, uris, "upper.drawbar1", 127);
-	write_cc_key_value(&b3s->notify_forge, uris, "lower.drawbar16", 0);
-	write_cc_key_value(&b3s->notify_forge, uris, "lower.drawbar513", 80);
-	write_cc_key_value(&b3s->notify_forge, uris, "lower.drawbar8", 0);
-	write_cc_key_value(&b3s->notify_forge, uris, "lower.drawbar4", 127);
-	write_cc_key_value(&b3s->notify_forge, uris, "lower.drawbar223", 127);
-	write_cc_key_value(&b3s->notify_forge, uris, "lower.drawbar2", 127);
-	write_cc_key_value(&b3s->notify_forge, uris, "lower.drawbar135", 127);
-	write_cc_key_value(&b3s->notify_forge, uris, "lower.drawbar113", 127);
-	write_cc_key_value(&b3s->notify_forge, uris, "lower.drawbar1", 127);
-	write_cc_key_value(&b3s->notify_forge, uris, "pedal.drawbar16", 0);
-	write_cc_key_value(&b3s->notify_forge, uris, "pedal.drawbar8", 32);
-
-	write_cc_key_value(&b3s->notify_forge, uris, "vibrato.routing", 0);
-	write_cc_key_value(&b3s->notify_forge, uris, "vibrato.knob", 0);
-
-	write_cc_key_value(&b3s->notify_forge, uris, "percussion.enable", 0);
-	write_cc_key_value(&b3s->notify_forge, uris, "percussion.volume", 0);
-	write_cc_key_value(&b3s->notify_forge, uris, "percussion.decay", 0);
-	write_cc_key_value(&b3s->notify_forge, uris, "percussion.harmonic", 0);
-
-	write_cc_key_value(&b3s->notify_forge, uris, "overdrive.enable", 0);
-	write_cc_key_value(&b3s->notify_forge, uris, "overdrive.character", 0);
-
-	write_cc_key_value(&b3s->notify_forge, uris, "reverb.mix", 38);
-	write_cc_key_value(&b3s->notify_forge, uris, "swellpedal1", 127);
-
-	write_cc_key_value(&b3s->notify_forge, uris, "rotary.speed-select", 4*15);
-#endif
+	rc_loop_state(b3s->inst.state, rc_cb, b3s);
       } else if (obj->body.otype == uris->sb3_control) {
 	char *k; int v;
 	if (!get_cc_key_value(uris, obj, &k, &v)) {
@@ -378,6 +335,7 @@ cleanup(LV2_Handle instance)
   freeMidiCfg(b3s->inst.midicfg);
   freePreamp(b3s->inst.preamp);
   freeProgs(b3s->inst.progs);
+  freeRunningConfig(b3s->inst.state);
   free(instance);
 }
 

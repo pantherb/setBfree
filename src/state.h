@@ -14,28 +14,22 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  
+ * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
-#ifndef GLOBAL_INST_H
-#define GLOBAL_INST_H
+#ifndef SETBFREE_STATE_H_
+#define SETBFREE_STATE_H_
 
-#include "tonegen.h"
-#include "vibrato.h"
-#include "midi.h"
-#include "whirl.h"
-#include "overdrive.h"
-#include "reverb.h"
-#include "program.h"
+#include "cfgParser.h"
 
-typedef struct b_instance {
-	struct b_reverb *reverb;
-	struct b_whirl *whirl;
-	struct b_tonegen *synth;
-	struct b_programme *progs;
-	void * midicfg;
-	void * preamp;
-	void * state;
-} b_instance;
+void *allocRunningConfig(void);
+void initRunningConfig(void *t, void *mcfg);
+void freeRunningConfig(void *t);
 
+void rc_add_midicc(void *t, int id, unsigned short val);
+void rc_add_cfg(void *t, ConfigContext *cfg);
+
+void rc_loop_state(void *t, void (*cb)(int, const char *, unsigned char, void *), void *arg);
+
+void rc_dump_state(void *t);
 #endif

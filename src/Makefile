@@ -11,6 +11,7 @@ BXCC=$(CC)
 OBJS= \
 	midi.o \
 	midi_aseq.o \
+	state.o \
 	vibrato.o \
 	tonegen.o \
 	program.o \

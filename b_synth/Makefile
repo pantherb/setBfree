@@ -44,6 +44,7 @@ OBJ= \
   ../src/cfgParser.c \
   ../src/program.o \
   ../src/vibrato.o \
+  ../src/state.o \
   ../src/tonegen.o \
   ../src/pgmParser.o \
   ../b_whirl/eqcomp.o \

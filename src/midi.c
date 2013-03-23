@@ -34,6 +34,7 @@
 #include "midi.h"
 #include "midi_types.h"
 #include "program.h"
+#include "state.h"
 #include "global_inst.h"
 
 /*
@@ -245,6 +246,8 @@ midiccflags_t ctrlflg[16][128]; /**< binary flags for each control  -- binary OR
 
 void (*hookfn)(int, const char *, unsigned char, midiCCmap *, void *);
 void *hookarg;
+
+void *rcstate; // pointer to inst.state
 };
 
 static void resetMidiCfg(void *mcfg) {
@@ -273,9 +276,11 @@ static void resetMidiCfg(void *mcfg) {
   m->hookarg = NULL;
 }
 
-void *allocMidiCfg() {
+void *allocMidiCfg(void *stateptr) {
   struct b_midicfg * mcfg = calloc(1, sizeof(struct b_midicfg));
+  if (!mcfg) return NULL;
   resetMidiCfg(mcfg);
+  mcfg->rcstate = stateptr;
   return mcfg;
 }
 
@@ -421,6 +426,7 @@ static inline void controlFunctionHook (void *mcfg, ctrl_function *ctrlF, unsign
 #if 0 // debug hook
   printf("fn: %d (%s)-> %d\n", ctrlF->id, ccFuncNames[ctrlF->id], val);
 #endif
+  rc_add_midicc(m->rcstate, ctrlF->id, val);
   if (m->hookfn) {
     m->hookfn(ctrlF->id, ccFuncNames[ctrlF->id], val & 0x7f, ctrlF->mm, m->hookarg);
   }

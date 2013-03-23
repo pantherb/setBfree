@@ -41,6 +41,7 @@
 #include "global_inst.h"
 #include "vibrato.h"
 #include "main.h"
+#include "state.h"
 #include "pgmParser.h"
 #include "program.h"
 
@@ -319,6 +320,10 @@ static void connect_jack_ports() {
  * Instantiate /classes/.
  */
 static void allocAll () {
+  if (! (inst.state = allocRunningConfig())) {
+    fprintf (stderr, "FATAL: memory allocation failed for state memory.\n");
+    exit(1);
+  }
   if (! (inst.progs = allocProgs())) {
     fprintf (stderr, "FATAL: memory allocation failed for program config.\n");
     exit(1);
@@ -335,7 +340,7 @@ static void allocAll () {
     fprintf (stderr, "FATAL: memory allocation failed for tonegen.\n");
     exit(1);
   }
-  if (! (inst.midicfg = allocMidiCfg())) {
+  if (! (inst.midicfg = allocMidiCfg(inst.state))) {
     fprintf (stderr, "FATAL: memory allocation failed for midi config.\n");
     exit(1);
   }
@@ -356,6 +361,7 @@ static void freeAll () {
   freeMidiCfg(inst.midicfg);
   freePreamp(inst.preamp);
   freeProgs(inst.progs);
+  freeRunningConfig(inst.state);
 #ifdef HAVE_ZITACONVOLVE
   freeConvolution();
 #endif
@@ -409,6 +415,10 @@ static void initAll () {
   }
   initConvolution(NULL, inst.midicfg, AUDIO_CHANNELS, BUFFER_SIZE_SAMPLES, s_param.sched_priority, s_policy);
 #endif
+
+  fprintf (stderr, "RC : ");
+  fflush (stderr);
+  initRunningConfig(inst.state, inst.midicfg);
 
   fprintf (stderr, "..done.\n");
 }
@@ -823,7 +833,6 @@ int main (int argc, char * argv []) {
 
   while (j_client)
     sleep (1); /* jack callback is doing this the work now */
-
 
   /* shutdown and cleanup */
 #ifdef HAVE_ASEQ

@@ -45,6 +45,7 @@
 #endif /* CFG_MAIN */
 
 #include "cfgParser.h"
+#include "state.h"
 
 #define LINEBUFSZ 2048
 
@@ -84,6 +85,8 @@ static int distributeParameter (b_instance* inst, ConfigContext * cfg) {
 	    cfg->linenr,
 	    cfg->name,
 	    cfg->value);
+  } else {
+    rc_add_cfg(inst->state, cfg);
   }
 
 #endif /* CFG_MAIN */
