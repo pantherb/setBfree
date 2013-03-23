@@ -79,7 +79,7 @@ static int distributeParameter (b_instance* inst, ConfigContext * cfg) {
 #endif
 
   if (n == 0) {
-    printf ("%s:%d:%s=%s:Not claimed by any module.\n",
+    fprintf (stderr, "%s:%d:%s=%s:Not claimed by any module.\n",
 	    cfg->fname,
 	    cfg->linenr,
 	    cfg->name,
@@ -148,6 +148,15 @@ void parseConfigurationLine (void *inst, char * fname, int lineNumber, char * on
 	}
       }
 
+}
+
+int evaluateConfigKeyValue(void *inst, const char *key, const char *value) {
+  ConfigContext cfg;
+  cfg.fname  = "---internal config---";
+  cfg.linenr = 0;
+  cfg.name   = key;
+  cfg.value  = value;
+  return distributeParameter ((b_instance*) inst, & cfg);
 }
 
 #ifndef CFG_MAIN
@@ -405,7 +414,7 @@ void setConfigDouble (double * vp, ConfigContext * cfg) {
 /*
  * Returns the configuration entry's value string.
  */
-char * getConfigValue (ConfigContext * cfg) {
+const char * getConfigValue (ConfigContext * cfg) {
   return cfg->value;
 }
 

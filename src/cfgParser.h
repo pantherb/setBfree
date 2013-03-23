@@ -33,8 +33,8 @@
 typedef struct _configContext {
   char * fname;
   int    linenr;
-  char * name;
-  char * value;
+  const char * name;
+  const char * value;
 } ConfigContext;
 
 enum conftype {
@@ -60,6 +60,7 @@ extern void parseConfigurationLine (
 
 extern int  parseConfigurationFile (void * instance, char * fname);
 extern void dumpConfigDoc ();
+extern int evaluateConfigKeyValue(void *inst, const char *key, const char *value);
 extern void showConfigfileContext (ConfigContext * cfg, char * msg);
 extern void configIntUnparsable (ConfigContext * cfg);
 extern void configIntOutOfRange (ConfigContext * cfg, int min, int max);
@@ -68,7 +69,7 @@ extern void configDoubleUnparsable (ConfigContext * cfg);
 extern void setConfigRangeInt (int * vp, ConfigContext * cfg);
 extern void setConfigInt (int * vp, ConfigContext * cfg);
 extern void setConfigDouble (double * vp, ConfigContext * cfg);
-extern char * getConfigValue (ConfigContext * cfg);
+extern const char * getConfigValue (ConfigContext * cfg);
 extern int  getConfigParameter_d (char * par,
 				  ConfigContext * cfg,
 				  double * dp);

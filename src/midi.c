@@ -311,7 +311,7 @@ int getCCFunctionId (const char * name) {
   return -1;
 }
 
-static void parseCCFlags(midiccflags_t *f, char *param) {
+static void parseCCFlags(midiccflags_t *f, const char *param) {
   int l = strlen(param);
   if (param[l-1] == '-') *f |= MFLAG_INV;
 }

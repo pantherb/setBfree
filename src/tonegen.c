@@ -2296,12 +2296,7 @@ int oscConfig (struct b_tonegen *t, ConfigContext * cfg) {
     } else if (!strcasecmp (cfg->value, "peak46")) {
       t->eqMacro = EQ_PEAK46;
     } else {
-      fprintf (stderr,
-	       "%s:line %d:%s expected chspline, peak24 or peak46:%s\n",
-	       cfg->fname,
-	       cfg->linenr,
-	       cfg->name,
-	       cfg->value);
+      showConfigfileContext (cfg, "expected chspline, peak24 or peak46");
     }
   }
   else if ((ack = getConfigParameter_d ("osc.eq.p1y", cfg, &t->eqP1y)))
@@ -2444,7 +2439,7 @@ int oscConfig (struct b_tonegen *t, ConfigContext * cfg) {
 	int b;
 	int w;
 	double v;
-	char * s = cfg->value;
+	const char * s = cfg->value;
 	do {
 	  if (sscanf (s, "%d:%d:%lf", &b, &w, &v) == 3) {
 	    if ((0 < b) && (b < NOF_BUSES)) {
