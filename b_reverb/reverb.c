@@ -141,7 +141,7 @@ struct b_reverb *allocReverb() {
 
 void freeReverb(struct b_reverb *r) {
   int i;
-  for (i=0; i< RV_NZ; ++i) {
+  for (i = 0; i < RV_NZ; ++i) {
     free(r->delays[i]);
   }
   free(r);

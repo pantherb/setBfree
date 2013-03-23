@@ -743,31 +743,41 @@ void installProgram (void *instance, unsigned char uc) {
 
     Programme * PGM = &(inst->progs->programmes[p]);
     unsigned int flags0 = PGM->flags[0];
+#ifdef DEBUG_MIDI_PROGRAM_CHANGES
     char display[128];
+#endif
 
     if (flags0 & FL_INUSE) {
 
+#ifdef DEBUG_MIDI_PROGRAM_CHANGES
       strcpy (display, PGM->name);
+#endif
 
       if (flags0 & FL_DRWRND) {
 	char buf [32];
 
 	if (flags0 & FL_DRAWBR) {
 	  randomizeDrawbars (PGM->drawbars, buf);
+#ifdef DEBUG_MIDI_PROGRAM_CHANGES
 	  strcat (display, "UPR:");
 	  strcat (display, buf);
+#endif
 	}
 
 	if (flags0 & FL_LOWDRW) {
 	  randomizeDrawbars (PGM->lowerDrawbars, buf);
+#ifdef DEBUG_MIDI_PROGRAM_CHANGES
 	  strcat (display, "LOW:");
 	  strcat (display, buf);
+#endif
 	}
 
 	if (flags0 & FL_PDLDRW) {
 	  randomizeDrawbars (PGM->pedalDrawbars, buf);
+#ifdef DEBUG_MIDI_PROGRAM_CHANGES
 	  strcat (display, "PDL:");
 	  strcat (display, buf);
+#endif
 	}
       }
 
@@ -788,10 +798,6 @@ void installProgram (void *instance, unsigned char uc) {
       if (flags0 & FL_PDLDRW) {
 	setDrawBars (inst, 2, PGM->pedalDrawbars);
       }
-
-      /* Key attack click */
-
-      /* Key release click */
 
       if (flags0 & FL_SCANNR) {
 	//setVibrato (inst->synth, PGM->scanner & 0x00FF);
@@ -853,6 +859,7 @@ void installProgram (void *instance, unsigned char uc) {
 	callMIDIControlFunction(inst->midicfg, "reverb.mix-preset", (PGM->reverbMix * 127.0));
       }
 
+      /* TODO --  keyboard split & transpose are not yet saved */
       if (flags0 & (FL_KSPLTL|FL_KSPLTP|FL_TRA_PD|FL_TRA_LM|FL_TRA_UM)) {
 	int b;
 	b  = (flags0 & FL_KSPLTP) ?  1 : 0;
