@@ -316,6 +316,14 @@ static void parseCCFlags(midiccflags_t *f, const char *param) {
   if (param[l-1] == '-') *f |= MFLAG_INV;
 }
 
+int getCCFunctionCount () {
+  return sizeof(ccFuncNames) / sizeof(char*);
+}
+
+const char * getCCFunctionName(int x) {
+  return ccFuncNames[x];
+}
+
 /*
  * This is the default (empty) controller function. It does nothing at all
  * and therefore we initialize the ctrlvec tables with pointers to it.
@@ -455,10 +463,7 @@ void notifyControlChangeById (void *mcfg, int id, unsigned char val) {
   }
 }
 
-/*
- * This initializes the MIDI controller vector tables.
- */
-void initControllerTable (void *mcfg) {
+static void resetRegisteredControlFunctions (void *mcfg) {
   struct b_midicfg * m = (struct b_midicfg *) mcfg;
   int i;
   for (i = 0; i < 128; i++) {
@@ -483,12 +488,43 @@ void initControllerTable (void *mcfg) {
     m->ctrlvecC[i].mm = NULL;
     m->ctrlvecF[i].mm = NULL;
   }
+}
 
+static void clearControllerMapping (void *mcfg) {
+  int i;
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
   for (i = 0; i < CTRL_USE_MAX; i++) {
     m->ctrlUseA[i] = 255;
     m->ctrlUseB[i] = 255;
     m->ctrlUseC[i] = 255;
   }
+
+  for (i = 0; i < 128; i++) {
+    int chn;
+    // clear flags for given mapping
+    for (chn = 0; chn < 16; chn++) {
+      m->ctrlflg[chn][i] = 0;
+    }
+
+    midiCCmap *t1, *t2;
+    if (!m->ctrlvecF[i].mm) continue;
+    t1 = m->ctrlvecF[i].mm;
+    do {
+      t2 = t1->next;
+      free(t1);
+      t1 = t2;
+    } while (t1);
+    m->ctrlvecF[i].mm = NULL;
+  }
+}
+
+
+/*
+ * This initializes the MIDI controller vector tables.
+ */
+void initControllerTable (void *mcfg) {
+  resetRegisteredControlFunctions(mcfg);
+  clearControllerMapping(mcfg);
 }
 
 /*
@@ -898,6 +934,12 @@ int midiConfig (void *mcfg, ConfigContext * cfg) {
 					 -127, 127)) == 1) {
     m->nshA_U = v;
   }
+  else if (strncasecmp (cfg->name, "midi.controller.reset", 21) == 0) {
+    ack++;
+    if (atoi(cfg->name+21)) {
+      clearControllerMapping(m);
+    }
+  }
   /*
    * The syntax for this config option is:
    * midi.controller.{upper,lower,pedals}.<cc>=<fname>
@@ -907,7 +949,7 @@ int midiConfig (void *mcfg, ConfigContext * cfg) {
   else if (strncasecmp (cfg->name, "midi.controller.", 16) == 0) {
     unsigned char * ctrlUse = m->ctrlUseA;
 
-    int ccIdx = 0;
+    int ccIdx = 0; // offset in cfg->name
     int ccChn = 0;
     if (strncasecmp ((cfg->name) + 16, "upper", 5) == 0) {
       ctrlUse = m->ctrlUseA;
@@ -963,6 +1005,7 @@ static const ConfigDoc doc[] = {
   {"midi.upper.channel", CFG_INT, "1", "The MIDI channel to use for the upper-manual. range: [1..16]"},
   {"midi.lower.channel", CFG_INT, "2", "The MIDI channel to use for the lower manual. range: [1..16]"},
   {"midi.pedals.channel", CFG_INT,"3", "The MIDI channel to use for the pedals. range: [1..16]"},
+  {"midi.controller.reset", CFG_INT, "\"-\"", "Clear existing CC mapping for all controllers (if non-zero argument is given). See also -D option."},
   {"midi.controller.upper.<cc>", CFG_TEXT, "\"-\"", "Speficy a function-name to bind to the given MIDI control-command. <cc> is an integer 0..127. Defaults are in midiPrimeControllerMapping() and can be listed using the '-d' commandline option. See general information."},
   {"midi.controller.lower.<cc>", CFG_TEXT, "\"-\"", "see midi.controller.upper"},
   {"midi.controller.pedals.<cc>", CFG_TEXT, "\"-\"", "see midi.controller.upper"},

@@ -32,6 +32,9 @@ extern void callMIDIControlFunction (void *m, char * cfname, unsigned char val);
 extern void notifyControlChangeByName (void *mcfg, char * cfname, unsigned char val);
 extern void notifyControlChangeById (void *mcfg, int id, unsigned char val);
 
+extern int  getCCFunctionCount ();
+extern const char * getCCFunctionName(int x);
+
 extern void setKeyboardSplitMulti (void *mcfg,
 				   int flags,
 				   int p_splitA_PL,
