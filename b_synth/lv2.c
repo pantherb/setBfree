@@ -125,10 +125,8 @@ void initSynth(B3S *b3s, double rate) {
 #define MIN(A,B) (((A)<(B))?(A):(B))
 #endif
 
-void synthSound (B3S *instance, uint32_t nframes, float **out) {
+uint32_t synthSound (B3S *instance, uint32_t written, uint32_t nframes, float **out) {
   B3S* b3s = (B3S*)instance;
-
-  uint32_t written = 0;
 
   while (written < nframes) {
     int nremain = nframes - written;
@@ -149,6 +147,7 @@ void synthSound (B3S *instance, uint32_t nframes, float **out) {
     written+=nread;
     b3s->boffset+=nread;
   }
+  return written;
 }
 
 static void mctl_cb(int fnid, const char *fn, unsigned char val, midiCCmap *mm, void *arg) {
@@ -339,12 +338,17 @@ run(LV2_Handle instance, uint32_t n_samples)
   lv2_atom_forge_set_buffer(&b3s->forge, (uint8_t*)b3s->midiout, capacity);
   lv2_atom_forge_sequence_head(&b3s->forge, &b3s->frame, 0);
 
+  uint32_t written = 0;
+
   /* Process incoming events from GUI and handle MIDI events */
   if (b3s->midiin) {
     LV2_Atom_Event* ev = lv2_atom_sequence_begin(&(b3s->midiin)->body);
-    // TODO - interleave events with oscGenerateFragment() -> sample accurate timing
     while(!lv2_atom_sequence_is_end(&(b3s->midiin)->body, (b3s->midiin)->atom.size, ev)) {
       if (ev->body.type == b3s->uris.midi_MidiEvent) {
+	if (written + BUFFER_SIZE_SAMPLES < ev->time.frames
+	    && ev->time.frames < n_samples) {
+	  written = synthSound(instance, written, ev->time.frames, audio);
+	}
 	parse_raw_midi_data(&b3s->inst, (uint8_t*)(ev+1), ev->body.size);
       } else if (ev->body.type == b3s->uris.atom_Blank) {
 	const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;
@@ -375,7 +379,7 @@ run(LV2_Handle instance, uint32_t n_samples)
   }
 
   // synthesize sound
-  synthSound(instance, n_samples, audio);
+  synthSound(instance, written, n_samples, audio);
 }
 
 static void
