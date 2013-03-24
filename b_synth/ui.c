@@ -1068,7 +1068,7 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   }
 
   if (!parent) {
-      fprintf(stderr, "error: glamp_ui: No parent window provided.\n");
+      fprintf(stderr, "B3Lv2UI error: No parent window provided.\n");
     return -1;
   }
 
@@ -1172,7 +1172,7 @@ instantiate(const LV2UI_Descriptor*   descriptor,
   }
 
   if (!ui->map) {
-    fprintf(stderr, "UI: Host does not support urid:map\n");
+    fprintf(stderr, "B3Lv2UI error: Host does not support urid:map\n");
     free(ui);
     return NULL;
   }
@@ -1225,7 +1225,7 @@ port_event(LV2UI_Handle handle,
   char *k; int v;
 
   if (format != ui->uris.atom_eventTransfer) {
-    fprintf(stderr, "B3LV2UI: Unknown message format.\n");
+    fprintf(stderr, "B3Lv2UI: Unknown message format.\n");
     return;
   }
 
