@@ -584,30 +584,30 @@ static void setupOpenGL() {
 }
 
 static void setupLight() {
-  const GLfloat global_ambient[]  = { 0.2, 0.2, 0.2, 1.0 };
-  const GLfloat light0_ambient[]  = { 0.3, 0.3, 0.3, 1.0 };
+  const GLfloat light0_ambient[]  = { 0.2, 0.15, 0.1, 1.0 };
   const GLfloat light0_diffuse[]  = { 1.0, 1.0, 1.0, 1.0 };
-  const GLfloat light0_specular[] = { 1.0, 0.9, 1.0, 1.0 };
-  const GLfloat light0_position[] = {  3.0,  2.5, -12.0, 0 };
-  const GLfloat spot_direction[]  = { -4.0, -2.5,  12.0 };
+  const GLfloat light0_specular[] = { 0.9, 0.9, 1.0, 1.0 };
+  const GLfloat light0_position[] = {  3.0,  2.5, -10.0, 0 };
+  const GLfloat spot_direction[]  = { -2.5, -2.5,  9.0 };
 
   glLightfv(GL_LIGHT0, GL_AMBIENT, light0_ambient);
   glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
   glLightfv(GL_LIGHT0, GL_SPECULAR, light0_specular);
   glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
-  glLightf(GL_LIGHT0,  GL_SPOT_CUTOFF, 15.0f);
+  glLightf(GL_LIGHT0,  GL_SPOT_CUTOFF, 10.0f);
   glLightfv(GL_LIGHT0, GL_SPOT_DIRECTION, spot_direction);
 #if 0
+  glLightf(GL_LIGHT0,  GL_SPOT_EXPONENT, 120.0);
   glLightf(GL_LIGHT0,  GL_CONSTANT_ATTENUATION, 1.5);
   glLightf(GL_LIGHT0,  GL_LINEAR_ATTENUATION, 0.5);
   glLightf(GL_LIGHT0,  GL_QUADRATIC_ATTENUATION, 0.2);
-  glLightf(GL_LIGHT0,  GL_SPOT_EXPONENT, 2.0);
-#endif
 
+  const GLfloat global_ambient[]  = { 0.2, 0.2, 0.2, 1.0 };
   glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
   glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
-
   glEnable(GL_COLOR_MATERIAL);
+#endif
+
   glEnable(GL_LIGHTING);
   glEnable(GL_LIGHT0);
 }
@@ -624,7 +624,7 @@ onReshape(PuglView* view, int width, int height)
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  glOrtho(-1.0, 1.0, invaspect, -invaspect, 1.0, -1.0);
+  glOrtho(-1.0, 1.0, invaspect, -invaspect, 3.0, -3.0);
   if (ui->show_help) {
     glMatrixMode(GL_MODELVIEW);
     return;
@@ -675,9 +675,9 @@ onDisplay(PuglView* view)
 
   const GLfloat mat_organ[] = { 0.5, 0.25, 0.1, 1.0 };
   const GLfloat mat_dial[] = { 0.1, 0.1, 0.1, 1.0 };
+  const GLfloat mat_lever[] = { 0.3, 0.3, 0.3, 1.0 };
   const GLfloat mat_switch[] = { 1.0, 1.0, 0.94, 1.0 };
   const GLfloat glow_red[] = { 1.0, 0.0, 0.00, 0.3 };
-  const GLfloat mat_drawbar_diff[] = { 0.5, 0.5, 0.5, 1.0 };
   const GLfloat mat_drawbar_white[] = { 1.0, 1.0, 1.0, 1.0 };
   const GLfloat mat_drawbar_brown[] = { 0.39, 0.25, 0.1, 1.0 };
   const GLfloat mat_drawbar_black[] = { 0.0, 0.0, 0.0, 1.0 };
@@ -710,7 +710,7 @@ onDisplay(PuglView* view)
   /* organ - background */
   glMaterialfv(GL_FRONT, GL_AMBIENT, no_mat);
   glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_organ);
-  glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+  glMaterialfv(GL_FRONT, GL_SPECULAR, no_mat);
   glMaterialfv(GL_FRONT, GL_SHININESS, no_shininess);
   glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
 
@@ -803,10 +803,9 @@ onDisplay(PuglView* view)
 	      150.0 - (300.0 * rint(ui->ctrls[i].cur - ui->ctrls[i].min) / (ui->ctrls[i].max - ui->ctrls[i].min))
 	      , 0, 0, 1);
 	}
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
 	break;
       case OBJ_SWITCH:
-	glMaterialfv(GL_FRONT, GL_AMBIENT, no_mat);
+	glMaterialfv(GL_FRONT, GL_AMBIENT, mat_switch);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_switch);
 	if (ui->ctrls[i].cur == ui->ctrls[i].max) {
 	  glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
@@ -814,10 +813,8 @@ onDisplay(PuglView* view)
 	  glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
 	}
 	glRotatef((vmap_val_to_midi(view, i) < 64 ? -12 : 12.0), 1, 0, 0); // XXX
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	break;
       case OBJ_DRAWBAR:
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_drawbar_diff);
 	glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
 	switch(i) {
 	  case 0:
@@ -827,6 +824,7 @@ onDisplay(PuglView* view)
 	  case 18:
 	  case 19:
 	    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_drawbar_brown);
+	    glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_drawbar_brown);
 	    break;
 	  case 4:
 	  case 6:
@@ -835,16 +833,17 @@ onDisplay(PuglView* view)
 	  case 15:
 	  case 16:
 	    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_drawbar_black);
+	    glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_drawbar_black);
 	    break;
 	  default:
 	    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_drawbar_white);
+	    glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_drawbar_white);
 	    break;
 	}
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
 	break;
       case OBJ_LEVER:
 	glMaterialfv(GL_FRONT, GL_AMBIENT, mat_dial);
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_dial);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_lever);
 	glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
 	glRotatef(
 	    (-40.0 + 80.0 * rint(ui->ctrls[i].cur - ui->ctrls[i].min) / (ui->ctrls[i].max - ui->ctrls[i].min))
@@ -855,6 +854,7 @@ onDisplay(PuglView* view)
     }
 
     if (ui->ctrls[i].texID > 0) {
+      glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
       glEnable(GL_TEXTURE_2D);
       glBindTexture(GL_TEXTURE_2D, ui->texID[ui->ctrls[i].texID]);
     }
