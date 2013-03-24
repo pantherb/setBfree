@@ -152,7 +152,7 @@ read_set_file(const setBfreeURIs*    uris,
 #endif
 
 static inline LV2_Atom *
-write_cc_key_value(LV2_Atom_Forge* forge,
+forge_kvcontrolmessage(LV2_Atom_Forge* forge,
 		const setBfreeURIs* uris,
 		const char* key, int value)
 {
@@ -168,6 +168,27 @@ write_cc_key_value(LV2_Atom_Forge* forge,
 	lv2_atom_forge_int(forge, value);
 	lv2_atom_forge_pop(forge, &frame);
 	return msg;
+}
+
+#define OBJ_BUF_SIZE 256
+
+static inline void
+append_kv_event(
+		LV2_Atom_Forge* forge,
+		const setBfreeURIs* uris,
+		LV2_Atom_Sequence* seq,
+		const char* key, int value) {
+
+  uint8_t obj_buf[OBJ_BUF_SIZE];
+  lv2_atom_forge_set_buffer(forge, obj_buf, OBJ_BUF_SIZE);
+
+	LV2_Atom* msg = forge_kvcontrolmessage(forge, uris, key, value);
+  LV2_Atom_Event* end = lv2_atom_sequence_end(&seq->body, seq->atom.size);
+  end->time.frames = 0;
+  end->body.type   = msg->type;
+  end->body.size   = msg->size;
+  memcpy(end + 1, LV2_ATOM_BODY(msg), msg->size);
+  seq->atom.size += lv2_atom_pad_size(sizeof(LV2_Atom_Event) + msg->size);
 }
 
 static inline int

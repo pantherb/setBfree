@@ -21,8 +21,6 @@
 #define _GNU_SOURCE
 #define GL_GLEXT_PROTOTYPES
 
-#define OBJ_BUF_SIZE 1024
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -183,8 +181,9 @@ static void notifyPlugin(PuglView* view, int elem) {
   }
 
   lv2_atom_forge_set_buffer(&ui->forge, obj_buf, OBJ_BUF_SIZE);
-  LV2_Atom* msg = write_cc_key_value(&ui->forge, &ui->uris, obj_control[elem], val);
-  ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
+  LV2_Atom* msg = forge_kvcontrolmessage(&ui->forge, &ui->uris, obj_control[elem], val);
+  if (msg)
+    ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
 }
 
 /* called from port_event -- plugin tells GUI a new value */
@@ -1190,8 +1189,8 @@ instantiate(const LV2UI_Descriptor*   descriptor,
 
 
   /* ask plugin about current state */
-  uint8_t obj_buf[OBJ_BUF_SIZE];
-  lv2_atom_forge_set_buffer(&ui->forge, obj_buf, OBJ_BUF_SIZE);
+  uint8_t obj_buf[64];
+  lv2_atom_forge_set_buffer(&ui->forge, obj_buf, 64);
 
   LV2_Atom_Forge_Frame set_frame;
   LV2_Atom* msg = (LV2_Atom*)lv2_atom_forge_blank(&ui->forge, &set_frame, 1, ui->uris.sb3_uiinit);
@@ -1232,18 +1231,19 @@ port_event(LV2UI_Handle handle,
 
   LV2_Atom* atom = (LV2_Atom*)buffer;
 
-  if (atom->type != ui->uris.atom_Blank) {
-    /* for whatever reason JALV also sends midi msgs
-     * from the midi_out port of this plugin to the UI..
-     */
-    //fprintf(stderr, "B3LV2UI: Unknown message type.\n");
+  if (atom->type == ui->uris.midi_MidiEvent) {
     return;
   }
 
-  LV2_Atom_Object* obj      = (LV2_Atom_Object*)atom;
-  get_cc_key_value(&ui->uris, obj, &k, &v);
+  if (atom->type != ui->uris.atom_Blank) {
+    fprintf(stderr, "B3Lv2UI: not an atom:Blank msg.\n");
+    return;
+  }
 
-  processCCevent(ui, k, v);
+  LV2_Atom_Object* obj = (LV2_Atom_Object*)atom;
+  if (!get_cc_key_value(&ui->uris, obj, &k, &v)) {
+    processCCevent(ui, k, v);
+  }
 }
 
 /******************************************************************************

@@ -46,9 +46,7 @@
 #define BUFFER_SIZE_SAMPLES  (128)
 
 typedef enum {
-  B3S_CONTROL = 0,
-  B3S_NOTIFY,
-  B3S_MIDIIN,
+  B3S_MIDIIN = 0,
   B3S_MIDIOUT,
   B3S_OUTL,
   B3S_OUTR
@@ -56,13 +54,10 @@ typedef enum {
 
 typedef struct {
   LV2_Atom_Forge notify_forge;
-  LV2_Atom_Forge_Frame notify_frame;
   int suspend_ui_msg;
 
   const LV2_Atom_Sequence* midiin;
   LV2_Atom_Sequence* midiout;
-  const LV2_Atom_Sequence* control_port;
-  LV2_Atom_Sequence*       notify_port;
   float* outL;
   float* outR;
 
@@ -169,14 +164,14 @@ static void mctl_cb(int fnid, const char *fn, unsigned char val, midiCCmap *mm, 
     append_midi_event(&b3s->uris, b3s->midiout, 0, msg, 3);
   }
   // TODO notfiy UI -- unless change originates from UI
-  if (b3s->notify_port && fn && !b3s->suspend_ui_msg) {
-    write_cc_key_value(&b3s->notify_forge, &b3s->uris, fn, val);
+  if (b3s->midiout && fn && !b3s->suspend_ui_msg) {
+    append_kv_event(&b3s->notify_forge, &b3s->uris, b3s->midiout, fn, val);
   }
 }
 
 static void rc_cb(int fnid, const char *fn, unsigned char val, void *arg) {
   B3S* b3s = (B3S*)arg;
-  write_cc_key_value(&b3s->notify_forge, &b3s->uris, fn, val);
+  append_kv_event(&b3s->notify_forge, &b3s->uris, b3s->midiout, fn, val);
 }
 
 /* LV2 */
@@ -246,12 +241,6 @@ connect_port(LV2_Handle instance,
     case B3S_OUTR:
       b3s->outR = (float*)data;
       break;
-    case B3S_CONTROL:
-      b3s->control_port = (const LV2_Atom_Sequence*)data;
-      break;
-    case B3S_NOTIFY:
-      b3s->notify_port = (LV2_Atom_Sequence*)data;
-      break;
   }
 }
 
@@ -272,45 +261,31 @@ run(LV2_Handle instance, uint32_t n_samples)
   /* prepare outgoing MIDI */
   clear_sequence(&b3s->uris, b3s->midiout);
 
-  /* Set up forge to write directly to notify output port. */
-  const uint32_t notify_capacity = b3s->notify_port->atom.size;
-  lv2_atom_forge_set_buffer(&b3s->notify_forge,
-                            (uint8_t*)b3s->notify_port,
-                            notify_capacity);
-
-  /* Start a sequence in the notify output port. */
-  lv2_atom_forge_sequence_head(&b3s->notify_forge, &b3s->notify_frame, 0);
-
-  /* Process incoming events from GUI */
-  b3s->suspend_ui_msg = 1;
-  LV2_ATOM_SEQUENCE_FOREACH(b3s->control_port, ev) {
-      const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;
-      setBfreeURIs* uris = &b3s->uris;
-      if (obj->body.otype == uris->sb3_uiinit) {
-	rc_loop_state(b3s->inst.state, rc_cb, b3s);
-      } else if (obj->body.otype == uris->sb3_control) {
-	char *k; int v;
-	if (!get_cc_key_value(uris, obj, &k, &v)) {
-#if 0
-	  printf("B3LV2: callMIDIControlFunction(..,\"%s\", %d);\n", k, v);
-#endif
-	  callMIDIControlFunction(b3s->inst.midicfg, k, v);
-	} else {
-	  printf("B3LV2: invalid control message\n");
-	}
-      } else {
-	printf("B3LV2: non control message reveived on ctrl port\n");
-      }
-  }
-  b3s->suspend_ui_msg = 0;
-
-  // handle MIDI events
+  /* Process incoming events from GUI and  handle MIDI events */
   if (b3s->midiin) {
     LV2_Atom_Event* ev = lv2_atom_sequence_begin(&(b3s->midiin)->body);
     // TODO - interleave events with oscGenerateFragment() -> sample accurate timing
     while(!lv2_atom_sequence_is_end(&(b3s->midiin)->body, (b3s->midiin)->atom.size, ev)) {
       if (ev->body.type == b3s->uris.midi_MidiEvent) {
 	parse_raw_midi_data(&b3s->inst, (uint8_t*)(ev+1), ev->body.size);
+      } else if (ev->body.type == b3s->uris.atom_Blank) {
+	const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;
+	if (obj->body.otype == b3s->uris.sb3_uiinit) {
+	  b3s->suspend_ui_msg = 1;
+	  rc_loop_state(b3s->inst.state, rc_cb, b3s);
+	  b3s->suspend_ui_msg = 0;
+	} else if (obj->body.otype == b3s->uris.sb3_control) {
+	  b3s->suspend_ui_msg = 1;
+	  const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;
+	  char *k; int v;
+	  if (!get_cc_key_value(&b3s->uris, obj, &k, &v)) {
+#if 0
+	    printf("B3LV2: callMIDIControlFunction(..,\"%s\", %d);\n", k, v);
+#endif
+	    callMIDIControlFunction(b3s->inst.midicfg, k, v);
+	  }
+	  b3s->suspend_ui_msg = 0;
+	}
       }
       ev = lv2_atom_sequence_next(ev);
     }
