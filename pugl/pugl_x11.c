@@ -348,8 +348,7 @@ puglProcessEvents(PuglView* view)
 			}
 
 			if (!repeated && view->keyboardFunc) {
-				KeySym sym = XKeycodeToKeysym(
-					view->impl->display, event.xkey.keycode, 0);
+				KeySym sym = XLookupKeysym(&event.xkey, 0);
 				PuglKey special = keySymToSpecial(sym);
 				if (!special) {
 					view->keyboardFunc(view, false, sym);
