@@ -72,11 +72,22 @@ map_setbfree_uris(LV2_URID_Map* map, setBfreeURIs* uris)
   uris->atom_Sequence      = map->map(map->handle, LV2_ATOM__Sequence);
 }
 
-static inline bool
-is_object_type(const setBfreeURIs* uris, LV2_URID type)
+static inline void
+forge_midimessage(LV2_Atom_Forge* forge,
+		const setBfreeURIs* uris,
+		const uint8_t* const msg, uint32_t size)
 {
-	return type == uris->atom_Blank;
+	//printf("UIcom: Tx MIDI msg\n");
+	LV2_Atom midiatom;
+	midiatom.type = uris->midi_MidiEvent;
+	midiatom.size = size;
+
+	lv2_atom_forge_frame_time(forge, 0);
+	lv2_atom_forge_raw(forge, &midiatom, sizeof(LV2_Atom));
+	lv2_atom_forge_raw(forge, msg, size);
+	lv2_atom_forge_pad(forge, sizeof(LV2_Atom) + size);
 }
+
 
 static inline LV2_Atom *
 forge_kvcontrolmessage(LV2_Atom_Forge* forge,
@@ -95,27 +106,6 @@ forge_kvcontrolmessage(LV2_Atom_Forge* forge,
 	lv2_atom_forge_int(forge, value);
 	lv2_atom_forge_pop(forge, &frame);
 	return msg;
-}
-
-#define OBJ_BUF_SIZE 256
-
-static inline void
-append_kv_event(
-		LV2_Atom_Forge* forge,
-		const setBfreeURIs* uris,
-		LV2_Atom_Sequence* seq,
-		const char* key, int value) {
-
-  uint8_t obj_buf[OBJ_BUF_SIZE];
-  lv2_atom_forge_set_buffer(forge, obj_buf, OBJ_BUF_SIZE);
-
-	LV2_Atom* msg = forge_kvcontrolmessage(forge, uris, key, value);
-  LV2_Atom_Event* end = lv2_atom_sequence_end(&seq->body, seq->atom.size);
-  end->time.frames = 0;
-  end->body.type   = msg->type;
-  end->body.size   = msg->size;
-  memcpy(end + 1, LV2_ATOM_BODY(msg), msg->size);
-  seq->atom.size += lv2_atom_pad_size(sizeof(LV2_Atom_Event) + msg->size);
 }
 
 static inline int
@@ -147,31 +137,6 @@ get_cc_key_value(
 	*v = ((LV2_Atom_Int*)value)->body;
 
 	return 0;
-}
-
-
-static inline void
-append_midi_event(const setBfreeURIs*  uris,
-                  LV2_Atom_Sequence*   seq,
-                  uint32_t             time,
-                  const uint8_t* const msg,
-                  uint32_t             size)
-{
-  LV2_Atom_Event* end = lv2_atom_sequence_end(&seq->body, seq->atom.size);
-  end->time.frames = time;
-  end->body.type   = uris->midi_MidiEvent;
-  end->body.size   = size;
-  memcpy(end + 1, msg, size);
-  seq->atom.size += lv2_atom_pad_size(sizeof(LV2_Atom_Event) + size);
-}
-
-static inline void
-clear_sequence(const setBfreeURIs* uris, LV2_Atom_Sequence* seq)
-{
-  seq->atom.type = uris->atom_Sequence;
-  seq->atom.size = sizeof(LV2_Atom_Sequence_Body);
-  seq->body.unit = 0;
-  seq->body.pad  = 0;
 }
 
 #endif

@@ -54,7 +54,8 @@ typedef enum {
 } PortIndex;
 
 typedef struct {
-  LV2_Atom_Forge notify_forge;
+  LV2_Atom_Forge forge;
+  LV2_Atom_Forge_Frame frame;
   int suspend_ui_msg;
 
   const LV2_Atom_Sequence* midiin;
@@ -62,6 +63,7 @@ typedef struct {
   float* outL;
   float* outR;
 
+  LV2_URID_Map* map;
   setBfreeURIs uris;
   struct b_instance inst;
 
@@ -154,23 +156,21 @@ static void mctl_cb(int fnid, const char *fn, unsigned char val, midiCCmap *mm, 
 #ifdef DEBUGPRINT
   printf("xfn: %d (\"%s\", %d)\n", fnid, fn, val);
 #endif
-  // TODO enqueue outgoing midi commands foreach mm;
   if (b3s->midiout && mm) {
     uint8_t msg[3];
     msg[0] = 0xb0 | (mm->channel&0x0f); // CONTROL_CHANGE
     msg[1] = mm->param;
     msg[2] = val;
-    append_midi_event(&b3s->uris, b3s->midiout, 0, msg, 3);
+    forge_midimessage(&b3s->forge, &b3s->uris, msg, 3);
   }
-  // TODO notfiy UI -- unless change originates from UI
   if (b3s->midiout && fn && !b3s->suspend_ui_msg) {
-    append_kv_event(&b3s->notify_forge, &b3s->uris, b3s->midiout, fn, val);
+    forge_kvcontrolmessage(&b3s->forge, &b3s->uris, fn, val);
   }
 }
 
 static void rc_cb(int fnid, const char *fn, unsigned char val, void *arg) {
   B3S* b3s = (B3S*)arg;
-  append_kv_event(&b3s->notify_forge, &b3s->uris, b3s->midiout, fn, val);
+  forge_kvcontrolmessage(&b3s->forge, &b3s->uris, fn, val);
 }
 
 /* LV2 -- state */
@@ -270,15 +270,18 @@ instantiate(const LV2_Descriptor*     descriptor,
   int i;
   for (i=0; features[i]; ++i) {
     if (!strcmp(features[i]->URI, LV2_URID__map)) {
-      LV2_URID_Map *urid_map = (LV2_URID_Map *) features[i]->data;
-      if (urid_map) {
-	map_setbfree_uris(urid_map, &b3s->uris);
-	lv2_atom_forge_init(&b3s->notify_forge, urid_map);
-        break;
-      }
+      b3s->map = (LV2_URID_Map*)features[i]->data;
     }
   }
-  // TODO fail if LV2_URID__map is N/A
+
+  if (!b3s->map) {
+    fprintf(stderr, "B3Lv2 error: Host does not support urid:map\n");
+    free(b3s);
+    return NULL;
+  }
+
+  map_setbfree_uris(b3s->map, &b3s->uris);
+  lv2_atom_forge_init(&b3s->forge, b3s->map);
 
   b3s->suspend_ui_msg = 1;
   b3s->update_gui_now = 0;
@@ -332,9 +335,11 @@ run(LV2_Handle instance, uint32_t n_samples)
   audio[1] = b3s->outR;
 
   /* prepare outgoing MIDI */
-  clear_sequence(&b3s->uris, b3s->midiout);
+  const uint32_t capacity = b3s->midiout->atom.size;
+  lv2_atom_forge_set_buffer(&b3s->forge, (uint8_t*)b3s->midiout, capacity);
+  lv2_atom_forge_sequence_head(&b3s->forge, &b3s->frame, 0);
 
-  /* Process incoming events from GUI and  handle MIDI events */
+  /* Process incoming events from GUI and handle MIDI events */
   if (b3s->midiin) {
     LV2_Atom_Event* ev = lv2_atom_sequence_begin(&(b3s->midiin)->body);
     // TODO - interleave events with oscGenerateFragment() -> sample accurate timing

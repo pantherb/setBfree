@@ -159,6 +159,7 @@ static int vmap_val_to_midi(PuglView* view, int elem) {
 }
 
 /* call lv2 plugin if value has changed */
+#define OBJ_BUF_SIZE 256
 static void notifyPlugin(PuglView* view, int elem) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   uint8_t obj_buf[OBJ_BUF_SIZE];
@@ -1166,7 +1167,7 @@ instantiate(const LV2UI_Descriptor*   descriptor,
   ui->controller = controller;
 
   for (i = 0; features[i]; ++i) {
-    if (!strcmp(features[i]->URI, LV2_URID_URI "#map")) {
+    if (!strcmp(features[i]->URI, LV2_URID__map)) {
       ui->map = (LV2_URID_Map*)features[i]->data;
     }
   }
