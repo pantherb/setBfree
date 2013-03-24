@@ -24,8 +24,6 @@ sb3:bsynth-out a pg:Group ;
 	doap:maintainer <http://gareus.org/> ;
 	doap:name "setBfree DSP Tonewheel Organ";
 	doap:license <http://usefulinc.com/doap/licenses/gpl> ;
-	lv2:microVersion: 0;
-	lv2:minorVersion: 2;
 	lv2:optionalFeature lv2:hardRTCapable ;
 	lv2:requiredFeature urid:map ;
 	lv2:extensionData state:interface ;
