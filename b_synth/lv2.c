@@ -111,15 +111,11 @@ void initSynth(B3S *b3s, double rate) {
   setDrawBars (&b3s->inst, 2, defaultPreset);
 #endif
 
-#if 0
+#ifdef DEBUGPRINT
   if (walkProgrammes(b3s->inst.progs, 0)) {
     listProgrammes (b3s->inst.progs, stderr);
   }
   listCCAssignments(b3s->inst.midicfg, stderr);
-#endif
-
-#if 1
-  setRevSelect (b3s->inst.whirl, WHIRL_SLOW);
 #endif
 }
 
@@ -155,7 +151,7 @@ void synthSound (B3S *instance, uint32_t nframes, float **out) {
 
 static void mctl_cb(int fnid, const char *fn, unsigned char val, midiCCmap *mm, void *arg) {
   B3S* b3s = (B3S*)arg;
-#if 0
+#ifdef DEBUGPRINT
   printf("xfn: %d (\"%s\", %d)\n", fnid, fn, val);
 #endif
   // TODO enqueue outgoing midi commands foreach mm;
@@ -202,9 +198,9 @@ save(LV2_Handle                instance,
   rc_loop_state(b3s->inst.state, rcsave_cb, (void*) cfg);
 
   store(handle, b3s->uris.sb3_state,
-	cfg, strlen(cfg) + 1,
-	b3s->uris.atom_String,
-	LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE);
+      cfg, strlen(cfg) + 1,
+      b3s->uris.atom_String,
+      LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE);
   free(cfg);
   return LV2_STATE_SUCCESS;
 }
@@ -218,34 +214,37 @@ restore(LV2_Handle                  instance,
         const LV2_Feature* const*   features)
 {
   B3S* b3s = (B3S*)instance;
-
   size_t   size;
   uint32_t type;
   uint32_t valflags;
   const void* value = retrieve(handle, b3s->uris.sb3_state, &size, &type, &valflags);
 
   b3s->suspend_ui_msg = 1;
-  if (value) {
-    const char* cfg = (const char*)value;
-    const char *te,*ts = cfg;
-    while (ts && *ts && (te=strchr(ts, '\n'))) {
-      char *val;
-      char kv[1024];
-      memcpy(kv, ts, te-ts);
-      kv[te-ts]=0;
-#if 0
-      printf("CFG: %s\n", kv);
-#endif
-      if(kv[0]=='M' && (val=strchr(kv,'='))) {
-        *val=0;
-#if 0
-	printf("B3LV2: callMIDIControlFunction(..,\"%s\", %d);\n", kv+2, atoi(val+1));
-#endif
-	callMIDIControlFunction(b3s->inst.midicfg, kv+2, atoi(val+1));
-      }
-      ts=te+1;
-    }
+  if (!value) {
+    return LV2_STATE_ERR_UNKNOWN;
   }
+
+  const char* cfg = (const char*)value;
+  const char *te, *ts = cfg;
+
+  while (ts && *ts && (te=strchr(ts, '\n'))) {
+    char *val;
+    char kv[1024];
+    memcpy(kv, ts, te-ts);
+    kv[te-ts]=0;
+#ifdef DEBUGPRINT
+    fprintf(stderr, "CFG: %s\n", kv);
+#endif
+    if(kv[0]=='M' && (val=strchr(kv,'='))) {
+      *val=0;
+#ifdef DEBUGPRINT
+      printf(stderr, "B3LV2: callMIDIControlFunction(..,\"%s\", %d);\n", kv+2, atoi(val+1));
+#endif
+      callMIDIControlFunction(b3s->inst.midicfg, kv+2, atoi(val+1));
+    }
+    ts=te+1;
+  }
+
   b3s->update_gui_now = 1;
   b3s->suspend_ui_msg = 0;
 
@@ -351,8 +350,8 @@ run(LV2_Handle instance, uint32_t n_samples)
 	  const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;
 	  char *k; int v;
 	  if (!get_cc_key_value(&b3s->uris, obj, &k, &v)) {
-#if 0
-	    printf("B3LV2: callMIDIControlFunction(..,\"%s\", %d);\n", k, v);
+#ifdef DEBUGPRINT
+	    printf(stderr, "B3LV2: callMIDIControlFunction(..,\"%s\", %d);\n", k, v);
 #endif
 	    callMIDIControlFunction(b3s->inst.midicfg, k, v);
 	  }
