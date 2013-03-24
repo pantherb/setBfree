@@ -6,8 +6,8 @@
 @prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix urid:  <http://lv2plug.in/ns/ext/urid#> .
-@prefix patch: <http://lv2plug.in/ns/ext/patch#> .
-@prefix rg:    <http://gareus.org/oss/lv2/b_synth#> .
+@prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix sb3:   <http://gareus.org/oss/lv2/b_synth#> .
 
 <http://gareus.org/>
 	a foaf:Person ;
@@ -15,7 +15,7 @@
 	foaf:mbox <mailto:robin@gareus.org> ;
 	foaf:homepage <http://gareus.org/> .
 
-rg:bsynth-out a pg:Group ;
+sb3:bsynth-out a pg:Group ;
 	a pg:StereoGroup ;
 	lv2:symbol "out" .
 
@@ -25,9 +25,10 @@ rg:bsynth-out a pg:Group ;
 	doap:name "setBfree DSP Tonewheel Organ";
 	doap:license <http://usefulinc.com/doap/licenses/gpl> ;
 	lv2:microVersion: 0;
-	lv2:minorVersion: 1;
+	lv2:minorVersion: 2;
 	lv2:optionalFeature lv2:hardRTCapable ;
 	lv2:requiredFeature urid:map ;
+	lv2:extensionData state:interface ;
 	lv2:port
 	[
 		a atom:AtomPort ,
@@ -35,7 +36,7 @@ rg:bsynth-out a pg:Group ;
 		atom:bufferType atom:Sequence ;
 		lv2:designation lv2:control ;
 		atom:supports <http://lv2plug.in/ns/ext/midi#MidiEvent>,
-			rg:controlmsg;
+			sb3:controlmsg;
 		lv2:index 0 ;
 		lv2:symbol "control" ;
 		lv2:name "MIDI In"
@@ -44,7 +45,7 @@ rg:bsynth-out a pg:Group ;
 			lv2:OutputPort ;
 		atom:bufferType atom:Sequence ;
 		atom:supports <http://lv2plug.in/ns/ext/midi#MidiEvent>,
-			rg:controlmsg;
+			sb3:controlmsg;
 		lv2:designation lv2:control ;
 		lv2:index 1 ;
 		lv2:symbol "notify" ;
@@ -56,7 +57,7 @@ rg:bsynth-out a pg:Group ;
 		lv2:index 2 ;
 		lv2:symbol "outL" ;
 		lv2:name "Left output" ;
-		pg:inGroup rg:bsynth-out ;
+		pg:inGroup sb3:bsynth-out ;
 		pg:role pg:leftChannel ;
 	],	
 	[
@@ -65,7 +66,7 @@ rg:bsynth-out a pg:Group ;
 		lv2:index 3 ;
 		lv2:symbol "outR" ;
 		lv2:name "Right Output" ;
-		pg:inGroup rg:bsynth-out ;
+		pg:inGroup sb3:bsynth-out ;
 		pg:role pg:rightChannel ;
 	]
 	.

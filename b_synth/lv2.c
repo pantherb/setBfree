@@ -31,6 +31,7 @@
 #include "lv2/lv2plug.in/ns/lv2core/lv2.h"
 #include "lv2/lv2plug.in/ns/ext/atom/util.h"
 #include "lv2/lv2plug.in/ns/ext/event/event-helpers.h"
+#include "lv2/lv2plug.in/ns/ext/state/state.h"
 
 #include "uris.h"
 
@@ -69,6 +70,8 @@ typedef struct {
   float bufB [BUFFER_SIZE_SAMPLES];
   float bufC [BUFFER_SIZE_SAMPLES];
   float bufJ [2][BUFFER_SIZE_SAMPLES];
+
+  int update_gui_now;
 } B3S;
 
 /* main synth wrappers */
@@ -174,6 +177,81 @@ static void rc_cb(int fnid, const char *fn, unsigned char val, void *arg) {
   append_kv_event(&b3s->notify_forge, &b3s->uris, b3s->midiout, fn, val);
 }
 
+/* LV2 -- state */
+static void rcsave_cb(int fnid, const char *fn, unsigned char val, void *arg) {
+  char tmp[128];
+  if (fnid < 0) return; // TODO cfg-eval
+  sprintf(tmp, "M %s=%d\n", fn, val);
+  strcat((char*)arg, tmp);
+}
+
+static LV2_State_Status
+save(LV2_Handle                instance,
+     LV2_State_Store_Function  store,
+     LV2_State_Handle          handle,
+     uint32_t                  flags,
+     const LV2_Feature* const* features)
+{
+  B3S* b3s = (B3S*)instance;
+
+  // property base-names are < 40 chars  -- see formatDoc()
+  // cfg-properties may have variable postfixes, MIDICC's not
+  // 5 additional bytes for "=NUM\n" and 2 for leading "ID"
+  char *cfg = malloc(getCCFunctionCount() * 48 * sizeof(char));
+  cfg[0] = '\0';
+  rc_loop_state(b3s->inst.state, rcsave_cb, (void*) cfg);
+
+  store(handle, b3s->uris.sb3_state,
+	cfg, strlen(cfg) + 1,
+	b3s->uris.atom_String,
+	LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE);
+  free(cfg);
+  return LV2_STATE_SUCCESS;
+}
+
+
+static LV2_State_Status
+restore(LV2_Handle                  instance,
+        LV2_State_Retrieve_Function retrieve,
+        LV2_State_Handle            handle,
+        uint32_t                    flags,
+        const LV2_Feature* const*   features)
+{
+  B3S* b3s = (B3S*)instance;
+
+  size_t   size;
+  uint32_t type;
+  uint32_t valflags;
+  const void* value = retrieve(handle, b3s->uris.sb3_state, &size, &type, &valflags);
+
+  b3s->suspend_ui_msg = 1;
+  if (value) {
+    const char* cfg = (const char*)value;
+    const char *te,*ts = cfg;
+    while (ts && *ts && (te=strchr(ts, '\n'))) {
+      char *val;
+      char kv[1024];
+      memcpy(kv, ts, te-ts);
+      kv[te-ts]=0;
+#if 0
+      printf("CFG: %s\n", kv);
+#endif
+      if(kv[0]=='M' && (val=strchr(kv,'='))) {
+        *val=0;
+#if 0
+	printf("B3LV2: callMIDIControlFunction(..,\"%s\", %d);\n", kv+2, atoi(val+1));
+#endif
+	callMIDIControlFunction(b3s->inst.midicfg, kv+2, atoi(val+1));
+      }
+      ts=te+1;
+    }
+  }
+  b3s->update_gui_now = 1;
+  b3s->suspend_ui_msg = 0;
+
+  return LV2_STATE_SUCCESS;
+}
+
 /* LV2 */
 
 static LV2_Handle
@@ -204,6 +282,7 @@ instantiate(const LV2_Descriptor*     descriptor,
   // TODO fail if LV2_URID__map is N/A
 
   b3s->suspend_ui_msg = 1;
+  b3s->update_gui_now = 0;
 
   // todo check if any alloc fails
   b3s->inst.state = allocRunningConfig();
@@ -245,11 +324,6 @@ connect_port(LV2_Handle instance,
 }
 
 static void
-activate(LV2_Handle instance)
-{
-}
-
-static void
 run(LV2_Handle instance, uint32_t n_samples)
 {
   B3S* b3s = (B3S*)instance;
@@ -271,9 +345,7 @@ run(LV2_Handle instance, uint32_t n_samples)
       } else if (ev->body.type == b3s->uris.atom_Blank) {
 	const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;
 	if (obj->body.otype == b3s->uris.sb3_uiinit) {
-	  b3s->suspend_ui_msg = 1;
-	  rc_loop_state(b3s->inst.state, rc_cb, b3s);
-	  b3s->suspend_ui_msg = 0;
+	  b3s->update_gui_now = 1;
 	} else if (obj->body.otype == b3s->uris.sb3_control) {
 	  b3s->suspend_ui_msg = 1;
 	  const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;
@@ -291,13 +363,15 @@ run(LV2_Handle instance, uint32_t n_samples)
     }
   }
 
+  if (b3s->update_gui_now) {
+    b3s->update_gui_now = 0;
+    b3s->suspend_ui_msg = 1;
+    rc_loop_state(b3s->inst.state, rc_cb, b3s);
+    b3s->suspend_ui_msg = 0;
+  }
+
   // synthesize sound
   synthSound(instance, n_samples, audio);
-}
-
-static void
-deactivate(LV2_Handle instance)
-{
 }
 
 static void
@@ -317,6 +391,10 @@ cleanup(LV2_Handle instance)
 const void*
 extension_data(const char* uri)
 {
+  static const LV2_State_Interface  state  = { save, restore };
+  if (!strcmp(uri, LV2_STATE__interface)) {
+    return &state;
+  }
   return NULL;
 }
 
@@ -324,9 +402,9 @@ static const LV2_Descriptor descriptor = {
   SB3_URI,
   instantiate,
   connect_port,
-  activate,
+  NULL,
   run,
-  deactivate,
+  NULL,
   cleanup,
   extension_data
 };
