@@ -31,6 +31,12 @@
 
 #include "pugl_internal.h"
 
+/* work around buggy re-parent & focus issues on some systems
+ * where no keyboard events are passed through even if the
+ * app has mouse-focus and all other events are working.
+ */
+#define XKEYFOCUSGRAB
+
 struct PuglInternalsImpl {
 	Display*   display;
 	int        screen;
@@ -115,6 +121,9 @@ puglCreate(PuglNativeWindow parent,
 
 	attr.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask
 		| ButtonPressMask | ButtonReleaseMask
+#ifdef XKEYFOCUSGRAB
+		| EnterWindowMask
+#endif
 		| PointerMotionMask | StructureNotifyMask;
 
 	impl->win = XCreateWindow(
@@ -358,6 +367,11 @@ puglProcessEvents(PuglView* view)
 				}
 			}
 			break;
+#ifdef XKEYFOCUSGRAB
+		case EnterNotify:
+			XSetInputFocus(view->impl->display, view->impl->win, RevertToPointerRoot, CurrentTime);
+			break;
+#endif
 		default:
 			break;
 		}
