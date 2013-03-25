@@ -3,8 +3,8 @@ Section: sound
 Priority: optional
 Maintainer: Robin Gareus <robin@gareus.org>
 Build-Depends: debhelper (>= 8),
- glu-dev,
  libasound2-dev,
+ libglu1-mesa-dev,
  libjack-dev | libjack-jackd2-dev,
  liblo-dev,
  libsndfile1-dev,
