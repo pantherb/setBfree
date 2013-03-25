@@ -1,0 +1,15 @@
+3D models and textures for the openGL LV2 GUI
+---------------------------------------------
+
+The GUI consists of a fixed background model and moveable objects.
+Each of which is modelled as independent object in blender and then exported
+as 3D openGL mesh in a C header file.
+
+For doing so, the "Blender OpenGL / C header exporter" by Krzysztof Solek was used.
+http://ksolek.fm.interia.pl/Blender/
+see b_synth/ui_model.h for the result.
+
+The textures were done with gimp which similarly suppors a "save as.. C-header"
+see b_synth/btn_overdrive.c for an example.
+
+See also http://gareus.org/blog/setbfree_-_3d_opengl_lv2_audio_plugin
