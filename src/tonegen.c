@@ -16,7 +16,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  
+ * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
 /* tonegen.c
@@ -296,17 +296,6 @@
 #define MSG_KEY_ON(K)  (MSG_MKEYON  | ((K) & MSG_PMASK))
 
 
-/*
- * Fixed-point arithmetic - mantissa of 10 bits.
- * ENV_BASE is the scaling applied to the attack and release envelope curves
- * for key-click.
- * ENV_NORM is number of bits of right-shift needed to normalize the result:
- * y[i] = (x[i] * e[j] * ENV_BASE) >> ENV_NORM
- */
-
-#define ENV_NORM 10
-#define ENV_BASE (1 << ENV_NORM)
-
 /* Core instruction codes (opr field in struct _coreins). */
 
 #define CR_CPY    0		/* Copy instruction */
@@ -361,6 +350,7 @@ static void initValues (struct b_tonegen *t) {
   t->envAttackClickLevel = 0.50;
   t->envReleaseClickLevel = 0.25;
 
+  /* these are set later in initToneGenerator() */
   t->envAtkClkMinLength = -1; //  8 @ 22050
   t->envAtkClkMaxLength = -1; // 40 @ 22050
 
@@ -3159,24 +3149,19 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
   float * const prcBuffer = t->prcBuffer;
 
 #ifdef KEYCOMPRESSION
-  float keyComp = t->keyCompTable[t->keyDownCount];
-  float keyCompDelta;
+  const float keyComp = t->keyCompTable[t->keyDownCount];
+  const float keyCompDelta = (keyComp - t->keyCompLevel) / (float) BUFFER_SIZE_SAMPLES;
 #define KEYCOMPCHASE() {t->keyCompLevel += keyCompDelta;}
+#define KEYCOMPLEVEL (t->keyCompLevel)
 
 #else
 
-#define keyCompLevel (1.0)
+#define KEYCOMPLEVEL (1.0)
 #define KEYCOMPCHASE()
 
 #endif /* KEYCOMPRESSION */
 
   /* End of declarations */
-
-#ifdef KEYCOMPRESSION
-
-  keyCompDelta = (keyComp - t->keyCompLevel) / (float) BUFFER_SIZE_SAMPLES;
-
-#endif /* KEYCOMPRESSION */
 
   /* Reset the core program */
   t->coreWriter = t->coreReader = t->corePgm;
@@ -3510,33 +3495,33 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
   }
 
   for (; t->coreReader < t->coreWriter; t->coreReader++) {
-    short opr = t->coreReader->opr;
+    short opr  = t->coreReader->opr;
+    int     n  = t->coreReader->cnt;
     float * ys = swlBuffer + t->coreReader->off;
     float * yv = vibBuffer + t->coreReader->off;
     float * yp = prcBuffer + t->coreReader->off;
-    float   gs = t->coreReader->sgain;
-    float   gv = t->coreReader->vgain;
-    float   gp = t->coreReader->pgain;
-    float   ds = t->coreReader->nsgain - gs; /* Move these three down */
-    float   dv = t->coreReader->nvgain - gv;
-    float   dp = t->coreReader->npgain - gp;
-    float * ep  = t->coreReader->env;
-    float * xp  = t->coreReader->src;
-    int     n  = t->coreReader->cnt;
+    const float   gs = t->coreReader->sgain;
+    const float   gv = t->coreReader->vgain;
+    const float   gp = t->coreReader->pgain;
+    const float   ds = t->coreReader->nsgain - gs; /* Move these three down */
+    const float   dv = t->coreReader->nvgain - gv;
+    const float   dp = t->coreReader->npgain - gp;
+    const float * ep  = t->coreReader->env;
+    const float * xp  = t->coreReader->src;
+    //printf("CR: %f %f +:%f  (ns:%f)\n", gs, ds, gs+ds, t->coreReader->nsgain );
 
     if (opr & 1) {		/* ADD and ADDENV */
       if (opr & 2) {		/* ADDENV */
 	for (; 0 < n; n--) {
-/*	  float x = (float) ((((int) (*xp++)) * (*ep++)) >> ENV_NORM); */
 	  float x = (float) (*xp++);
-	  float e = *ep++;
+	  const float e = *ep++;
 	  *ys++ += x * (gs + (e * ds));
 	  *yv++ += x * (gv + (e * dv));
 	  *yp++ += x * (gp + (e * dp));
 	}
       } else {			/* ADD */
 	for (; 0 < n; n--) {
-	  float x = (float) (*xp++);
+	  const float x = (float) (*xp++);
 	  *ys++ += x * gs;
 	  *yv++ += x * gv;
 	  *yp++ += x * gp;
@@ -3547,9 +3532,8 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
 
       if (opr & 2) {		/* CPY and CPYENV */
 	for (; 0 < n; n--) {	/* CPYENV */
-/*	  float x = (float) ((((int) (*xp++)) * (*ep++)) >> ENV_NORM); */
-	  float x = (float) (*xp++);
-	  float e = *ep++;
+	  const float x = (float) (*xp++);
+	  const float e =  *ep++;
 	  *ys++ = x * (gs + (e * ds));
 	  *yv++ = x * (gv + (e * dv));
 	  *yp++ = x * (gp + (e * dp));
@@ -3558,7 +3542,7 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
       } else {
 
 	for (; 0 < n; n--) {	/* CPY */
-	  float x = (float) (*xp++);
+	  const float x = (float) (*xp++);
 	  *ys++ = x * gs;
 	  *yv++ = x * gv;
 	  *yp++ = x * gp;
@@ -3591,9 +3575,9 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
   /* Mix buffers, applying percussion and swell pedal. */
 
   {
-    float * xp = swlBuffer;
-    float * vp = vibYBuffr;
-    float * pp = prcBuffer;
+    const float * xp = swlBuffer;
+    const float * vp = vibYBuffr;
+    const float * pp = prcBuffer;
 
 
     if (t->oldRouting & RT_PERC) {	/* If percussion is on */
@@ -3614,7 +3598,7 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
       if (t->oldRouting & RT_VIB) { /* If vibrato is on */
 	for (i = 0; i < BUFFER_SIZE_SAMPLES; i++) { /* Perc and vibrato */
 	  *yptr++ =
-	    (t->outputGain * t->keyCompLevel *
+	    (t->outputGain * KEYCOMPLEVEL *
 	     ((*xp++) + (*vp++) + ((*pp++) * t->percEnvGain)));
 	  t->percEnvGain *= t->percEnvGainDecay;
 	  KEYCOMPCHASE();
@@ -3622,7 +3606,7 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
       } else {			/* Percussion only */
 	for (i = 0; i < BUFFER_SIZE_SAMPLES; i++) {
 	  *yptr++ =
-	    (t->outputGain * t->keyCompLevel * ((*xp++) + ((*pp++) * t->percEnvGain)));
+	    (t->outputGain * KEYCOMPLEVEL * ((*xp++) + ((*pp++) * t->percEnvGain)));
 	  t->percEnvGain *= t->percEnvGainDecay;
 	  KEYCOMPCHASE();
 	}
@@ -3632,13 +3616,13 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
 
       for (i = 0; i < BUFFER_SIZE_SAMPLES; i++) {
 	*yptr++ =
-	  (t->swellPedalGain * t->keyCompLevel * ((*xp++) + (*vp++)));
+	  (t->swellPedalGain * KEYCOMPLEVEL * ((*xp++) + (*vp++)));
 	KEYCOMPCHASE();
       }
     } else {			/* No percussion and no vibrato */
       for (i = 0; i < BUFFER_SIZE_SAMPLES; i++) {
 	*yptr++ =
-	  (t->swellPedalGain * t->keyCompLevel * (*xp++));
+	  (t->swellPedalGain * KEYCOMPLEVEL * (*xp++));
 	KEYCOMPCHASE();
       }
     }
