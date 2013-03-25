@@ -9,7 +9,8 @@ For doing so, the "Blender OpenGL / C header exporter" by Krzysztof Solek was us
 http://ksolek.fm.interia.pl/Blender/
 see b_synth/ui_model.h for the result.
 
-The textures were done with gimp which similarly suppors a "save as.. C-header"
+The textures were done with gimp which has a "save as.. C-header" feature.
 see b_synth/btn_overdrive.c for an example.
 
-See also http://gareus.org/blog/setbfree_-_3d_opengl_lv2_audio_plugin
+See http://gareus.org/blog/setbfree_-_3d_opengl_lv2_audio_plugin
+for screenshots of the current design in action.
