@@ -4,9 +4,14 @@ LOADLIBES = -lm
 CFLAGS+= -I../src -I../b_overdrive -I../b_reverb -I../b_whirl -std=c99
 CFLAGS+=`pkg-config --cflags lv2 lv2core`
 
-HAVE_UI=yes
-
 targets=
+
+ifeq ($(IS_OSX), yes)
+  HAVE_UI=yes
+else
+  HAVE_UI=$(shell pkg-config --exists glu && echo yes)
+endif
+
 
 ifeq ($(LV2AVAIL), yes)
   LV2NAME=b_synth
@@ -25,15 +30,18 @@ ifeq ($(LV2AVAIL), yes)
     UIDEPS+=help_screen_image.c
     LV2GUI=b_synthUI
     ifeq ($(IS_OSX), yes)
-      UILIBS=../pugl/pugl_osx.m -framework Cocoa -framework OpenGL
       UIDEPS+=../pugl/pugl_osx.m
+      UILIBS=../pugl/pugl_osx.m -framework Cocoa -framework OpenGL
       UI_TYPE=CocoaUI
     else
-      UILIBS=../pugl/pugl_x11.c -lX11 -lGL -lGLU
       UIDEPS+=../pugl/pugl_x11.c
+      CFLAGS+=`pkg-config --cflags pkg-config --libs glu`
+      UILIBS=../pugl/pugl_x11.c -lX11 `pkg-config --libs pkg-config --libs glu`
       UI_TYPE=X11UI
     endif
     targets+=$(LV2GUI)$(LIB_EXT)
+  else
+    $(warning "openGL/GLU is not available - install glu-dev to include LV2 GUI")
   endif
 endif
 
