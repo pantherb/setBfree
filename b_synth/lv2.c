@@ -157,19 +157,19 @@ static void mctl_cb(int fnid, const char *fn, unsigned char val, midiCCmap *mm, 
 #endif
   if (b3s->midiout && mm) {
     uint8_t msg[3];
-    msg[0] = 0xb0 | (mm->channel&0x0f); // CONTROL_CHANGE
+    msg[0] = 0xb0 | (mm->channel&0x0f); // Control Change
     msg[1] = mm->param;
     msg[2] = val;
     forge_midimessage(&b3s->forge, &b3s->uris, msg, 3);
   }
   if (b3s->midiout && fn && !b3s->suspend_ui_msg) {
-    forge_kvcontrolmessage(&b3s->forge, &b3s->uris, fn, val);
+    forge_kvcontrolmessage(&b3s->forge, &b3s->uris, fn, (int32_t) val);
   }
 }
 
 static void rc_cb(int fnid, const char *fn, unsigned char val, void *arg) {
   B3S* b3s = (B3S*)arg;
-  forge_kvcontrolmessage(&b3s->forge, &b3s->uris, fn, val);
+  forge_kvcontrolmessage(&b3s->forge, &b3s->uris, fn, (int32_t) val);
 }
 
 /* LV2 -- state */
@@ -335,6 +335,14 @@ run(LV2_Handle instance, uint32_t n_samples)
 
   /* prepare outgoing MIDI */
   const uint32_t capacity = b3s->midiout->atom.size;
+
+  static bool warning_printed = false;
+  if (!warning_printed && capacity < 4096) {
+    warning_printed = true;
+    fprintf(stderr, "B3LV2: LV message buffer is only %d bytes. Expect problems.\n", capacity);
+    fprintf(stderr, "B3LV2: if your LV2 host allows to configure a buffersize use at least 4kBytes.\n");
+
+  }
   lv2_atom_forge_set_buffer(&b3s->forge, (uint8_t*)b3s->midiout, capacity);
   lv2_atom_forge_sequence_head(&b3s->forge, &b3s->frame, 0);
 

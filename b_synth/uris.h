@@ -92,7 +92,7 @@ forge_midimessage(LV2_Atom_Forge* forge,
 static inline LV2_Atom *
 forge_kvcontrolmessage(LV2_Atom_Forge* forge,
 		const setBfreeURIs* uris,
-		const char* key, int value)
+		const char* key, int32_t value)
 {
 	//printf("UIcom: Tx '%s' -> %d \n", key, value);
 
@@ -128,7 +128,7 @@ get_cc_key_value(
 		return -1;
 	}
 	if (!value) {
-		fprintf(stderr, " Malformed message has no value.\n");
+		fprintf(stderr, " Malformed message has no value for key '%s'.\n", (char*)LV2_ATOM_BODY(key));
 		return -1;
 	}
 	//printf("UIcom: Rx '%s' -> %d \n", (char*)LV2_ATOM_BODY(key), ((LV2_Atom_Int*)value)->body);

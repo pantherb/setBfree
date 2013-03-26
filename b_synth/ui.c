@@ -153,9 +153,10 @@ static void vmap_midi_to_val(PuglView* view, int elem, int mval) {
   ui->ctrls[elem].cur = ui->ctrls[elem].min + rint((ui->ctrls[elem].max - ui->ctrls[elem].min) * mval / 127.0);
 }
 
-static int vmap_val_to_midi(PuglView* view, int elem) {
+static unsigned char vmap_val_to_midi(PuglView* view, int elem) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
-  return (int)floor( rint(ui->ctrls[elem].cur - ui->ctrls[elem].min) * 127.0 / (ui->ctrls[elem].max - ui->ctrls[elem].min));
+  const int v = floor( rint(ui->ctrls[elem].cur - ui->ctrls[elem].min) * 127.0 / (ui->ctrls[elem].max - ui->ctrls[elem].min));
+  return (v&0x7f);
 }
 
 /* call lv2 plugin if value has changed */
@@ -163,7 +164,7 @@ static int vmap_val_to_midi(PuglView* view, int elem) {
 static void notifyPlugin(PuglView* view, int elem) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   uint8_t obj_buf[OBJ_BUF_SIZE];
-  int val;
+  int32_t val;
 
   /* special cases */
   if (elem == 24 || elem == 25) {
@@ -230,7 +231,7 @@ static void processMotion(PuglView* view, int elem, float dx, float dy) {
   if (elem < 0 || elem >= TOTAL_OBJ) return;
 
   const float dist = -2.0 * (ui->ctrls[elem].type == OBJ_LEVER ? 2.5 * dx : dy);
-  const int oldval = vmap_val_to_midi(view, elem);
+  const unsigned char oldval = vmap_val_to_midi(view, elem);
 
   switch (ui->ctrls[elem].type) {
     case OBJ_DIAL:
