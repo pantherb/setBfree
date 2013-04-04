@@ -36,6 +36,13 @@
 #include <GL/glu.h>
 #endif
 
+#ifdef HAVE_FTGL
+#include <FTGL/ftgl.h>
+#ifndef FONTFILE
+#define FONTFILE "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSerif.ttf"
+#endif
+#endif
+
 #include "uris.h"
 #include "ui_model.h"
 
@@ -140,6 +147,10 @@ typedef struct {
   int dndid;
   float dndval;
   float dndx, dndy;
+
+#ifdef HAVE_FTGL
+  FTGLfont *font;
+#endif
 
 } B3ui;
 
@@ -657,18 +668,6 @@ onDisplay(PuglView* view)
   int i;
   B3ui* ui = (B3ui*)puglGetHandle(view);
 
-  if (!ui->initialized) {
-    /* initialization needs to happen from event context
-     * after pugl set glXMakeCurrent() - this /should/ otherwise
-     * be done during initialization()
-     */
-    ui->initialized = 1;
-    setupOpenGL();
-    initMesh(ui->view);
-    setupLight();
-    initTextures(ui->view);
-  }
-
   const GLfloat no_mat[] = { 0.0, 0.0, 0.0, 1.0 };
   const GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };
   const GLfloat no_shininess[] = { 128.0 };
@@ -682,9 +681,29 @@ onDisplay(PuglView* view)
   const GLfloat mat_drawbar_white[] = { 1.0, 1.0, 1.0, 1.0 };
   const GLfloat mat_drawbar_brown[] = { 0.39, 0.25, 0.1, 1.0 };
   const GLfloat mat_drawbar_black[] = { 0.0, 0.0, 0.0, 1.0 };
+  const GLfloat mat_w[] = {3.5, 3.5, 3.5, 1.0};
 
+  if (!ui->initialized) {
+    /* initialization needs to happen from event context
+     * after pugl set glXMakeCurrent() - this /should/ otherwise
+     * be done during initialization()
+     */
+    ui->initialized = 1;
+    setupOpenGL();
+    initMesh(ui->view);
+    setupLight();
+    initTextures(ui->view);
+#ifdef HAVE_FTGL
+    ui->font = ftglCreateBufferFont(FONTFILE);
+    ftglSetFontFaceSize(ui->font, 80, 72);
+    ftglSetFontCharMap(ui->font, ft_encoding_unicode);
+    //ftglSetFontDepth(ui->font, 1.0);
+#endif
+  }
   if (ui->show_help) {
     const float invaspect = (float) ui->height / (float) ui->width;
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_w);
+    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_w);
     glLoadIdentity();
     glEnable(GL_TEXTURE_2D);
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
@@ -700,6 +719,30 @@ onDisplay(PuglView* view)
     return;
   }
 
+#ifdef HAVE_FTGL
+
+  glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_w);
+  glMaterialfv(GL_FRONT, GL_AMBIENT, mat_w);
+
+  glPushMatrix();
+  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
+  glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
+  float bb[6];
+  glScalef(0.001,0.001,1.00);
+  glRotatef(180, 1, 0, 0);
+#define TEXTSTR " ?  "
+  ftglGetFontBBox(ui->font, TEXTSTR, -1, bb);
+  printf("%.2f %.2f %.2f  %.2f %.2f %.2f\n",
+      bb[0], bb[1], bb[2], bb[3], bb[4], bb[5]);
+  glTranslatef(
+      (bb[3] - bb[0])/-2.0,
+      (bb[4] - bb[1])/-2.0,
+      .055);
+  glTranslatef(1080, 220, 0);
+  //glTranslatef(1000.0, 332, 0);
+  ftglRenderFont(ui->font, TEXTSTR, FTGL_RENDER_ALL);
+  glPopMatrix();
+#endif
 
   /** step 1 - draw background -- fixed objects **/
 
@@ -913,7 +956,7 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       break;
     case 's':
       ui->rot[0] = ui->rot[1] = ui->rot[2] = 0.0;
-      ui->scale = 0.9;
+      ui->scale = 0.875;
       ui->off[0] = ui->off[1] = ui->off[2] = 0.0;
       queue_reshape = 1;
       break;
@@ -926,9 +969,10 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       queue_reshape = 1;
       break;
     case '?':
-    default:
       ui->show_help = !ui->show_help;
       queue_reshape = 1;
+      break;
+    default:
       break;
   }
 
@@ -978,10 +1022,18 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
   project_mouse(view, x, y, &fx, &fy);
   //fprintf(stderr, "Mouse %d %s at %.3f,%.3f\n", button, press ? "down" : "up", fx, fy);
 
-  if (!press) { /* mouse up */
+  if (!press || ui->show_help) { /* mouse up */
     ui->dndid = -1;
     return;
   }
+#ifdef HAVE_FTGL
+  if (fx >= 1.050 && fx <= 1.150 && fy >= -.27 && fy <= -.19) {
+    ui->show_help = 1;
+    onReshape(view, ui->width, ui->height);
+    puglPostRedisplay(view);
+    return;
+  }
+#endif
 
   for (i = 0; i < TOTAL_OBJ; ++i) {
     if (!MOUSEOVER(ui->ctrls[i], fx, fy)) {
@@ -1209,6 +1261,9 @@ cleanup(LV2UI_Handle handle)
 #ifdef OLD_SUIL
   ui->exit = true;
   pthread_join(ui->thread, NULL);
+#endif
+#ifdef HAVE_FTGL
+  ftglDestroyFont(ui->font);
 #endif
   puglDestroy(ui->view);
   free(ui->vbo);

@@ -12,7 +12,6 @@ else
   HAVE_UI=$(shell pkg-config --exists glu && echo yes)
 endif
 
-
 ifeq ($(LV2AVAIL), yes)
   LV2NAME=b_synth
   targets+=lv2
@@ -35,9 +34,13 @@ ifeq ($(LV2AVAIL), yes)
       UI_TYPE=CocoaUI
     else
       UIDEPS+=../pugl/pugl_x11.c
-      CFLAGS+=`pkg-config --cflags pkg-config --libs glu`
-      UILIBS=../pugl/pugl_x11.c -lX11 `pkg-config --libs pkg-config --libs glu`
+      CFLAGS+=`pkg-config --cflags glu`
+      UILIBS=../pugl/pugl_x11.c -lX11 `pkg-config --libs glu`
       UI_TYPE=X11UI
+    endif
+    ifeq ($(shell pkg-config --exists ftgl && echo yes), yes)
+      CFLAGS+=`pkg-config --cflags ftgl` -DHAVE_FTGL
+      UILIBS+=`pkg-config --libs ftgl`
     endif
     targets+=$(LV2GUI)$(LIB_EXT)
   else
