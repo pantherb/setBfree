@@ -91,7 +91,7 @@ void initSynth(B3S *b3s, double rate) {
   initControllerTable (b3s->inst.midicfg);
 #if 1
   midiPrimeControllerMapping (b3s->inst.midicfg);
-#else // rg test midi-feedback
+#elif 0 // rg test midi-feedback
   parseConfigurationFile (&b3s->inst, "/home/rgareus/data/coding/setBfree/cfg/bcf2000.cfg");
 #endif
 
@@ -153,14 +153,20 @@ uint32_t synthSound (B3S *instance, uint32_t written, uint32_t nframes, float **
 static void mctl_cb(int fnid, const char *fn, unsigned char val, midiCCmap *mm, void *arg) {
   B3S* b3s = (B3S*)arg;
 #ifdef DEBUGPRINT
-  printf("xfn: %d (\"%s\", %d)\n", fnid, fn, val);
+  printf("xfn: %d (\"%s\", %d) mm:%s\n", fnid, fn, val, mm?"yes":"no");
 #endif
   if (b3s->midiout && mm) {
-    uint8_t msg[3];
-    msg[0] = 0xb0 | (mm->channel&0x0f); // Control Change
-    msg[1] = mm->param;
-    msg[2] = val;
-    forge_midimessage(&b3s->forge, &b3s->uris, msg, 3);
+    while (mm) {
+#ifdef DEBUGPRINT
+      printf("MIDI FEEDBACK %d %d %d\n", mm->channel, mm->param, val);
+#endif
+      uint8_t msg[3];
+      msg[0] = 0xb0 | (mm->channel&0x0f); // Control Change
+      msg[1] = mm->param;
+      msg[2] = val;
+      forge_midimessage(&b3s->forge, &b3s->uris, msg, 3);
+      mm = mm->next;
+    }
   }
   if (b3s->midiout && fn && !b3s->suspend_ui_msg) {
     forge_kvcontrolmessage(&b3s->forge, &b3s->uris, fn, (int32_t) val);
@@ -170,6 +176,22 @@ static void mctl_cb(int fnid, const char *fn, unsigned char val, midiCCmap *mm, 
 static void rc_cb(int fnid, const char *fn, unsigned char val, void *arg) {
   B3S* b3s = (B3S*)arg;
   forge_kvcontrolmessage(&b3s->forge, &b3s->uris, fn, (int32_t) val);
+}
+
+static void mcc_cb(const char *fnname, unsigned char chn, unsigned char cc, unsigned char flags, void *arg) {
+  B3S* b3s = (B3S*)arg;
+  char mmv[20];
+  sprintf(mmv, "%d|%d ", chn, cc);
+
+  LV2_Atom_Forge_Frame frame;
+  lv2_atom_forge_frame_time(&b3s->forge, 0);
+  lv2_atom_forge_blank(&b3s->forge, &frame, 1, b3s->uris.sb3_uimccset);
+
+  lv2_atom_forge_property_head(&b3s->forge, b3s->uris.sb3_cckey, 0);
+  lv2_atom_forge_string(&b3s->forge, fnname, strlen(fnname));
+  lv2_atom_forge_property_head(&b3s->forge, b3s->uris.sb3_ccval, 0);
+  lv2_atom_forge_string(&b3s->forge, mmv, strlen(mmv));
+  lv2_atom_forge_pop(&b3s->forge, &frame);
 }
 
 /* LV2 -- state */
@@ -362,6 +384,15 @@ run(LV2_Handle instance, uint32_t n_samples)
 	const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;
 	if (obj->body.otype == b3s->uris.sb3_uiinit) {
 	  b3s->update_gui_now = 1;
+	} else if (obj->body.otype == b3s->uris.sb3_uimccquery) {
+	  midi_loop_CCAssignment(b3s->inst.midicfg, mcc_cb, b3s);
+	} else if (obj->body.otype == b3s->uris.sb3_uimccset) {
+	  const LV2_Atom* key = NULL;
+	  lv2_atom_object_get(obj, b3s->uris.sb3_cckey, &key, 0);
+	  if (key) {
+	    midi_uiassign_cc(b3s->inst.midicfg, (const char*)LV2_ATOM_BODY(key));
+	  }
+
 	} else if (obj->body.otype == b3s->uris.sb3_control) {
 	  b3s->suspend_ui_msg = 1;
 	  const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;

@@ -39,7 +39,7 @@
 #ifdef HAVE_FTGL
 #include <FTGL/ftgl.h>
 #ifndef FONTFILE
-#define FONTFILE "/usr/share/fonts/truetype/ttf-dejavu/DejaVuSerif.ttf"
+#define FONTFILE "/usr/share/fonts/truetype/ttf-bitstream-vera/VeraBd.ttf"
 #endif
 #endif
 
@@ -111,6 +111,7 @@ typedef struct {
   float x,y; // matrix position
   float w,h; // bounding box
   int texID; // texture ID
+  char midinfo[1024];
 } b3widget;
 
 typedef struct {
@@ -139,6 +140,8 @@ typedef struct {
   GLdouble matrix[16]; // used for mouse mapping
   double rot[3], off[3], scale; // global projection
   int show_help;
+  int show_mm;
+  int uiccbind;
 
   /* interactive control objexts */
   b3widget ctrls[TOTAL_OBJ];
@@ -149,7 +152,8 @@ typedef struct {
   float dndx, dndy;
 
 #ifdef HAVE_FTGL
-  FTGLfont *font;
+  FTGLfont *font_big;
+  FTGLfont *font_small;
 #endif
 
 } B3ui;
@@ -197,6 +201,20 @@ static void notifyPlugin(PuglView* view, int elem) {
   LV2_Atom* msg = forge_kvcontrolmessage(&ui->forge, &ui->uris, obj_control[elem], val);
   if (msg)
     ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
+}
+
+static void forge_message(B3ui* ui, LV2_URID uri, const char *key) {
+  uint8_t obj_buf[64];
+  lv2_atom_forge_set_buffer(&ui->forge, obj_buf, 64);
+
+  LV2_Atom_Forge_Frame set_frame;
+  LV2_Atom* msg = (LV2_Atom*)lv2_atom_forge_blank(&ui->forge, &set_frame, 1, uri);
+  if (key) {
+    lv2_atom_forge_property_head(&ui->forge, ui->uris.sb3_cckey, 0);
+    lv2_atom_forge_string(&ui->forge, key, strlen(key));
+  }
+  lv2_atom_forge_pop(&ui->forge, &set_frame);
+  ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
 }
 
 /* called from port_event -- plugin tells GUI a new value */
@@ -663,6 +681,40 @@ onReshape(PuglView* view, int width, int height)
 }
 
 static void
+render_text(PuglView* view, const char *text, float x, float y, float z)
+{
+#ifdef HAVE_FTGL
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  const GLfloat mat_b[] = {0.0, 0.0, 0.0, 1.0};
+  const GLfloat mat_r[] = {0.1, 1.0, 0.2, 1.0};
+
+  glPushMatrix();
+  glLoadIdentity();
+
+  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_b);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_b);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_r);
+
+  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
+  float bb[6];
+  glScalef(0.001,0.001,1.00);
+  glRotatef(180, 1, 0, 0);
+  ftglGetFontBBox(ui->font_small, text, -1, bb);
+#if 0
+  printf("%.2f %.2f %.2f  %.2f %.2f %.2f\n",
+      bb[0], bb[1], bb[2], bb[3], bb[4], bb[5]);
+#endif
+  glTranslatef(
+      (bb[3] - bb[0])/-2.0,
+      (bb[4] - bb[1])/-2.0,
+      0);
+  glTranslatef(x * (1000.0*SCALE) , -y * (1000.0*SCALE), z * SCALE);
+  ftglRenderFont(ui->font_small, text, FTGL_RENDER_ALL);
+  glPopMatrix();
+#endif
+}
+
+static void
 onDisplay(PuglView* view)
 {
   int i;
@@ -694,10 +746,12 @@ onDisplay(PuglView* view)
     setupLight();
     initTextures(ui->view);
 #ifdef HAVE_FTGL
-    ui->font = ftglCreateBufferFont(FONTFILE);
-    ftglSetFontFaceSize(ui->font, 80, 72);
-    ftglSetFontCharMap(ui->font, ft_encoding_unicode);
-    //ftglSetFontDepth(ui->font, 1.0);
+    ui->font_big = ftglCreateBufferFont(FONTFILE);
+    ftglSetFontFaceSize(ui->font_big, 80, 72);
+    ftglSetFontCharMap(ui->font_big, ft_encoding_unicode);
+    ui->font_small = ftglCreateBufferFont(FONTFILE);
+    ftglSetFontFaceSize(ui->font_small, 20, 72);
+    ftglSetFontCharMap(ui->font_small, ft_encoding_unicode);
 #endif
   }
   if (ui->show_help) {
@@ -726,21 +780,23 @@ onDisplay(PuglView* view)
 
   glPushMatrix();
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
-  glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
+  //glColorMaterial(GL_FRONT_AND_BACK, GL_DIFFUSE);
   float bb[6];
   glScalef(0.001,0.001,1.00);
   glRotatef(180, 1, 0, 0);
 #define TEXTSTR " ?  "
-  ftglGetFontBBox(ui->font, TEXTSTR, -1, bb);
+  ftglGetFontBBox(ui->font_big, TEXTSTR, -1, bb);
+#if 0
   printf("%.2f %.2f %.2f  %.2f %.2f %.2f\n",
       bb[0], bb[1], bb[2], bb[3], bb[4], bb[5]);
+#endif
   glTranslatef(
       (bb[3] - bb[0])/-2.0,
       (bb[4] - bb[1])/-2.0,
       .055);
   glTranslatef(1080, 220, 0);
   //glTranslatef(1000.0, 332, 0);
-  ftglRenderFont(ui->font, TEXTSTR, FTGL_RENDER_ALL);
+  ftglRenderFont(ui->font_big, TEXTSTR, FTGL_RENDER_ALL);
   glPopMatrix();
 #endif
 
@@ -823,6 +879,7 @@ onDisplay(PuglView* view)
 
   for (i = 0; i < TOTAL_OBJ; ++i) {
     float y = ui->ctrls[i].y;
+
     if (ui->ctrls[i].type == OBJ_DRAWBAR) { /* drawbar */
       y -= (float) vmap_val_to_midi(view, i) / 12.7;
     }
@@ -906,6 +963,20 @@ onDisplay(PuglView* view)
     drawMesh(view, ui->ctrls[i].type, 1);
     glDisable(GL_TEXTURE_2D);
     glPopMatrix();
+
+    float x = ui->ctrls[i].x;
+    if (i == 24) x += 1.375;
+    if (i == 25) x -= 1.375;
+    if (i == 31) x += 2.8;
+    if (i == 32) x -= 2.8;
+    if (i < 20)  y -= 0.4;
+
+    if (ui->show_mm) {
+      render_text(view, ui->ctrls[i].midinfo, x, y, 1.5f);
+    }
+    if (ui->uiccbind == i) {
+      render_text(view, "move slider", x, y-.8, 1.6f);
+    }
   }
 }
 
@@ -972,6 +1043,19 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       ui->show_help = !ui->show_help;
       queue_reshape = 1;
       break;
+    case 'm':
+      if (ui->show_mm) {
+	ui->show_mm = 0;
+      } else {
+	int i;
+	for (i = 0; i < TOTAL_OBJ; ++i) {
+	  ui->ctrls[i].midinfo[0] = '\0';
+	}
+	forge_message(ui, ui->uris.sb3_uimccquery, NULL);
+	ui->show_mm = 1;
+      }
+      puglPostRedisplay(view);
+      break;
     default:
       break;
   }
@@ -1022,11 +1106,36 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
   project_mouse(view, x, y, &fx, &fy);
   //fprintf(stderr, "Mouse %d %s at %.3f,%.3f\n", button, press ? "down" : "up", fx, fy);
 
-  if (!press || ui->show_help) { /* mouse up */
+  if (!press) {
     ui->dndid = -1;
     return;
   }
+
+  if (puglGetModifiers(view) & PUGL_MOD_CTRL && button == 2) {
+    for (i = 0; i < TOTAL_OBJ; ++i) {
+      if (!MOUSEOVER(ui->ctrls[i], fx, fy)) {
+	continue;
+      }
+      ui->uiccbind = i;
+      forge_message(ui, ui->uris.sb3_uimccset, obj_control[i]);
+      puglPostRedisplay(view);
+      return;
+    }
+  }
+  if (ui->uiccbind >= 0) {
+    ui->uiccbind = -1;
+    forge_message(ui, ui->uris.sb3_uimccset, "off");
+    puglPostRedisplay(view);
+  }
+
 #ifdef HAVE_FTGL
+  if (ui->show_help) {
+    ui->show_help = 0;
+    onReshape(view, ui->width, ui->height);
+    puglPostRedisplay(view);
+    return;
+  }
+
   if (fx >= 1.050 && fx <= 1.150 && fy >= -.27 && fy <= -.19) {
     ui->show_help = 1;
     onReshape(view, ui->width, ui->height);
@@ -1100,6 +1209,8 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   int i;
 
   ui->show_help   = 0;
+  ui->show_mm     = 0;
+  ui->uiccbind    = -1;
   ui->width       = 960;
   ui->height      = 320;
   ui->dndid       = -1;
@@ -1243,13 +1354,7 @@ instantiate(const LV2UI_Descriptor*   descriptor,
 
 
   /* ask plugin about current state */
-  uint8_t obj_buf[64];
-  lv2_atom_forge_set_buffer(&ui->forge, obj_buf, 64);
-
-  LV2_Atom_Forge_Frame set_frame;
-  LV2_Atom* msg = (LV2_Atom*)lv2_atom_forge_blank(&ui->forge, &set_frame, 1, ui->uris.sb3_uiinit);
-  lv2_atom_forge_pop(&ui->forge, &set_frame);
-  ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
+  forge_message(ui, ui->uris.sb3_uiinit, NULL);
 
   return ui;
 }
@@ -1263,7 +1368,8 @@ cleanup(LV2UI_Handle handle)
   pthread_join(ui->thread, NULL);
 #endif
 #ifdef HAVE_FTGL
-  ftglDestroyFont(ui->font);
+  ftglDestroyFont(ui->font_big);
+  ftglDestroyFont(ui->font_small);
 #endif
   puglDestroy(ui->view);
   free(ui->vbo);
@@ -1279,7 +1385,7 @@ port_event(LV2UI_Handle handle,
     const void*  buffer)
 {
   B3ui* ui = (B3ui*)handle;
-  char *k; int v;
+  char *k, *fn; int v;
 
   if (format != ui->uris.atom_eventTransfer) {
     fprintf(stderr, "B3Lv2UI: Unknown message format.\n");
@@ -1299,7 +1405,23 @@ port_event(LV2UI_Handle handle,
 
   LV2_Atom_Object* obj = (LV2_Atom_Object*)atom;
   if (!get_cc_key_value(&ui->uris, obj, &k, &v)) {
-    processCCevent(ui, k, v);
+    if (!strcmp(k, "special.midimap")) {
+      ui->uiccbind = -1;
+      ui->show_mm = 0;
+      puglPostRedisplay(ui->view);
+    } else {
+      processCCevent(ui, k, v);
+    }
+  } else if (!get_cc_midi_mapping(&ui->uris, obj, &fn, &k)) {
+    int i;
+    int fnid = -1;
+    for (i = 0; i < TOTAL_OBJ; ++i) {
+      if (!strcmp(obj_control[i], fn)) {fnid = i; break;}
+    }
+    if (fnid >= 0) {
+      strcat(ui->ctrls[fnid].midinfo, k);
+    }
+    puglPostRedisplay(ui->view);
   }
 }
 

@@ -32,6 +32,8 @@
 #define SB3__load    SB3_URI "#load"
 #define SB3__state   SB3_URI "#state"
 #define SB3__uiinit  SB3_URI "#uiinit"
+#define SB3__uimccq  SB3_URI "#uimccquery"
+#define SB3__uimccs  SB3_URI "#uimccset"
 #define SB3__control SB3_URI "#controlmsg"
 #define SB3__cckey   SB3_URI "#controlkey"
 #define SB3__ccval   SB3_URI "#controlval"
@@ -46,6 +48,8 @@ typedef struct {
 
 	LV2_URID sb3_state;
 	LV2_URID sb3_uiinit;
+	LV2_URID sb3_uimccquery;
+	LV2_URID sb3_uimccset;
 	LV2_URID sb3_control;
 	LV2_URID sb3_cckey;
 	LV2_URID sb3_ccval;
@@ -65,6 +69,8 @@ map_setbfree_uris(LV2_URID_Map* map, setBfreeURIs* uris)
 	uris->atom_eventTransfer = map->map(map->handle, LV2_ATOM__eventTransfer);
 	uris->sb3_state          = map->map(map->handle, SB3__state);
 	uris->sb3_uiinit         = map->map(map->handle, SB3__uiinit);
+	uris->sb3_uimccquery     = map->map(map->handle, SB3__uimccq);
+	uris->sb3_uimccset       = map->map(map->handle, SB3__uimccs);
 	uris->sb3_control        = map->map(map->handle, SB3__control);
 	uris->sb3_cckey          = map->map(map->handle, SB3__cckey);
 	uris->sb3_ccval          = map->map(map->handle, SB3__ccval);
@@ -119,22 +125,52 @@ get_cc_key_value(
 	*k = NULL; *v = 0;
 
 	if (obj->body.otype != uris->sb3_control) {
-		fprintf(stderr, "B3Lv2: Ignoring unknown message type %d\n", obj->body.otype);
+		//fprintf(stderr, "B3Lv2: Ignoring message type %d (expect [ctrl] %d\n", obj->body.otype, uris->sb3_control);
 		return -1;
 	}
 	lv2_atom_object_get(obj, uris->sb3_cckey, &key, uris->sb3_ccval, &value, 0);
 	if (!key) {
-		fprintf(stderr, "B3Lv2: Malformed message has no key.\n");
+		fprintf(stderr, "B3Lv2: Malformed ctrl message has no key.\n");
 		return -1;
 	}
 	if (!value) {
-		fprintf(stderr, " Malformed message has no value for key '%s'.\n", (char*)LV2_ATOM_BODY(key));
+		fprintf(stderr, " Malformed ctrl message has no value for key '%s'.\n", (char*)LV2_ATOM_BODY(key));
 		return -1;
 	}
 	//printf("UIcom: Rx '%s' -> %d \n", (char*)LV2_ATOM_BODY(key), ((LV2_Atom_Int*)value)->body);
 
 	*k = LV2_ATOM_BODY(key);
 	*v = ((LV2_Atom_Int*)value)->body;
+
+	return 0;
+}
+
+static inline int
+get_cc_midi_mapping(
+		const setBfreeURIs* uris, const LV2_Atom_Object* obj,
+		char **fnname, char **mms)
+{
+	const LV2_Atom* key = NULL;
+	const LV2_Atom* value = NULL;
+	if (!mms || !fnname) return -1;
+	*mms = NULL; *fnname = NULL;
+
+	if (obj->body.otype != uris->sb3_uimccset) {
+		//fprintf(stderr, "B3Lv2: Ignoring message type %d (expect [CC] %d\n", obj->body.otype, uris->sb3_uimccset);
+		return -1;
+	}
+	lv2_atom_object_get(obj, uris->sb3_cckey, &key, uris->sb3_ccval, &value, 0);
+	if (!key) {
+		fprintf(stderr, "B3Lv2: Malformed CCmap message has no key.\n");
+		return -1;
+	}
+	if (!value) {
+		fprintf(stderr, " Malformed CCmap message has no value for key '%s'.\n", (char*)LV2_ATOM_BODY(key));
+		return -1;
+	}
+
+	*fnname = LV2_ATOM_BODY(key);
+	*mms = LV2_ATOM_BODY(value);
 
 	return 0;
 }
