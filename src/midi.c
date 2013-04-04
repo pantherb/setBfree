@@ -244,6 +244,8 @@ ctrl_function *ctrlvec[16]; /**< control function table per MIDI channel */
 
 midiccflags_t ctrlflg[16][128]; /**< binary flags for each control  -- binary OR */
 
+int ccuimap; // auto-assign this function to the next received CC
+
 void (*hookfn)(int, const char *, unsigned char, midiCCmap *, void *);
 void *hookarg;
 
@@ -274,6 +276,8 @@ static void resetMidiCfg(void *mcfg) {
 
   m->hookfn = NULL;
   m->hookarg = NULL;
+
+  m->ccuimap = -1;
 }
 
 void *allocMidiCfg(void *stateptr) {
@@ -403,7 +407,7 @@ void useMIDIControlFunction (void *mcfg, char * cfname, void (* f) (void *, unsi
   }
 }
 
-void reverse_cc_map(struct b_midicfg *m, int x, uint8_t chn, uint8_t param) {
+static void reverse_cc_map(struct b_midicfg *m, int x, uint8_t chn, uint8_t param) {
   midiCCmap *newmm, *tmp;
 
   newmm = malloc(sizeof(midiCCmap));
@@ -418,6 +422,28 @@ void reverse_cc_map(struct b_midicfg *m, int x, uint8_t chn, uint8_t param) {
   tmp = m->ctrlvecF[x].mm;
   while (tmp && tmp->next) { tmp = tmp->next; }
   tmp->next = newmm;
+}
+
+static int reverse_cc_unmap(struct b_midicfg *m, int x, uint8_t chn, uint8_t param) {
+  midiCCmap *tmp, *prev;
+  if (!m->ctrlvecF[x].mm) {
+    return -2;
+  }
+
+  prev = NULL;
+  tmp = m->ctrlvecF[x].mm;
+  while (tmp && tmp->channel != chn && tmp->param != param) {prev = tmp; tmp = tmp->next;}
+  if (!tmp) {
+    return -3;
+  }
+  if (prev) {
+    prev->next = tmp->next;
+    free(tmp);
+  } else {
+    m->ctrlvecF[x].mm = tmp->next;
+    free(tmp);
+  }
+  return 0;
 }
 
 
@@ -522,6 +548,35 @@ static void clearControllerMapping (void *mcfg) {
     } while (t1);
     m->ctrlvecF[i].mm = NULL;
   }
+}
+
+static int remove_CC_map (void *mcfg, int chn, unsigned char cc) {
+  int i;
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
+  unsigned char * ctrlUse;
+  int ccChn = 0;
+  if        (chn == m->rcvChA) {
+    ctrlUse = m->ctrlUseA;
+    ccChn = m->rcvChA;
+  } else if (chn == m->rcvChB) {
+    ctrlUse = m->ctrlUseA;
+    ccChn = m->rcvChB;
+  } else if (chn == m->rcvChC) {
+    ctrlUse = m->ctrlUseC;
+    ccChn = m->rcvChC;
+  } else {
+    fprintf(stderr, "ignored request to remove unmapped midi-CC\n");
+    return -1;
+  }
+  for (i=0; i<127; ++i) {
+    if (ctrlUse[i] == cc) {
+      ctrlUse[i] = 255;
+      m->ctrlflg[ccChn][i] = 0;
+      return reverse_cc_unmap(m, i, ccChn, cc);
+      break;
+    }
+  }
+  return -1;
 }
 
 
@@ -984,14 +1039,15 @@ int midiConfig (void *mcfg, ConfigContext * cfg) {
 	/* ...and the controller number is in the allowed range... */
 	if ((0 <= ccn) && (ccn < 128)) {
 	  int i = getCCFunctionId (cfg->value);
-	  if (-1 < i) {
+	  if (!strcmp(cfg->value,"unmap")) {
+	    remove_CC_map(m, ccChn, ccn);
+	  } else if (-1 < i) {
 	    /* Store the controller number indexed by abstract function id */
 	    ctrlUse[i] = ccn;
 	    parseCCFlags(&(m->ctrlflg[ccChn][ccn]), cfg->value);
 	    reverse_cc_map(m, i, ccChn, ccn);
 	    ack++;
-	  }
-	  else {
+	  } else {
 	    /* No match found for symbolic function name. */
 	    showConfigfileContext (cfg,
 				   "name of controllable function not found");
@@ -1035,6 +1091,23 @@ void initMidiTables(void *mcfg) {
   loadKeyTableB (m);
   loadKeyTableC (m);
   loadStatusTable (m);
+}
+
+static void remember_dynamic_CC_change(void *instp, int chn, int param, int fnid) {
+  struct b_instance * inst = (struct b_instance *) instp;
+  struct b_midicfg * m = (struct b_midicfg *) inst->midicfg;
+  char rckey[32];
+  ConfigContext cfg;
+  cfg.fname  = "---dynamic config---";
+  cfg.linenr = 0;
+  sprintf(rckey, "midi.controller.%s.%d",
+      chn == m->rcvChA ? "upper" : (chn == m->rcvChB ? "lower" : "pedals"), param);
+  cfg.name = rckey;
+  if (fnid < 0)
+    cfg.value = "unmap";
+  else
+    cfg.value = ccFuncNames[fnid];
+  rc_add_cfg(inst, &cfg);
 }
 
 
@@ -1106,14 +1179,52 @@ void process_midi_event(void *instp, const struct bmidi_event_t *ev) {
       if (ev->d.control.param >= 120) {
 	/* params 122-127 are reserved - skip them. */
 	break;
-      } else
+      } else {
+	/* auto assign function from midi-controller */
+	if (m->ccuimap >= 0) {
+	  unsigned char * ctrlUse;
+	  if        (ev->channel == m->rcvChA) {
+	    ctrlUse = m->ctrlUseA;
+	  } else if (ev->channel == m->rcvChB) {
+	    ctrlUse = m->ctrlUseA;
+	  } else if (ev->channel == m->rcvChC) {
+	    ctrlUse = m->ctrlUseC;
+	  } else {
+	    // N/A
+	    break;
+	  }
+	  // unassign functions from this controller
+	  if (m->ctrlvec[ev->channel] && m->ctrlvec[ev->channel][ev->d.control.param].fn) {
+	    if (!remove_CC_map(m, ev->channel, ev->d.control.param)) {
+	      remember_dynamic_CC_change(instp, ev->channel, ev->d.control.param, -1);
+	    }
+	  }
 
-      if (m->ctrlvec[ev->channel] && m->ctrlvec[ev->channel][ev->d.control.param].fn) {
-	uint8_t val = ev->d.control.value & 0x7f;
-	if (m->ctrlflg[ev->channel][ev->d.control.param] & MFLAG_INV) {
-	  val = 127 - val;
+	  // assign new functions to this controller
+	  const int fnid = m->ccuimap & 0xff;
+	  ctrlUse[fnid] = ev->d.control.param;
+	  memcpy(&m->ctrlvec[ev->channel][ev->d.control.param], &m->ctrlvecF[fnid], sizeof(ctrl_function));
+	  m->ctrlvec[ev->channel][ev->d.control.param].mm = NULL;
+
+	  reverse_cc_map(m, fnid, ev->channel, ev->d.control.param);
+	  m->ctrlflg[ev->channel][ev->d.control.param] = (m->ccuimap&0xff00) >> 16;
+
+	  remember_dynamic_CC_change(instp, ev->channel, ev->d.control.param, fnid);
+
+	  // send feedback to GUI..
+	  if (m->hookfn) {
+	    m->hookfn(-1, "special.midimap", 0, NULL, m->hookarg);
+	  }
+	  m->ccuimap = -1;
+	} else
+
+	if (m->ctrlvec[ev->channel] && m->ctrlvec[ev->channel][ev->d.control.param].fn) {
+	  uint8_t val = ev->d.control.value & 0x7f;
+	  if (m->ctrlflg[ev->channel][ev->d.control.param] & MFLAG_INV) {
+	    val = 127 - val;
+	  }
+	  execControlFunction(m, &m->ctrlvec[ev->channel][ev->d.control.param], val);
 	}
-	execControlFunction(m, &m->ctrlvec[ev->channel][ev->d.control.param], val);
       }
       break;
     default:
@@ -1179,6 +1290,39 @@ void listCCAssignments(void *mcfg, FILE * fp) {
   dumpCCAssigment(fp, m->ctrlUseB, m->ctrlflg[m->rcvChB]);
   fprintf(fp,"--- Pedal          - Channel %2d ---\n", m->rcvChC);
   dumpCCAssigment(fp, m->ctrlUseC, m->ctrlflg[m->rcvChC]);
+}
+
+void midi_uiassign_cc (void *mcfg, const char *fname) {
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
+  m->ccuimap = getCCFunctionId(fname);
+  printf("CC UI MAP: %d\n", m->ccuimap);
+}
+
+static void midi_print_cc_cb(const char *fnname, unsigned char chn, unsigned char cc, unsigned char flags, void *arg) {
+  FILE *fp = (FILE*)arg;
+  fprintf(fp,"  %d  %03d  | %s %s\n", chn, cc, fnname, (flags&1)?"-":"");
+}
+
+void midi_loop_CCAssignment(void *mcfg, void (*cb)(const char *, unsigned char, unsigned char, unsigned char, void *), void *arg) {
+  int i;
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
+  for (i=0;i<127;++i) {
+    if (m->ctrlUseA[i] != 255) {
+      cb(ccFuncNames[i], m->rcvChA, m->ctrlUseA[i], m->ctrlflg[m->rcvChA][i], arg);
+    }
+    if (m->ctrlUseB[i] != 255) {
+      cb(ccFuncNames[i], m->rcvChB, m->ctrlUseB[i], m->ctrlflg[m->rcvChB][i], arg);
+    }
+    if (m->ctrlUseC[i] != 255) {
+      cb(ccFuncNames[i], m->rcvChC, m->ctrlUseC[i], m->ctrlflg[m->rcvChC][i], arg);
+    }
+  }
+}
+
+void listCCAssignments2(void *mcfg, FILE * fp) {
+  fprintf(fp," Chn  CC  | Function [Mod]\n");
+  fprintf(fp," ---------+---------------\n");
+  midi_loop_CCAssignment(mcfg, midi_print_cc_cb, fp);
 }
 
 /* vi:set ts=8 sts=2 sw=2: */
