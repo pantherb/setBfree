@@ -601,6 +601,7 @@ int main (int argc, char * argv []) {
   unsigned int randomPreset[9];
   unsigned int defaultPreset[9] = {8,8,8, 0,0,0,0, 0,0};
   unsigned int * presetSelect = defaultPreset;
+  char *midnam = NULL;
 
   char * alternateProgrammeFile = NULL;
   char * alternateConfigFile = NULL;
@@ -613,7 +614,7 @@ int main (int argc, char * argv []) {
     jack_port[i] = NULL;
   jack_ports = strdup("system:playback_");
 
-  const char *optstring = "c:CdDhHp:PrV";
+  const char *optstring = "c:CdDhHM:p:PrV";
   struct option long_options[] = {
     { "help",       no_argument,       0, 'H' },
     { "program",    required_argument, 0, 'p' },
@@ -648,6 +649,9 @@ int main (int argc, char * argv []) {
       case 'H':
 	Usage(1);
 	return (0);
+	break;
+      case 'M':
+	midnam = optarg;
 	break;
       case 'r':
 	for (k = 0; k < 9; k++)
@@ -793,6 +797,16 @@ int main (int argc, char * argv []) {
 
   if (printCCTable) {
     listCCAssignments(inst.midicfg, stderr);
+  }
+
+  if (midnam) {
+    FILE *fp = fopen(midnam, "w");
+    if (fp) {
+      save_midname(&inst, fp);
+      fclose(fp);
+    } else {
+      fprintf(stderr, "failed to write midnam to '%s'\n", midnam);
+    }
   }
 
   /*

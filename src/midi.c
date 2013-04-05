@@ -1319,6 +1319,13 @@ void midi_loopCCAssignment(void *mcfg, int ulp, void (*cb)(const char *, unsigne
   }
 }
 
+void midi_channels(void *mcfg, int *upper, int *lower, int *pedals) {
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
+  if (upper)  *upper  = m->rcvChA;
+  if (lower)  *lower  = m->rcvChB;
+  if (pedals) *pedals = m->rcvChC;
+}
+
 void listCCAssignments2(void *mcfg, FILE * fp) {
   fprintf(fp," Chn  CC  | Function [Mod]\n");
   fprintf(fp," ---------+---------------\n");

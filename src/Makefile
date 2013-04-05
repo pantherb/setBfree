@@ -18,6 +18,7 @@ OBJS= \
 	pgmParser.o \
 	cfgParser.o \
 	main.o \
+	midnam.o \
 	../b_reverb/reverb.o \
 	../b_whirl/eqcomp.o \
 	../b_whirl/whirl.o \

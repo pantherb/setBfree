@@ -81,4 +81,5 @@ void setControlFunctionCallback(void *mcfg, void (* fn) (int, const char *, unsi
 
 void midi_uiassign_cc (void *mcfg, const char *fname);
 void midi_loopCCAssignment(void *mcfg, int ulp, void (*cb)(const char *, const unsigned char, const unsigned char, const unsigned char, void *), void *arg);
+void midi_channels(void *mcfg, int *upper, int *lower, int *pedals);
 #endif /* MIDI_H */
