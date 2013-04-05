@@ -72,6 +72,7 @@ extern void installProgram (void *inst, unsigned char uc);
 
 extern void listProgrammes (struct b_programme *p, FILE * fp);
 extern int walkProgrammes (struct b_programme *p, int clear);
+extern void loopProgammes (struct b_programme *p, int all, void (*cb)(int, int, const char*, void *), void *arg);
 
 extern struct b_programme *allocProgs ();
 extern void freeProgs (struct b_programme *p);
