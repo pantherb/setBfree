@@ -1107,7 +1107,7 @@ static void remember_dynamic_CC_change(void *instp, int chn, int param, int fnid
     cfg.value = "unmap";
   else
     cfg.value = ccFuncNames[fnid];
-  rc_add_cfg(inst, &cfg);
+  rc_add_cfg(inst->state, &cfg);
 }
 
 
@@ -1298,22 +1298,22 @@ void midi_uiassign_cc (void *mcfg, const char *fname) {
   printf("CC UI MAP: %d\n", m->ccuimap);
 }
 
-static void midi_print_cc_cb(const char *fnname, unsigned char chn, unsigned char cc, unsigned char flags, void *arg) {
+static void midi_print_cc_cb(const char *fnname, const unsigned char chn, const unsigned char cc, const unsigned char flags, void *arg) {
   FILE *fp = (FILE*)arg;
   fprintf(fp,"  %d  %03d  | %s %s\n", chn, cc, fnname, (flags&1)?"-":"");
 }
 
-void midi_loop_CCAssignment(void *mcfg, void (*cb)(const char *, unsigned char, unsigned char, unsigned char, void *), void *arg) {
+void midi_loopCCAssignment(void *mcfg, int ulp, void (*cb)(const char *, unsigned char, unsigned char, unsigned char, void *), void *arg) {
   int i;
   struct b_midicfg * m = (struct b_midicfg *) mcfg;
   for (i=0;i<127;++i) {
-    if (m->ctrlUseA[i] != 255) {
+    if (m->ctrlUseA[i] != 255 && (ulp&1)) {
       cb(ccFuncNames[i], m->rcvChA, m->ctrlUseA[i], m->ctrlflg[m->rcvChA][i], arg);
     }
-    if (m->ctrlUseB[i] != 255) {
+    if (m->ctrlUseB[i] != 255 && (ulp&2)) {
       cb(ccFuncNames[i], m->rcvChB, m->ctrlUseB[i], m->ctrlflg[m->rcvChB][i], arg);
     }
-    if (m->ctrlUseC[i] != 255) {
+    if (m->ctrlUseC[i] != 255 && (ulp&4)) {
       cb(ccFuncNames[i], m->rcvChC, m->ctrlUseC[i], m->ctrlflg[m->rcvChC][i], arg);
     }
   }
@@ -1322,7 +1322,7 @@ void midi_loop_CCAssignment(void *mcfg, void (*cb)(const char *, unsigned char, 
 void listCCAssignments2(void *mcfg, FILE * fp) {
   fprintf(fp," Chn  CC  | Function [Mod]\n");
   fprintf(fp," ---------+---------------\n");
-  midi_loop_CCAssignment(mcfg, midi_print_cc_cb, fp);
+  midi_loopCCAssignment(mcfg, 7, midi_print_cc_cb, fp);
 }
 
 /* vi:set ts=8 sts=2 sw=2: */

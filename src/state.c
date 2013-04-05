@@ -35,17 +35,78 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+void rc_dump_state(void *t);
+/* simple key-value store */
+
+struct b_kv {
+  struct b_kv *next;
+  char *key;
+  char *value;
+};
+
+static void *kvstore_alloc() {
+  struct b_kv *kv = calloc(1, sizeof(struct b_kv));
+  return kv;
+}
+
+static void kvstore_free(void *kvs) {
+  struct b_kv *kv = (struct b_kv*) kvs;
+  while (kv) {
+    struct b_kv *me = kv;
+    free(kv->key);
+    free(kv->value);
+    kv = kv->next;
+    free(me);
+  }
+}
+
+static void kvstore_store(void *kvs, const char *key, const char *value) {
+  struct b_kv *kv = (struct b_kv*) kvs;
+  struct b_kv *it = NULL;
+  while (kv) {
+    if (!kv->next) {
+      /* "->next == NULL" : "terminal node" */
+      break;
+    }
+    if (!strcmp(kv->key, key)) {
+      it = kv;
+      break;
+    }
+    kv = kv->next;
+  }
+  if (!it) {
+    /* allocate new terminal node */
+    it = calloc(1, sizeof(struct b_kv));
+    kv->next = it;
+    it = kv;
+    it->key = strdup(key);
+  }
+  free(it->value);
+  it->value = strdup(value);
+}
+
+/* setBfree resource/running config */
 
 #include "midi.h"
 
-struct b_rc {
+struct b_midirc {
   int mccc; // count of midi-CCs
   int *mcc; // midi-CC values for each midi-CC function
 };
 
+struct b_rc {
+  struct b_midirc mrc;
+  struct b_kv *rrc;
+};
+
+
 void freeRunningConfig(void *t) {
   struct b_rc *rc = (struct b_rc*) t;
-  free (rc->mcc);
+  free (rc->mrc.mcc);
+  kvstore_free(rc->rrc);
+  free(rc);
 }
 
 void *allocRunningConfig(void) {
@@ -53,11 +114,23 @@ void *allocRunningConfig(void) {
   struct b_rc *rc = (struct b_rc*) malloc(sizeof(struct b_rc));
   if (!rc) return NULL;
 
-  mccc = rc->mccc = getCCFunctionCount();
-  rc->mcc = malloc(mccc * sizeof(int));
+  mccc = rc->mrc.mccc = getCCFunctionCount();
+  rc->mrc.mcc = malloc(mccc * sizeof(int));
+  if (!rc->mrc.mcc) {
+    free(rc);
+    return NULL;
+  }
+
+  rc->rrc = kvstore_alloc();
+
+  if (!rc->rrc) {
+    free(rc->mrc.mcc);
+    free(rc);
+    return NULL;
+  }
 
   for (i = 0; i < mccc; ++i) {
-    rc->mcc[i] = -1; // mark as unset
+    rc->mrc.mcc[i] = -1; // mark as unset
   }
 
   return rc;
@@ -65,17 +138,18 @@ void *allocRunningConfig(void) {
 
 void rc_add_midicc(void *t, int id, unsigned char val) {
   struct b_rc *rc = (struct b_rc*) t;
-  if (id < 0 || id >= rc->mccc) {
+  if (id < 0 || id >= rc->mrc.mccc) {
 #if 0 // devel&debug
     fprintf(stderr, "ignored state save: fn:%d -> %d\n", id, val);
 #endif
     return;
   }
-  rc->mcc[id] = val;
+  rc->mrc.mcc[id] = (int) val;
 }
 
 
 void rc_add_cfg(void *t, ConfigContext *cfg) {
+  struct b_rc *rc = (struct b_rc*) t;
 #if 0
   if (getCCFunctionId(cfg->name) > 0) {
     /* if there is a MIDI-CC function corresponding to the cfg -> use it */
@@ -92,30 +166,35 @@ void rc_add_cfg(void *t, ConfigContext *cfg) {
     //  eg. setDrumBreakPosition(), revControl(), setPercEnableFromMIDI(),..  etc
     printf ("  cfg_midi(\"%s\", \"%s\")\n", cfg->name, cfg->value);
     return;
-  }
+  } else
 #endif
-  // TODO use hash-table
-  // printf ("  cfg_eval(\"%s\", \"%s\")\n", cfg->name, cfg->value);
+  kvstore_store(rc->rrc, cfg->name, cfg->value);
 }
 
 
-void rc_loop_state(void *t, void (*cb)(int, const char *, unsigned char, void *), void *arg) {
+void rc_loop_state(void *t, void (*cb)(int, const char *, const char *, unsigned char, void *), void *arg) {
   struct b_rc *rc = (struct b_rc*) t;
   int i;
-  for (i = 0; i < rc->mccc; ++i) {
-    if (rc->mcc[i] < 0) continue;
-    cb(i, getCCFunctionName(i), rc->mcc[i], arg);
+  for (i = 0; i < rc->mrc.mccc; ++i) {
+    if (rc->mrc.mcc[i] < 0) continue;
+    cb(i, getCCFunctionName(i), NULL, (unsigned char) rc->mrc.mcc[i], arg);
   }
-  // TODO hash-table of 'cfg'
+
+  struct b_kv *kv = rc->rrc;
+  while (kv && kv->next != NULL) {
+    if (kv->key == NULL) continue;
+    cb(-1, kv->key, kv->value, 0, arg);
+    kv = kv->next;
+  }
 }
 
 /* ------------- */
 
-static void state_print_cb(int fnid, const char *fnname, unsigned char val, void *arg) {
+static void state_print_cb(int fnid, const char *key, const char *kv, unsigned char val, void *arg) {
   if (fnid < 0) {
-    printf("  rc_cfg (\"%s\", %d);\n", fnname, val);
+    printf("  rc_cfg (\"%s\", \"%s\");\n", key, kv);
   } else {
-    printf("  rc_ccf (\"%s\", %d); // id:%d\n", fnname, val, fnid);
+    printf("  rc_ccf (\"%s\", %d); // id:%d\n", key, val, fnid);
   }
 }
 

@@ -173,12 +173,14 @@ static void mctl_cb(int fnid, const char *fn, unsigned char val, midiCCmap *mm, 
   }
 }
 
-static void rc_cb(int fnid, const char *fn, unsigned char val, void *arg) {
+static void rc_cb(int fnid, const char *key, const char *kv, unsigned char val, void *arg) {
   B3S* b3s = (B3S*)arg;
-  forge_kvcontrolmessage(&b3s->forge, &b3s->uris, fn, (int32_t) val);
+  if (fnid >=0) {
+    forge_kvcontrolmessage(&b3s->forge, &b3s->uris, key, (int32_t) val);
+  }
 }
 
-static void mcc_cb(const char *fnname, unsigned char chn, unsigned char cc, unsigned char flags, void *arg) {
+static void mcc_cb(const char *fnname, const unsigned char chn, const unsigned char cc, const unsigned char flags, void *arg) {
   B3S* b3s = (B3S*)arg;
   char mmv[20];
   sprintf(mmv, "%d|%d ", chn, cc);
@@ -195,11 +197,18 @@ static void mcc_cb(const char *fnname, unsigned char chn, unsigned char cc, unsi
 }
 
 /* LV2 -- state */
-static void rcsave_cb(int fnid, const char *fn, unsigned char val, void *arg) {
-  char tmp[128];
-  if (fnid < 0) return; // TODO cfg-eval
-  sprintf(tmp, "M %s=%d\n", fn, val);
-  strcat((char*)arg, tmp);
+static void rcsave_cb(int fnid, const char *key, const char *kv, unsigned char val, void *arg) {
+  if (fnid < 0) {
+#if 0 // arg may not be large enough
+    char tmp[128];
+    sprintf(tmp, "C %s=%s\n", key, kv);
+    strcat((char*)arg, tmp);
+#endif
+  } else {
+    char tmp[128];
+    sprintf(tmp, "M %s=%d\n", key, val);
+    strcat((char*)arg, tmp);
+  }
 }
 
 static LV2_State_Status
@@ -262,6 +271,11 @@ restore(LV2_Handle                  instance,
       printf(stderr, "B3LV2: callMIDIControlFunction(..,\"%s\", %d);\n", kv+2, atoi(val+1));
 #endif
       callMIDIControlFunction(b3s->inst.midicfg, kv+2, atoi(val+1));
+    } else if(kv[0]=='C' && (val=strchr(kv,'='))) {
+      // most of these won't have any effect if the synth engine is already started.
+      // TODO use worker-thread and re-init
+      *val=0;
+      evaluateConfigKeyValue(b3s->inst.midicfg, kv+2, val+1);
     }
     ts=te+1;
   }
@@ -385,7 +399,7 @@ run(LV2_Handle instance, uint32_t n_samples)
 	if (obj->body.otype == b3s->uris.sb3_uiinit) {
 	  b3s->update_gui_now = 1;
 	} else if (obj->body.otype == b3s->uris.sb3_uimccquery) {
-	  midi_loop_CCAssignment(b3s->inst.midicfg, mcc_cb, b3s);
+	  midi_loopCCAssignment(b3s->inst.midicfg, 7, mcc_cb, b3s);
 	} else if (obj->body.otype == b3s->uris.sb3_uimccset) {
 	  const LV2_Atom* key = NULL;
 	  lv2_atom_object_get(obj, b3s->uris.sb3_cckey, &key, 0);

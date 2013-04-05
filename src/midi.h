@@ -80,5 +80,5 @@ typedef struct _midicc {
 void setControlFunctionCallback(void *mcfg, void (* fn) (int, const char *, unsigned char, midiCCmap *, void *), void *d);
 
 void midi_uiassign_cc (void *mcfg, const char *fname);
-void midi_loop_CCAssignment(void *mcfg, void (*cb)(const char *, unsigned char, unsigned char, unsigned char, void *), void *arg);
+void midi_loopCCAssignment(void *mcfg, int ulp, void (*cb)(const char *, const unsigned char, const unsigned char, const unsigned char, void *), void *arg);
 #endif /* MIDI_H */

@@ -29,7 +29,7 @@ void freeRunningConfig(void *t);
 void rc_add_midicc(void *t, int id, unsigned short val);
 void rc_add_cfg(void *t, ConfigContext *cfg);
 
-void rc_loop_state(void *t, void (*cb)(int, const char *, unsigned char, void *), void *arg);
+void rc_loop_state(void *t, void (*cb)(int, const char *, const char *, unsigned char, void *), void *arg);
 
 void rc_dump_state(void *t);
 #endif
