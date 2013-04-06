@@ -7,6 +7,7 @@
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix urid:  <http://lv2plug.in/ns/ext/urid#> .
 @prefix state: <http://lv2plug.in/ns/ext/state#> .
+@prefix work:  <http://lv2plug.in/ns/ext/worker#> .
 @prefix sb3:   <http://gareus.org/oss/lv2/b_synth#> .
 
 <http://gareus.org/>
@@ -21,8 +22,8 @@
 	doap:name "setBfree DSP Tonewheel Organ";
 	doap:license <http://usefulinc.com/doap/licenses/gpl> ;
 	lv2:optionalFeature lv2:hardRTCapable ;
-	lv2:requiredFeature urid:map ;
-	lv2:extensionData state:interface ;
+	lv2:requiredFeature urid:map , work:schedule ;
+	lv2:extensionData state:interface , work:interface ;
 	lv2:port
 	[
 		a atom:AtomPort ,

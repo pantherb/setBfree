@@ -32,6 +32,7 @@
 #include "lv2/lv2plug.in/ns/ext/atom/util.h"
 #include "lv2/lv2plug.in/ns/ext/event/event-helpers.h"
 #include "lv2/lv2plug.in/ns/ext/state/state.h"
+#include "lv2/lv2plug.in/ns/ext/worker/worker.h"
 
 #include "uris.h"
 
@@ -56,7 +57,7 @@ typedef enum {
 typedef struct {
   LV2_Atom_Forge forge;
   LV2_Atom_Forge_Frame frame;
-  int suspend_ui_msg;
+  LV2_Worker_Schedule* schedule;
 
   const LV2_Atom_Sequence* midiin;
   LV2_Atom_Sequence* midiout;
@@ -65,7 +66,6 @@ typedef struct {
 
   LV2_URID_Map* map;
   setBfreeURIs uris;
-  struct b_instance inst;
 
   int   boffset;
   float bufA [BUFFER_SIZE_SAMPLES];
@@ -73,8 +73,18 @@ typedef struct {
   float bufC [BUFFER_SIZE_SAMPLES];
   float bufJ [2][BUFFER_SIZE_SAMPLES];
 
-  int update_gui_now;
+  short suspend_ui_msg;
+  short update_gui_now;
+  short swap_instances;
+
+  struct b_instance *inst;
+  struct b_instance *inst_offline;
 } B3S;
+
+enum {
+  CMD_LOAD   = 0,
+  CMD_FREE   = 1,
+};
 
 /* main synth wrappers */
 
@@ -83,42 +93,47 @@ int mainConfig (ConfigContext * cfg) { return 0; }
 
 double SampleRateD = 48000.0;
 
-void initSynth(B3S *b3s, double rate) {
-  // equicalent to ../src/main.c main()
+void initSynth(struct b_instance *inst, double rate) {
+  // equivalent to ../src/main.c main()
   unsigned int defaultPreset[9] = {8,8,6, 0,0,0,0, 0,0};
 
-  srand ((unsigned int) time (NULL));
-  initControllerTable (b3s->inst.midicfg);
-#if 1
-  midiPrimeControllerMapping (b3s->inst.midicfg);
-#elif 0 // rg test midi-feedback
-  parseConfigurationFile (&b3s->inst, "/home/rgareus/data/coding/setBfree/cfg/bcf2000.cfg");
-#endif
-
   /* initAll() */
-  initToneGenerator (b3s->inst.synth, b3s->inst.midicfg);
-  initVibrato (b3s->inst.synth, b3s->inst.midicfg);
-  initPreamp (b3s->inst.preamp, b3s->inst.midicfg);
-  initReverb (b3s->inst.reverb, b3s->inst.midicfg, rate);
-  initWhirl (b3s->inst.whirl, b3s->inst.midicfg, rate);
-  initRunningConfig(b3s->inst.state, b3s->inst.midicfg);
+  initToneGenerator (inst->synth, inst->midicfg);
+  initVibrato (inst->synth, inst->midicfg);
+  initPreamp (inst->preamp, inst->midicfg);
+  initReverb (inst->reverb, inst->midicfg, rate);
+  initWhirl (inst->whirl, inst->midicfg, rate);
+  initRunningConfig(inst->state, inst->midicfg);
   /* end - initAll() */
 
-  initMidiTables(b3s->inst.midicfg);
+  initMidiTables(inst->midicfg);
 
-  setMIDINoteShift (b3s->inst.midicfg, 0);
-  setDrawBars (&b3s->inst, 0, defaultPreset);
+  setMIDINoteShift (inst->midicfg, 0);
+  setDrawBars (inst, 0, defaultPreset);
 #if 0
-  setDrawBars (&b3s->inst, 1, defaultPreset);
-  setDrawBars (&b3s->inst, 2, defaultPreset);
+  setDrawBars (inst, 1, defaultPreset);
+  setDrawBars (inst, 2, defaultPreset);
 #endif
 
 #ifdef DEBUGPRINT
-  if (walkProgrammes(b3s->inst.progs, 0)) {
-    listProgrammes (b3s->inst.progs, stderr);
+  if (walkProgrammes(inst->progs, 0)) {
+    listProgrammes (inst->progs, stderr);
   }
-  listCCAssignments(b3s->inst.midicfg, stderr);
+  listCCAssignments(inst->midicfg, stderr);
 #endif
+}
+
+static void
+freeSynth(struct b_instance *inst)
+{
+  if (!inst) return;
+  freeReverb(inst->reverb);
+  freeWhirl(inst->whirl);
+  freeToneGenerator(inst->synth);
+  freeMidiCfg(inst->midicfg);
+  freePreamp(inst->preamp);
+  freeProgs(inst->progs);
+  freeRunningConfig(inst->state);
 }
 
 #ifndef MIN
@@ -133,10 +148,10 @@ uint32_t synthSound (B3S *instance, uint32_t written, uint32_t nframes, float **
 
     if (b3s->boffset >= BUFFER_SIZE_SAMPLES)  {
       b3s->boffset = 0;
-      oscGenerateFragment (instance->inst.synth, b3s->bufA, BUFFER_SIZE_SAMPLES);
-      preamp (instance->inst.preamp, b3s->bufA, b3s->bufB, BUFFER_SIZE_SAMPLES);
-      reverb (instance->inst.reverb, b3s->bufB, b3s->bufC, BUFFER_SIZE_SAMPLES);
-      whirlProc(instance->inst.whirl, b3s->bufC, b3s->bufJ[0], b3s->bufJ[1], BUFFER_SIZE_SAMPLES);
+      oscGenerateFragment (instance->inst->synth, b3s->bufA, BUFFER_SIZE_SAMPLES);
+      preamp (instance->inst->preamp, b3s->bufA, b3s->bufB, BUFFER_SIZE_SAMPLES);
+      reverb (instance->inst->reverb, b3s->bufB, b3s->bufC, BUFFER_SIZE_SAMPLES);
+      whirlProc(instance->inst->whirl, b3s->bufC, b3s->bufJ[0], b3s->bufJ[1], BUFFER_SIZE_SAMPLES);
     }
 
     int nread = MIN(nremain, (BUFFER_SIZE_SAMPLES - b3s->boffset));
@@ -153,12 +168,12 @@ uint32_t synthSound (B3S *instance, uint32_t written, uint32_t nframes, float **
 static void mctl_cb(int fnid, const char *fn, unsigned char val, midiCCmap *mm, void *arg) {
   B3S* b3s = (B3S*)arg;
 #ifdef DEBUGPRINT
-  printf("xfn: %d (\"%s\", %d) mm:%s\n", fnid, fn, val, mm?"yes":"no");
+  fprintf(stderr, "xfn: %d (\"%s\", %d) mm:%s\n", fnid, fn, val, mm?"yes":"no");
 #endif
   if (b3s->midiout && mm) {
     while (mm) {
 #ifdef DEBUGPRINT
-      printf("MIDI FEEDBACK %d %d %d\n", mm->channel, mm->param, val);
+      fprintf(stderr, "MIDI FEEDBACK %d %d %d\n", mm->channel, mm->param, val);
 #endif
       uint8_t msg[3];
       msg[0] = 0xb0 | (mm->channel&0x0f); // Control Change
@@ -175,6 +190,9 @@ static void mctl_cb(int fnid, const char *fn, unsigned char val, midiCCmap *mm, 
 
 static void rc_cb(int fnid, const char *key, const char *kv, unsigned char val, void *arg) {
   B3S* b3s = (B3S*)arg;
+#ifdef DEBUGPRINT
+      fprintf(stderr, "RC CB %d %s %s %d\n", fnid, key, kv?kv:"-", val);
+#endif
   if (fnid >=0) {
     forge_kvcontrolmessage(&b3s->forge, &b3s->uris, key, (int32_t) val);
   }
@@ -196,19 +214,36 @@ static void mcc_cb(const char *fnname, const unsigned char chn, const unsigned c
   lv2_atom_forge_pop(&b3s->forge, &frame);
 }
 
+void allocSynth(struct b_instance *inst) {
+  inst->state = allocRunningConfig();
+  inst->progs = allocProgs();
+  inst->reverb = allocReverb();
+  inst->whirl = allocWhirl();
+  inst->midicfg = allocMidiCfg(inst->state);
+  inst->synth = allocTonegen();
+  inst->preamp = allocPreamp();
+
+  initControllerTable (inst->midicfg);
+#if 1
+  midiPrimeControllerMapping (inst->midicfg);
+#elif 0 // rg test midi-feedback
+  parseConfigurationFile (inst, "/home/rgareus/data/coding/setBfree/cfg/bcf2000.cfg");
+#endif
+
+}
+
+
 /* LV2 -- state */
 static void rcsave_cb(int fnid, const char *key, const char *kv, unsigned char val, void *arg) {
+  char tmp[256];
+  char **cfg = (char**)arg;
   if (fnid < 0) {
-#if 0 // arg may not be large enough
-    char tmp[128];
     sprintf(tmp, "C %s=%s\n", key, kv);
-    strcat((char*)arg, tmp);
-#endif
   } else {
-    char tmp[128];
     sprintf(tmp, "M %s=%d\n", key, val);
-    strcat((char*)arg, tmp);
   }
+  *cfg = realloc(*cfg, strlen(*cfg) + strlen(tmp) +1);
+  strcat(*cfg, tmp);
 }
 
 static LV2_State_Status
@@ -220,12 +255,8 @@ save(LV2_Handle                instance,
 {
   B3S* b3s = (B3S*)instance;
 
-  // property base-names are < 40 chars  -- see formatDoc()
-  // cfg-properties may have variable postfixes, MIDICC's not
-  // 5 additional bytes for "=NUM\n" and 2 for leading "ID"
-  char *cfg = malloc(getCCFunctionCount() * 48 * sizeof(char));
-  cfg[0] = '\0';
-  rc_loop_state(b3s->inst.state, rcsave_cb, (void*) cfg);
+  char *cfg = calloc(1, sizeof(char));
+  rc_loop_state(b3s->inst->state, rcsave_cb, (void*) &cfg);
 
   store(handle, b3s->uris.sb3_state,
       cfg, strlen(cfg) + 1,
@@ -249,44 +280,149 @@ restore(LV2_Handle                  instance,
   uint32_t valflags;
   const void* value = retrieve(handle, b3s->uris.sb3_state, &size, &type, &valflags);
 
-  b3s->suspend_ui_msg = 1;
   if (!value) {
     return LV2_STATE_ERR_UNKNOWN;
   }
 
+  if (b3s->inst_offline) {
+    fprintf(stderr, "restore ignored. re-init in progress\n");
+    return LV2_STATE_ERR_UNKNOWN;
+  }
+
+  b3s->inst_offline = calloc(1, sizeof(struct b_instance));
+  allocSynth(b3s->inst_offline);
+
   const char* cfg = (const char*)value;
   const char *te, *ts = cfg;
 
+  /* pass1 - evaulate CFG -- before initializing synth */
   while (ts && *ts && (te=strchr(ts, '\n'))) {
     char *val;
     char kv[1024];
     memcpy(kv, ts, te-ts);
     kv[te-ts]=0;
 #ifdef DEBUGPRINT
-    fprintf(stderr, "CFG: %s\n", kv);
+    fprintf(stderr, "B3LV2 CFG Pass1: %s\n", kv);
 #endif
-    if(kv[0]=='M' && (val=strchr(kv,'='))) {
+    if(kv[0]=='C' && (val=strchr(kv,'='))) {
       *val=0;
 #ifdef DEBUGPRINT
-      printf(stderr, "B3LV2: callMIDIControlFunction(..,\"%s\", %d);\n", kv+2, atoi(val+1));
+      fprintf(stderr, "B3LV2: evaluateConfigKeyValue(..,\"%s\", \"%s\");\n", kv+2, val+1);
 #endif
-      callMIDIControlFunction(b3s->inst.midicfg, kv+2, atoi(val+1));
-    } else if(kv[0]=='C' && (val=strchr(kv,'='))) {
-      // most of these won't have any effect if the synth engine is already started.
-      // TODO use worker-thread and re-init
-      *val=0;
-      evaluateConfigKeyValue(b3s->inst.midicfg, kv+2, val+1);
+      evaluateConfigKeyValue((void*)b3s->inst_offline, kv+2, val+1);
     }
     ts=te+1;
   }
 
-  b3s->update_gui_now = 1;
-  b3s->suspend_ui_msg = 0;
+  initSynth(b3s->inst_offline, SampleRateD);
 
+  /* pass2 - replay CC's after initializing synth */
+  ts = cfg;
+  while (ts && *ts && (te=strchr(ts, '\n'))) {
+    char *val;
+    char kv[1024];
+    memcpy(kv, ts, te-ts);
+    kv[te-ts]=0;
+#ifdef DEBUGPRINT
+    fprintf(stderr, "B3LV2 CFG Pass2: %s\n", kv);
+#endif
+    if(kv[0]=='M' && (val=strchr(kv,'='))) {
+      *val=0;
+#ifdef DEBUGPRINT
+      fprintf(stderr, "B3LV2: callMIDIControlFunction(..,\"%s\", %d);\n", kv+2, atoi(val+1));
+#endif
+      callMIDIControlFunction(b3s->inst_offline->midicfg, kv+2, atoi(val+1));
+    }
+    ts=te+1;
+  }
+
+  b3s->swap_instances = 1;
   return LV2_STATE_SUCCESS;
 }
 
-/* LV2 */
+/* LV2 -- worker */
+static LV2_Worker_Status
+work(LV2_Handle                  instance,
+     LV2_Worker_Respond_Function respond,
+     LV2_Worker_Respond_Handle   handle,
+     uint32_t                    size,
+     const void*                 data)
+{
+  B3S* b3s = (B3S*)instance;
+
+  if (size != sizeof(int)) {
+    return LV2_WORKER_ERR_UNKNOWN;
+  }
+
+  switch(*((const int*)data)) {
+    case CMD_LOAD:
+      if (b3s->inst_offline) {
+	fprintf(stderr, "restore ignored. re-init in progress\n");
+	return LV2_STATE_ERR_UNKNOWN;
+      }
+      fprintf(stderr, "TODO -- load new cfg/pgm, re-init\n");
+
+      break;
+    case CMD_FREE:
+#ifdef DEBUGPRINT
+      fprintf(stderr, "free offline instance\n");
+#endif
+      freeSynth(b3s->inst_offline);
+      b3s->inst_offline = NULL;
+    break;
+  }
+
+  return LV2_WORKER_SUCCESS;
+}
+
+static LV2_Worker_Status
+work_response(LV2_Handle  instance,
+              uint32_t    size,
+              const void* data)
+{
+  B3S* b3s = (B3S*)instance;
+
+  if (size != sizeof(int)) {
+    return LV2_WORKER_ERR_UNKNOWN;
+  }
+
+  switch(*((const int*)data)) {
+    case CMD_LOAD:
+      fprintf(stderr, "loaded new instance\n");
+      // TODO only if sucessful
+      b3s->swap_instances = 1;
+      break;
+    case CMD_FREE:
+    break;
+  }
+  return LV2_WORKER_SUCCESS;
+}
+
+static inline void
+postrun (B3S* b3s)
+{
+  if (b3s->swap_instances) {
+#ifdef DEBUGPRINT
+    fprintf(stderr, "swap instances..\n");
+#endif
+    int d = CMD_FREE;
+    /* swap engine instances */
+    struct b_instance *old  = b3s->inst;
+    b3s->inst = b3s->inst_offline;
+    b3s->inst_offline = old;
+    setControlFunctionCallback(b3s->inst_offline->midicfg, NULL, NULL);
+    setControlFunctionCallback(b3s->inst->midicfg, mctl_cb, b3s);
+
+    /* hide midi-maps, stop possibly pending midi-bind process */
+    forge_kvcontrolmessage(&b3s->forge, &b3s->uris, "special.midimap", (int32_t) 0);
+
+    b3s->schedule->schedule_work(b3s->schedule->handle, sizeof(int), &d);
+    b3s->update_gui_now = 1;
+    b3s->swap_instances = 0;
+  }
+}
+
+/* main LV2 */
 
 static LV2_Handle
 instantiate(const LV2_Descriptor*     descriptor,
@@ -306,11 +442,13 @@ instantiate(const LV2_Descriptor*     descriptor,
   for (i=0; features[i]; ++i) {
     if (!strcmp(features[i]->URI, LV2_URID__map)) {
       b3s->map = (LV2_URID_Map*)features[i]->data;
+    } else if (!strcmp(features[i]->URI, LV2_WORKER__schedule)) {
+      b3s->schedule = (LV2_Worker_Schedule*)features[i]->data;
     }
   }
 
-  if (!b3s->map) {
-    fprintf(stderr, "B3Lv2 error: Host does not support urid:map\n");
+  if (!b3s->map || !b3s->schedule) {
+    fprintf(stderr, "B3Lv2 error: Host does not support urid:map or work:schedule\n");
     free(b3s);
     return NULL;
   }
@@ -318,21 +456,20 @@ instantiate(const LV2_Descriptor*     descriptor,
   map_setbfree_uris(b3s->map, &b3s->uris);
   lv2_atom_forge_init(&b3s->forge, b3s->map);
 
+  srand ((unsigned int) time (NULL));
   b3s->suspend_ui_msg = 1;
   b3s->update_gui_now = 0;
-
-  // todo check if any alloc fails
-  b3s->inst.state = allocRunningConfig();
-  b3s->inst.progs = allocProgs();
-  b3s->inst.reverb = allocReverb();
-  b3s->inst.whirl = allocWhirl();
-  b3s->inst.midicfg = allocMidiCfg(b3s->inst.state);
-  setControlFunctionCallback(b3s->inst.midicfg, mctl_cb, b3s);
-  b3s->inst.synth = allocTonegen();
-  b3s->inst.preamp = allocPreamp();
   b3s->boffset = BUFFER_SIZE_SAMPLES;
 
-  initSynth(b3s, rate);
+  b3s->swap_instances = 0;
+  b3s->update_gui_now = 0;
+
+  b3s->inst = calloc(1, sizeof(struct b_instance));
+  b3s->inst_offline = NULL;
+
+  allocSynth(b3s->inst);
+  setControlFunctionCallback(b3s->inst->midicfg, mctl_cb, b3s);
+  initSynth(b3s->inst, rate);
 
   return (LV2_Handle)b3s;
 }
@@ -389,33 +526,36 @@ run(LV2_Handle instance, uint32_t n_samples)
     LV2_Atom_Event* ev = lv2_atom_sequence_begin(&(b3s->midiin)->body);
     while(!lv2_atom_sequence_is_end(&(b3s->midiin)->body, (b3s->midiin)->atom.size, ev)) {
       if (ev->body.type == b3s->uris.midi_MidiEvent) {
+	/* process midi messages from player */
 	if (written + BUFFER_SIZE_SAMPLES < ev->time.frames
 	    && ev->time.frames < n_samples) {
+	  /* first syntheize sound up until the message timestamp */
 	  written = synthSound(instance, written, ev->time.frames, audio);
 	}
-	parse_raw_midi_data(&b3s->inst, (uint8_t*)(ev+1), ev->body.size);
+	/* send midi message to synth, CC's will trigger hook -> update GUI */
+	parse_raw_midi_data(b3s->inst, (uint8_t*)(ev+1), ev->body.size);
       } else if (ev->body.type == b3s->uris.atom_Blank) {
+	/* process messages from GUI */
 	const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;
 	if (obj->body.otype == b3s->uris.sb3_uiinit) {
 	  b3s->update_gui_now = 1;
 	} else if (obj->body.otype == b3s->uris.sb3_uimccquery) {
-	  midi_loopCCAssignment(b3s->inst.midicfg, 7, mcc_cb, b3s);
+	  midi_loopCCAssignment(b3s->inst->midicfg, 7, mcc_cb, b3s);
 	} else if (obj->body.otype == b3s->uris.sb3_uimccset) {
 	  const LV2_Atom* key = NULL;
 	  lv2_atom_object_get(obj, b3s->uris.sb3_cckey, &key, 0);
 	  if (key) {
-	    midi_uiassign_cc(b3s->inst.midicfg, (const char*)LV2_ATOM_BODY(key));
+	    midi_uiassign_cc(b3s->inst->midicfg, (const char*)LV2_ATOM_BODY(key));
 	  }
-
 	} else if (obj->body.otype == b3s->uris.sb3_control) {
 	  b3s->suspend_ui_msg = 1;
 	  const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;
 	  char *k; int v;
 	  if (!get_cc_key_value(&b3s->uris, obj, &k, &v)) {
 #ifdef DEBUGPRINT
-	    printf(stderr, "B3LV2: callMIDIControlFunction(..,\"%s\", %d);\n", k, v);
+	    fprintf(stderr, "B3LV2: callMIDIControlFunction(..,\"%s\", %d);\n", k, v);
 #endif
-	    callMIDIControlFunction(b3s->inst.midicfg, k, v);
+	    callMIDIControlFunction(b3s->inst->midicfg, k, v);
 	  }
 	  b3s->suspend_ui_msg = 0;
 	}
@@ -427,33 +567,35 @@ run(LV2_Handle instance, uint32_t n_samples)
   if (b3s->update_gui_now) {
     b3s->update_gui_now = 0;
     b3s->suspend_ui_msg = 1;
-    rc_loop_state(b3s->inst.state, rc_cb, b3s);
+    rc_loop_state(b3s->inst->state, rc_cb, b3s);
     b3s->suspend_ui_msg = 0;
   }
 
-  // synthesize sound
+  /* synthesize [remaining] sound */
   synthSound(instance, written, n_samples, audio);
+
+  /* check for new instances */
+  postrun(b3s);
 }
 
 static void
 cleanup(LV2_Handle instance)
 {
   B3S* b3s = (B3S*)instance;
-  freeReverb(b3s->inst.reverb);
-  freeWhirl(b3s->inst.whirl);
-  freeToneGenerator(b3s->inst.synth);
-  freeMidiCfg(b3s->inst.midicfg);
-  freePreamp(b3s->inst.preamp);
-  freeProgs(b3s->inst.progs);
-  freeRunningConfig(b3s->inst.state);
+  freeSynth(b3s->inst);
+  freeSynth(b3s->inst_offline);
   free(instance);
 }
 
 const void*
 extension_data(const char* uri)
 {
+  static const LV2_Worker_Interface worker = { work, work_response, NULL };
   static const LV2_State_Interface  state  = { save, restore };
-  if (!strcmp(uri, LV2_STATE__interface)) {
+  if (!strcmp(uri, LV2_WORKER__interface)) {
+    return &worker;
+  }
+  else if (!strcmp(uri, LV2_STATE__interface)) {
     return &state;
   }
   return NULL;
