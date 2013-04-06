@@ -399,12 +399,13 @@ void useMIDIControlFunction (void *mcfg, char * cfname, void (* f) (void *, unsi
     assignMIDIControllerFunction (m->ctrlvecC, m->ctrlUseC[x], x, f, d);
   }
 
-  if ((m->ctrlvecF[x].fn == emptyControlFunction) ||
-      (m->ctrlvecF[x].fn == NULL)) {
-    m->ctrlvecF[x].fn = f;
-    m->ctrlvecF[x].d  = d;
-    m->ctrlvecF[x].id = x;
+  if ((m->ctrlvecF[x].fn != emptyControlFunction) && (m->ctrlvecF[x].fn != NULL)) {
+    fprintf (stderr, "midi.c:WARNING, multiple allocation of control-function %s!\n", cfname);
   }
+
+  m->ctrlvecF[x].fn = f;
+  m->ctrlvecF[x].d  = d;
+  m->ctrlvecF[x].id = x;
 }
 
 static void reverse_cc_map(struct b_midicfg *m, int x, uint8_t chn, uint8_t param) {
@@ -445,7 +446,6 @@ static int reverse_cc_unmap(struct b_midicfg *m, int x, uint8_t chn, uint8_t par
   }
   return 0;
 }
-
 
 static inline void controlFunctionHook (void *mcfg, ctrl_function *ctrlF, unsigned char val) {
   struct b_midicfg * m = (struct b_midicfg *) mcfg;
@@ -1042,6 +1042,7 @@ int midiConfig (void *mcfg, ConfigContext * cfg) {
 	  if (!strcmp(cfg->value,"unmap")) {
 	    remove_CC_map(m, ccChn, ccn);
 	  } else if (-1 < i) {
+	    remove_CC_map(m, ccChn, ccn);
 	    /* Store the controller number indexed by abstract function id */
 	    ctrlUse[i] = ccn;
 	    parseCCFlags(&(m->ctrlflg[ccChn][ccn]), cfg->value);
