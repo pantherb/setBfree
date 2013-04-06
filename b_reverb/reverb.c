@@ -155,6 +155,8 @@ static void setReverbPointers (struct b_reverb *r, int i) {
     if (!r->delays[i]) {
       fprintf (stderr, "FATAL: memory allocation failed for reverb.\n");
       exit(1);
+    } else {
+      memset(r->delays[i], 0 , (e + 2) * sizeof(float));
     }
     r->endp[i] = r->delays[i] + e + 1;
     r->idx0[i] = r->idxp[i] = &(r->delays[i][0]);
@@ -320,7 +322,6 @@ float * reverb (struct b_reverb *r,
     const float xo = (*xp++);
     const float x = y_1 + (inputGain * xo) + DENORMAL_HACK;
     float xa = 0.0;
-
     /* First we do four feedback comb filters (ie parallel delay lines,
        each with a single tap at the end that feeds back at the start) */
 
