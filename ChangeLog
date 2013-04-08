@@ -1,3 +1,16 @@
+2013-04-08 (0.6.2)  Robin Gareus <robin@gareus.org>
+* major work started on LV2 GUI (using openGL)
+feature-wise the GUI is still work-in-progress
+but it is already very useful and stable.
+* added state save/load interface and dynamic reconfiguration
+* fix reverb initialization (possible strange-noises on first start)
+* fixes in LV2 plugin:
+	- sample accurate rendering
+	- port-group definitions
+* added bcf2000 and Oxygen61 config files
+* option to not load default midi CCs and unmap existing ones
+* many small details all over the place in wake of GUI design
+
 2013-03-11 (0.6.1)  Robin Gareus <robin@gareus.org>
 * added MIDI-panic (all notes off)
 * merged patches from akapelrud:

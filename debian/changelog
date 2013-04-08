@@ -1,4 +1,4 @@
-setbfree (0.6.1-1) unstable; urgency=low
+setbfree (0.6.2-1) unstable; urgency=low
 
   * dummy entry -- this is a package for upstream testing
 
@@ -7,4 +7,4 @@ setbfree (0.6.1-1) unstable; urgency=low
     => http://packages.debian.org/sid/setbfree and
     => http://anonscm.debian.org/gitweb/?p=pkg-multimedia/setbfree.git
 
- -- Robin Gareus <robin@gareus.org>  Mon, 11 Mar 2013 17:01:18 +0100
+ -- Robin Gareus <robin@gareus.org>  Mon, 08 Apr 2013 10:02:04 +0200
