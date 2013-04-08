@@ -139,7 +139,7 @@ typedef struct {
   GLuint texID[15]; // textures
   GLdouble matrix[16]; // used for mouse mapping
   double rot[3], off[3], scale; // global projection
-  int show_help;
+  int displaymode;
   int show_mm;
   int uiccbind;
 
@@ -155,6 +155,7 @@ typedef struct {
   FTGLfont *font_big;
   FTGLfont *font_small;
 #endif
+  char midipgm[128][32];
 
 } B3ui;
 
@@ -655,7 +656,8 @@ onReshape(PuglView* view, int width, int height)
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
   glOrtho(-1.0, 1.0, invaspect, -invaspect, 3.0, -3.0);
-  if (ui->show_help) {
+
+  if (ui->displaymode) {
     glMatrixMode(GL_MODELVIEW);
     return;
   }
@@ -681,7 +683,7 @@ onReshape(PuglView* view, int width, int height)
 }
 
 static void
-render_text(PuglView* view, const char *text, float x, float y, float z)
+render_text(PuglView* view, const char *text, float x, float y, float z, int align)
 {
 #ifdef HAVE_FTGL
   B3ui* ui = (B3ui*)puglGetHandle(view);
@@ -704,10 +706,22 @@ render_text(PuglView* view, const char *text, float x, float y, float z)
   printf("%.2f %.2f %.2f  %.2f %.2f %.2f\n",
       bb[0], bb[1], bb[2], bb[3], bb[4], bb[5]);
 #endif
-  glTranslatef(
-      (bb[3] - bb[0])/-2.0,
-      (bb[4] - bb[1])/-2.0,
-      0);
+  switch(align) {
+    case 1: // center
+      glTranslatef(
+	  (bb[3] - bb[0])/-2.0,
+	  (bb[4] - bb[1])/-2.0,
+	  0);
+      break;
+    case 2: // right
+      glTranslatef(
+	  (bb[3] - bb[0])/-1.0,
+	  (bb[4] - bb[1])/-1.0,
+	  0);
+      break;
+    default: // left
+      break;
+  }
   glTranslatef(x * (1000.0*SCALE) , -y * (1000.0*SCALE), z * SCALE);
   ftglRenderFont(ui->font_small, text, FTGL_RENDER_ALL);
   glPopMatrix();
@@ -754,7 +768,8 @@ onDisplay(PuglView* view)
     ftglSetFontCharMap(ui->font_small, ft_encoding_unicode);
 #endif
   }
-  if (ui->show_help) {
+
+  if (ui->displaymode == 1) {
     const float invaspect = (float) ui->height / (float) ui->width;
     glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_w);
     glMaterialfv(GL_FRONT, GL_AMBIENT, mat_w);
@@ -770,6 +785,40 @@ onDisplay(PuglView* view)
     glTexCoord2f (1.0, 0.0); glVertex3f( 1, -invaspect, 0);
     glEnd();
     glDisable(GL_TEXTURE_2D);
+    return;
+  } else if (ui->displaymode == 2) {
+    int i;
+    const float invaspect = (float) ui->height / (float) ui->width;
+    for (i=0; i < 128; i++) {
+      char txt[40];
+      sprintf(txt, "p%3d: %s", i+1, ui->midipgm[i]);
+      float x = -1.1 +  (i/24)/2.7;
+      float y = -1.0 +  (i%24)/12.0;
+#if 0
+      float w = .5/2.7;
+      float h = .5/12.0;
+      //printf("%fx%f > %fx%f\n", x, y, w, h);
+      if (i%2) {
+	glPushMatrix();
+	glLoadIdentity();
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_w);
+	glMaterialfv(GL_FRONT, GL_AMBIENT, mat_w);
+	glBegin(GL_QUADS);
+	glColor3f(1.0, 1.0, 1.0);
+	glVertex3f(x, y, 0);
+	glVertex3f(x, y+h, 0);
+	glVertex3f(x+w, y+h, 0);
+	glVertex3f(x+w, y, 0);
+	glEnd();
+	glPopMatrix();
+      }
+      w *= 22.0;
+      h *= 22.0 * invaspect;
+#endif
+      x *= 22.0;
+      y *= 22.0 * invaspect;
+      render_text(view, txt, x, y, .1f, 0.1);
+    }
     return;
   }
 
@@ -972,10 +1021,10 @@ onDisplay(PuglView* view)
     if (i < 20)  y -= 0.4;
 
     if (ui->show_mm) {
-      render_text(view, ui->ctrls[i].midinfo, x, y, 1.5f);
+      render_text(view, ui->ctrls[i].midinfo, x, y, 1.5f, 1);
     }
     if (ui->uiccbind == i) {
-      render_text(view, "move slider", x, y-.8, 1.6f);
+      render_text(view, "move slider", x, y-.8, 1.6f, 1);
     }
   }
 }
@@ -1039,8 +1088,16 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       ui->rot[2] = 0;
       queue_reshape = 1;
       break;
+    case 'p':
+#ifdef HAVE_FTGL
+      if (ui->displaymode == 0) ui->displaymode = 2;
+      else if (ui->displaymode == 2) ui->displaymode = 0;
+      queue_reshape = 1;
+#endif
+      break;
     case '?':
-      ui->show_help = !ui->show_help;
+      if (ui->displaymode == 0) ui->displaymode = 1;
+      else if (ui->displaymode == 1) ui->displaymode = 0;
       queue_reshape = 1;
       break;
     case 'm':
@@ -1129,15 +1186,15 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
   }
 
 #ifdef HAVE_FTGL
-  if (ui->show_help) {
-    ui->show_help = 0;
+  if (ui->displaymode) {
+    ui->displaymode = 0;
     onReshape(view, ui->width, ui->height);
     puglPostRedisplay(view);
     return;
   }
 
-  if (fx >= 1.050 && fx <= 1.150 && fy >= -.27 && fy <= -.19) {
-    ui->show_help = 1;
+  if (ui->displaymode == 0 && fx >= 1.050 && fx <= 1.150 && fy >= -.27 && fy <= -.19) {
+    ui->displaymode = 1;
     onReshape(view, ui->width, ui->height);
     puglPostRedisplay(view);
     return;
@@ -1208,7 +1265,7 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   LV2UI_Resize*    resize = NULL;
   int i;
 
-  ui->show_help   = 0;
+  ui->displaymode = 0;
   ui->show_mm     = 0;
   ui->uiccbind    = -1;
   ui->width       = 960;
@@ -1350,8 +1407,9 @@ instantiate(const LV2UI_Descriptor*   descriptor,
     return NULL;
   }
 
-  *widget = (void*)puglGetNativeWindow(ui->view);
+  memset(ui->midipgm, 0, 128 * 32 * sizeof(char));
 
+  *widget = (void*)puglGetNativeWindow(ui->view);
 
   /* ask plugin about current state */
   forge_message(ui, ui->uris.sb3_uiinit, NULL);
@@ -1421,6 +1479,10 @@ port_event(LV2UI_Handle handle,
     if (fnid >= 0) {
       strcat(ui->ctrls[fnid].midinfo, k);
     }
+    puglPostRedisplay(ui->view);
+  } else if (!get_pgm_midi_mapping(&ui->uris, obj, &v, &fn)) {
+    strncpy(ui->midipgm[v], fn, 32);
+    ui->midipgm[v][31] = '\0';
     puglPostRedisplay(ui->view);
   }
 }

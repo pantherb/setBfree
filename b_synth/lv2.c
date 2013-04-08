@@ -198,6 +198,22 @@ static void rc_cb(int fnid, const char *key, const char *kv, unsigned char val, 
   }
 }
 
+static void pgm_cb(int num, int pc, const char *name, void *arg) {
+  B3S* b3s = (B3S*)arg;
+#ifdef DEBUGPRINT
+      fprintf(stderr, "PGM CB %d %d %s\n",num, pc, name);
+#endif
+  LV2_Atom_Forge_Frame frame;
+  lv2_atom_forge_frame_time(&b3s->forge, 0);
+  lv2_atom_forge_blank(&b3s->forge, &frame, 1, b3s->uris.sb3_midipgm);
+
+  lv2_atom_forge_property_head(&b3s->forge, b3s->uris.sb3_cckey, 0);
+  lv2_atom_forge_int(&b3s->forge, pc);
+  lv2_atom_forge_property_head(&b3s->forge, b3s->uris.sb3_ccval, 0);
+  lv2_atom_forge_string(&b3s->forge, name, strlen(name));
+  lv2_atom_forge_pop(&b3s->forge, &frame);
+}
+
 static void mcc_cb(const char *fnname, const unsigned char chn, const unsigned char cc, const unsigned char flags, void *arg) {
   B3S* b3s = (B3S*)arg;
   char mmv[20];
@@ -568,6 +584,7 @@ run(LV2_Handle instance, uint32_t n_samples)
     b3s->update_gui_now = 0;
     b3s->suspend_ui_msg = 1;
     rc_loop_state(b3s->inst->state, rc_cb, b3s);
+    loopProgammes(b3s->inst->progs, 1, pgm_cb, b3s);
     b3s->suspend_ui_msg = 0;
   }
 

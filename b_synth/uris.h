@@ -34,6 +34,7 @@
 #define SB3__uiinit  SB3_URI "#uiinit"
 #define SB3__uimccq  SB3_URI "#uimccquery"
 #define SB3__uimccs  SB3_URI "#uimccset"
+#define SB3__midipgm SB3_URI "#midipgm"
 #define SB3__control SB3_URI "#controlmsg"
 #define SB3__cckey   SB3_URI "#controlkey"
 #define SB3__ccval   SB3_URI "#controlval"
@@ -50,6 +51,7 @@ typedef struct {
 	LV2_URID sb3_uiinit;
 	LV2_URID sb3_uimccquery;
 	LV2_URID sb3_uimccset;
+	LV2_URID sb3_midipgm;
 	LV2_URID sb3_control;
 	LV2_URID sb3_cckey;
 	LV2_URID sb3_ccval;
@@ -71,6 +73,7 @@ map_setbfree_uris(LV2_URID_Map* map, setBfreeURIs* uris)
 	uris->sb3_uiinit         = map->map(map->handle, SB3__uiinit);
 	uris->sb3_uimccquery     = map->map(map->handle, SB3__uimccq);
 	uris->sb3_uimccset       = map->map(map->handle, SB3__uimccs);
+	uris->sb3_midipgm        = map->map(map->handle, SB3__midipgm);
 	uris->sb3_control        = map->map(map->handle, SB3__control);
 	uris->sb3_cckey          = map->map(map->handle, SB3__cckey);
 	uris->sb3_ccval          = map->map(map->handle, SB3__ccval);
@@ -171,6 +174,36 @@ get_cc_midi_mapping(
 
 	*fnname = LV2_ATOM_BODY(key);
 	*mms = LV2_ATOM_BODY(value);
+
+	return 0;
+}
+
+static inline int
+get_pgm_midi_mapping(
+		const setBfreeURIs* uris, const LV2_Atom_Object* obj,
+		int *pgmnum, char **pgmname)
+{
+	const LV2_Atom* key = NULL;
+	const LV2_Atom* value = NULL;
+	if (!pgmnum || !pgmname) return -1;
+	*pgmnum = 0; *pgmname = NULL;
+
+	if (obj->body.otype != uris->sb3_midipgm) {
+		//fprintf(stderr, "B3Lv2: Ignoring message type %d (expect [CC] %d\n", obj->body.otype, uris->sb3_uimccset);
+		return -1;
+	}
+	lv2_atom_object_get(obj, uris->sb3_cckey, &key, uris->sb3_ccval, &value, 0);
+	if (!key) {
+		fprintf(stderr, "B3Lv2: Malformed PGMmap message has no key.\n");
+		return -1;
+	}
+	if (!value) {
+		fprintf(stderr, " Malformed PGMmap message has no value for key '%s'.\n", (char*)LV2_ATOM_BODY(key));
+		return -1;
+	}
+
+	*pgmname = LV2_ATOM_BODY(value);
+	*pgmnum = ((LV2_Atom_Int*)key)->body;
 
 	return 0;
 }
