@@ -140,6 +140,7 @@ typedef struct {
   GLdouble matrix[16]; // used for mouse mapping
   double rot[3], off[3], scale; // global projection
   int displaymode;
+  int pgm_sel;
   int show_mm;
   int uiccbind;
 
@@ -204,7 +205,7 @@ static void notifyPlugin(PuglView* view, int elem) {
     ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
 }
 
-static void forge_message(B3ui* ui, LV2_URID uri, const char *key) {
+static void forge_message_str(B3ui* ui, LV2_URID uri, const char *key) {
   uint8_t obj_buf[64];
   lv2_atom_forge_set_buffer(&ui->forge, obj_buf, 64);
 
@@ -214,6 +215,18 @@ static void forge_message(B3ui* ui, LV2_URID uri, const char *key) {
     lv2_atom_forge_property_head(&ui->forge, ui->uris.sb3_cckey, 0);
     lv2_atom_forge_string(&ui->forge, key, strlen(key));
   }
+  lv2_atom_forge_pop(&ui->forge, &set_frame);
+  ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
+}
+
+static void forge_message_int(B3ui* ui, LV2_URID uri, const int val) {
+  uint8_t obj_buf[64];
+  lv2_atom_forge_set_buffer(&ui->forge, obj_buf, 64);
+
+  LV2_Atom_Forge_Frame set_frame;
+  LV2_Atom* msg = (LV2_Atom*)lv2_atom_forge_blank(&ui->forge, &set_frame, 1, uri);
+  lv2_atom_forge_property_head(&ui->forge, ui->uris.sb3_cckey, 0);
+  lv2_atom_forge_int(&ui->forge, val);
   lv2_atom_forge_pop(&ui->forge, &set_frame);
   ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
 }
@@ -688,7 +701,7 @@ render_text(PuglView* view, const char *text, float x, float y, float z, int ali
 #ifdef HAVE_FTGL
   B3ui* ui = (B3ui*)puglGetHandle(view);
   const GLfloat mat_b[] = {0.0, 0.0, 0.0, 1.0};
-  const GLfloat mat_r[] = {0.1, 1.0, 0.2, 1.0};
+  const GLfloat mat_r[] = {0.1, 0.9, 0.15, 1.0};
 
   glPushMatrix();
   glLoadIdentity();
@@ -707,7 +720,7 @@ render_text(PuglView* view, const char *text, float x, float y, float z, int ali
       bb[0], bb[1], bb[2], bb[3], bb[4], bb[5]);
 #endif
   switch(align) {
-    case 1: // center
+    case 1: // center + middle
       glTranslatef(
 	  (bb[3] - bb[0])/-2.0,
 	  (bb[4] - bb[1])/-2.0,
@@ -720,6 +733,10 @@ render_text(PuglView* view, const char *text, float x, float y, float z, int ali
 	  0);
       break;
     default: // left
+      glTranslatef(
+	  0,
+	  (bb[4] - bb[1])/-1.0,
+	  0);
       break;
   }
   glTranslatef(x * (1000.0*SCALE) , -y * (1000.0*SCALE), z * SCALE);
@@ -789,34 +806,41 @@ onDisplay(PuglView* view)
   } else if (ui->displaymode == 2) {
     int i;
     const float invaspect = (float) ui->height / (float) ui->width;
+    const float w = 1.0/2.8 * 22.0/25.0;
+    const float h = invaspect * 2.0/24.0 * 22.0/25.0;
+
     for (i=0; i < 128; i++) {
       char txt[40];
       sprintf(txt, "p%3d: %s", i+1, ui->midipgm[i]);
-      float x = -1.1 +  (i/24)/2.7;
-      float y = -1.0 +  (i%24)/12.0;
-#if 0
-      float w = .5/2.7;
-      float h = .5/12.0;
-      //printf("%fx%f > %fx%f\n", x, y, w, h);
-      if (i%2) {
-	glPushMatrix();
-	glLoadIdentity();
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_w);
-	glMaterialfv(GL_FRONT, GL_AMBIENT, mat_w);
-	glBegin(GL_QUADS);
-	glColor3f(1.0, 1.0, 1.0);
-	glVertex3f(x, y, 0);
-	glVertex3f(x, y+h, 0);
-	glVertex3f(x+w, y+h, 0);
-	glVertex3f(x+w, y, 0);
-	glEnd();
-	glPopMatrix();
+      float x = -1.1 +  (i/24)/2.7; // 0..5
+      float y = -1.0 +  (i%24)/12.0; // 0..23
+      y *= invaspect;
+
+      const float bx = x * 22.0/25.0;
+      const float by = y * 22.0/25.0;
+
+      GLfloat mat_x[] = {0.1, 0.1, 0.1, 1.0};
+      if (i == ui->pgm_sel) mat_x[2] = .6;
+      else if (i%2) {
+	mat_x[0] = .125;
+	mat_x[1] = .125;
+	mat_x[2] = .125;
       }
-      w *= 22.0;
-      h *= 22.0 * invaspect;
-#endif
+      glPushMatrix();
+      glLoadIdentity();
+      glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_x);
+      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_x);
+      glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_x);
+      glBegin(GL_QUADS);
+      glVertex3f(bx,   by, 0);
+      glVertex3f(bx,   by+h, 0);
+      glVertex3f(bx+w, by+h, 0);
+      glVertex3f(bx+w, by, 0);
+      glEnd();
+      glPopMatrix();
+
       x *= 22.0;
-      y *= 22.0 * invaspect;
+      y *= 22.0;
       render_text(view, txt, x, y, .1f, 0.1);
     }
     return;
@@ -1108,7 +1132,7 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
 	for (i = 0; i < TOTAL_OBJ; ++i) {
 	  ui->ctrls[i].midinfo[0] = '\0';
 	}
-	forge_message(ui, ui->uris.sb3_uimccquery, NULL);
+	forge_message_str(ui, ui->uris.sb3_uimccquery, NULL);
 	ui->show_mm = 1;
       }
       puglPostRedisplay(view);
@@ -1144,6 +1168,28 @@ onMotion(PuglView* view, int x, int y)
   B3ui* ui = (B3ui*)puglGetHandle(view);
   float fx, fy;
 
+  if (ui->displaymode == 2) {
+    int pgm_sel = ui->pgm_sel;
+    fx = (2.0 * x / ui->width ) - 1.0;
+    fy = (2.0 * y / ui->height ) - 1.0;
+
+    fx *= 25.0/22.0; fy *= 25.0/22.0;
+    fx += 1.1; fy += 1.0;
+    //printf("MX %fx%f --- %f %f \n", fx, fy,   fx * 2.7, fy*12);
+    fx *= 2.7; fy *= 12.0;
+    if (fx > 0 && fx < 6 && fy > 0 && fy < 24) {
+      pgm_sel = floor(fx) * 24 + floor(fy);
+    } else {
+      pgm_sel = -1;
+    }
+    if (pgm_sel != ui->pgm_sel) {
+      ui->pgm_sel = pgm_sel;
+      puglPostRedisplay(view);
+    }
+  } else {
+    ui->pgm_sel = -1;
+  }
+
   if (ui->dndid < 0) return;
 
   project_mouse(view, x, y, &fx, &fy);
@@ -1168,28 +1214,20 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     return;
   }
 
-  if (puglGetModifiers(view) & PUGL_MOD_CTRL && button == 2) {
-    for (i = 0; i < TOTAL_OBJ; ++i) {
-      if (!MOUSEOVER(ui->ctrls[i], fx, fy)) {
-	continue;
-      }
-      ui->uiccbind = i;
-      forge_message(ui, ui->uris.sb3_uimccset, obj_control[i]);
-      puglPostRedisplay(view);
-      return;
-    }
-  }
-  if (ui->uiccbind >= 0) {
-    ui->uiccbind = -1;
-    forge_message(ui, ui->uris.sb3_uimccset, "off");
-    puglPostRedisplay(view);
-  }
-
-#ifdef HAVE_FTGL
-  if (ui->displaymode) {
+  if (ui->displaymode == 2) {
     ui->displaymode = 0;
+    forge_message_int(ui, ui->uris.sb3_midipgm, ui->pgm_sel);
     onReshape(view, ui->width, ui->height);
     puglPostRedisplay(view);
+    return;
+  }
+
+  if (ui->displaymode == 1) {
+    ui->displaymode = 0;
+#ifdef HAVE_FTGL
+    onReshape(view, ui->width, ui->height);
+    puglPostRedisplay(view);
+#endif
     return;
   }
 
@@ -1199,7 +1237,24 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     puglPostRedisplay(view);
     return;
   }
-#endif
+
+  if (puglGetModifiers(view) & PUGL_MOD_CTRL && button == 2) {
+    for (i = 0; i < TOTAL_OBJ; ++i) {
+      if (!MOUSEOVER(ui->ctrls[i], fx, fy)) {
+	continue;
+      }
+      ui->uiccbind = i;
+      forge_message_str(ui, ui->uris.sb3_uimccset, obj_control[i]);
+      puglPostRedisplay(view);
+      return;
+    }
+  }
+  if (ui->uiccbind >= 0) {
+    // TODO abort when switching modes via keyboard.. proper state machine..
+    ui->uiccbind = -1;
+    forge_message_str(ui, ui->uris.sb3_uimccset, "off");
+    puglPostRedisplay(view);
+  }
 
   for (i = 0; i < TOTAL_OBJ; ++i) {
     if (!MOUSEOVER(ui->ctrls[i], fx, fy)) {
@@ -1266,6 +1321,7 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   int i;
 
   ui->displaymode = 0;
+  ui->pgm_sel     = 0;
   ui->show_mm     = 0;
   ui->uiccbind    = -1;
   ui->width       = 960;
@@ -1412,7 +1468,7 @@ instantiate(const LV2UI_Descriptor*   descriptor,
   *widget = (void*)puglGetNativeWindow(ui->view);
 
   /* ask plugin about current state */
-  forge_message(ui, ui->uris.sb3_uiinit, NULL);
+  forge_message_str(ui, ui->uris.sb3_uiinit, NULL);
 
   return ui;
 }

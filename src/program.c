@@ -998,10 +998,10 @@ void loopProgammes (struct b_programme *p, int all,
   void (*cb)(int, int, const char*, void *), void *arg) {
   int i;
   int cnt=1;
-  for (i=0 ; i < 127; ++i) {
+  for (i=0 ; i < 128; ++i) {
     int pgmNr = i + p->MIDIControllerPgmOffset;
     if (all || p->programmes[pgmNr].flags[0] & FL_INUSE) {
-      cb(cnt++, i+1, p->programmes[pgmNr].name, arg);
+      cb(cnt++, i + p->MIDIControllerPgmOffset, p->programmes[pgmNr].name, arg);
     }
   }
 }

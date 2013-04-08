@@ -200,6 +200,7 @@ static void rc_cb(int fnid, const char *key, const char *kv, unsigned char val, 
 
 static void pgm_cb(int num, int pc, const char *name, void *arg) {
   B3S* b3s = (B3S*)arg;
+  pc -= b3s->inst->progs->MIDIControllerPgmOffset;
 #ifdef DEBUGPRINT
       fprintf(stderr, "PGM CB %d %d %s\n",num, pc, name);
 #endif
@@ -562,6 +563,12 @@ run(LV2_Handle instance, uint32_t n_samples)
 	  lv2_atom_object_get(obj, b3s->uris.sb3_cckey, &key, 0);
 	  if (key) {
 	    midi_uiassign_cc(b3s->inst->midicfg, (const char*)LV2_ATOM_BODY(key));
+	  }
+	} else if (obj->body.otype == b3s->uris.sb3_midipgm) {
+	  const LV2_Atom* key = NULL;
+	  lv2_atom_object_get(obj, b3s->uris.sb3_cckey, &key, 0);
+	  if (key) {
+	    installProgram(b3s->inst, ((LV2_Atom_Int*)key)->body);
 	  }
 	} else if (obj->body.otype == b3s->uris.sb3_control) {
 	  b3s->suspend_ui_msg = 1;
