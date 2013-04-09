@@ -36,11 +36,9 @@
 #include <GL/glu.h>
 #endif
 
-#ifdef HAVE_FTGL
 #include <FTGL/ftgl.h>
 #ifndef FONTFILE
 #define FONTFILE "/usr/share/fonts/truetype/ttf-bitstream-vera/VeraBd.ttf"
-#endif
 #endif
 
 #include "uris.h"
@@ -152,10 +150,9 @@ typedef struct {
   float dndval;
   float dndx, dndy;
 
-#ifdef HAVE_FTGL
   FTGLfont *font_big;
   FTGLfont *font_small;
-#endif
+
   char midipgm[128][32];
 
 } B3ui;
@@ -698,7 +695,6 @@ onReshape(PuglView* view, int width, int height)
 static void
 render_text(PuglView* view, const char *text, float x, float y, float z, int align)
 {
-#ifdef HAVE_FTGL
   B3ui* ui = (B3ui*)puglGetHandle(view);
   const GLfloat mat_b[] = {0.0, 0.0, 0.0, 1.0};
   const GLfloat mat_r[] = {0.1, 0.9, 0.15, 1.0};
@@ -742,7 +738,6 @@ render_text(PuglView* view, const char *text, float x, float y, float z, int ali
   glTranslatef(x * (1000.0*SCALE) , -y * (1000.0*SCALE), z * SCALE);
   ftglRenderFont(ui->font_small, text, FTGL_RENDER_ALL);
   glPopMatrix();
-#endif
 }
 
 static void
@@ -776,14 +771,12 @@ onDisplay(PuglView* view)
     initMesh(ui->view);
     setupLight();
     initTextures(ui->view);
-#ifdef HAVE_FTGL
     ui->font_big = ftglCreateBufferFont(FONTFILE);
     ftglSetFontFaceSize(ui->font_big, 80, 72);
     ftglSetFontCharMap(ui->font_big, ft_encoding_unicode);
     ui->font_small = ftglCreateBufferFont(FONTFILE);
     ftglSetFontFaceSize(ui->font_small, 20, 72);
     ftglSetFontCharMap(ui->font_small, ft_encoding_unicode);
-#endif
   }
 
   if (ui->displaymode == 1) {
@@ -846,8 +839,6 @@ onDisplay(PuglView* view)
     return;
   }
 
-#ifdef HAVE_FTGL
-
   glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_w);
   glMaterialfv(GL_FRONT, GL_AMBIENT, mat_w);
 
@@ -871,7 +862,6 @@ onDisplay(PuglView* view)
   //glTranslatef(1000.0, 332, 0);
   ftglRenderFont(ui->font_big, TEXTSTR, FTGL_RENDER_ALL);
   glPopMatrix();
-#endif
 
   /** step 1 - draw background -- fixed objects **/
 
@@ -1113,11 +1103,9 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       queue_reshape = 1;
       break;
     case 'p':
-#ifdef HAVE_FTGL
       if (ui->displaymode == 0) ui->displaymode = 2;
       else if (ui->displaymode == 2) ui->displaymode = 0;
       queue_reshape = 1;
-#endif
       break;
     case '?':
       if (ui->displaymode == 0) ui->displaymode = 1;
@@ -1224,10 +1212,8 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 
   if (ui->displaymode == 1) {
     ui->displaymode = 0;
-#ifdef HAVE_FTGL
     onReshape(view, ui->width, ui->height);
     puglPostRedisplay(view);
-#endif
     return;
   }
 
@@ -1481,10 +1467,8 @@ cleanup(LV2UI_Handle handle)
   ui->exit = true;
   pthread_join(ui->thread, NULL);
 #endif
-#ifdef HAVE_FTGL
   ftglDestroyFont(ui->font_big);
   ftglDestroyFont(ui->font_small);
-#endif
   puglDestroy(ui->view);
   free(ui->vbo);
   free(ui->vinx);

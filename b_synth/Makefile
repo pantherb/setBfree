@@ -4,22 +4,27 @@ LOADLIBES = -lm
 CFLAGS+= -I../src -I../b_overdrive -I../b_reverb -I../b_whirl -std=c99
 CFLAGS+=`pkg-config --cflags lv2 lv2core`
 
-FONTFILE?=/usr/share/fonts/truetype/ttf-bitstream-vera/VeraBd.ttf
+ifeq ($(IS_OSX), yes)
+  FONTFILE?=/usr/X11/lib/X11/fonts/TTF/VeraBd.ttf
+else
+  FONTFILE?=/usr/share/fonts/truetype/ttf-bitstream-vera/VeraBd.ttf
+endif
+
 ifeq ($(shell test -f $(FONTFILE) || echo no ), no)
   $(warning UI font can not be found on this system, install bitstream-vera TTF or set the FONTFILE variable to a ttf file)
-  $(warning LV2 GUI is built without information display)
+  $(warning LV2 GUI will not be built)
   FONT_FOUND=no
 else
   FONT_FOUND=yes
 endif
 
-targets=
-
 ifeq ($(IS_OSX), yes)
-  HAVE_UI=yes
+  HAVE_UI=$(shell pkg-config --exists ftgl && echo $(FONT_FOUND))
 else
-  HAVE_UI=$(shell pkg-config --exists glu && echo yes)
+  HAVE_UI=$(shell pkg-config --exists glu ftgl && echo $(FONT_FOUND))
 endif
+
+targets=
 
 ifeq ($(LV2AVAIL), yes)
   LV2NAME=b_synth
@@ -47,11 +52,9 @@ ifeq ($(LV2AVAIL), yes)
       UILIBS=../pugl/pugl_x11.c -lX11 `pkg-config --libs glu`
       UI_TYPE=X11UI
     endif
-    ifeq ($(shell pkg-config --exists ftgl && echo $(FONT_FOUND)), yes)
-      CFLAGS+=`pkg-config --cflags ftgl` -DHAVE_FTGL
-      UILIBS+=`pkg-config --libs ftgl`
-      CFLAGS+=-DFONTFILE=\"$(FONTFILE)\"
-    endif
+    CFLAGS+=`pkg-config --cflags ftgl` -DHAVE_FTGL
+    UILIBS+=`pkg-config --libs ftgl`
+    CFLAGS+=-DFONTFILE=\"$(FONTFILE)\"
     targets+=$(LV2GUI)$(LIB_EXT)
   else
     $(warning "openGL/GLU is not available - install glu-dev to include LV2 GUI")
