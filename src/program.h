@@ -34,19 +34,19 @@ typedef struct _programme {
   unsigned int drawbars[9];
   unsigned int lowerDrawbars[9];
   unsigned int pedalDrawbars[9];
-  short        keyAttackEnvelope;
-  float        keyAttackClickLevel;
-  float        keyAttackClickDuration;
-  short        keyReleaseEnvelope;
-  float        keyReleaseClickLevel;
-  float        keyReleaseClickDuration;
+  short        keyAttackEnvelope; // unused
+  float        keyAttackClickLevel; // unused
+  float        keyAttackClickDuration; // unused
+  short        keyReleaseEnvelope; // unused
+  float        keyReleaseClickLevel; // unused
+  float        keyReleaseClickDuration; // unused
   short        scanner;
   short        percussionEnabled;
   short        percussionVolume;
   short        percussionSpeed;
   short        percussionHarmonic;
   short        overdriveSelect;
-  short        rotaryEnabled;
+  short        rotaryEnabled; // unused
   short        rotarySpeedSelect;
   float        reverbMix;
   short        keyboardSplitLower;
