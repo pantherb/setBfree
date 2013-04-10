@@ -38,6 +38,7 @@
 #define SB3__control SB3_URI "#controlmsg"
 #define SB3__cckey   SB3_URI "#controlkey"
 #define SB3__ccval   SB3_URI "#controlval"
+#define SB3__ccdsc   SB3_URI "#controldsc"
 
 typedef struct {
 	LV2_URID atom_Blank;
@@ -54,6 +55,7 @@ typedef struct {
 	LV2_URID sb3_midipgm;
 	LV2_URID sb3_control;
 	LV2_URID sb3_cckey;
+	LV2_URID sb3_ccdsc;
 	LV2_URID sb3_ccval;
 
 	LV2_URID midi_MidiEvent;
@@ -77,6 +79,7 @@ map_setbfree_uris(LV2_URID_Map* map, setBfreeURIs* uris)
 	uris->sb3_control        = map->map(map->handle, SB3__control);
 	uris->sb3_cckey          = map->map(map->handle, SB3__cckey);
 	uris->sb3_ccval          = map->map(map->handle, SB3__ccval);
+	uris->sb3_ccdsc          = map->map(map->handle, SB3__ccdsc);
 	uris->midi_MidiEvent     = map->map(map->handle, LV2_MIDI__MidiEvent);
   uris->atom_Sequence      = map->map(map->handle, LV2_ATOM__Sequence);
 }
@@ -181,27 +184,33 @@ get_cc_midi_mapping(
 static inline int
 get_pgm_midi_mapping(
 		const setBfreeURIs* uris, const LV2_Atom_Object* obj,
-		int *pgmnum, char **pgmname)
+		int *pgmnum, char **pgmname, char **pgmdesc)
 {
 	const LV2_Atom* key = NULL;
 	const LV2_Atom* value = NULL;
-	if (!pgmnum || !pgmname) return -1;
-	*pgmnum = 0; *pgmname = NULL;
+	const LV2_Atom* descr = NULL;
+	if (!pgmnum || !pgmname || !pgmdesc) return -1;
+	*pgmnum = 0; *pgmname = NULL;; *pgmdesc = NULL;
 
 	if (obj->body.otype != uris->sb3_midipgm) {
 		//fprintf(stderr, "B3Lv2: Ignoring message type %d (expect [CC] %d\n", obj->body.otype, uris->sb3_uimccset);
 		return -1;
 	}
-	lv2_atom_object_get(obj, uris->sb3_cckey, &key, uris->sb3_ccval, &value, 0);
+	lv2_atom_object_get(obj, uris->sb3_cckey, &key, uris->sb3_ccval, &value, uris->sb3_ccdsc, &descr, 0);
 	if (!key) {
 		fprintf(stderr, "B3Lv2: Malformed PGMmap message has no key.\n");
 		return -1;
 	}
 	if (!value) {
-		fprintf(stderr, " Malformed PGMmap message has no value for key '%s'.\n", (char*)LV2_ATOM_BODY(key));
+		fprintf(stderr, " Malformed PGMmap message has no value\n");
+		return -1;
+	}
+	if (!descr) {
+		fprintf(stderr, " Malformed PGMmap message has no value\n");
 		return -1;
 	}
 
+	*pgmdesc = LV2_ATOM_BODY(descr);
 	*pgmname = LV2_ATOM_BODY(value);
 	*pgmnum = ((LV2_Atom_Int*)key)->body;
 

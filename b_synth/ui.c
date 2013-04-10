@@ -154,6 +154,7 @@ typedef struct {
   FTGLfont *font_small;
 
   char midipgm[128][32];
+  char mididsc[128][256];
 
 } B3ui;
 
@@ -728,7 +729,13 @@ render_text(PuglView* view, const char *text, float x, float y, float z, int ali
 	  (bb[4] - bb[1])/-1.0,
 	  0);
       break;
-    default: // left
+    case 3: // left bottom
+      glTranslatef(
+	  0,
+	  0,
+	  0);
+      break;
+    default: // left top
       glTranslatef(
 	  0,
 	  (bb[4] - bb[1])/-1.0,
@@ -780,6 +787,7 @@ onDisplay(PuglView* view)
   }
 
   if (ui->displaymode == 1) {
+    /* Help screen */
     const float invaspect = (float) ui->height / (float) ui->width;
     glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_w);
     glMaterialfv(GL_FRONT, GL_AMBIENT, mat_w);
@@ -797,6 +805,7 @@ onDisplay(PuglView* view)
     glDisable(GL_TEXTURE_2D);
     return;
   } else if (ui->displaymode == 2) {
+    /* midi program list */
     int i;
     const float invaspect = (float) ui->height / (float) ui->width;
     const float w = 1.0/2.8 * 22.0/25.0;
@@ -834,10 +843,23 @@ onDisplay(PuglView* view)
 
       x *= 22.0;
       y *= 22.0;
-      render_text(view, txt, x, y, .1f, 0.1);
+      render_text(view, txt, x, y, .1f, 0);
+    }
+    if (ui->pgm_sel >= 0) {
+      char *t0, *t1; int ln = 0;
+      t0 = ui->mididsc[ui->pgm_sel];
+      //printf("DSC: %s\n", t0);
+      while (*t0 && (t1 = strchr(t0, '\n'))) {
+	*t1='\0';
+	render_text(view, t0, 16.5, ++ln*0.5, .1f, 3);
+	*t1='\n';
+	t0=t1+1;
+      }
     }
     return;
   }
+
+  /* main organ */
 
   glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_w);
   glMaterialfv(GL_FRONT, GL_AMBIENT, mat_w);
@@ -1106,11 +1128,13 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       if (ui->displaymode == 0) ui->displaymode = 2;
       else if (ui->displaymode == 2) ui->displaymode = 0;
       queue_reshape = 1;
+      ui->dndid = -1;
       break;
     case '?':
       if (ui->displaymode == 0) ui->displaymode = 1;
       else if (ui->displaymode == 1) ui->displaymode = 0;
       queue_reshape = 1;
+      ui->dndid = -1;
       break;
     case 'm':
       if (ui->show_mm) {
@@ -1140,6 +1164,7 @@ onScroll(PuglView* view, int x, int y, float dx, float dy)
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   float fx, fy;
+  if (ui->displaymode) return;
   project_mouse(view, x, y, &fx, &fy);
   int i;
   for (i = 0; i < TOTAL_OBJ ; ++i) {
@@ -1174,6 +1199,8 @@ onMotion(PuglView* view, int x, int y)
       ui->pgm_sel = pgm_sel;
       puglPostRedisplay(view);
     }
+    ui->dndid = -1;
+    return;
   } else {
     ui->pgm_sel = -1;
   }
@@ -1450,6 +1477,7 @@ instantiate(const LV2UI_Descriptor*   descriptor,
   }
 
   memset(ui->midipgm, 0, 128 * 32 * sizeof(char));
+  memset(ui->mididsc, 0, 128 * 256 * sizeof(char));
 
   *widget = (void*)puglGetNativeWindow(ui->view);
 
@@ -1483,7 +1511,7 @@ port_event(LV2UI_Handle handle,
     const void*  buffer)
 {
   B3ui* ui = (B3ui*)handle;
-  char *k, *fn; int v;
+  char *k, *fn, *dsc; int v;
 
   if (format != ui->uris.atom_eventTransfer) {
     fprintf(stderr, "B3Lv2UI: Unknown message format.\n");
@@ -1520,9 +1548,12 @@ port_event(LV2UI_Handle handle,
       strcat(ui->ctrls[fnid].midinfo, k);
     }
     puglPostRedisplay(ui->view);
-  } else if (!get_pgm_midi_mapping(&ui->uris, obj, &v, &fn)) {
+  } else if (!get_pgm_midi_mapping(&ui->uris, obj, &v, &fn, &dsc)) {
     strncpy(ui->midipgm[v], fn, 32);
+    strncpy(ui->mididsc[v], dsc, 256);
     ui->midipgm[v][31] = '\0';
+    ui->mididsc[v][255] = '\0';
+    //printf("%d %s %s", v, ui->midipgm[v], ui->mididsc[v]);
     puglPostRedisplay(ui->view);
   }
 }

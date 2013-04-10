@@ -75,6 +75,7 @@ typedef struct {
 
   short suspend_ui_msg;
   short update_gui_now;
+  short update_pgm_now;
   short swap_instances;
 
   struct b_instance *inst;
@@ -200,8 +201,9 @@ static void rc_cb(int fnid, const char *key, const char *kv, unsigned char val, 
 
 static void pgm_cb(int num, int pc, const char *name, void *arg) {
   B3S* b3s = (B3S*)arg;
-  pc -= b3s->inst->progs->MIDIControllerPgmOffset;
-#ifdef DEBUGPRINT
+  char tmp[256];
+  int pco = pc - b3s->inst->progs->MIDIControllerPgmOffset;
+#if 1
       fprintf(stderr, "PGM CB %d %d %s\n",num, pc, name);
 #endif
   LV2_Atom_Forge_Frame frame;
@@ -209,9 +211,14 @@ static void pgm_cb(int num, int pc, const char *name, void *arg) {
   lv2_atom_forge_blank(&b3s->forge, &frame, 1, b3s->uris.sb3_midipgm);
 
   lv2_atom_forge_property_head(&b3s->forge, b3s->uris.sb3_cckey, 0);
-  lv2_atom_forge_int(&b3s->forge, pc);
+  lv2_atom_forge_int(&b3s->forge, pco);
   lv2_atom_forge_property_head(&b3s->forge, b3s->uris.sb3_ccval, 0);
   lv2_atom_forge_string(&b3s->forge, name, strlen(name));
+
+  formatProgram(&b3s->inst->progs->programmes[pc], tmp, 256);
+  lv2_atom_forge_property_head(&b3s->forge, b3s->uris.sb3_ccdsc, 0);
+  lv2_atom_forge_string(&b3s->forge, tmp, strlen(tmp));
+
   lv2_atom_forge_pop(&b3s->forge, &frame);
 }
 
@@ -475,11 +482,11 @@ instantiate(const LV2_Descriptor*     descriptor,
 
   srand ((unsigned int) time (NULL));
   b3s->suspend_ui_msg = 1;
-  b3s->update_gui_now = 0;
   b3s->boffset = BUFFER_SIZE_SAMPLES;
 
   b3s->swap_instances = 0;
   b3s->update_gui_now = 0;
+  b3s->update_pgm_now = 0;
 
   b3s->inst = calloc(1, sizeof(struct b_instance));
   b3s->inst_offline = NULL;
@@ -589,10 +596,13 @@ run(LV2_Handle instance, uint32_t n_samples)
 
   if (b3s->update_gui_now) {
     b3s->update_gui_now = 0;
+    b3s->update_pgm_now = 1;
     b3s->suspend_ui_msg = 1;
     rc_loop_state(b3s->inst->state, rc_cb, b3s);
-    loopProgammes(b3s->inst->progs, 1, pgm_cb, b3s);
     b3s->suspend_ui_msg = 0;
+  } else if (b3s->update_pgm_now) {
+    b3s->update_pgm_now = 0;
+    loopProgammes(b3s->inst->progs, 1, pgm_cb, b3s);
   }
 
   /* synthesize [remaining] sound */
