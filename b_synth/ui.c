@@ -137,10 +137,14 @@ typedef struct {
   GLuint texID[15]; // textures
   GLdouble matrix[16]; // used for mouse mapping
   double rot[3], off[3], scale; // global projection
+
   int displaymode;
   int pgm_sel;
   int show_mm;
   int uiccbind;
+
+  int textentry_active;
+  char textentry_text[1024];
 
   /* interactive control objexts */
   b3widget ctrls[TOTAL_OBJ];
@@ -157,7 +161,6 @@ typedef struct {
   char mididsc[128][256];
 
 } B3ui;
-
 
 /******************************************************************************
  * Value mapping, MIDI <> internal min/max <> mouse
@@ -668,7 +671,7 @@ onReshape(PuglView* view, int width, int height)
   glLoadIdentity();
   glOrtho(-1.0, 1.0, invaspect, -invaspect, 3.0, -3.0);
 
-  if (ui->displaymode) {
+  if (ui->displaymode || ui->textentry_active) {
     glMatrixMode(GL_MODELVIEW);
     return;
   }
@@ -747,6 +750,75 @@ render_text(PuglView* view, const char *text, float x, float y, float z, int ali
   glPopMatrix();
 }
 
+
+/******************************************************************************
+ * openGL text entry
+ */
+
+static int txtentry_start(PuglView* view, char *defaulttext) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  if (ui->textentry_active) return -1;
+
+  if (!defaulttext) {
+    ui->textentry_text[0] = '\0';
+  } else {
+    strncpy(ui->textentry_text, defaulttext, 1024);
+  }
+  ui->textentry_active = 1;
+  onReshape(view, ui->width, ui->height);
+  puglPostRedisplay(view);
+  return 0;
+}
+
+static void txtentry_handle(PuglView* view, uint32_t key) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  int pos = strlen(ui->textentry_text);
+  switch (key) {
+    case 8:
+      if (pos > 0) pos--;
+      break;
+    case 27:
+      pos = 0;
+      // fall through
+    case 10:
+    case 13:
+      ui->textentry_active = 0;
+      onReshape(view, ui->width, ui->height);
+      break;
+    default:
+      ui->textentry_text[pos++] = (char) key;
+      break;
+  }
+  if (pos > 1023) pos=1023;
+  ui->textentry_text[pos] = '\0';
+  puglPostRedisplay(view);
+}
+
+static void txtentry_render(PuglView* view) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+
+  const GLfloat mat_b[] = {0.0, 0.0, 0.0, 1.0};
+  const GLfloat mat_r[] = {0.1, 0.9, 0.15, 1.0};
+
+  glPushMatrix();
+  glLoadIdentity();
+
+  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_b);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_b);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_r);
+
+  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
+  glScalef(0.001,0.001,1.00);
+  glRotatef(180, 1, 0, 0);
+  //glTranslatef(x * (1000.0*SCALE) , -y * (1000.0*SCALE), z * SCALE);
+  ftglRenderFont(ui->font_big, ui->textentry_text, FTGL_RENDER_ALL);
+  glPopMatrix();
+}
+
+/**
+ * main display fn
+ */
+
 static void
 onDisplay(PuglView* view)
 {
@@ -784,6 +856,11 @@ onDisplay(PuglView* view)
     ui->font_small = ftglCreateBufferFont(FONTFILE);
     ftglSetFontFaceSize(ui->font_small, 20, 72);
     ftglSetFontCharMap(ui->font_small, ft_encoding_unicode);
+  }
+
+  if (ui->textentry_active) {
+    txtentry_render(view);
+    return;
   }
 
   if (ui->displaymode == 1) {
@@ -1073,6 +1150,10 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
   if (!press) {
     return;
   }
+  if (ui->textentry_active) {
+    txtentry_handle(view, key);
+    return;
+  }
   switch (key) {
     case 'a':
       if (ui->rot[0] > -55) { ui->rot[0] -= 5; queue_reshape = 1; }
@@ -1136,6 +1217,12 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       queue_reshape = 1;
       ui->dndid = -1;
       break;
+#if 0
+    case 't':
+      txtentry_start(view,"test");
+      queue_reshape = 1;
+      break;
+#endif
     case 'm':
       if (ui->show_mm) {
 	ui->show_mm = 0;
