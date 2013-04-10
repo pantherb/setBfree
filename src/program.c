@@ -703,6 +703,18 @@ int bindToProgram (void * pp,
 }
 
 #ifndef PRG_MAIN
+static int format_drawbars(const unsigned int drawbars [], char *buf) {
+  return sprintf (buf, "%c%c%c %c%c%c%c %c%c",
+    '0' + drawbars[0],
+    '0' + drawbars[1],
+    '0' + drawbars[2],
+    '0' + drawbars[3],
+    '0' + drawbars[4],
+    '0' + drawbars[5],
+    '0' + drawbars[6],
+    '0' + drawbars[7],
+    '0' + drawbars[8]);
+}
 /**
  * Installs random values in the supplied array.
  * @param drawbars  Array where to store drawbar settings.
@@ -716,16 +728,7 @@ static void randomizeDrawbars (unsigned int drawbars [], char * buf) {
   }
 
   if (buf != NULL) {
-    sprintf (buf, "%c%c%c %c%c%c%c %c%c",
-	     '0' + drawbars[0],
-	     '0' + drawbars[1],
-	     '0' + drawbars[2],
-	     '0' + drawbars[3],
-	     '0' + drawbars[4],
-	     '0' + drawbars[5],
-	     '0' + drawbars[6],
-	     '0' + drawbars[7],
-	     '0' + drawbars[8]);
+    format_drawbars(drawbars, buf);
   }
 }
 
@@ -1007,6 +1010,106 @@ void loopProgammes (struct b_programme *p, int all,
 }
 
 #ifndef PRG_MAIN
+int formatProgram(Programme *p, char *out, int maxlen) {
+  int len = 0;
+  out[0]='\0';
+  if (!(p->flags[0] & FL_INUSE)) {
+    len += snprintf(out, maxlen, " --empty--\n");
+    return len;
+  }
+
+  if (p->flags[0] & FL_DRAWBR) {
+    len += snprintf(out+len, maxlen-len, "U: ");
+    if (p->flags[0] & FL_DRWRND)
+      len += snprintf(out+len, maxlen-len, "-random-");
+    else
+      len += format_drawbars(p->drawbars, out+len);
+    len += snprintf(out+len, maxlen-len, "\n");
+  }
+
+  if (p->flags[0] & FL_LOWDRW) {
+    len += snprintf(out+len, maxlen-len, "L: ");
+    if (p->flags[0] & FL_DRWRND)
+      len += snprintf(out+len, maxlen-len, "-random-");
+    else
+    len += format_drawbars(p->lowerDrawbars, out+len);
+    len += snprintf(out+len, maxlen-len, "\n");
+  }
+
+  if (p->flags[0] & FL_PDLDRW) {
+    len += snprintf(out+len, maxlen-len, "P: ");
+    if (p->flags[0] & FL_DRWRND)
+      len += snprintf(out+len, maxlen-len, "-random-");
+    else
+      len += format_drawbars(p->pedalDrawbars, out+len);
+    len += snprintf(out+len, maxlen-len, "\n");
+  }
+  if (p->flags[0] & (FL_SCANNR|FL_VCRUPR|FL_VCRLWR)) {
+    len += snprintf(out+len, maxlen-len, "vib: ");
+    if (p->flags[0] & FL_SCANNR) {
+      // FL_VCRUPR  FL_VCRLWR
+      int knob = ((p->scanner & 0xf) << 1) - ((p->scanner & CHO_) ? 1 : 2);
+      //len += snprintf(out+len, maxlen-len, "mode: ");
+      switch (knob) {
+	case 0: len += snprintf(out+len, maxlen-len, "v1 "); break;
+	case 1: len += snprintf(out+len, maxlen-len, "c1 "); break;
+	case 2: len += snprintf(out+len, maxlen-len, "v2 "); break;
+	case 3: len += snprintf(out+len, maxlen-len, "c2 "); break;
+	case 4: len += snprintf(out+len, maxlen-len, "v3 "); break;
+	case 5: len += snprintf(out+len, maxlen-len, "c3 "); break;
+	default: len += snprintf(out+len, maxlen-len, "? "); break;
+      }
+    }
+    if (p->flags[0] & FL_VCRUPR) {
+      len += snprintf(out+len, maxlen-len, "uppr: %s ", p->scanner & 0x200 ? "on" : "off");
+    }
+    if (p->flags[0] & FL_VCRLWR) {
+      len += snprintf(out+len, maxlen-len, "lowr: %s ", p->scanner & 0x100 ? "on" : "off");
+    }
+
+    len += snprintf(out+len, maxlen-len, "\n");
+  }
+  if (p->flags[0] & (FL_PRCENA|FL_PRCVOL|FL_PRCSPD|FL_PRCHRM)) {
+    len += snprintf(out+len, maxlen-len, "perc: ");
+    if (p->flags[0] & FL_PRCENA) {
+      len += snprintf(out+len, maxlen-len, "%s ", p->percussionEnabled ? "on" : "off");
+    }
+    if (p->flags[0] & FL_PRCVOL) {
+      len += snprintf(out+len, maxlen-len, "%s ", p->percussionVolume ? "high" : "low");
+    }
+    if (p->flags[0] & FL_PRCSPD) {
+      len += snprintf(out+len, maxlen-len, "%s ", p->percussionSpeed ? "fast" : "slow");
+    }
+    if (p->flags[0] & FL_PRCHRM) {
+      len += snprintf(out+len, maxlen-len, "%s ", p->percussionHarmonic ? "2nd" : "3rd");
+    }
+    len += snprintf(out+len, maxlen-len, "\n");
+  }
+  if (p->flags[0] & FL_OVRSEL) {
+    len += snprintf(out+len, maxlen-len, "overdrive: %s\n", p->overdriveSelect ? "bypass" : "on");
+  }
+  if (p->flags[0] & FL_ROTSPS) {
+    len += snprintf(out+len, maxlen-len, "leslie: ");
+    switch (p->rotarySpeedSelect){
+      case WHIRL_FAST: len += snprintf(out+len, maxlen-len, "fast"); break;
+      case WHIRL_SLOW: len += snprintf(out+len, maxlen-len, "slow"); break;
+      case WHIRL_STOP: len += snprintf(out+len, maxlen-len, "stop"); break;
+      default: len += snprintf(out+len, maxlen-len, "? "); break;
+    }
+    len += snprintf(out+len, maxlen-len, "\n");
+  }
+  if (p->flags[0] & FL_RVBMIX) {
+    len += snprintf(out+len, maxlen-len, "reverb: %d%%\n", (int) rint(100.0*p->reverbMix));
+  }
+  if (p->flags[0] & (FL_KSPLTL|FL_KSPLTP|FL_TRA_PD|FL_TRA_LM|FL_TRA_UM)) {
+    len += snprintf(out+len, maxlen-len, "keyboard-split change\n");
+  }
+  if (p->flags[0] & (FL_TRANSP|FL_TRCH_A|FL_TRCH_B|FL_TRCH_C)) {
+    len += snprintf(out+len, maxlen-len, "transpose..\n");
+  }
+  return len;
+}
+
 struct b_programme *allocProgs() {
   struct b_programme *p = (struct b_programme*) calloc(1, sizeof(struct b_programme));
   if (!p) return NULL;
