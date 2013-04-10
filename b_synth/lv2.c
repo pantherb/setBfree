@@ -203,7 +203,7 @@ static void pgm_cb(int num, int pc, const char *name, void *arg) {
   B3S* b3s = (B3S*)arg;
   char tmp[256];
   int pco = pc - b3s->inst->progs->MIDIControllerPgmOffset;
-#if 1
+#ifdef DEBUGPRINT
       fprintf(stderr, "PGM CB %d %d %s\n",num, pc, name);
 #endif
   LV2_Atom_Forge_Frame frame;
