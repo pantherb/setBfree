@@ -173,7 +173,7 @@ static void vmap_midi_to_val(PuglView* view, int elem, int mval) {
 
 static unsigned char vmap_val_to_midi(PuglView* view, int elem) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
-  const int v = floor( rint(ui->ctrls[elem].cur - ui->ctrls[elem].min) * 127.0 / (ui->ctrls[elem].max - ui->ctrls[elem].min));
+  const int v = rint( rint(ui->ctrls[elem].cur - ui->ctrls[elem].min) * 127.0 / (ui->ctrls[elem].max - ui->ctrls[elem].min));
   return (v&0x7f);
 }
 
@@ -283,7 +283,7 @@ static void processMotion(PuglView* view, int elem, float dx, float dy) {
       if (ui->ctrls[elem].max == 0) {
 	if (ui->ctrls[elem].cur > ui->ctrls[elem].max || ui->ctrls[elem].cur < ui->ctrls[elem].min) {
 	  const float r = (ui->ctrls[elem].max - ui->ctrls[elem].min);
-	  ui->ctrls[elem].cur -= floor(ui->ctrls[elem].cur / r) * r;
+	  ui->ctrls[elem].cur -= ceil(ui->ctrls[elem].cur / r) * r;
 	}
       } else {
 	if (ui->ctrls[elem].cur > ui->ctrls[elem].max) ui->ctrls[elem].cur = ui->ctrls[elem].max;
