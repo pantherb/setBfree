@@ -56,54 +56,6 @@
 #define FILE_BUFFER_SIZE 2048
 
 
-
-/* Flag bits used in the first field */
-
-#define FL_INUSE  0x0001	/* Record is in use */
-
-#define FL_DRAWBR 0x0002	/* Set drawbars */
-
-#define FL_ATKENV 0x0004	/* Attack envelope */
-#define FL_ATKCKL 0x0008	/* Attack Click level */
-#define FL_ATKCKD 0x0010	/* Attack click duration */
-
-#define FL_RLSENV 0x0020	/* Release envelope */
-#define FL_RLSCKL 0x0040	/* Release level */
-#define FL_RLSCKD 0x0080	/* Release duration */
-
-#define FL_SCANNR 0x0100	/* Vibrato scanner modulation depth */
-
-#define FL_PRCENA 0x0200	/* Percussion on/off */
-#define FL_PRCVOL 0x0400	/* Percussion soft/normal */
-#define FL_PRCSPD 0x0800	/* Percussion slow/fast */
-#define FL_PRCHRM 0x1000	/* Percussion 2nd/3rd */
-
-#define FL_OVRSEL 0x2000	/* Overdrive on/off */
-
-#define FL_ROTENA 0x4000	/* Rotary on/off */
-#define FL_ROTSPS 0x8000	/* Rotary speed select */
-
-#define FL_RVBMIX 0x00010000	/* Reverb on/off */
-
-#define FL_DRWRND 0x00020000	/* Randomize drawbars */
-#define FL_KSPLTL 0x00040000	/* Keyboard split point lower/upper */
-
-#define FL_LOWDRW 0x00080000	/* Lower manual drawbars */
-#define FL_PDLDRW 0x00100000	/* Pedal drawbars */
-
-#define FL_KSPLTP 0x00200000	/* Keyboard split point pedal/lower */
-
-#define FL_TRA_PD 0x00400000	/* Transpose for pedal split region */
-#define FL_TRA_LM 0x00800000	/* Transpose for lower split region */
-#define FL_TRA_UM 0x01000000	/* Transpose for upper split region */
-#define FL_TRANSP 0x02000000	/* Global transpose */
-#define FL_TRCH_A 0x04000000	/* Channel A (upper) transpose */
-#define FL_TRCH_B 0x08000000	/* Channel B (lower) transpose */
-#define FL_TRCH_C 0x10000000	/* Channel C (pedal) transpose */
-
-#define FL_VCRUPR 0x20000000	/* Vib/cho upper manual routing */
-#define FL_VCRLWR 0x40000000	/* Vib/cho lower manual routing */
-
 #define ANY_TRSP (FL_TRA_PL | FL_TRA_LM | FL_TRA_UM | FL_TRANSP | \
                   FL_TRCH_A | FL_TRCH_B | FL_TRCH_C)
 
@@ -1108,6 +1060,91 @@ int formatProgram(Programme *p, char *out, int maxlen) {
     len += snprintf(out+len, maxlen-len, "transpose..\n");
   }
   return len;
+}
+
+static void save_pgm_state_cb(int fnid, const char *key, const char *kv, unsigned char val, void *arg) {
+  Programme * PGM = (Programme*) arg;
+  if      (!strcmp(key, "upper.drawbar16"))  {PGM->drawbars[0] = 8-val/14; PGM->flags[0] |= FL_DRAWBR;}
+  else if (!strcmp(key, "upper.drawbar513")) {PGM->drawbars[1] = (127-val)*8/127; PGM->flags[0] |= FL_DRAWBR;}
+  else if (!strcmp(key, "upper.drawbar8"))   {PGM->drawbars[2] = (127-val)*8/127; PGM->flags[0] |= FL_DRAWBR;}
+  else if (!strcmp(key, "upper.drawbar4"))   {PGM->drawbars[3] = (127-val)*8/127; PGM->flags[0] |= FL_DRAWBR;}
+  else if (!strcmp(key, "upper.drawbar223")) {PGM->drawbars[4] = (127-val)*8/127; PGM->flags[0] |= FL_DRAWBR;}
+  else if (!strcmp(key, "upper.drawbar2"))   {PGM->drawbars[5] = (127-val)*8/127; PGM->flags[0] |= FL_DRAWBR;}
+  else if (!strcmp(key, "upper.drawbar135")) {PGM->drawbars[6] = (127-val)*8/127; PGM->flags[0] |= FL_DRAWBR;}
+  else if (!strcmp(key, "upper.drawbar113")) {PGM->drawbars[7] = (127-val)*8/127; PGM->flags[0] |= FL_DRAWBR;}
+  else if (!strcmp(key, "upper.drawbar1"))   {PGM->drawbars[8] = (127-val)*8/127; PGM->flags[0] |= FL_DRAWBR;}
+
+  else if (!strcmp(key, "lower.drawbar16"))  {PGM->lowerDrawbars[0] = (127-val)*8/127; PGM->flags[0] |= FL_LOWDRW;}
+  else if (!strcmp(key, "lower.drawbar513")) {PGM->lowerDrawbars[1] = (127-val)*8/127; PGM->flags[0] |= FL_LOWDRW;}
+  else if (!strcmp(key, "lower.drawbar8"))   {PGM->lowerDrawbars[2] = (127-val)*8/127; PGM->flags[0] |= FL_LOWDRW;}
+  else if (!strcmp(key, "lower.drawbar4"))   {PGM->lowerDrawbars[3] = (127-val)*8/127; PGM->flags[0] |= FL_LOWDRW;}
+  else if (!strcmp(key, "lower.drawbar223")) {PGM->lowerDrawbars[4] = (127-val)*8/127; PGM->flags[0] |= FL_LOWDRW;}
+  else if (!strcmp(key, "lower.drawbar2"))   {PGM->lowerDrawbars[5] = (127-val)*8/127; PGM->flags[0] |= FL_LOWDRW;}
+  else if (!strcmp(key, "lower.drawbar135")) {PGM->lowerDrawbars[6] = (127-val)*8/127; PGM->flags[0] |= FL_LOWDRW;}
+  else if (!strcmp(key, "lower.drawbar113")) {PGM->lowerDrawbars[7] = (127-val)*8/127; PGM->flags[0] |= FL_LOWDRW;}
+  else if (!strcmp(key, "lower.drawbar1"))   {PGM->lowerDrawbars[8] = (127-val)*8/127; PGM->flags[0] |= FL_LOWDRW;}
+
+  else if (!strcmp(key, "pedal.drawbar16"))  {PGM->pedalDrawbars[0] = (127-val)*8/127; PGM->flags[0] |= FL_PDLDRW;}
+  else if (!strcmp(key, "pedal.drawbar513")) {PGM->pedalDrawbars[1] = (127-val)*8/127; PGM->flags[0] |= FL_PDLDRW;}
+  else if (!strcmp(key, "pedal.drawbar8"))   {PGM->pedalDrawbars[2] = (127-val)*8/127; PGM->flags[0] |= FL_PDLDRW;}
+  else if (!strcmp(key, "pedal.drawbar4"))   {PGM->pedalDrawbars[3] = (127-val)*8/127; PGM->flags[0] |= FL_PDLDRW;}
+  else if (!strcmp(key, "pedal.drawbar223")) {PGM->pedalDrawbars[4] = (127-val)*8/127; PGM->flags[0] |= FL_PDLDRW;}
+  else if (!strcmp(key, "pedal.drawbar2"))   {PGM->pedalDrawbars[5] = (127-val)*8/127; PGM->flags[0] |= FL_PDLDRW;}
+  else if (!strcmp(key, "pedal.drawbar135")) {PGM->pedalDrawbars[6] = (127-val)*8/127; PGM->flags[0] |= FL_PDLDRW;}
+  else if (!strcmp(key, "pedal.drawbar113")) {PGM->pedalDrawbars[7] = (127-val)*8/127; PGM->flags[0] |= FL_PDLDRW;}
+  else if (!strcmp(key, "pedal.drawbar1"))   {PGM->pedalDrawbars[8] = (127-val)*8/127; PGM->flags[0] |= FL_PDLDRW;}
+
+  else if (!strcmp(key, "percussion.enable"   )) {PGM->percussionEnabled = val > 63 ? TRUE : FALSE; PGM->flags[0] |= FL_PRCENA;}
+  else if (!strcmp(key, "percussion.volume"   )) {PGM->percussionVolume = val/127.0; PGM->flags[0] |= FL_PRCVOL;}
+  else if (!strcmp(key, "percussion.decay"    )) {PGM->percussionSpeed = val > 63 ? TRUE : FALSE; PGM->flags[0] |= FL_PRCSPD;}
+  else if (!strcmp(key, "percussion.harmonic" )) {PGM->percussionHarmonic = val > 63 ? TRUE : FALSE; PGM->flags[0] |= FL_PRCHRM;}
+  else if (!strcmp(key, "overdrive.enable"    )) {PGM->overdriveSelect = val > 63 ? FALSE : TRUE; PGM->flags[0] |= FL_OVRSEL;}
+  else if (!strcmp(key, "reverb.mix"          )) {PGM->reverbMix = val/127.0; PGM->flags[0] |= FL_RVBMIX;}
+  else if (!strcmp(key, "rotary.speed-select" )) {
+    const int hr = (val / 45) % 3; // horn 0:off, 1:chorale  2:tremolo
+    //const int bf = (val / 15) % 3; // drum 0:off, 1:chorale  2:tremolo
+    if (hr == 0) PGM->rotarySpeedSelect = WHIRL_STOP;
+    if (hr == 1) PGM->rotarySpeedSelect = WHIRL_SLOW;
+    if (hr == 2) PGM->rotarySpeedSelect = WHIRL_FAST;
+    PGM->flags[0] |= FL_ROTSPS;
+  }
+  else if (!strcmp(key, "vibrato.routing"     )) {
+    PGM->scanner |= ((val>>5) & 1 ) ?  0x100 : 0; //lower
+    PGM->scanner |= ((val>>5) & 2 ) ?  0x200 : 0; //upper
+    PGM->flags[0] |= FL_VCRUPR | FL_VCRLWR;}
+  else if (!strcmp(key, "vibrato.knob"        )) {
+    int u = val / 23;
+    printf("U= %d  / 23 -> %d\n", val, u);
+    if (u&1) {
+      PGM->scanner |= CHO_;
+      PGM->scanner |= (u>>1) + 1;
+    } else {
+      PGM->scanner |= (u>>1) + 1;
+    }
+
+    PGM->flags[0] |= FL_SCANNR;}
+}
+
+#include "state.h"
+int saveProgramm(void *instance, int p, char *name, int flagmask) {
+  b_instance * inst = (b_instance*) instance;
+  p += inst->progs->MIDIControllerPgmOffset;
+  if ((p < 0) || (p >= MAXPROGS) || !name) {
+    return -1;
+  }
+  printf("SAVE STATE\n");
+  Programme * PGM = &(inst->progs->programmes[p]);
+  memset(PGM, 0, sizeof(Programme));
+  strcat(PGM->name, name);
+  rc_loop_state(inst->state, save_pgm_state_cb, PGM);
+  PGM->flags[0] &= ~flagmask;
+  PGM->flags[0] = FL_INUSE;
+#if 0
+  char tmp[256];
+  formatProgram(PGM, tmp, 256);
+  printf("SAVED STATE: %s\n", tmp);
+#endif
+  return 0;
 }
 
 struct b_programme *allocProgs() {
