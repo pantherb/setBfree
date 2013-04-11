@@ -1428,6 +1428,7 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   ui->height      = 320;
   ui->dndid       = -1;
   ui->initialized = 0;
+  ui->textentry_active = 0;
 
   ui->rot[0]     = -20;
   ui->rot[1]     = -20;
