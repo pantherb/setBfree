@@ -1145,6 +1145,76 @@ int saveProgramm(void *instance, int p, char *name, int flagmask) {
   return 0;
 }
 
+void exportProgramms(struct b_programme *pgm, FILE * fp) {
+  int i;
+  char tmp[24];
+  for (i=0 ; i < 128; ++i) {
+    int pgmNr = i + pgm->MIDIControllerPgmOffset;
+    if (!pgm->programmes[pgmNr].flags[0] & FL_INUSE) {
+      continue;
+    }
+    fprintf(fp, "%d {\n    name=\"%s\"\n",  i + pgm->MIDIControllerPgmOffset, pgm->programmes[pgmNr].name);
+    Programme *p = &pgm->programmes[pgmNr];
+
+    if ((p->flags[0] & FL_DRAWBR) && !(p->flags[0] & FL_DRWRND)) {
+      format_drawbars(p->drawbars, tmp);
+      fprintf(fp, "    , drawbarsupper=\"%s\"\n", tmp);
+    }
+    if ((p->flags[0] & FL_LOWDRW) && !(p->flags[0] & FL_DRWRND)) {
+      format_drawbars(p->lowerDrawbars, tmp);
+      fprintf(fp, "    , drawbarslower=\"%s\"\n", tmp);
+    }
+    if ((p->flags[0] & FL_PDLDRW) && !(p->flags[0] & FL_DRWRND)) {
+      format_drawbars(p->pedalDrawbars, tmp);
+      fprintf(fp, "    , drawbarspedals=\"%s\"\n", tmp);
+    }
+    if (p->flags[0] & FL_SCANNR) {
+      int knob = ((p->scanner & 0xf) << 1) - ((p->scanner & CHO_) ? 1 : 2);
+      fprintf(fp, "    , vibrato=");
+      switch (knob) {
+	case 0: fprintf(fp, "v1\n"); break;
+	case 1: fprintf(fp, "c1\n"); break;
+	case 2: fprintf(fp, "v2\n"); break;
+	case 3: fprintf(fp, "c2\n"); break;
+	case 4: fprintf(fp, "v3\n"); break;
+	case 5: fprintf(fp, "c3\n"); break;
+	default: fprintf(fp, "\n"); break;  // XXX
+      }
+    }
+    if (p->flags[0] & FL_VCRUPR) { fprintf(fp, "    , vibratoupper=%s\n", (p->scanner&0x200) ? "on" : "off"); }
+    if (p->flags[0] & FL_VCRLWR) { fprintf(fp, "    , vibratolower=%s\n", (p->scanner&0x100) ? "on" : "off"); }
+    if (p->flags[0] & FL_PRCENA) { fprintf(fp, "    , perc=%s\n", p->percussionEnabled ? "on" : "off"); }
+    if (p->flags[0] & FL_PRCVOL) { fprintf(fp, "    , percvol=%s\n", p->percussionVolume ? "soft" : "normal"); }
+    if (p->flags[0] & FL_PRCSPD) { fprintf(fp, "    , percspeed=%s\n", p->percussionSpeed ? "fast" : "slow"); }
+    if (p->flags[0] & FL_PRCHRM) { fprintf(fp, "    , percharm=%s\n", p->percussionHarmonic ? "2nd" : "3rd"); }
+    if (p->flags[0] & FL_OVRSEL) { fprintf(fp, "    , overdrive=%s\n", p->overdriveSelect ? "off" : "on"); }
+    if (p->flags[0] & FL_RVBMIX) { fprintf(fp, "    , reverbmix=%f\n", p->reverbMix); }
+    if (p->flags[0] & FL_ROTSPS) {
+      fprintf(fp, "    , rotaryspeed=");
+      switch(p->rotarySpeedSelect) {
+	case WHIRL_FAST: fprintf(fp , "fast\n"); break;
+	case WHIRL_SLOW: fprintf(fp , "slow\n"); break;
+	case WHIRL_STOP: fprintf(fp , "stop\n"); break;
+	default: fprintf(fp, "\n"); break;  // XXX
+      }
+    }
+
+    if (p->flags[0] & FL_KSPLTL) { fprintf(fp, "    , keysplitlower=%d\n", p->keyboardSplitLower); }
+    if (p->flags[0] & FL_KSPLTP) { fprintf(fp, "    , keysplitpedals=%d\n", p->keyboardSplitPedals); }
+
+    if (p->flags[0] & FL_TRANSP) { fprintf(fp, "    , transpose=%d\n", p->transpose[TR_TRANSP]); }
+    if (p->flags[0] & FL_TRCH_A) { fprintf(fp, "    , transposeupper=%d\n", p->transpose[TR_CHNL_A]); }
+    if (p->flags[0] & FL_TRCH_B) { fprintf(fp, "    , transposelower=%d\n", p->transpose[TR_CHNL_B]); }
+    if (p->flags[0] & FL_TRCH_C) { fprintf(fp, "    , transposepedals=%d\n", p->transpose[TR_CHNL_C]); }
+
+    if (p->flags[0] & FL_TRA_PD) { fprintf(fp, "    , trssplitpedals=%d\n", p->transpose[TR_CHA_PD]); }
+    if (p->flags[0] & FL_TRA_LM) { fprintf(fp, "    , trssplitlower=%d\n", p->transpose[TR_CHA_LM]); }
+    if (p->flags[0] & FL_TRA_UM) { fprintf(fp, "    , trssplitupper=%d\n", p->transpose[TR_CHA_UM]); }
+
+    fprintf(fp, "   }\n");
+  }
+}
+
 struct b_programme *allocProgs() {
   struct b_programme *p = (struct b_programme*) calloc(1, sizeof(struct b_programme));
   if (!p) return NULL;
