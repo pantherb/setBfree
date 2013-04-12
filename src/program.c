@@ -1114,7 +1114,6 @@ static void save_pgm_state_cb(int fnid, const char *key, const char *kv, unsigne
     PGM->flags[0] |= FL_VCRUPR | FL_VCRLWR;}
   else if (!strcmp(key, "vibrato.knob"        )) {
     int u = val / 23;
-    printf("U= %d  / 23 -> %d\n", val, u);
     if (u&1) {
       PGM->scanner |= CHO_;
       PGM->scanner |= (u>>1) + 1;
@@ -1132,13 +1131,12 @@ int saveProgramm(void *instance, int p, char *name, int flagmask) {
   if ((p < 0) || (p >= MAXPROGS) || !name) {
     return -1;
   }
-  printf("SAVE STATE\n");
   Programme * PGM = &(inst->progs->programmes[p]);
   memset(PGM, 0, sizeof(Programme));
   strcat(PGM->name, name);
   rc_loop_state(inst->state, save_pgm_state_cb, PGM);
   PGM->flags[0] &= ~flagmask;
-  PGM->flags[0] = FL_INUSE;
+  PGM->flags[0] |= FL_INUSE;
 #if 0
   char tmp[256];
   formatProgram(PGM, tmp, 256);
