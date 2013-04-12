@@ -145,6 +145,7 @@ typedef struct {
 
   int textentry_active;
   char textentry_text[1024];
+  char textentry_title[128];
 
   /* interactive control objexts */
   b3widget ctrls[TOTAL_OBJ];
@@ -771,7 +772,7 @@ render_text(PuglView* view, const char *text, float x, float y, float z, int ali
  * openGL text entry
  */
 
-static int txtentry_start(PuglView* view, char *defaulttext) {
+static int txtentry_start(PuglView* view, const char *title, char *defaulttext) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   if (ui->textentry_active) return -1;
 
@@ -780,10 +781,29 @@ static int txtentry_start(PuglView* view, char *defaulttext) {
   } else {
     strncpy(ui->textentry_text, defaulttext, 1024);
   }
+  sprintf(ui->textentry_title, "%s", title);
   ui->textentry_active = 1;
   onReshape(view, ui->width, ui->height);
   puglPostRedisplay(view);
   return 0;
+}
+
+static void txtentry_end(PuglView* view, const char *txt) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  if (!txt || strlen(txt) ==0) return;
+  switch(ui->displaymode) {
+    case 3:
+      if (ui->pgm_sel > 0) {
+	forge_message_kv(ui, ui->uris.sb3_midisavepgm, ui->pgm_sel, txt);
+      }
+      ui->displaymode = 0;
+      break;
+    default:
+      printf("unhandled text entry (mode:%d)\n", ui->displaymode);
+      ui->displaymode = 0;
+      break;
+  }
+  onReshape(view, ui->width, ui->height);
 }
 
 static void txtentry_handle(PuglView* view, uint32_t key) {
@@ -795,11 +815,13 @@ static void txtentry_handle(PuglView* view, uint32_t key) {
       break;
     case 27:
       pos = 0;
+      ui->textentry_text[pos] = '\0';
       // fall through
     case 10:
     case 13:
       ui->textentry_active = 0;
       onReshape(view, ui->width, ui->height);
+      txtentry_end(view, ui->textentry_text);
       break;
     default:
       ui->textentry_text[pos++] = (char) key;
@@ -814,21 +836,57 @@ static void txtentry_render(PuglView* view) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
 
   const GLfloat mat_b[] = {0.0, 0.0, 0.0, 1.0};
-  const GLfloat mat_r[] = {0.1, 0.9, 0.15, 1.0};
+  const GLfloat mat_w[] = {1.0, 1.0, 1.0, 1.0};
+  const GLfloat mat_g[] = {0.1, 0.9, 0.15, 1.0};
+  const GLfloat mat_x[] = {0.1, 0.1, 0.15, 1.0};
 
+#if 1
   glPushMatrix();
   glLoadIdentity();
+  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_x);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_x);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_x);
+  glBegin(GL_QUADS);
+  glVertex3f(-1.0,   0, 0);
+  glVertex3f(-1.0,  .08, 0);
+  glVertex3f( 1.0,  .08, 0);
+  glVertex3f( 1.0,   0, 0);
+  glEnd();
+  glPopMatrix();
+#endif
+
+  glPushMatrix();
 
   glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_b);
   glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_b);
-  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_r);
-
+  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_g);
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
+
+  glLoadIdentity();
   glScalef(0.001,0.001,1.00);
   glRotatef(180, 1, 0, 0);
-  //glTranslatef(x * (1000.0*SCALE) , -y * (1000.0*SCALE), z * SCALE);
+  float bb[6];
+  ftglGetFontBBox(ui->font_big, ui->textentry_text, -1, bb);
+
+
+
+  glTranslatef((bb[3] - bb[0])/-2.0, -1.5 * (1000.0*SCALE), 0);
   ftglRenderFont(ui->font_big, ui->textentry_text, FTGL_RENDER_ALL);
+
+  glTranslatef((bb[3] - bb[0]), 0, 0);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_w);
+  ftglRenderFont(ui->font_big, "|", FTGL_RENDER_ALL);
+
+  glLoadIdentity();
+  glScalef(0.001,0.001,1.00);
+  glRotatef(180, 1, 0, 0);
+  ftglGetFontBBox(ui->font_big, ui->textentry_title, -1, bb);
+  glTranslatef((bb[3] - bb[0])/-2.0, (bb[4] - bb[1])/-2.0, 0);
+  glTranslatef(0, 4.5 * (1000.0*SCALE), 0);
+  ftglRenderFont(ui->font_big, ui->textentry_title, FTGL_RENDER_ALL);
+
   glPopMatrix();
+
 }
 
 /**
@@ -897,13 +955,28 @@ onDisplay(PuglView* view)
     glEnd();
     glDisable(GL_TEXTURE_2D);
     return;
-  } else if (ui->displaymode == 2) {
+  } else if (ui->displaymode == 2 || ui->displaymode == 3) {
     /* midi program list */
     int i;
     const float invaspect = (float) ui->height / (float) ui->width;
     const float w = 1.0/2.8 * 22.0/25.0;
     const float h = invaspect * 2.0/24.0 * 22.0/25.0;
 
+    glPushMatrix();
+    glLoadIdentity();
+    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_drawbar_white);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
+    glScalef(0.001,0.001,1.00);
+    glTranslatef(16.5 * (1000.0*SCALE) , 7.25 * (1000.0*SCALE), 0);
+    //glRotatef(-90, 0, 0, 1);
+    glRotatef(180, 1, 0, 0);
+    if (ui->displaymode == 2) {
+      ftglRenderFont(ui->font_big, "load", FTGL_RENDER_ALL);
+    } else {
+      ftglRenderFont(ui->font_big, "save", FTGL_RENDER_ALL);
+    }
+    glPopMatrix();
+#if 1
     for (i=0; i < 128; i++) {
       char txt[40];
       sprintf(txt, "p%3d: %s", i+1, ui->midipgm[i]);
@@ -915,7 +988,10 @@ onDisplay(PuglView* view)
       const float by = y * 22.0/25.0;
 
       GLfloat mat_x[] = {0.1, 0.1, 0.1, 1.0};
-      if (i == ui->pgm_sel) mat_x[2] = .6;
+      if (i == ui->pgm_sel) {
+	if (ui->displaymode == 2) mat_x[2] = .6;
+	else mat_x[0] = .6;
+      }
       else if (i%2) {
 	mat_x[0] = .125;
 	mat_x[1] = .125;
@@ -949,6 +1025,7 @@ onDisplay(PuglView* view)
 	t0=t1+1;
       }
     }
+#endif
     return;
   }
 
@@ -1233,15 +1310,17 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       queue_reshape = 1;
       ui->dndid = -1;
       break;
-#if 0
-    case 't':
-      txtentry_start(view,"test");
+    case 'P':
+      if (ui->displaymode == 0) ui->displaymode = 3;
+      else if (ui->displaymode == 3) ui->displaymode = 0;
       queue_reshape = 1;
+      ui->dndid = -1;
       break;
-    case 'y':
-      forge_message_kv(ui, ui->uris.sb3_midisavepgm, 10, "user 1");
+    case 27: // ESC
+      ui->displaymode = 0;
+      queue_reshape = 1;
+      ui->dndid = -1;
       break;
-#endif
     case 'm':
       if (ui->show_mm) {
 	ui->show_mm = 0;
@@ -1271,6 +1350,7 @@ onScroll(PuglView* view, int x, int y, float dx, float dy)
   B3ui* ui = (B3ui*)puglGetHandle(view);
   float fx, fy;
   if (ui->displaymode) return;
+  if (ui->textentry_active) return;
   project_mouse(view, x, y, &fx, &fy);
   int i;
   for (i = 0; i < TOTAL_OBJ ; ++i) {
@@ -1287,7 +1367,9 @@ onMotion(PuglView* view, int x, int y)
   B3ui* ui = (B3ui*)puglGetHandle(view);
   float fx, fy;
 
-  if (ui->displaymode == 2) {
+  if (ui->textentry_active) return;
+
+  if (ui->displaymode == 2 || ui->displaymode == 3) {
     int pgm_sel = ui->pgm_sel;
     fx = (2.0 * x / ui->width ) - 1.0;
     fy = (2.0 * y / ui->height ) - 1.0;
@@ -1335,9 +1417,22 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     return;
   }
 
+  if (ui->textentry_active) return;
+
   if (ui->displaymode == 2) {
     ui->displaymode = 0;
     forge_message_int(ui, ui->uris.sb3_midipgm, ui->pgm_sel);
+    onReshape(view, ui->width, ui->height);
+    puglPostRedisplay(view);
+    return;
+  }
+
+  if (ui->displaymode == 3) {
+    if (ui->pgm_sel >= 0) {
+      txtentry_start(view,"Enter Preset Name:", strlen(ui->midipgm[ui->pgm_sel]) > 0 ? ui->midipgm[ui->pgm_sel] : "User" );
+    } else {
+      ui->displaymode = 0;
+    }
     onReshape(view, ui->width, ui->height);
     puglPostRedisplay(view);
     return;
@@ -1440,7 +1535,7 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   int i;
 
   ui->displaymode = 0;
-  ui->pgm_sel     = 0;
+  ui->pgm_sel     = -1;
   ui->show_mm     = 0;
   ui->uiccbind    = -1;
   ui->width       = 960;
