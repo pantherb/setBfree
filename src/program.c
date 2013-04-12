@@ -1064,35 +1064,35 @@ int formatProgram(Programme *p, char *out, int maxlen) {
 
 static void save_pgm_state_cb(int fnid, const char *key, const char *kv, unsigned char val, void *arg) {
   Programme * PGM = (Programme*) arg;
-  if      (!strcmp(key, "upper.drawbar16"))  {PGM->drawbars[0] = 8-val/14; PGM->flags[0] |= FL_DRAWBR;}
-  else if (!strcmp(key, "upper.drawbar513")) {PGM->drawbars[1] = (127-val)*8/127; PGM->flags[0] |= FL_DRAWBR;}
-  else if (!strcmp(key, "upper.drawbar8"))   {PGM->drawbars[2] = (127-val)*8/127; PGM->flags[0] |= FL_DRAWBR;}
-  else if (!strcmp(key, "upper.drawbar4"))   {PGM->drawbars[3] = (127-val)*8/127; PGM->flags[0] |= FL_DRAWBR;}
-  else if (!strcmp(key, "upper.drawbar223")) {PGM->drawbars[4] = (127-val)*8/127; PGM->flags[0] |= FL_DRAWBR;}
-  else if (!strcmp(key, "upper.drawbar2"))   {PGM->drawbars[5] = (127-val)*8/127; PGM->flags[0] |= FL_DRAWBR;}
-  else if (!strcmp(key, "upper.drawbar135")) {PGM->drawbars[6] = (127-val)*8/127; PGM->flags[0] |= FL_DRAWBR;}
-  else if (!strcmp(key, "upper.drawbar113")) {PGM->drawbars[7] = (127-val)*8/127; PGM->flags[0] |= FL_DRAWBR;}
-  else if (!strcmp(key, "upper.drawbar1"))   {PGM->drawbars[8] = (127-val)*8/127; PGM->flags[0] |= FL_DRAWBR;}
+  if      (!strcmp(key, "upper.drawbar16"))  {PGM->drawbars[0] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_DRAWBR;}
+  else if (!strcmp(key, "upper.drawbar513")) {PGM->drawbars[1] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_DRAWBR;}
+  else if (!strcmp(key, "upper.drawbar8"))   {PGM->drawbars[2] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_DRAWBR;}
+  else if (!strcmp(key, "upper.drawbar4"))   {PGM->drawbars[3] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_DRAWBR;}
+  else if (!strcmp(key, "upper.drawbar223")) {PGM->drawbars[4] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_DRAWBR;}
+  else if (!strcmp(key, "upper.drawbar2"))   {PGM->drawbars[5] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_DRAWBR;}
+  else if (!strcmp(key, "upper.drawbar135")) {PGM->drawbars[6] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_DRAWBR;}
+  else if (!strcmp(key, "upper.drawbar113")) {PGM->drawbars[7] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_DRAWBR;}
+  else if (!strcmp(key, "upper.drawbar1"))   {PGM->drawbars[8] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_DRAWBR;}
 
-  else if (!strcmp(key, "lower.drawbar16"))  {PGM->lowerDrawbars[0] = (127-val)*8/127; PGM->flags[0] |= FL_LOWDRW;}
-  else if (!strcmp(key, "lower.drawbar513")) {PGM->lowerDrawbars[1] = (127-val)*8/127; PGM->flags[0] |= FL_LOWDRW;}
-  else if (!strcmp(key, "lower.drawbar8"))   {PGM->lowerDrawbars[2] = (127-val)*8/127; PGM->flags[0] |= FL_LOWDRW;}
-  else if (!strcmp(key, "lower.drawbar4"))   {PGM->lowerDrawbars[3] = (127-val)*8/127; PGM->flags[0] |= FL_LOWDRW;}
-  else if (!strcmp(key, "lower.drawbar223")) {PGM->lowerDrawbars[4] = (127-val)*8/127; PGM->flags[0] |= FL_LOWDRW;}
-  else if (!strcmp(key, "lower.drawbar2"))   {PGM->lowerDrawbars[5] = (127-val)*8/127; PGM->flags[0] |= FL_LOWDRW;}
-  else if (!strcmp(key, "lower.drawbar135")) {PGM->lowerDrawbars[6] = (127-val)*8/127; PGM->flags[0] |= FL_LOWDRW;}
-  else if (!strcmp(key, "lower.drawbar113")) {PGM->lowerDrawbars[7] = (127-val)*8/127; PGM->flags[0] |= FL_LOWDRW;}
-  else if (!strcmp(key, "lower.drawbar1"))   {PGM->lowerDrawbars[8] = (127-val)*8/127; PGM->flags[0] |= FL_LOWDRW;}
+  else if (!strcmp(key, "lower.drawbar16"))  {PGM->lowerDrawbars[0] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_LOWDRW;}
+  else if (!strcmp(key, "lower.drawbar513")) {PGM->lowerDrawbars[1] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_LOWDRW;}
+  else if (!strcmp(key, "lower.drawbar8"))   {PGM->lowerDrawbars[2] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_LOWDRW;}
+  else if (!strcmp(key, "lower.drawbar4"))   {PGM->lowerDrawbars[3] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_LOWDRW;}
+  else if (!strcmp(key, "lower.drawbar223")) {PGM->lowerDrawbars[4] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_LOWDRW;}
+  else if (!strcmp(key, "lower.drawbar2"))   {PGM->lowerDrawbars[5] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_LOWDRW;}
+  else if (!strcmp(key, "lower.drawbar135")) {PGM->lowerDrawbars[6] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_LOWDRW;}
+  else if (!strcmp(key, "lower.drawbar113")) {PGM->lowerDrawbars[7] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_LOWDRW;}
+  else if (!strcmp(key, "lower.drawbar1"))   {PGM->lowerDrawbars[8] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_LOWDRW;}
 
-  else if (!strcmp(key, "pedal.drawbar16"))  {PGM->pedalDrawbars[0] = (127-val)*8/127; PGM->flags[0] |= FL_PDLDRW;}
-  else if (!strcmp(key, "pedal.drawbar513")) {PGM->pedalDrawbars[1] = (127-val)*8/127; PGM->flags[0] |= FL_PDLDRW;}
-  else if (!strcmp(key, "pedal.drawbar8"))   {PGM->pedalDrawbars[2] = (127-val)*8/127; PGM->flags[0] |= FL_PDLDRW;}
-  else if (!strcmp(key, "pedal.drawbar4"))   {PGM->pedalDrawbars[3] = (127-val)*8/127; PGM->flags[0] |= FL_PDLDRW;}
-  else if (!strcmp(key, "pedal.drawbar223")) {PGM->pedalDrawbars[4] = (127-val)*8/127; PGM->flags[0] |= FL_PDLDRW;}
-  else if (!strcmp(key, "pedal.drawbar2"))   {PGM->pedalDrawbars[5] = (127-val)*8/127; PGM->flags[0] |= FL_PDLDRW;}
-  else if (!strcmp(key, "pedal.drawbar135")) {PGM->pedalDrawbars[6] = (127-val)*8/127; PGM->flags[0] |= FL_PDLDRW;}
-  else if (!strcmp(key, "pedal.drawbar113")) {PGM->pedalDrawbars[7] = (127-val)*8/127; PGM->flags[0] |= FL_PDLDRW;}
-  else if (!strcmp(key, "pedal.drawbar1"))   {PGM->pedalDrawbars[8] = (127-val)*8/127; PGM->flags[0] |= FL_PDLDRW;}
+  else if (!strcmp(key, "pedal.drawbar16"))  {PGM->pedalDrawbars[0] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_PDLDRW;}
+  else if (!strcmp(key, "pedal.drawbar513")) {PGM->pedalDrawbars[1] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_PDLDRW;}
+  else if (!strcmp(key, "pedal.drawbar8"))   {PGM->pedalDrawbars[2] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_PDLDRW;}
+  else if (!strcmp(key, "pedal.drawbar4"))   {PGM->pedalDrawbars[3] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_PDLDRW;}
+  else if (!strcmp(key, "pedal.drawbar223")) {PGM->pedalDrawbars[4] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_PDLDRW;}
+  else if (!strcmp(key, "pedal.drawbar2"))   {PGM->pedalDrawbars[5] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_PDLDRW;}
+  else if (!strcmp(key, "pedal.drawbar135")) {PGM->pedalDrawbars[6] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_PDLDRW;}
+  else if (!strcmp(key, "pedal.drawbar113")) {PGM->pedalDrawbars[7] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_PDLDRW;}
+  else if (!strcmp(key, "pedal.drawbar1"))   {PGM->pedalDrawbars[8] = rint((127-val)*8.0/127.0); PGM->flags[0] |= FL_PDLDRW;}
 
   else if (!strcmp(key, "percussion.enable"   )) {PGM->percussionEnabled = val > 63 ? TRUE : FALSE; PGM->flags[0] |= FL_PRCENA;}
   else if (!strcmp(key, "percussion.volume"   )) {PGM->percussionVolume = val/127.0; PGM->flags[0] |= FL_PRCVOL;}

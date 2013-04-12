@@ -2784,7 +2784,8 @@ void setDrawBars (void *inst, unsigned int manual, unsigned int setting []) {
  */
 
 static void setMIDIDrawBar (struct b_tonegen *t, int bus, unsigned char v) {
-  setDrawBar (t, bus, (8 * ((unsigned int) (127 - v))) / 127);
+  int val = 127 - v;
+  setDrawBar (t, bus, rint(val * 8.0 / 127.0));
 }
 
 static void setDrawbar0 (void *d, unsigned char v) { setMIDIDrawBar ((struct b_tonegen*)d, 0, v);}
