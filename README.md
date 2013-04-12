@@ -152,6 +152,7 @@ Install the dependencies and simply call `make` followed by `sudo make install`.
 *   tcl-dev, tk-dev - optional, recommended - http://tcl.sf.net/ - virtual Keyboard GUI
 *   libasound2-dev - optional, recommended - ALSA MIDI
 *   lv2-dev - optional, recommended - build effects as LV2 plugins
+*   libftgl-dev, libglu1-mesa-dev, ttf-bitstream-vera - optional, recommended for the LV2 GUI
 *   libzita-convolver-dev - optional - IR leslie cabinet-emulation
 *   libsndfile1-dev - optional - needed to load IR samples for zita-convolver
 *   liblo-dev - optional - http://opensoundcontrol.org/ - used only in standalone preamp/overdrive app.
