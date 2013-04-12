@@ -206,6 +206,22 @@ static void notifyPlugin(PuglView* view, int elem) {
     ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
 }
 
+static void forge_message_kv(B3ui* ui, LV2_URID uri, int key, const char *val) {
+  uint8_t obj_buf[256];
+  if (!val || strlen(val) > 32) { return; }
+
+  lv2_atom_forge_set_buffer(&ui->forge, obj_buf, 64);
+
+  LV2_Atom_Forge_Frame set_frame;
+  LV2_Atom* msg = (LV2_Atom*)lv2_atom_forge_blank(&ui->forge, &set_frame, 1, uri);
+  lv2_atom_forge_property_head(&ui->forge, ui->uris.sb3_cckey, 0);
+  lv2_atom_forge_int(&ui->forge, key);
+  lv2_atom_forge_property_head(&ui->forge, ui->uris.sb3_ccval, 0);
+  lv2_atom_forge_string(&ui->forge, val, strlen(val));
+  lv2_atom_forge_pop(&ui->forge, &set_frame);
+  ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
+}
+
 static void forge_message_str(B3ui* ui, LV2_URID uri, const char *key) {
   uint8_t obj_buf[64];
   lv2_atom_forge_set_buffer(&ui->forge, obj_buf, 64);
@@ -1221,6 +1237,9 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
     case 't':
       txtentry_start(view,"test");
       queue_reshape = 1;
+      break;
+    case 'y':
+      forge_message_kv(ui, ui->uris.sb3_midisavepgm, 10, "user 1");
       break;
 #endif
     case 'm':

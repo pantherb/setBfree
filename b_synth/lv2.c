@@ -577,6 +577,14 @@ run(LV2_Handle instance, uint32_t n_samples)
 	  if (key) {
 	    installProgram(b3s->inst, ((LV2_Atom_Int*)key)->body);
 	  }
+	} else if (obj->body.otype == b3s->uris.sb3_midisavepgm) {
+	  const LV2_Atom* pgm = NULL;
+	  const LV2_Atom* name = NULL;
+	  lv2_atom_object_get(obj, b3s->uris.sb3_cckey, &pgm, b3s->uris.sb3_ccval, &name, 0);
+	  if (pgm && name) {
+	    saveProgramm(b3s->inst, (int) ((LV2_Atom_Int*)pgm)->body, (char*) LV2_ATOM_BODY(name), 0);
+	    b3s->update_pgm_now = 1;
+	  }
 	} else if (obj->body.otype == b3s->uris.sb3_control) {
 	  b3s->suspend_ui_msg = 1;
 	  const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;

@@ -35,6 +35,7 @@
 #define SB3__uimccq  SB3_URI "#uimccquery"
 #define SB3__uimccs  SB3_URI "#uimccset"
 #define SB3__midipgm SB3_URI "#midipgm"
+#define SB3__savepgm SB3_URI "#midisave"
 #define SB3__control SB3_URI "#controlmsg"
 #define SB3__cckey   SB3_URI "#controlkey"
 #define SB3__ccval   SB3_URI "#controlval"
@@ -53,6 +54,7 @@ typedef struct {
 	LV2_URID sb3_uimccquery;
 	LV2_URID sb3_uimccset;
 	LV2_URID sb3_midipgm;
+	LV2_URID sb3_midisavepgm;
 	LV2_URID sb3_control;
 	LV2_URID sb3_cckey;
 	LV2_URID sb3_ccdsc;
@@ -76,6 +78,7 @@ map_setbfree_uris(LV2_URID_Map* map, setBfreeURIs* uris)
 	uris->sb3_uimccquery     = map->map(map->handle, SB3__uimccq);
 	uris->sb3_uimccset       = map->map(map->handle, SB3__uimccs);
 	uris->sb3_midipgm        = map->map(map->handle, SB3__midipgm);
+	uris->sb3_midisavepgm    = map->map(map->handle, SB3__savepgm);
 	uris->sb3_control        = map->map(map->handle, SB3__control);
 	uris->sb3_cckey          = map->map(map->handle, SB3__cckey);
 	uris->sb3_ccval          = map->map(map->handle, SB3__ccval);
