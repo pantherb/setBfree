@@ -1,7 +1,14 @@
 ---
-page_extension: .html
+menuitems:
+  - title: About
+    link: /
+  - title: Samples &amp; Screenshots
+    link: samples.html
+  - title: Tutorial
+    link: tutorial.html
+  - title: Documentation
+    link: doc.html
 ---
-
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -10,8 +17,23 @@ page_extension: .html
   {% if page.meta_keywords %}<meta name="keywords" content="{{ page.meta_keywords }}" />{% endif %}
 	{% if page.meta_description %}<meta name="description" content="{{ page.meta_description }}" />{% endif %}
 	<link rel="shortcut icon" href="favicon.ico" />
+	<link href="/css/layout.css" rel="stylesheet">
+	<link href="/css/design.css" rel="stylesheet">
 </head>
-	<body style="width:900px; margin:1em auto 0 auto;">
+<body>
+	<div id="header">
+		<img src="images/setBfree.png" alt="setBfree banner"/>
+	</div>
+	<div id="navigation">
+		<ul>
+			{% for item in page.menuitems %}
+			{% if page.title == item.title %}<li class ="active">{{ item.title }}{% else %}<li><a href="{{ item.link }}">{{ item.title }}</a>{% endif %}</li>
+			{% endfor %}
+		</ul>
+		<div class="clearer"></div>
+	</div>
+	<div id="container"><div id="content">
 {{ content }}
+	</div></div>
 	</body>
 </html>

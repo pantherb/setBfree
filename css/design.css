@@ -1,0 +1,27 @@
+body {
+	background: black;
+	color: white
+}
+
+#navigation li.active, #navigation li.active:hover {
+	background:#a06000;
+	cursor:default;
+}
+
+#navigation li:hover {
+	background:#d0c000;
+}
+
+#navigation a {
+	text-decoration:none;
+	color: white;
+}
+
+#container {
+	background:white;
+}
+
+#content {
+	background:white;
+	color:black;
+}
