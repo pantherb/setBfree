@@ -893,7 +893,7 @@ static void txtentry_end(PuglView* view, const char *txt) {
   if (!txt || strlen(txt) ==0) return;
   switch(ui->displaymode) {
     case 3:
-      if (ui->pgm_sel > 0) {
+      if (ui->pgm_sel >= 0) {
 	forge_message_kv(ui, ui->uris.sb3_midisavepgm, ui->pgm_sel, txt);
       }
       ui->displaymode = 0;
