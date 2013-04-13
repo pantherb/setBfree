@@ -976,7 +976,7 @@ onDisplay(PuglView* view)
       ftglRenderFont(ui->font_big, "save", FTGL_RENDER_ALL);
     }
     glPopMatrix();
-#if 1
+
     for (i=0; i < 128; i++) {
       char txt[40];
       sprintf(txt, "p%3d: %s", i+1, ui->midipgm[i]);
@@ -1025,7 +1025,6 @@ onDisplay(PuglView* view)
 	t0=t1+1;
       }
     }
-#endif
     return;
   }
 
