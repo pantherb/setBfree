@@ -124,6 +124,7 @@ extern void loopProgammes (struct b_programme *p, int all, void (*cb)(int, int, 
 extern int formatProgram(Programme *p, char *out, int maxlen);
 extern int saveProgramm(void *inst, int pgm, char *name, int flagmask);
 extern void exportProgramms(struct b_programme *p, FILE * fp);
+extern void writeProgramm(int pgmNr, Programme *p, const char *sep, FILE * fp);
 
 extern struct b_programme *allocProgs ();
 extern void freeProgs (struct b_programme *p);
