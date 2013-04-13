@@ -17,8 +17,8 @@ menuitems:
   {% if page.meta_keywords %}<meta name="keywords" content="{{ page.meta_keywords }}" />{% endif %}
 	{% if page.meta_description %}<meta name="description" content="{{ page.meta_description }}" />{% endif %}
 	<link rel="shortcut icon" href="favicon.ico" />
-	<link href="/css/layout.css" rel="stylesheet">
-	<link href="/css/design.css" rel="stylesheet">
+	<link href="{{ site.url }}css/layout.css" rel="stylesheet">
+	<link href="{{ site.url }}css/design.css" rel="stylesheet">
 </head>
 <body>
 	<div id="header">
@@ -27,7 +27,7 @@ menuitems:
 	<div id="navigation">
 		<ul>
 			{% for item in page.menuitems %}
-			{% if page.title == item.title %}<li class ="active">{{ item.title }}{% else %}<li><a href="{{ item.link }}">{{ item.title }}</a>{% endif %}</li>
+			{% if page.title == item.title %}<li class ="active">{{ item.title }}{% else %}<li><a href="{{ site.url }}{{ item.link }}">{{ item.title }}</a>{% endif %}</li>
 			{% endfor %}
 		</ul>
 		<div class="clearer"></div>
