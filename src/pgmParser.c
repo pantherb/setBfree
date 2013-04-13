@@ -346,4 +346,21 @@ int loadProgrammeFile (void *p, char * fileName) {
     return (int) P_ERROR;
   }
 }
+
+int loadProgrammeString (void *p, char * pdef) {
+  ParserState ps;
+  ps.p = p;
+  if ((ps.fp = fmemopen (pdef, strlen(pdef), "r")) != NULL) {
+    int rtn;
+    ps.fileName = "<string-pipe>";
+    ps.lineNumber = 0;
+    getNextToken (&ps);
+    rtn = (int) parseProgramDefinitionList (&ps);
+    fclose (ps.fp);
+    return rtn;
+  }
+  else {
+    return (int) P_ERROR;
+  }
+}
 /* vi:set ts=8 sts=2 sw=2: */

@@ -24,5 +24,6 @@
 #define PGMPARSER_H
 
 extern int loadProgrammeFile (void *p, char * fileName);
+extern int loadProgrammeString (void *p, char * pdef);
 
 #endif /* PGMPARSER_H */
