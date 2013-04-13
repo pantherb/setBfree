@@ -29,7 +29,6 @@
 
 #define SB3_URI "http://gareus.org/oss/lv2/b_synth"
 
-#define SB3__load    SB3_URI "#load"
 #define SB3__state   SB3_URI "#state"
 #define SB3__uiinit  SB3_URI "#uiinit"
 #define SB3__uimccq  SB3_URI "#uimccquery"
@@ -40,6 +39,8 @@
 #define SB3__cckey   SB3_URI "#controlkey"
 #define SB3__ccval   SB3_URI "#controlval"
 #define SB3__ccdsc   SB3_URI "#controldsc"
+#define SB3__loadcfg SB3_URI "#loadcfg"
+#define SB3__savecfg SB3_URI "#savecfg"
 
 typedef struct {
 	LV2_URID atom_Blank;
@@ -59,6 +60,8 @@ typedef struct {
 	LV2_URID sb3_cckey;
 	LV2_URID sb3_ccdsc;
 	LV2_URID sb3_ccval;
+	LV2_URID sb3_loadcfg;
+	LV2_URID sb3_savecfg;
 
 	LV2_URID midi_MidiEvent;
 	LV2_URID atom_Sequence;
@@ -85,6 +88,8 @@ map_setbfree_uris(LV2_URID_Map* map, setBfreeURIs* uris)
 	uris->sb3_ccdsc          = map->map(map->handle, SB3__ccdsc);
 	uris->midi_MidiEvent     = map->map(map->handle, LV2_MIDI__MidiEvent);
   uris->atom_Sequence      = map->map(map->handle, LV2_ATOM__Sequence);
+	uris->sb3_loadcfg        = map->map(map->handle, SB3__loadcfg);
+	uris->sb3_savecfg        = map->map(map->handle, SB3__savecfg);
 }
 
 static inline void

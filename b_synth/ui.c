@@ -287,7 +287,7 @@ static void forge_message_kv(B3ui* ui, LV2_URID uri, int key, const char *val) {
 }
 
 static void forge_message_str(B3ui* ui, LV2_URID uri, const char *key) {
-  uint8_t obj_buf[64];
+  uint8_t obj_buf[1024];
   lv2_atom_forge_set_buffer(&ui->forge, obj_buf, 64);
 
   LV2_Atom_Forge_Frame set_frame;
@@ -1392,6 +1392,8 @@ static void reset_state(PuglView* view) {
   ui->dndid = -1;
   ui->pgm_sel = -1;
   ui->dir_sel = -1;
+  ui->dir_scrollgrab = 0;
+  ui->dir_scroll = 0;
   reset_state_ccbind(view);
 }
 
@@ -1676,7 +1678,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 	  S_ISLNK(fs.st_mode) ||
 #endif
 	  S_ISREG(fs.st_mode)) {
-	  printf("open file: '%s'\n", rfn);
+	  forge_message_str(ui, ui->uris.sb3_loadcfg, rfn);
 	  free(rfn);
 	}
       }
