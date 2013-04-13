@@ -27,6 +27,10 @@
 #include <math.h>
 #include <pthread.h>
 
+#include <sys/types.h>
+#include <dirent.h>
+#include <sys/stat.h>
+
 #include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
 #include "pugl/pugl.h"
 
@@ -161,7 +165,66 @@ typedef struct {
   char midipgm[128][32];
   char mididsc[128][256];
 
+  char *curdir;
+  char **dirlist;
+  int dirlistlen;
+  int dir_sel;
+  int dir_scroll;
+  int dir_scrollgrab;
+
 } B3ui;
+
+/******************************************************************************
+ * file-name helper function
+ */
+static void free_dirlist(B3ui* ui) {
+  int i;
+  if (!ui->dirlist) return;
+  for (i=0; i < ui->dirlistlen; ++i) {
+    free(ui->dirlist[i]);
+  }
+  free(ui->dirlist);
+  ui->dirlistlen = 0;
+  ui->dirlist = NULL;
+}
+
+static int cmpstringp(const void *p1, const void *p2) {
+  return strcmp(* (char * const *) p1, * (char * const *) p2);
+}
+
+static int dirlist(PuglView* view, const char *dir) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  DIR  *D;
+  struct dirent *dd;
+
+  free_dirlist(ui);
+
+  printf("dirlist dir: '%s'\n", dir);
+  if (!(D = opendir (dir)))  {
+    return -1;
+  }
+
+  while ((dd = readdir (D))) {
+#if 0
+    if (dd->d_name[0] == '.') continue;
+#elif 1
+    int delen = strlen(dd->d_name);
+    if (delen == 1 && dd->d_name[0] == '.') continue; // '.'
+    //if (delen == 2 && dd->d_name[0] == '.' && dd->d_name[1] == '.') continue; // '..'
+#endif
+
+    ui->dirlist = realloc(ui->dirlist, (ui->dirlistlen+1) * sizeof(char*));
+#if 0
+    ui->dirlist[ui->dirlistlen] = strdup(dd->d_name);
+#else
+    ui->dirlist[ui->dirlistlen] = malloc(1024*sizeof(char));
+    strcpy(ui->dirlist[ui->dirlistlen], dd->d_name);
+#endif
+    ui->dirlistlen++;
+  }
+  qsort(ui->dirlist, ui->dirlistlen, sizeof(ui->dirlist[0]), cmpstringp);
+  return 0;
+}
 
 /******************************************************************************
  * Value mapping, MIDI <> internal min/max <> mouse
@@ -714,6 +777,22 @@ onReshape(PuglView* view, int width, int height)
 }
 
 static void
+render_title(PuglView* view, const char *text, float x, float y)
+{
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  const GLfloat mat_w[] = {1.0, 1.0, 1.0, 1.0};
+  glPushMatrix();
+  glLoadIdentity();
+  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_w);
+  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
+  glScalef(0.001,0.001,1.00);
+  glTranslatef(x * (1000.0*SCALE) , y * (1000.0*SCALE), 0);
+  glRotatef(180, 1, 0, 0);
+  ftglRenderFont(ui->font_big, text, FTGL_RENDER_ALL);
+  glPopMatrix();
+}
+
+static void
 render_text(PuglView* view, const char *text, float x, float y, float z, int align)
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
@@ -767,6 +846,27 @@ render_text(PuglView* view, const char *text, float x, float y, float z, int ali
   glPopMatrix();
 }
 
+static void
+unity_box(PuglView* view,
+    const float x0, const float x1,
+    const float y0, const float y1,
+    const GLfloat color[4])
+{
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  const float invaspect = (float) ui->height / (float) ui->width;
+  glPushMatrix();
+  glLoadIdentity();
+  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, color);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, color);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, color);
+  glBegin(GL_QUADS);
+  glVertex3f(x0, y0 * invaspect, 0);
+  glVertex3f(x0, y1 * invaspect, 0);
+  glVertex3f(x1, y1 * invaspect, 0);
+  glVertex3f(x1, y0 * invaspect, 0);
+  glEnd();
+  glPopMatrix();
+}
 
 /******************************************************************************
  * openGL text entry
@@ -840,7 +940,6 @@ static void txtentry_render(PuglView* view) {
   const GLfloat mat_g[] = {0.1, 0.9, 0.15, 1.0};
   const GLfloat mat_x[] = {0.1, 0.1, 0.15, 1.0};
 
-#if 1
   glPushMatrix();
   glLoadIdentity();
   glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_x);
@@ -853,7 +952,6 @@ static void txtentry_render(PuglView* view) {
   glVertex3f( 1.0,   0, 0);
   glEnd();
   glPopMatrix();
-#endif
 
   glPushMatrix();
 
@@ -867,8 +965,6 @@ static void txtentry_render(PuglView* view) {
   glRotatef(180, 1, 0, 0);
   float bb[6];
   ftglGetFontBBox(ui->font_big, ui->textentry_text, -1, bb);
-
-
 
   glTranslatef((bb[3] - bb[0])/-2.0, -1.5 * (1000.0*SCALE), 0);
   ftglRenderFont(ui->font_big, ui->textentry_text, FTGL_RENDER_ALL);
@@ -962,20 +1058,7 @@ onDisplay(PuglView* view)
     const float w = 1.0/2.8 * 22.0/25.0;
     const float h = invaspect * 2.0/24.0 * 22.0/25.0;
 
-    glPushMatrix();
-    glLoadIdentity();
-    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_drawbar_white);
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
-    glScalef(0.001,0.001,1.00);
-    glTranslatef(16.5 * (1000.0*SCALE) , 7.25 * (1000.0*SCALE), 0);
-    //glRotatef(-90, 0, 0, 1);
-    glRotatef(180, 1, 0, 0);
-    if (ui->displaymode == 2) {
-      ftglRenderFont(ui->font_big, "load", FTGL_RENDER_ALL);
-    } else {
-      ftglRenderFont(ui->font_big, "save", FTGL_RENDER_ALL);
-    }
-    glPopMatrix();
+    render_title(view, (ui->displaymode == 2) ? "load" : "save", 16.5, 7.25);
 
     for (i=0; i < 128; i++) {
       char txt[40];
@@ -1024,6 +1107,67 @@ onDisplay(PuglView* view)
 	*t1='\n';
 	t0=t1+1;
       }
+    }
+    return;
+  } else if (ui->displaymode == 4) {
+    int i;
+    const float invaspect = (float) ui->height / (float) ui->width;
+    const float w = 1.0/2.8 * 22.0/25.0;
+    const float h = invaspect * 2.0/24.0 * 22.0/25.0;
+
+    render_title(view, (ui->displaymode == 4) ? "open" : "save", 16.5, 7.75);
+    // TODO handle empty dir
+
+    float xscolloff = 0;
+    if (ui->dirlistlen > 120) {
+      unity_box(view, -.8, 0.8, 0.625, 0.7, mat_drawbar_white);
+      int pages = (ui->dirlistlen / 20);
+      float ss = 1.6 / (float)pages;
+      float sw = 5.0 * ss;
+      float sx = ui->dir_scroll * ss - .8;
+      unity_box(view, sx, sx+sw, 0.625, 0.7, mat_organ);
+      xscolloff = ui->dir_scroll / 2.7;
+    }
+
+    for (i=0; i < ui->dirlistlen; i++) {
+      char txt[30];
+      snprintf(txt, 24, "%s", ui->dirlist[i]);
+      txt[24]='\0';
+      if (strlen(ui->dirlist[i]) > 24) strcat(txt, "...");
+
+      float x = -1.1 + (i/20)/2.7; // 0..5
+      float y = -1.0 + (i%20)/12.0; // 0..23
+      y *= invaspect;
+      x -= xscolloff;
+
+      const float bx = x * 22.0/25.0;
+      const float by = y * 22.0/25.0 +.006;
+
+      GLfloat mat_x[] = {0.1, 0.1, 0.1, 1.0};
+      if (i == ui->dir_sel) {
+	mat_x[2] = .6;
+      }
+      else if (i%2) {
+	mat_x[0] = .125;
+	mat_x[1] = .125;
+	mat_x[2] = .125;
+      }
+      glPushMatrix();
+      glLoadIdentity();
+      glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_x);
+      glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_x);
+      glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_x);
+      glBegin(GL_QUADS);
+      glVertex3f(bx,   by-h, 0);
+      glVertex3f(bx,   by, 0);
+      glVertex3f(bx+w, by, 0);
+      glVertex3f(bx+w, by-h, 0);
+      glEnd();
+      glPopMatrix();
+
+      x *= 22.0;
+      y *= 22.0;
+      render_text(view, txt, x, y, .1f, 3);
     }
     return;
   }
@@ -1234,6 +1378,23 @@ onDisplay(PuglView* view)
   }
 }
 
+static void reset_state_ccbind(PuglView* view) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  if (ui->uiccbind >= 0) {
+    ui->uiccbind = -1;
+    forge_message_str(ui, ui->uris.sb3_uimccset, "off");
+  }
+  puglPostRedisplay(view);
+}
+
+static void reset_state(PuglView* view) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  ui->dndid = -1;
+  ui->pgm_sel = -1;
+  ui->dir_sel = -1;
+  reset_state_ccbind(view);
+}
+
 static void
 onKeyboard(PuglView* view, bool press, uint32_t key)
 {
@@ -1301,24 +1462,24 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       if (ui->displaymode == 0) ui->displaymode = 2;
       else if (ui->displaymode == 2) ui->displaymode = 0;
       queue_reshape = 1;
-      ui->dndid = -1;
+      reset_state(view);
       break;
     case '?':
       if (ui->displaymode == 0) ui->displaymode = 1;
       else if (ui->displaymode == 1) ui->displaymode = 0;
       queue_reshape = 1;
-      ui->dndid = -1;
+      reset_state(view);
       break;
     case 'P':
       if (ui->displaymode == 0) ui->displaymode = 3;
       else if (ui->displaymode == 3) ui->displaymode = 0;
       queue_reshape = 1;
-      ui->dndid = -1;
+      reset_state(view);
       break;
     case 27: // ESC
       ui->displaymode = 0;
       queue_reshape = 1;
-      ui->dndid = -1;
+      reset_state(view);
       break;
     case 'm':
       if (ui->show_mm) {
@@ -1333,6 +1494,17 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       }
       puglPostRedisplay(view);
       break;
+#if 0 // not ready, yet
+    case 'X':
+      if (ui->displaymode == 0) {
+	dirlist(view, ui->curdir);
+	ui->displaymode = 4;
+      }
+      else if (ui->displaymode == 4) ui->displaymode = 0;
+      queue_reshape = 1;
+      reset_state(view);
+      break;
+#endif
     default:
       break;
   }
@@ -1392,6 +1564,45 @@ onMotion(PuglView* view, int x, int y)
     ui->pgm_sel = -1;
   }
 
+  if (ui->displaymode == 4 && ui->dir_scrollgrab) {
+    fx = (2.0 * x / ui->width ) - 1.0;
+    const int pages = (ui->dirlistlen / 20);
+    const float ss = 1.6 / (float)pages;
+    const int dir_scroll = ui->dir_scroll;
+    ui->dir_scroll = (fx +.8) / ss;
+    if (ui->dir_scroll < 0) ui->dir_scroll = 0;
+    if (ui->dir_scroll > pages - 5) ui->dir_scroll = pages - 5;
+    if (ui->dir_scroll != dir_scroll) {
+      puglPostRedisplay(view);
+    }
+    return;
+  }
+  else if (ui->displaymode == 4) {
+    int dir_sel = ui->dir_sel;
+    fx = (2.0 * x / ui->width ) - 1.0;
+    fy = (2.0 * y / ui->height ) - 1.0;
+
+    fx *= 25.0/22.0; fy *= 25.0/22.0;
+    fx += 1.1; fy += 1.0;
+    fx *= 2.7; fy *= 12.0;
+    fy+=1; fx+=ui->dir_scroll;
+    if (fx > 0 && fy > 0 && fy < 20) {
+      dir_sel = floor(fx) * 20 + floor(fy);
+      if (dir_sel >= ui->dirlistlen) dir_sel = -1;
+    } else {
+      dir_sel = -1;
+    }
+    if (dir_sel != ui->dir_sel) {
+      ui->dir_sel = dir_sel;
+      puglPostRedisplay(view);
+    }
+    ui->dndid = -1;
+    ui->pgm_sel = -1;
+    return;
+  } else {
+    ui->dir_sel = -1;
+  }
+
   if (ui->dndid < 0) return;
 
   project_mouse(view, x, y, &fx, &fy);
@@ -1413,6 +1624,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 
   if (!press) {
     ui->dndid = -1;
+    ui->dir_scrollgrab = 0;
     return;
   }
 
@@ -1443,6 +1655,56 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     puglPostRedisplay(view);
     return;
   }
+  if (ui->displaymode == 4) {
+    if (ui->dir_sel >= 0) {
+      struct stat fs;
+      char *fn = malloc((strlen(ui->curdir) + strlen(ui->dirlist[ui->dir_sel]) + 2)*sizeof(char));
+      strcpy(fn, ui->curdir);
+      strcat(fn, "/");
+      strcat(fn, ui->dirlist[ui->dir_sel]);
+      char * rfn = realpath(fn, NULL);
+      free(fn);
+      if(rfn && stat(rfn, &fs) == 0) {
+	if (S_ISDIR(fs.st_mode)) {
+	  free(ui->curdir);
+	  ui->curdir = rfn;
+	  dirlist(view, ui->curdir);
+	  puglPostRedisplay(view);
+	  return;
+	} else if (
+#ifndef _WIN32
+	  S_ISLNK(fs.st_mode) ||
+#endif
+	  S_ISREG(fs.st_mode)) {
+	  printf("open file: '%s'\n", rfn);
+	  free(rfn);
+	}
+      }
+    } else if (ui->dirlistlen > 120) {
+	// handle scrollbar
+	fx = (2.0 * x / ui->width ) - 1.0;
+	fy = (2.0 * y / ui->height ) - 1.0;
+	if (fx >= -.8 && fx <= .8 && fy >= 0.625 && fy <= 0.7) {
+	int pages = (ui->dirlistlen / 20);
+	float ss = 1.6 / (float)pages;
+	float sw = 5.0 * ss;
+	float sx = ui->dir_scroll * ss - .8;
+	if (fx < sx && ui->dir_scroll > 0) --ui->dir_scroll;
+	else if (fx > sx+sw && ui->dir_scroll < (pages-4)) ++ui->dir_scroll;
+	else if (fx >= sx && fx <= sx+sw) {
+	  ui->dir_scrollgrab = 1;
+	}
+	ui->dir_sel = -1;
+	puglPostRedisplay(view);
+	return;
+      }
+    }
+    ui->dir_sel = -1;
+    ui->displaymode = 0;
+    onReshape(view, ui->width, ui->height);
+    puglPostRedisplay(view);
+    return;
+  }
 
   if (ui->displaymode == 0 && fx >= 1.050 && fx <= 1.150 && fy >= -.27 && fy <= -.19) {
     ui->displaymode = 1;
@@ -1462,12 +1724,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
       return;
     }
   }
-  if (ui->uiccbind >= 0) {
-    // TODO abort when switching modes via keyboard.. proper state machine..
-    ui->uiccbind = -1;
-    forge_message_str(ui, ui->uris.sb3_uimccset, "off");
-    puglPostRedisplay(view);
-  }
+  reset_state_ccbind(view);
 
   for (i = 0; i < TOTAL_OBJ; ++i) {
     if (!MOUSEOVER(ui->ctrls[i], fx, fy)) {
@@ -1542,6 +1799,17 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   ui->dndid       = -1;
   ui->initialized = 0;
   ui->textentry_active = 0;
+  ui->dirlist     = NULL;
+  ui->dirlistlen  = 0;
+  ui->dir_sel     = -1;
+  ui->dir_scroll  = 0;
+  ui->dir_scrollgrab = 0;
+
+  if (getenv("HOME")) {
+    ui->curdir = strdup(getenv("HOME"));
+  } else {
+    ui->curdir = strdup("/");
+  }
 
   ui->rot[0]     = -20;
   ui->rot[1]     = -20;
