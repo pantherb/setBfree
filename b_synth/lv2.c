@@ -309,7 +309,7 @@ restore(LV2_Handle                  instance,
   }
 
   if (b3s->inst_offline) {
-    fprintf(stderr, "restore ignored. re-init in progress\n");
+    fprintf(stderr, "B3LV2: restore ignored. re-init in progress\n");
     return LV2_STATE_ERR_UNKNOWN;
   }
 
@@ -381,7 +381,7 @@ work(LV2_Handle                  instance,
   switch(*((const int*)data)) {
     case CMD_LOAD:
       if (b3s->inst_offline) {
-	fprintf(stderr, "restore ignored. re-init in progress\n");
+	fprintf(stderr, "B3LV2: restore ignored. re-init in progress\n");
 	return LV2_STATE_ERR_UNKNOWN;
       }
       fprintf(stderr, "TODO -- load new cfg/pgm, re-init\n");
