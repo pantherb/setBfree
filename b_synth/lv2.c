@@ -19,6 +19,8 @@
  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
+#define _GNU_SOURCE
+
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
@@ -282,6 +284,22 @@ save(LV2_Handle                instance,
   char *cfg = calloc(1, sizeof(char));
   rc_loop_state(b3s->inst->state, rcsave_cb, (void*) &cfg);
 
+  int i;
+  size_t rs = 0;
+  char *out = NULL;
+  FILE *x = open_memstream(&out, &rs);
+  for (i=0 ; i < 128; ++i) {
+    int pgmNr = i + b3s->inst->progs->MIDIControllerPgmOffset;
+    if (!(b3s->inst->progs->programmes[pgmNr].flags[0] & FL_INUSE)) {
+      continue;
+    }
+    fprintf(x, "P ");
+    writeProgramm(pgmNr, &b3s->inst->progs->programmes[pgmNr], " ", x);
+  }
+  fclose(x);
+  cfg = realloc(cfg, strlen(cfg) + strlen(out) +1);
+  strcat(cfg, out);
+
   store(handle, b3s->uris.sb3_state,
       cfg, strlen(cfg) + 1,
       b3s->uris.atom_String,
@@ -334,6 +352,12 @@ restore(LV2_Handle                  instance,
       fprintf(stderr, "B3LV2: evaluateConfigKeyValue(..,\"%s\", \"%s\");\n", kv+2, val+1);
 #endif
       evaluateConfigKeyValue((void*)b3s->inst_offline, kv+2, val+1);
+    }
+    else if(kv[0]=='P') {
+#ifdef DEBUGPRINT
+      printf("PGM '%s'\n", kv+2);
+#endif
+      loadProgrammeString(b3s->inst_offline->progs, kv+2);
     }
     ts=te+1;
   }
