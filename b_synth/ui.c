@@ -190,6 +190,7 @@ static void free_dirlist(B3ui* ui) {
   free(ui->dirlist);
   ui->dirlistlen = 0;
   ui->dirlist = NULL;
+  ui->dir_scroll = 0;
 }
 
 static char * absfilepath(const char *dir, const char *file) {
@@ -861,7 +862,7 @@ render_title(PuglView* view, const char *text, float x, float y, float z, int al
 	  (bb[4] - bb[1])/-2.0,
 	  0);
       break;
-    case 2: // right
+    case 2: // right top
       glTranslatef(
 	  (bb[3] - bb[0])/-1.0,
 	  (bb[4] - bb[1])/-1.0,
@@ -876,7 +877,7 @@ render_title(PuglView* view, const char *text, float x, float y, float z, int al
 	  0);
       break;
   }
-  glTranslatef(x * (1000.0*SCALE) , y * (1000.0*SCALE), z);
+  glTranslatef(x * (1000.0*SCALE) , -y * (1000.0*SCALE), z);
   ftglRenderFont(ui->font_big, text, FTGL_RENDER_ALL);
 
   glPopMatrix();
@@ -887,7 +888,7 @@ render_text(PuglView* view, const char *text, float x, float y, float z, int ali
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   const GLfloat mat_b[] = {0.0, 0.0, 0.0, 1.0};
-  const GLfloat mat_r[] = {0.1, 0.9, 0.15, 1.0};
+  const GLfloat mat_r[] = {0.1, 0.95, 0.15, 1.0};
   float bb[6];
 
   glPushMatrix();
@@ -955,6 +956,27 @@ unity_box(PuglView* view,
   glPopMatrix();
 }
 
+static void
+unity_tri(PuglView* view,
+    const float x0,
+    const float y0, const float y1,
+    const GLfloat color[4])
+{
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  const float invaspect = (float) ui->height / (float) ui->width;
+  glPushMatrix();
+  glLoadIdentity();
+  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, color);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, color);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, color);
+  glBegin(GL_TRIANGLES);
+  glVertex3f(x0                          , invaspect * (y1+y0)/2.0, 0);
+  glVertex3f(x0 + invaspect * (y1-y0)/2.0, invaspect * y1, 0);
+  glVertex3f(x0 + invaspect * (y1-y0)/2.0, invaspect * y0, 0);
+  glEnd();
+  glPopMatrix();
+}
+
 /******************************************************************************
  * openGL text entry
  */
@@ -985,6 +1007,14 @@ static void txtentry_end(PuglView* view, const char *txt) {
       }
       ui->displaymode = 0;
       break;
+    case 5:
+      // TODO prefix dir to txt
+      //forge_message_str(ui, ui->uris.sb3_savecfg, txt);
+      break;
+    case 6:
+      // TODO prefix dir to txt
+      //forge_message_str(ui, ui->uris.sb3_savepgm, txt);
+      break;
     default:
       fprintf(stderr, "B3Lv2UI: unhandled text entry (mode:%d)\n", ui->displaymode);
       ui->displaymode = 0;
@@ -1011,7 +1041,9 @@ static void txtentry_handle(PuglView* view, uint32_t key) {
       txtentry_end(view, ui->textentry_text);
       break;
     default:
-      ui->textentry_text[pos++] = (char) key;
+      if (key >= 32 && key <= 125 && key != 47 && key !=92) {
+	ui->textentry_text[pos++] = (char) key;
+      }
       break;
   }
   if (pos > 1023) pos=1023;
@@ -1151,7 +1183,7 @@ onDisplay(PuglView* view)
     const float w = 1.0/2.8 * 22.0 * SCALE;
     const float h = 2.0/24.0 * 22.0 * SCALE;
 
-    render_title(view, (ui->displaymode == 2) ? "load" : "save", 16.5, -7.25, 0.0, 3);
+    render_title(view, (ui->displaymode == 2) ? "set" : "store", 16.5, 7.25, 0.0, 3);
 
     for (i=0; i < 128; i++) {
       char txt[40];
@@ -1196,17 +1228,23 @@ onDisplay(PuglView* view)
     const float w = 1.0/2.8 * 22.0 * SCALE;
     const float h = 2.0/24.0 * 22.0 * SCALE;
 
-    render_title(view, (ui->displaymode == 4) ? "open" : "save", 16.5, -7.75, 0.0, 3);
-    // TODO handle empty dir
+    render_title(view, "open .pgm or .cfg", 24.25, 5.75, 0.0, 2);
+    render_text(view, "Path:", -20.0, 7.0, 0.0, 3);
+    render_text(view, ui->curdir, -18.25, 7.0, 0.0, 3);
+    render_text(view, "Note: loading a .cfg will re-initialize the organ.", -20.0, 7.75, 0.0, 3);
 
     float xscolloff = 0;
     if (ui->dirlistlen > 120) {
-      unity_box(view, -.8, 0.8, 0.625, 0.7, mat_drawbar_white);
+      GLfloat mat_sbg[] = {0.1, 0.1, 0.1, 1.0};
+      GLfloat mat_sfg[] = {0.1, 0.9, 0.15, 1.0};
+      unity_box(view, -.8, 0.8, 0.625, 0.7, mat_sbg);
       int pages = (ui->dirlistlen / 20);
       float ss = 1.6 / (float)pages;
       float sw = 5.0 * ss;
       float sx = ui->dir_scroll * ss - .8;
-      unity_box(view, sx, sx+sw, 0.625, 0.7, mat_organ);
+      unity_box(view, sx, sx+sw, 0.63, 0.695, mat_sfg);
+      unity_tri(view, sx, 0.63, 0.695, mat_sbg);
+      unity_tri(view, sx+sw, 0.695, 0.63, mat_sbg);
       xscolloff = ui->dir_scroll / 2.7;
     }
 
@@ -1223,7 +1261,7 @@ onDisplay(PuglView* view)
       x *= 22.0; y *= 22.0;
 
       const float bx = x * SCALE;
-      const float by = y * SCALE + .006;
+      const float by = y * SCALE + .02;
 
       GLfloat mat_x[] = {0.1, 0.1, 0.1, 1.0};
       if (i == ui->dir_sel) {
@@ -1233,6 +1271,11 @@ onDisplay(PuglView* view)
 	mat_x[0] = .125;
 	mat_x[1] = .125;
 	mat_x[2] = .125;
+      }
+      if (ui->dirlist[i][strlen(ui->dirlist[i])-1] != '/') {
+	mat_x[0] += .1;
+	mat_x[1] += .1;
+	mat_x[2] += .1;
       }
       unity_box(view, bx, bx+w, by-h, by, mat_x);
 
@@ -1246,7 +1289,7 @@ onDisplay(PuglView* view)
 
   /** step 0 - help button **/
 
-  render_title(view, " ?  ", 1.08/SCALE, .22/SCALE, .055, 1);
+  render_title(view, " ?  ", 1.08/SCALE, -.22/SCALE, .055, 1);
 
   /** step 1 - draw background -- fixed objects **/
 
