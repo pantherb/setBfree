@@ -174,6 +174,7 @@ typedef struct {
   int dir_sel;
   int dir_scroll;
   int dir_scrollgrab;
+  int dir_hidedotfiles;
 
 } B3ui;
 
@@ -209,6 +210,8 @@ static int dirlist(PuglView* view, const char *dir) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   DIR  *D;
   struct dirent *dd;
+  char **filelist = NULL;
+  int filelistlen = 0;
 
   free_dirlist(ui);
 
@@ -228,31 +231,43 @@ static int dirlist(PuglView* view, const char *dir) {
     if (S_ISREG(fs.st_mode)) {
       int fnl = strlen(rfn);
       if (fnl <= 4) continue;
-      if (strcmp(&rfn[fnl-4], ".pgm") && strcmp(&rfn[fnl-4], ".cfg")) {
+      if ((strcmp(&rfn[fnl-4], ".pgm") && strcmp(&rfn[fnl-4], ".cfg"))
+	  || (ui->dir_hidedotfiles && dd->d_name[0] == '.')
+	 ) {
 	free(rfn);
 	continue;
       }
+      filelist = realloc(filelist, (filelistlen+1) * sizeof(char*));
+      filelist[filelistlen] = malloc(1024*sizeof(char));
+      strncpy(filelist[filelistlen], dd->d_name, 1024);
+      filelistlen++;
+      free(rfn);
+      continue;
     }
     free(rfn);
 
-#if 0
-    if (dd->d_name[0] == '.') continue;
-#elif 1
-    int delen = strlen(dd->d_name);
+    const int delen = strlen(dd->d_name);
     if (delen == 1 && dd->d_name[0] == '.') continue; // '.'
-    //if (delen == 2 && dd->d_name[0] == '.' && dd->d_name[1] == '.') continue; // '..'
-#endif
+    else if (delen == 2 && dd->d_name[0] == '.' && dd->d_name[1] == '.') ; // '..' -> OK
+    else if (ui->dir_hidedotfiles && dd->d_name[0] == '.') continue;
 
     ui->dirlist = realloc(ui->dirlist, (ui->dirlistlen+1) * sizeof(char*));
-#if 0
-    ui->dirlist[ui->dirlistlen] = strdup(dd->d_name);
-#else
     ui->dirlist[ui->dirlistlen] = malloc(1024*sizeof(char));
-    strncpy(ui->dirlist[ui->dirlistlen], dd->d_name, 1024);
-#endif
+    strncpy(ui->dirlist[ui->dirlistlen], dd->d_name, 1022);
+    ui->dirlist[ui->dirlistlen][1022] = '\0';
+    strcat(ui->dirlist[ui->dirlistlen], "/");
     ui->dirlistlen++;
   }
   qsort(ui->dirlist, ui->dirlistlen, sizeof(ui->dirlist[0]), cmpstringp);
+  qsort(filelist, filelistlen, sizeof(filelist[0]), cmpstringp);
+
+  ui->dirlist = realloc(ui->dirlist, (ui->dirlistlen + filelistlen) * sizeof(char*));
+  int i;
+  for (i = 0; i < filelistlen; i++) {
+    ui->dirlist[ui->dirlistlen + i] = filelist[i];
+  }
+  ui->dirlistlen += filelistlen;
+  free(filelist);
   return 0;
 }
 
@@ -1429,6 +1444,7 @@ static void reset_state(PuglView* view) {
   ui->dir_sel = -1;
   ui->dir_scrollgrab = 0;
   ui->dir_scroll = 0;
+  ui->dir_hidedotfiles = 0;
   reset_state_ccbind(view);
 }
 
