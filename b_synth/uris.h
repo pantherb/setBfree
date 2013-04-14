@@ -41,6 +41,7 @@
 #define SB3__ccdsc   SB3_URI "#controldsc"
 #define SB3__loadcfg SB3_URI "#loadcfg"
 #define SB3__savecfg SB3_URI "#savecfg"
+#define SB3__uimsg   SB3_URI "#uimessage"
 
 typedef struct {
 	LV2_URID atom_Blank;
@@ -62,6 +63,7 @@ typedef struct {
 	LV2_URID sb3_ccval;
 	LV2_URID sb3_loadcfg;
 	LV2_URID sb3_savecfg;
+	LV2_URID sb3_uimsg;
 
 	LV2_URID midi_MidiEvent;
 	LV2_URID atom_Sequence;
@@ -90,6 +92,7 @@ map_setbfree_uris(LV2_URID_Map* map, setBfreeURIs* uris)
   uris->atom_Sequence      = map->map(map->handle, LV2_ATOM__Sequence);
 	uris->sb3_loadcfg        = map->map(map->handle, SB3__loadcfg);
 	uris->sb3_savecfg        = map->map(map->handle, SB3__savecfg);
+	uris->sb3_uimsg          = map->map(map->handle, SB3__uimsg);
 }
 
 static inline void
