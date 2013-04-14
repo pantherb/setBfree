@@ -644,11 +644,18 @@ static void drawMesh(PuglView* view, unsigned int index, int apply_transformatio
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, VARNAME.width, VARNAME.height, 0, \
       (VARNAME.bytes_per_pixel == 3 ? GL_RGB : GL_RGBA), \
       GL_UNSIGNED_BYTE, VARNAME.pixel_data); \
-  glGenerateMipmap(GL_TEXTURE_2D);
+  if (atihack) { \
+    glEnable(GL_TEXTURE_2D); \
+    glGenerateMipmapEXT(GL_TEXTURE_2D); \
+    glDisable(GL_TEXTURE_2D); \
+  } else { \
+    glGenerateMipmapEXT(GL_TEXTURE_2D); \
+  }
 
 
 static void initTextures(PuglView* view) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
+  const int atihack = 1; // TODO detect card
 
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
@@ -659,7 +666,13 @@ static void initTextures(PuglView* view) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, wood_image.width, wood_image.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, wood_image.pixel_data);
-  glGenerateMipmap(GL_TEXTURE_2D);
+  if (atihack) {
+    glEnable(GL_TEXTURE_2D);
+    glGenerateMipmapEXT(GL_TEXTURE_2D);
+    glDisable(GL_TEXTURE_2D);
+  } else {
+    glGenerateMipmapEXT(GL_TEXTURE_2D);
+  }
 
   CIMAGE(1, drawbar_image);
   CIMAGE(2, dial_image);
