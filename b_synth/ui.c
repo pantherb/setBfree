@@ -163,6 +163,7 @@ typedef struct {
   FTGLfont *font_small;
 
   char *popupmsg;
+  int  queuepopup;
 
   char midipgm[128][32];
   char mididsc[128][256];
@@ -220,7 +221,6 @@ static int dirlist(PuglView* view, const char *dir) {
     char * rfn = absfilepath(dir, dd->d_name);
     if (!rfn) continue;
     if(stat(rfn, &fs)) {
-      printf("stat failed: %s\n", rfn);
       free(rfn);
       continue;
     }
@@ -229,7 +229,6 @@ static int dirlist(PuglView* view, const char *dir) {
       int fnl = strlen(rfn);
       if (fnl <= 4) continue;
       if (strcmp(&rfn[fnl-4], ".pgm") && strcmp(&rfn[fnl-4], ".cfg")) {
-	printf("EXT SKIPPED: %s\n", &rfn[fnl-4]);
 	free(rfn);
 	continue;
       }
@@ -972,7 +971,7 @@ static void txtentry_end(PuglView* view, const char *txt) {
       ui->displaymode = 0;
       break;
     default:
-      printf("unhandled text entry (mode:%d)\n", ui->displaymode);
+      fprintf(stderr, "B3Lv2UI: unhandled text entry (mode:%d)\n", ui->displaymode);
       ui->displaymode = 0;
       break;
   }
@@ -1050,7 +1049,7 @@ static void show_message(PuglView* view, const char *msg) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   if (ui->popupmsg) free (ui->popupmsg);
   ui->popupmsg = strdup(msg);
-  onReshape(view, ui->width, ui->height);
+  ui->queuepopup = 1;
   puglPostRedisplay(view);
 }
 
@@ -1098,6 +1097,10 @@ onDisplay(PuglView* view)
   }
 
   if (ui->popupmsg) {
+    if (ui->queuepopup) {
+      onReshape(view, ui->width, ui->height);
+      ui->queuepopup = 0;
+    }
     unity_box(view, -1.0, 1.0, .25, .25, mat_dial);
     render_title(view, ui->popupmsg, 0, 0, 0, 1);
     return;
@@ -1852,6 +1855,8 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   ui->dir_sel     = -1;
   ui->dir_scroll  = 0;
   ui->dir_scrollgrab = 0;
+  ui->popupmsg = NULL;
+  ui->queuepopup = 0;
 
   if (getenv("HOME")) {
     ui->curdir = strdup(getenv("HOME"));
@@ -1876,7 +1881,7 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   }
 
   if (!parent) {
-      fprintf(stderr, "B3Lv2UI error: No parent window provided.\n");
+    fprintf(stderr, "B3Lv2UI error: No parent window provided.\n");
     return -1;
   }
 
@@ -2072,7 +2077,7 @@ port_event(LV2UI_Handle handle,
     ui->mididsc[v][255] = '\0';
     //printf("%d %s %s", v, ui->midipgm[v], ui->mididsc[v]);
     puglPostRedisplay(ui->view);
-  } else if (obj->body.otype == ui->uris.sb3_loadcfg) {
+  } else if (obj->body.otype == ui->uris.sb3_uimsg) {
     const LV2_Atom* msg = NULL;
     lv2_atom_object_get(obj, ui->uris.sb3_uimsg, &msg, 0);
     if (msg) {
