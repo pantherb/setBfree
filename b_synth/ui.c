@@ -106,7 +106,6 @@ static const char *obj_control[] = {
   "rotary.speed-select"  // SPECIAL leslie baffle
 };
 
-
 typedef struct {
   int type; // type ID from ui_model.h
   float min, max, cur;  // value range and current value
@@ -142,6 +141,15 @@ typedef struct {
   GLdouble matrix[16]; // used for mouse mapping
   double rot[3], off[3], scale; // global projection
 
+  /* displaymode
+   * 0: main/organ
+   * 1: help-screen
+   * 2: MIDI PGM list - set/load
+   * 3: MIDI PGM list - store/save
+   * 4: File-index - load .cfg, load .pgm)
+   * 5: File-index save cfg
+   * 6: File-index save pgm
+   */
   int displaymode;
   int pgm_sel;
   int show_mm;
@@ -163,7 +171,9 @@ typedef struct {
   FTGLfont *font_small;
 
   char *popupmsg;
-  int  queuepopup;
+  int   queuepopup;
+  char *pendingdata;
+  int   pendingmode;
 
   char midipgm[128][32];
   char mididsc[128][256];
@@ -177,6 +187,23 @@ typedef struct {
   int dir_hidedotfiles;
 
 } B3ui;
+
+
+#define IS_FILEBROWSER(UI) (UI->displaymode == 4 || UI->displaymode == 5 || UI->displaymode == 6)
+
+
+static int show_message(PuglView* view, const char *msg) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  if (ui->popupmsg) {
+    fprintf(stderr, "B3Lv2UI: modal message overload\n");
+    return -1;
+  }
+  if (ui->popupmsg) free (ui->popupmsg);
+  ui->popupmsg = strdup(msg);
+  ui->queuepopup = 1;
+  puglPostRedisplay(view);
+  return 0;
+}
 
 /******************************************************************************
  * file-name helper function
@@ -194,13 +221,28 @@ static void free_dirlist(B3ui* ui) {
 }
 
 static char * absfilepath(const char *dir, const char *file) {
+  if (!dir || !file) return NULL;
   char *fn = malloc((strlen(dir) + strlen(file) + 2)*sizeof(char));
   strcpy(fn, dir);
   strcat(fn, "/");
   strcat(fn, file);
   char * rfn = realpath(fn, NULL);
-  free(fn);
-  return rfn;
+  if (rfn) {
+    free(fn);
+    return rfn;
+  } else {
+    return fn;
+  }
+}
+
+static int check_extension(const char *fn, const char *ext) {
+  if (!fn || !ext) return -1;
+  const int fnl = strlen(fn);
+  const int exl = strlen(ext);
+  if (fnl > exl && !strcmp(&fn[fnl-exl], ext)) {
+    return 0; // OK
+  }
+  return -1;
 }
 
 static int cmpstringp(const void *p1, const void *p2) {
@@ -978,6 +1020,47 @@ unity_tri(PuglView* view,
 }
 
 /******************************************************************************
+ */
+
+int save_cfgpgm(PuglView* view, const char *fn, int mode, int override) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  if (check_extension(fn, mode == 6 ? ".pgm" : ".cfg")) {
+    if (mode == 6)
+      show_message(view, "file does not end in '.pgm'");
+    else
+      show_message(view, "file does not end in '.cfg'");
+    return -1;
+  }
+  if (!override && !access(fn, F_OK)) {
+    if (!show_message(view, "file exists. Overwrite?")) {
+      ui->pendingdata = strdup(fn);
+      ui->pendingmode = mode;
+    }
+    return 0;
+  }
+  if (mode == 6) {
+    printf("saving PGM -> %s\n", fn);
+    //forge_message_str(ui, ui->uris.sb3_savepgm, fn);
+  } else {
+    printf("saving CFG -> %s\n", fn);
+    //forge_message_str(ui, ui->uris.sb3_savecfg, fn);
+  }
+  return 0;
+}
+
+void handle_msg_reply(PuglView* view) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  if (!ui->pendingdata || !ui->pendingmode) return;
+
+  if (ui->pendingmode == 5 || ui->pendingmode == 6) {
+    printf("CONTINUE from before save_cfgpgm()\n");
+    save_cfgpgm(view, ui->pendingdata, ui->pendingmode, 1);
+  } else {
+    fprintf(stderr, "B3Lv2UI: invalid pending mode.\n");
+}
+}
+
+/******************************************************************************
  * openGL text entry
  */
 
@@ -999,7 +1082,11 @@ static int txtentry_start(PuglView* view, const char *title, char *defaulttext) 
 
 static void txtentry_end(PuglView* view, const char *txt) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
-  if (!txt || strlen(txt) ==0) return;
+  if (!txt || strlen(txt) ==0) {
+    show_message(view, "empty name.");
+    ui->displaymode = 0;
+    return;
+  }
   switch(ui->displaymode) {
     case 3:
       if (ui->pgm_sel >= 0) {
@@ -1007,13 +1094,17 @@ static void txtentry_end(PuglView* view, const char *txt) {
       }
       ui->displaymode = 0;
       break;
-    case 5:
-      // TODO prefix dir to txt
-      //forge_message_str(ui, ui->uris.sb3_savecfg, txt);
-      break;
     case 6:
-      // TODO prefix dir to txt
-      //forge_message_str(ui, ui->uris.sb3_savepgm, txt);
+    case 5:
+      {
+      char * rfn = absfilepath(ui->curdir, txt);
+      if (save_cfgpgm(view, rfn, ui->displaymode, 0)) {
+	ui->textentry_active = 1;
+      } else {
+	ui->displaymode = 0;
+      }
+      free(rfn);
+      }
       break;
     default:
       fprintf(stderr, "B3Lv2UI: unhandled text entry (mode:%d)\n", ui->displaymode);
@@ -1027,18 +1118,20 @@ static void txtentry_handle(PuglView* view, uint32_t key) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   int pos = strlen(ui->textentry_text);
   switch (key) {
-    case 8:
+    case 8: // backspace
       if (pos > 0) pos--;
       break;
-    case 27:
+    case 27: // ESC
       pos = 0;
       ui->textentry_text[pos] = '\0';
-      // fall through
-    case 10:
-    case 13:
       ui->textentry_active = 0;
+      ui->displaymode = 0;
       onReshape(view, ui->width, ui->height);
+      break;
+    case 13: // Enter
+      ui->textentry_active = 0;
       txtentry_end(view, ui->textentry_text);
+      onReshape(view, ui->width, ui->height);
       break;
     default:
       if (key >= 32 && key <= 125 && key != 47 && key !=92) {
@@ -1089,15 +1182,8 @@ static void txtentry_render(PuglView* view) {
   ftglRenderFont(ui->font_big, ui->textentry_title, FTGL_RENDER_ALL);
 
   glPopMatrix();
+  render_text(view, "<enter> to confirm, <ESC> to abort", 0, 6.0, 0, 1);
 
-}
-
-static void show_message(PuglView* view, const char *msg) {
-  B3ui* ui = (B3ui*)puglGetHandle(view);
-  if (ui->popupmsg) free (ui->popupmsg);
-  ui->popupmsg = strdup(msg);
-  ui->queuepopup = 1;
-  puglPostRedisplay(view);
 }
 
 /**
@@ -1150,6 +1236,12 @@ onDisplay(PuglView* view)
     }
     unity_box(view, -1.0, 1.0, .25, .25, mat_dial);
     render_title(view, ui->popupmsg, 0, 0, 0, 1);
+    // TODO : OK||Cancel buttons
+    if (ui->pendingmode) {
+      render_text(view, "Press <enter> to confirm, <ESC> to abort.", 0, 6.5, 0, 1);
+    } else {
+      render_text(view, "Press <enter> or <ESC> to continue.", 0, 6.5, 0, 1);
+    }
     return;
   }
 
@@ -1222,16 +1314,23 @@ onDisplay(PuglView* view)
       }
     }
     return;
-  } else if (ui->displaymode == 4) {
+  } else if (IS_FILEBROWSER(ui)) {
     int i;
     const float invaspect = (float) ui->height / (float) ui->width;
     const float w = 1.0/2.8 * 22.0 * SCALE;
     const float h = 2.0/24.0 * 22.0 * SCALE;
 
-    render_title(view, "open .pgm or .cfg", 24.25, 5.75, 0.0, 2);
+    switch(ui->displaymode) {
+      case 4:
+	render_title(view, "open .pgm or .cfg", 24.25, 5.75, 0.0, 2);
+	render_text(view, "Note: loading a .cfg will re-initialize the organ.", -20.0, 7.75, 0.0, 3);
+	break;
+      default:
+	break;
+    }
+
     render_text(view, "Path:", -20.0, 7.0, 0.0, 3);
     render_text(view, ui->curdir, -18.25, 7.0, 0.0, 3);
-    render_text(view, "Note: loading a .cfg will re-initialize the organ.", -20.0, 7.75, 0.0, 3);
 
     float xscolloff = 0;
     if (ui->dirlistlen > 120) {
@@ -1499,7 +1598,7 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
   if (!press) {
     return;
   }
-  if (ui->textentry_active) {
+  if (ui->textentry_active && !ui->popupmsg) {
     txtentry_handle(view, key);
     return;
   }
@@ -1573,11 +1672,21 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       queue_reshape = 1;
       reset_state(view);
       break;
+    case 13: // Enter
+      if (ui->popupmsg) {
+	free(ui->popupmsg); ui->popupmsg = NULL;
+	handle_msg_reply(view);
+	free(ui->pendingdata); ui->pendingdata = NULL;
+	ui->pendingmode = 0;
+      }
+      queue_reshape = 1;
+      break;
     case 27: // ESC
       if (ui->popupmsg) {
-	free(ui->popupmsg);
-	ui->popupmsg = NULL;
-      } else {
+	free(ui->popupmsg); ui->popupmsg = NULL;
+	free(ui->pendingdata); ui->pendingdata = NULL;
+	ui->pendingmode = 0;
+      } else if (ui->displaymode) {
 	ui->displaymode = 0;
 	reset_state(view);
       }
@@ -1603,6 +1712,24 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
 	ui->displaymode = 4;
       }
       else if (ui->displaymode == 4) ui->displaymode = 0;
+      queue_reshape = 1;
+      reset_state(view);
+      break;
+    case 'C':
+      if (ui->displaymode == 0) {
+	dirlist(view, ui->curdir);
+	ui->displaymode = 5;
+      }
+      else if (ui->displaymode == 5) ui->displaymode = 0;
+      queue_reshape = 1;
+      reset_state(view);
+      break;
+    case 'V':
+      if (ui->displaymode == 0) {
+	dirlist(view, ui->curdir);
+	ui->displaymode = 6;
+      }
+      else if (ui->displaymode == 6) ui->displaymode = 0;
       queue_reshape = 1;
       reset_state(view);
       break;
@@ -1667,7 +1794,7 @@ onMotion(PuglView* view, int x, int y)
     ui->pgm_sel = -1;
   }
 
-  if (ui->displaymode == 4 && ui->dir_scrollgrab) {
+  if (IS_FILEBROWSER(ui) && ui->dir_scrollgrab) {
     fx = (2.0 * x / ui->width ) - 1.0;
     const int pages = (ui->dirlistlen / 20);
     const float ss = 1.6 / (float)pages;
@@ -1680,7 +1807,7 @@ onMotion(PuglView* view, int x, int y)
     }
     return;
   }
-  else if (ui->displaymode == 4) {
+  else if (IS_FILEBROWSER(ui)) {
     int dir_sel = ui->dir_sel;
     fx = (2.0 * x / ui->width ) - 1.0;
     fy = (2.0 * y / ui->height ) - 1.0;
@@ -1731,15 +1858,17 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     return;
   }
 
-  if (ui->textentry_active) return;
-
   if (ui->popupmsg) {
-    free(ui->popupmsg);
-    ui->popupmsg = NULL;
+    free(ui->popupmsg); ui->popupmsg = NULL;
+    if (0) handle_msg_reply(view); // TODO OK clicked only
+    free(ui->pendingdata); ui->pendingdata = NULL;
+    ui->pendingmode = 0;
     onReshape(view, ui->width, ui->height);
     puglPostRedisplay(view);
     return;
   }
+
+  if (ui->textentry_active) return;
 
   if (ui->displaymode == 2) {
     ui->displaymode = 0;
@@ -1766,7 +1895,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     puglPostRedisplay(view);
     return;
   }
-  if (ui->displaymode == 4) {
+  if (IS_FILEBROWSER(ui)) {
     if (ui->dir_sel >= 0) {
       struct stat fs;
       char * rfn = absfilepath(ui->curdir, ui->dirlist[ui->dir_sel]);
@@ -1778,18 +1907,38 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 	  puglPostRedisplay(view);
 	  return;
 	} else if (S_ISREG(fs.st_mode)) {
-	  int fnl = strlen(rfn);
-	  if (fnl > 4 && !strcmp(&rfn[fnl-4], ".pgm")) {
-	    forge_message_str(ui, ui->uris.sb3_loadpgm, rfn);
-	  }
-	  else if (fnl > 4 && !strcmp(&rfn[fnl-4], ".cfg")) {
-	    forge_message_str(ui, ui->uris.sb3_loadcfg, rfn);
-	  } else {
-	    show_message(view, "file is not a .pgm nor .cfg");
+	  switch(ui->displaymode) {
+	    case 4:
+	      if (!check_extension(rfn, ".pgm")) {
+		forge_message_str(ui, ui->uris.sb3_loadpgm, rfn);
+	      }
+	      else if (!check_extension(rfn, ".cfg")) {
+		forge_message_str(ui, ui->uris.sb3_loadcfg, rfn);
+	      } else {
+		show_message(view, "file is not a .pgm nor .cfg");
+	      }
+	      break;
+	    case 6:
+	    case 5:
+	      printf ("SAVE/OVERRIDE: %s\n", rfn);
+	      if (save_cfgpgm(view, rfn, ui->displaymode, 0)) {
+		free(rfn);
+		puglPostRedisplay(view);
+		return;
+	      }
+	      break;
 	  }
 	  free(rfn);
 	}
       }
+    } else if (
+	(ui->displaymode == 5 || ui->displaymode == 6)
+	&& ((float) x / ui->width ) > .9
+	&& ((float) y / ui->height ) > .9
+	) {
+      // handle save OK -> this folder
+      txtentry_start(view, "Enter File Name:", "" );
+      return;
     } else if (ui->dirlistlen > 120) {
 	// handle scrollbar
 	fx = (2.0 * x / ui->width ) - 1.0;
@@ -1916,6 +2065,8 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   ui->dir_scrollgrab = 0;
   ui->popupmsg = NULL;
   ui->queuepopup = 0;
+  ui->pendingdata = NULL;
+  ui->pendingmode = 0;
 
   if (getenv("HOME")) {
     ui->curdir = strdup(getenv("HOME"));
