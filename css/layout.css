@@ -12,16 +12,24 @@
 }
 
 #navigation {
-	width:900px;
-	margin: 0 auto 2em auto;
-	border-top: 1px dotted gray;
-	border-bottom: 1px dotted gray;
+	width:800px;
+	margin: 1em auto 0 auto;
+
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
 }
 
 #navigation li {
 	list-style:none;
+	margin-right:3px;
 	padding:.5em 1.5em;
 	text-align:left;
+	border-top-left-radius:10px;
+	border-top-right-radius:10px;
 	float:left;
 }
 
@@ -42,7 +50,6 @@ h1,h2,h3,h4,h5 {
 #container {
 	width:900px;
 	margin: 0px auto;
-	border:1px solid gray;
 	border-radius:10px;
 	margin: 0px auto;
 }
@@ -63,4 +70,3 @@ h1,h2,h3,h4,h5 {
 #content p + p {
 	text-indent: 1em;
 }
-

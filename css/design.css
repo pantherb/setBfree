@@ -3,8 +3,14 @@ body {
 	color: white
 }
 
+#navigation li {
+	font-weight: bold;
+	background:#666;
+}
+
 #navigation li.active, #navigation li.active:hover {
-	background:#a06000;
+	background:white;
+	color: black;
 	cursor:default;
 }
 
@@ -17,11 +23,7 @@ body {
 	color: white;
 }
 
-#container {
-	background:white;
-}
-
-#content {
+#container, #content {
 	background:white;
 	color:black;
 }
