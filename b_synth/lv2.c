@@ -98,7 +98,25 @@ struct worknfo {
 /* main synth wrappers */
 
 const ConfigDoc *mainDoc () { return NULL;}
-int mainConfig (ConfigContext * cfg) { return 0; }
+
+int mainConfig (ConfigContext * cfg) {
+  if (strcasecmp (cfg->name, "midi.driver") == 0) {
+    return 1;
+  }
+  else if (strcasecmp (cfg->name, "midi.port") == 0) {
+    return 1;
+  }
+  else if (strcasecmp (cfg->name, "jack.connect") == 0) {
+    return 1;
+  }
+  else if (strcasecmp (cfg->name, "jack.out.left") == 0) {
+    return 1;
+  }
+  else if (strcasecmp (cfg->name, "jack.out.right") == 0) {
+    return 1;
+  }
+  return 0;
+}
 
 double SampleRateD = 48000.0;
 
