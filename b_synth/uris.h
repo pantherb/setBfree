@@ -34,11 +34,13 @@
 #define SB3__uimccq  SB3_URI "#uimccquery"
 #define SB3__uimccs  SB3_URI "#uimccset"
 #define SB3__midipgm SB3_URI "#midipgm"
-#define SB3__savepgm SB3_URI "#midisave"
+#define SB3__storepgm SB3_URI "#midisave"
 #define SB3__control SB3_URI "#controlmsg"
 #define SB3__cckey   SB3_URI "#controlkey"
 #define SB3__ccval   SB3_URI "#controlval"
 #define SB3__ccdsc   SB3_URI "#controldsc"
+#define SB3__loadpgm SB3_URI "#loadpgm"
+#define SB3__savepgm SB3_URI "#savepgm"
 #define SB3__loadcfg SB3_URI "#loadcfg"
 #define SB3__savecfg SB3_URI "#savecfg"
 #define SB3__uimsg   SB3_URI "#uimessage"
@@ -61,6 +63,8 @@ typedef struct {
 	LV2_URID sb3_cckey;
 	LV2_URID sb3_ccdsc;
 	LV2_URID sb3_ccval;
+	LV2_URID sb3_loadpgm;
+	LV2_URID sb3_savepgm;
 	LV2_URID sb3_loadcfg;
 	LV2_URID sb3_savecfg;
 	LV2_URID sb3_uimsg;
@@ -83,13 +87,15 @@ map_setbfree_uris(LV2_URID_Map* map, setBfreeURIs* uris)
 	uris->sb3_uimccquery     = map->map(map->handle, SB3__uimccq);
 	uris->sb3_uimccset       = map->map(map->handle, SB3__uimccs);
 	uris->sb3_midipgm        = map->map(map->handle, SB3__midipgm);
-	uris->sb3_midisavepgm    = map->map(map->handle, SB3__savepgm);
+	uris->sb3_midisavepgm    = map->map(map->handle, SB3__storepgm);
 	uris->sb3_control        = map->map(map->handle, SB3__control);
 	uris->sb3_cckey          = map->map(map->handle, SB3__cckey);
 	uris->sb3_ccval          = map->map(map->handle, SB3__ccval);
 	uris->sb3_ccdsc          = map->map(map->handle, SB3__ccdsc);
 	uris->midi_MidiEvent     = map->map(map->handle, LV2_MIDI__MidiEvent);
   uris->atom_Sequence      = map->map(map->handle, LV2_ATOM__Sequence);
+	uris->sb3_loadpgm        = map->map(map->handle, SB3__loadpgm);
+	uris->sb3_savepgm        = map->map(map->handle, SB3__savepgm);
 	uris->sb3_loadcfg        = map->map(map->handle, SB3__loadcfg);
 	uris->sb3_savecfg        = map->map(map->handle, SB3__savecfg);
 	uris->sb3_uimsg          = map->map(map->handle, SB3__uimsg);

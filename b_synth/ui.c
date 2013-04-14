@@ -190,6 +190,16 @@ static void free_dirlist(B3ui* ui) {
   ui->dirlist = NULL;
 }
 
+static char * absfilepath(const char *dir, const char *file) {
+  char *fn = malloc((strlen(dir) + strlen(file) + 2)*sizeof(char));
+  strcpy(fn, dir);
+  strcat(fn, "/");
+  strcat(fn, file);
+  char * rfn = realpath(fn, NULL);
+  free(fn);
+  return rfn;
+}
+
 static int cmpstringp(const void *p1, const void *p2) {
   return strcmp(* (char * const *) p1, * (char * const *) p2);
 }
@@ -201,12 +211,31 @@ static int dirlist(PuglView* view, const char *dir) {
 
   free_dirlist(ui);
 
-  printf("dirlist dir: '%s'\n", dir);
   if (!(D = opendir (dir)))  {
     return -1;
   }
 
   while ((dd = readdir (D))) {
+    struct stat fs;
+    char * rfn = absfilepath(dir, dd->d_name);
+    if (!rfn) continue;
+    if(stat(rfn, &fs)) {
+      printf("stat failed: %s\n", rfn);
+      free(rfn);
+      continue;
+    }
+
+    if (S_ISREG(fs.st_mode)) {
+      int fnl = strlen(rfn);
+      if (fnl <= 4) continue;
+      if (strcmp(&rfn[fnl-4], ".pgm") && strcmp(&rfn[fnl-4], ".cfg")) {
+	printf("EXT SKIPPED: %s\n", &rfn[fnl-4]);
+	free(rfn);
+	continue;
+      }
+    }
+    free(rfn);
+
 #if 0
     if (dd->d_name[0] == '.') continue;
 #elif 1
@@ -220,7 +249,7 @@ static int dirlist(PuglView* view, const char *dir) {
     ui->dirlist[ui->dirlistlen] = strdup(dd->d_name);
 #else
     ui->dirlist[ui->dirlistlen] = malloc(1024*sizeof(char));
-    strcpy(ui->dirlist[ui->dirlistlen], dd->d_name);
+    strncpy(ui->dirlist[ui->dirlistlen], dd->d_name, 1024);
 #endif
     ui->dirlistlen++;
   }
@@ -1104,7 +1133,7 @@ onDisplay(PuglView* view)
     const float w = 1.0/2.8 * 22.0 * SCALE;
     const float h = 2.0/24.0 * 22.0 * SCALE;
 
-    render_title(view, (ui->displaymode == 2) ? "load" : "save", 16.5, 7.25, 0.0, 3);
+    render_title(view, (ui->displaymode == 2) ? "load" : "save", 16.5, -7.25, 0.0, 3);
 
     for (i=0; i < 128; i++) {
       char txt[40];
@@ -1149,7 +1178,7 @@ onDisplay(PuglView* view)
     const float w = 1.0/2.8 * 22.0 * SCALE;
     const float h = 2.0/24.0 * 22.0 * SCALE;
 
-    render_title(view, (ui->displaymode == 4) ? "open" : "save", 16.5, 7.75, 0.0, 3);
+    render_title(view, (ui->displaymode == 4) ? "open" : "save", 16.5, -7.75, 0.0, 3);
     // TODO handle empty dir
 
     float xscolloff = 0;
@@ -1505,7 +1534,7 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       }
       puglPostRedisplay(view);
       break;
-#if 1 // not ready, yet
+#if 0 // not ready, yet
     case 'X':
       if (ui->displaymode == 0) {
 	dirlist(view, ui->curdir);
@@ -1678,12 +1707,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
   if (ui->displaymode == 4) {
     if (ui->dir_sel >= 0) {
       struct stat fs;
-      char *fn = malloc((strlen(ui->curdir) + strlen(ui->dirlist[ui->dir_sel]) + 2)*sizeof(char));
-      strcpy(fn, ui->curdir);
-      strcat(fn, "/");
-      strcat(fn, ui->dirlist[ui->dir_sel]);
-      char * rfn = realpath(fn, NULL);
-      free(fn);
+      char * rfn = absfilepath(ui->curdir, ui->dirlist[ui->dir_sel]);
       if(rfn && stat(rfn, &fs) == 0) {
 	if (S_ISDIR(fs.st_mode)) {
 	  free(ui->curdir);
@@ -1691,12 +1715,16 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 	  dirlist(view, ui->curdir);
 	  puglPostRedisplay(view);
 	  return;
-	} else if (
-#ifndef _WIN32
-	  S_ISLNK(fs.st_mode) ||
-#endif
-	  S_ISREG(fs.st_mode)) {
-	  forge_message_str(ui, ui->uris.sb3_loadcfg, rfn);
+	} else if (S_ISREG(fs.st_mode)) {
+	  int fnl = strlen(rfn);
+	  if (fnl > 4 && !strcmp(&rfn[fnl-4], ".pgm")) {
+	    forge_message_str(ui, ui->uris.sb3_loadpgm, rfn);
+	  }
+	  else if (fnl > 4 && !strcmp(&rfn[fnl-4], ".cfg")) {
+	    forge_message_str(ui, ui->uris.sb3_loadcfg, rfn);
+	  } else {
+	    show_message(view, "file is not a .pgm nor .cfg");
+	  }
 	  free(rfn);
 	}
       }

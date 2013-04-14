@@ -85,8 +85,14 @@ typedef struct {
 } B3S;
 
 enum {
-  CMD_LOAD   = 0,
-  CMD_FREE   = 1,
+  CMD_FREE    = 0,
+  CMD_LOADPGM = 1,
+  CMD_LOADCFG = 2,
+};
+
+struct worknfo {
+  int cmd;
+  char msg[1024];
 };
 
 /* main synth wrappers */
@@ -398,18 +404,27 @@ work(LV2_Handle                  instance,
 {
   B3S* b3s = (B3S*)instance;
 
-  if (size != sizeof(int)) {
+  if (size != sizeof(struct worknfo)) {
     return LV2_WORKER_ERR_UNKNOWN;
   }
+  struct worknfo *w = (struct worknfo*) data;
 
-  switch(*((const int*)data)) {
-    case CMD_LOAD:
+  switch(w->cmd) {
+    case CMD_LOADPGM:
+      fprintf(stderr, "B3LV2: loading pgm file: %s\n", w->msg);
+      if (!loadProgrammeFile(b3s->inst->progs, w->msg)) {
+	b3s->update_pgm_now = 1;
+      }
+      break;
+    case CMD_LOADCFG:
       if (b3s->inst_offline) {
 	fprintf(stderr, "B3LV2: restore ignored. re-init in progress\n");
 	return LV2_STATE_ERR_UNKNOWN;
       }
-      fprintf(stderr, "TODO -- load new cfg/pgm, re-init\n");
-
+      b3s->inst_offline = calloc(1, sizeof(struct b_instance));
+      allocSynth(b3s->inst_offline);
+      parseConfigurationFile (b3s->inst_offline, w->msg);
+      initSynth(b3s->inst_offline, SampleRateD);
       break;
     case CMD_FREE:
 #ifdef DEBUGPRINT
@@ -430,15 +445,17 @@ work_response(LV2_Handle  instance,
 {
   B3S* b3s = (B3S*)instance;
 
-  if (size != sizeof(int)) {
+  if (size != sizeof(struct worknfo)) {
     return LV2_WORKER_ERR_UNKNOWN;
   }
 
-  switch(*((const int*)data)) {
-    case CMD_LOAD:
-      fprintf(stderr, "loaded new instance\n");
-      // TODO only if sucessful
-      b3s->swap_instances = 1;
+  struct worknfo *w = (struct worknfo*) data;
+
+  switch(w->cmd) {
+    case CMD_LOADPGM:
+      break;
+    case CMD_LOADCFG:
+	b3s->swap_instances = 1;
       break;
     case CMD_FREE:
     break;
@@ -453,7 +470,8 @@ postrun (B3S* b3s)
 #ifdef DEBUGPRINT
     fprintf(stderr, "swap instances..\n");
 #endif
-    int d = CMD_FREE;
+    struct worknfo w;
+    w.cmd = CMD_FREE;
     /* swap engine instances */
     struct b_instance *old  = b3s->inst;
     b3s->inst = b3s->inst_offline;
@@ -464,7 +482,7 @@ postrun (B3S* b3s)
     /* hide midi-maps, stop possibly pending midi-bind process */
     forge_kvcontrolmessage(&b3s->forge, &b3s->uris, "special.midimap", (int32_t) 0);
 
-    b3s->schedule->schedule_work(b3s->schedule->handle, sizeof(int), &d);
+    b3s->schedule->schedule_work(b3s->schedule->handle, sizeof(struct worknfo), &w);
     b3s->update_gui_now = 1;
     b3s->swap_instances = 0;
   }
@@ -609,11 +627,23 @@ run(LV2_Handle instance, uint32_t n_samples)
 	    saveProgramm(b3s->inst, (int) ((LV2_Atom_Int*)pgm)->body, (char*) LV2_ATOM_BODY(name), 0);
 	    b3s->update_pgm_now = 1;
 	  }
+	} else if (obj->body.otype == b3s->uris.sb3_loadpgm) {
+	  const LV2_Atom* name = NULL;
+	  lv2_atom_object_get(obj, b3s->uris.sb3_cckey, &name, 0);
+	  if (name) {
+	    struct worknfo w;
+	    w.cmd = CMD_LOADPGM;
+	    strncpy(w.msg, (char *)LV2_ATOM_BODY(name), 1024);
+	    b3s->schedule->schedule_work(b3s->schedule->handle, sizeof(struct worknfo), &w);
+	  }
 	} else if (obj->body.otype == b3s->uris.sb3_loadcfg) {
 	  const LV2_Atom* name = NULL;
 	  lv2_atom_object_get(obj, b3s->uris.sb3_cckey, &name, 0);
 	  if (name) {
-	    printf("XXX load config file: %s\n", (char*) LV2_ATOM_BODY(name));
+	    struct worknfo w;
+	    w.cmd = CMD_LOADCFG;
+	    strncpy(w.msg, (char *)LV2_ATOM_BODY(name), 1024);
+	    b3s->schedule->schedule_work(b3s->schedule->handle, sizeof(struct worknfo), &w);
 	  }
 	} else if (obj->body.otype == b3s->uris.sb3_control) {
 	  b3s->suspend_ui_msg = 1;
