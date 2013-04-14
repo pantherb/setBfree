@@ -88,6 +88,8 @@ enum {
   CMD_FREE    = 0,
   CMD_LOADPGM = 1,
   CMD_LOADCFG = 2,
+  CMD_SAVEPGM = 3,
+  CMD_SAVECFG = 4,
 };
 
 struct worknfo {
@@ -284,7 +286,7 @@ void allocSynth(struct b_instance *inst) {
 
 
 /* LV2 -- state */
-static void rcsave_cb(int fnid, const char *key, const char *kv, unsigned char val, void *arg) {
+static void rcstate_cb(int fnid, const char *key, const char *kv, unsigned char val, void *arg) {
   char tmp[256];
   char **cfg = (char**)arg;
   if (fnid < 0) {
@@ -306,7 +308,7 @@ save(LV2_Handle                instance,
   B3S* b3s = (B3S*)instance;
 
   char *cfg = calloc(1, sizeof(char));
-  rc_loop_state(b3s->inst->state, rcsave_cb, (void*) &cfg);
+  rc_loop_state(b3s->inst->state, rcstate_cb, (void*) &cfg);
 
   int i;
   size_t rs = 0;
@@ -321,6 +323,7 @@ save(LV2_Handle                instance,
     writeProgramm(pgmNr, &b3s->inst->progs->programmes[pgmNr], " ", x);
   }
   fclose(x);
+
   cfg = realloc(cfg, strlen(cfg) + strlen(out) +1);
   strcat(cfg, out);
 
@@ -412,6 +415,12 @@ restore(LV2_Handle                  instance,
   return LV2_STATE_SUCCESS;
 }
 
+static void rcsave_cb(int fnid, const char *key, const char *kv, unsigned char val, void *arg) {
+  if (fnid < 0) {
+    fprintf((FILE*)arg, "%s=%s\n", key, kv);
+  }
+}
+
 /* LV2 -- worker */
 static LV2_Worker_Status
 work(LV2_Handle                  instance,
@@ -421,11 +430,13 @@ work(LV2_Handle                  instance,
      const void*                 data)
 {
   B3S* b3s = (B3S*)instance;
+  FILE *x;
 
   if (size != sizeof(struct worknfo)) {
     return LV2_WORKER_ERR_UNKNOWN;
   }
   struct worknfo *w = (struct worknfo*) data;
+  int rply = w->cmd;
 
   switch(w->cmd) {
     case CMD_LOADPGM:
@@ -439,10 +450,32 @@ work(LV2_Handle                  instance,
 	fprintf(stderr, "B3LV2: restore ignored. re-init in progress\n");
 	return LV2_STATE_ERR_UNKNOWN;
       }
+      fprintf(stderr, "B3LV2: loading cfg file: %s\n", w->msg);
       b3s->inst_offline = calloc(1, sizeof(struct b_instance));
       allocSynth(b3s->inst_offline);
       parseConfigurationFile (b3s->inst_offline, w->msg);
       initSynth(b3s->inst_offline, SampleRateD);
+      break;
+    case CMD_SAVECFG:
+      x = fopen(w->msg, "w");
+      if (x) {
+	rc_loop_state(b3s->inst->state, rcsave_cb, (void*) &x);
+	fclose(x);
+      }
+      break;
+    case CMD_SAVEPGM:
+      x = fopen(w->msg, "w");
+      if (x) {
+	int i;
+	for (i=0 ; i < 128; ++i) {
+	  int pgmNr = i + b3s->inst->progs->MIDIControllerPgmOffset;
+	  if (!(b3s->inst->progs->programmes[pgmNr].flags[0] & FL_INUSE)) {
+	    continue;
+	  }
+	  writeProgramm(pgmNr, &b3s->inst->progs->programmes[pgmNr], "\n    ", x);
+	}
+	fclose(x);
+      }
       break;
     case CMD_FREE:
 #ifdef DEBUGPRINT
@@ -453,6 +486,7 @@ work(LV2_Handle                  instance,
     break;
   }
 
+  respond(handle, sizeof(int), &rply);
   return LV2_WORKER_SUCCESS;
 }
 
@@ -463,19 +497,28 @@ work_response(LV2_Handle  instance,
 {
   B3S* b3s = (B3S*)instance;
 
-  if (size != sizeof(struct worknfo)) {
+  if (size != sizeof(int)) {
     return LV2_WORKER_ERR_UNKNOWN;
   }
 
-  struct worknfo *w = (struct worknfo*) data;
-
-  switch(w->cmd) {
-    case CMD_LOADPGM:
-      break;
+  switch(*((const int*)data)) {
     case CMD_LOADCFG:
 	b3s->swap_instances = 1;
-      break;
-    case CMD_FREE:
+    case CMD_LOADPGM:
+    case CMD_SAVEPGM:
+    case CMD_SAVECFG:
+	// TODO proper message
+      {
+      const char msg[] = "LOAD/SAVE OK.";
+      LV2_Atom_Forge_Frame frame;
+      lv2_atom_forge_frame_time(&b3s->forge, 0);
+      lv2_atom_forge_blank(&b3s->forge, &frame, 1, b3s->uris.sb3_uimsg);
+      lv2_atom_forge_property_head(&b3s->forge, b3s->uris.sb3_uimsg, 0);
+      lv2_atom_forge_string(&b3s->forge, msg, strlen(msg));
+      lv2_atom_forge_pop(&b3s->forge, &frame);
+      }
+    break;
+    default:
     break;
   }
   return LV2_WORKER_SUCCESS;
@@ -503,6 +546,17 @@ postrun (B3S* b3s)
     b3s->schedule->schedule_work(b3s->schedule->handle, sizeof(struct worknfo), &w);
     b3s->update_gui_now = 1;
     b3s->swap_instances = 0;
+  }
+}
+
+static void iowork(B3S* b3s, const LV2_Atom_Object* obj, int cmd) {
+  const LV2_Atom* name = NULL;
+  lv2_atom_object_get(obj, b3s->uris.sb3_cckey, &name, 0);
+  if (name) {
+    struct worknfo w;
+    w.cmd = cmd;
+    strncpy(w.msg, (char *)LV2_ATOM_BODY(name), 1024);
+    b3s->schedule->schedule_work(b3s->schedule->handle, sizeof(struct worknfo), &w);
   }
 }
 
@@ -646,23 +700,13 @@ run(LV2_Handle instance, uint32_t n_samples)
 	    b3s->update_pgm_now = 1;
 	  }
 	} else if (obj->body.otype == b3s->uris.sb3_loadpgm) {
-	  const LV2_Atom* name = NULL;
-	  lv2_atom_object_get(obj, b3s->uris.sb3_cckey, &name, 0);
-	  if (name) {
-	    struct worknfo w;
-	    w.cmd = CMD_LOADPGM;
-	    strncpy(w.msg, (char *)LV2_ATOM_BODY(name), 1024);
-	    b3s->schedule->schedule_work(b3s->schedule->handle, sizeof(struct worknfo), &w);
-	  }
+	  iowork(b3s, obj, CMD_LOADPGM);
 	} else if (obj->body.otype == b3s->uris.sb3_loadcfg) {
-	  const LV2_Atom* name = NULL;
-	  lv2_atom_object_get(obj, b3s->uris.sb3_cckey, &name, 0);
-	  if (name) {
-	    struct worknfo w;
-	    w.cmd = CMD_LOADCFG;
-	    strncpy(w.msg, (char *)LV2_ATOM_BODY(name), 1024);
-	    b3s->schedule->schedule_work(b3s->schedule->handle, sizeof(struct worknfo), &w);
-	  }
+	  iowork(b3s, obj, CMD_LOADCFG);
+	} else if (obj->body.otype == b3s->uris.sb3_savepgm) {
+	  iowork(b3s, obj, CMD_SAVEPGM);
+	} else if (obj->body.otype == b3s->uris.sb3_savecfg) {
+	  iowork(b3s, obj, CMD_SAVECFG);
 	} else if (obj->body.otype == b3s->uris.sb3_control) {
 	  b3s->suspend_ui_msg = 1;
 	  const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;
