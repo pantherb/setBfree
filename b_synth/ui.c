@@ -67,6 +67,7 @@ enum {
   HOVER_SCROLLBAR = 32
 };
 
+#define NOSCROLL -1000
 #define SIGNUM(a) (a < 0 ? -1 : 1)
 #define CTRLWIDTH2(ctrl) (SCALE * (ctrl).w / 2.0)
 #define CTRLHEIGHT2(ctrl) (SCALE * (ctrl).h / 2.0)
@@ -221,8 +222,8 @@ typedef struct {
   char **dirlist;
   int dirlistlen;
   int dir_sel;
-  int dir_scroll;
-  int dir_scrollgrab;
+  float dir_scroll;
+  float dir_scrollgrab;
   int dir_hidedotfiles;
 
   int mouseover;
@@ -1456,7 +1457,7 @@ onDisplay(PuglView* view)
     if (ui->dirlistlen > 120) {
       GLfloat mat_sbg[] = {0.1, 0.1, 0.1, 1.0};
       GLfloat mat_sfg[] = {0.1, 0.9, 0.15, 1.0};
-      if (ui->mouseover & HOVER_SCROLLBAR || ui->dir_scrollgrab) {
+      if (ui->mouseover & HOVER_SCROLLBAR || ui->dir_scrollgrab != NOSCROLL) {
 	mat_sbg[0] = mat_sbg[1] = mat_sbg[2] = 0.15;
 	mat_sfg[0] = 0.4; mat_sfg[1] = 1.0; mat_sfg[2] = 0.4;
       }
@@ -1708,7 +1709,7 @@ static void reset_state(PuglView* view) {
   ui->dndid = -1;
   ui->pgm_sel = -1;
   ui->dir_sel = -1;
-  ui->dir_scrollgrab = 0;
+  ui->dir_scrollgrab = NOSCROLL;
   ui->dir_scroll = 0;
   ui->dir_hidedotfiles = 0;
   reset_state_ccbind(view);
@@ -1933,12 +1934,12 @@ onMotion(PuglView* view, int x, int y)
     ui->pgm_sel = -1;
   }
 
-  if (IS_FILEBROWSER(ui) && ui->dir_scrollgrab) {
+  if (IS_FILEBROWSER(ui) && ui->dir_scrollgrab != NOSCROLL) {
     fx = (2.0 * x / ui->width ) - 1.0;
     const int pages = (ui->dirlistlen / 20);
     const float ss = 1.6 / (float)pages;
     const int dir_scroll = ui->dir_scroll;
-    ui->dir_scroll = (fx +.8) / ss;
+    ui->dir_scroll = (fx +.8 - ui->dir_scrollgrab) / ss;
     if (ui->dir_scroll < 0) ui->dir_scroll = 0;
     if (ui->dir_scroll > pages - 5) ui->dir_scroll = pages - 5;
     if (ui->dir_scroll != dir_scroll) {
@@ -1991,7 +1992,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 
   if (!press) {
     ui->dndid = -1;
-    ui->dir_scrollgrab = 0;
+    ui->dir_scrollgrab = NOSCROLL;
     return;
   }
 
@@ -2099,7 +2100,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
       if (fx < sx && ui->dir_scroll > 0) --ui->dir_scroll;
       else if (fx > sx+sw && ui->dir_scroll < (pages-4)) ++ui->dir_scroll;
       else if (fx >= sx && fx <= sx+sw) {
-	ui->dir_scrollgrab = 1;
+	ui->dir_scrollgrab = fx - sx;
       }
       ui->dir_sel = -1;
       puglPostRedisplay(view);
@@ -2220,7 +2221,7 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   ui->dirlistlen  = 0;
   ui->dir_sel     = -1;
   ui->dir_scroll  = 0;
-  ui->dir_scrollgrab = 0;
+  ui->dir_scrollgrab = NOSCROLL;
   ui->mouseover = 0;
   ui->popupmsg = NULL;
   ui->queuepopup = 0;
