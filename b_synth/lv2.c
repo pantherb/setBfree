@@ -436,7 +436,6 @@ work(LV2_Handle                  instance,
     return LV2_WORKER_ERR_UNKNOWN;
   }
   struct worknfo *w = (struct worknfo*) data;
-  int rply = w->cmd;
 
   switch(w->cmd) {
     case CMD_LOADPGM:
@@ -488,8 +487,17 @@ work(LV2_Handle                  instance,
     break;
   }
 
-  respond(handle, sizeof(int), &rply);
+  respond(handle, sizeof(struct worknfo), data);
   return LV2_WORKER_SUCCESS;
+}
+
+static void forge_message_str(B3S *b3s, LV2_URID uri, const char *msg) {
+  LV2_Atom_Forge_Frame frame;
+  lv2_atom_forge_frame_time(&b3s->forge, 0);
+  lv2_atom_forge_blank(&b3s->forge, &frame, 1, uri);
+  lv2_atom_forge_property_head(&b3s->forge, b3s->uris.sb3_uimsg, 0);
+  lv2_atom_forge_string(&b3s->forge, msg, strlen(msg));
+  lv2_atom_forge_pop(&b3s->forge, &frame);
 }
 
 static LV2_Worker_Status
@@ -498,27 +506,32 @@ work_response(LV2_Handle  instance,
               const void* data)
 {
   B3S* b3s = (B3S*)instance;
+  char tmp[1048];
 
-  if (size != sizeof(int)) {
+  if (size != sizeof(struct worknfo)) {
     return LV2_WORKER_ERR_UNKNOWN;
   }
 
-  switch(*((const int*)data)) {
+  struct worknfo *w = (struct worknfo*) data;
+
+  switch(w->cmd) {
     case CMD_LOADCFG:
-	b3s->swap_instances = 1;
+      b3s->swap_instances = 1;
+      sprintf(tmp, "loaded CFG: '%s'", w->msg);
+      forge_message_str(b3s, b3s->uris.sb3_uimsg, tmp);
+      break;
     case CMD_LOADPGM:
+      sprintf(tmp, "loaded PGM: '%s'", w->msg);
+      forge_message_str(b3s, b3s->uris.sb3_uimsg, tmp);
+      break;
     case CMD_SAVEPGM:
+      sprintf(tmp, "saved PGM: '%s'", w->msg);
+      forge_message_str(b3s, b3s->uris.sb3_uimsg, tmp);
+      break;
     case CMD_SAVECFG:
-	// TODO proper message
-      {
-      const char msg[] = "LOAD/SAVE OK.";
-      LV2_Atom_Forge_Frame frame;
-      lv2_atom_forge_frame_time(&b3s->forge, 0);
-      lv2_atom_forge_blank(&b3s->forge, &frame, 1, b3s->uris.sb3_uimsg);
-      lv2_atom_forge_property_head(&b3s->forge, b3s->uris.sb3_uimsg, 0);
-      lv2_atom_forge_string(&b3s->forge, msg, strlen(msg));
-      lv2_atom_forge_pop(&b3s->forge, &frame);
-      }
+      sprintf(tmp, "saved CFG: '%s'", w->msg);
+      forge_message_str(b3s, b3s->uris.sb3_uimsg, tmp);
+      break;
     break;
     default:
     break;
