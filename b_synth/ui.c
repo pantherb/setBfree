@@ -1038,7 +1038,7 @@ unity_button(PuglView* view,
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   const float invaspect = (float) ui->height / (float) ui->width;
-  const GLfloat no_mat[] = { 0.0, 0.0, 0.0, 1.0 };
+  const GLfloat btncol[] = {0.1, 0.95, 0.15, 1.0 };
   float x0A, x0B;
 
   /* button texture: x/3 (left-circle + x/3 (box) + x/3 (right-circle) ;; texture aspect: 4/3
@@ -1056,11 +1056,11 @@ unity_button(PuglView* view,
 
   glPushMatrix();
   glLoadIdentity();
-  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, no_mat);
-  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, no_mat);
-  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, no_mat);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, btncol);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, btncol);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, btncol);
   glEnable(GL_TEXTURE_2D);
-  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
   glBindTexture(GL_TEXTURE_2D, ui->texID[15]);
   glBegin(GL_QUADS);
   glTexCoord2f (0.0,  0.0); glVertex3f(x0, y0 * invaspect, 0);
@@ -1322,12 +1322,12 @@ onDisplay(PuglView* view)
       render_text(view, "Press <enter> to confirm, <ESC> to abort, or press button.", 0, 7.0, 0, 1);
       unity_button(view, BTNLOC_NO);
       unity_button(view, BTNLOC_YES);
-      render_title(view, "No", btn_x(BTNLOC_NO), invaspect * btn_y(BTNLOC_NO), 0, no_mat, 1);
-      render_title(view, "Yes", btn_x(BTNLOC_YES), invaspect * btn_y(BTNLOC_YES), 0, no_mat, 1);
+      render_title(view, "No", btn_x(BTNLOC_NO), invaspect * btn_y(BTNLOC_NO), 0, mat_drawbar_white, 1);
+      render_title(view, "Yes", btn_x(BTNLOC_YES), invaspect * btn_y(BTNLOC_YES), 0, mat_drawbar_white, 1);
     } else {
       render_text(view, "Press <enter> or <ESC> to continue.", 0, 7.0, 0, 1);
       unity_button(view, BTNLOC_OK);
-      render_title(view, "Ok", btn_x(BTNLOC_OK), invaspect * btn_y(BTNLOC_OK), 0, no_mat, 1);
+      render_title(view, "Ok", btn_x(BTNLOC_OK), invaspect * btn_y(BTNLOC_OK), 0, mat_drawbar_white, 1);
     }
     return;
   }
@@ -1415,17 +1415,17 @@ onDisplay(PuglView* view)
       case 5:
 	render_title(view, "save .cfg", 0, invaspect * btn_y(BTNLOC_SAVE), 0.0, mat_drawbar_white, 1);
 	unity_button(view, BTNLOC_SAVE);
-	render_title(view, "Save", btn_x(BTNLOC_SAVE), invaspect * btn_y(BTNLOC_SAVE), 0, no_mat, 1);
+	render_title(view, "Save", btn_x(BTNLOC_SAVE), invaspect * btn_y(BTNLOC_SAVE), 0, mat_drawbar_white, 1);
 	unity_button(view, BTNLOC_CANC);
-	render_title(view, "Cancel", btn_x(BTNLOC_CANC), invaspect * btn_y(BTNLOC_CANC), 0, no_mat, 1);
+	render_title(view, "Cancel", btn_x(BTNLOC_CANC), invaspect * btn_y(BTNLOC_CANC), 0, mat_drawbar_white, 1);
 	render_text(view, "select a file or press OK or <enter> to create new.", -20.0, 7.75, 0.0, 3);
 	break;
       case 6:
 	render_title(view, "save .pgm", 0, invaspect * btn_y(BTNLOC_SAVE), 0.0, mat_drawbar_white, 1);
 	unity_button(view, BTNLOC_SAVE);
 	unity_button(view, BTNLOC_CANC);
-	render_title(view, "Cancel", btn_x(BTNLOC_CANC), invaspect * btn_y(BTNLOC_CANC), 0, no_mat, 1);
-	render_title(view, "Save", btn_x(BTNLOC_SAVE), invaspect * btn_y(BTNLOC_SAVE), 0, no_mat, 1);
+	render_title(view, "Cancel", btn_x(BTNLOC_CANC), invaspect * btn_y(BTNLOC_CANC), 0, mat_drawbar_white, 1);
+	render_title(view, "Save", btn_x(BTNLOC_SAVE), invaspect * btn_y(BTNLOC_SAVE), 0, mat_drawbar_white, 1);
 	render_text(view, "select a file or press OK or <enter> to create new.", -20.0, 7.75, 0.0, 3);
 	break;
       default:
@@ -1810,7 +1810,7 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       }
       puglPostRedisplay(view);
       break;
-#if 0 // not ready, yet
+#if 1 // not ready, yet
     case 'L':
       if (ui->displaymode == 0) {
 	dirlist(view, ui->curdir);
