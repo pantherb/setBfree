@@ -94,6 +94,7 @@ enum {
 
 struct worknfo {
   int cmd;
+  int status;
   char msg[1024];
 };
 
@@ -440,7 +441,7 @@ work(LV2_Handle                  instance,
   switch(w->cmd) {
     case CMD_LOADPGM:
       fprintf(stderr, "B3LV2: loading pgm file: %s\n", w->msg);
-      if (!loadProgrammeFile(b3s->inst->progs, w->msg)) {
+      if (!(w->status=loadProgrammeFile(b3s->inst->progs, w->msg))) {
 	b3s->update_pgm_now = 1;
       }
       break;
@@ -452,7 +453,7 @@ work(LV2_Handle                  instance,
       fprintf(stderr, "B3LV2: loading cfg file: %s\n", w->msg);
       b3s->inst_offline = calloc(1, sizeof(struct b_instance));
       allocSynth(b3s->inst_offline);
-      parseConfigurationFile (b3s->inst_offline, w->msg);
+      w->status = parseConfigurationFile (b3s->inst_offline, w->msg);
       initSynth(b3s->inst_offline, SampleRateD);
       break;
     case CMD_SAVECFG:
@@ -461,6 +462,9 @@ work(LV2_Handle                  instance,
 	fprintf(x, "# setBfree config file\n# modificaions on top of default config\n");
 	rc_loop_state(b3s->inst->state, rcsave_cb, (void*) x);
 	fclose(x);
+	w->status = 0;
+      } else {
+	w->status = -1;
       }
       break;
     case CMD_SAVEPGM:
@@ -476,6 +480,9 @@ work(LV2_Handle                  instance,
 	  writeProgramm(pgmNr, &b3s->inst->progs->programmes[pgmNr], "\n    ", x);
 	}
 	fclose(x);
+	w->status = 0;
+      } else {
+	w->status = -1;
       }
       break;
     case CMD_FREE:
@@ -517,19 +524,31 @@ work_response(LV2_Handle  instance,
   switch(w->cmd) {
     case CMD_LOADCFG:
       b3s->swap_instances = 1;
-      sprintf(tmp, "loaded CFG: '%s'", w->msg);
+      if (w->status)
+	sprintf(tmp, "error loading CFG: '%s'", w->msg);
+      else
+	sprintf(tmp, "loaded CFG: '%s'", w->msg);
       forge_message_str(b3s, b3s->uris.sb3_uimsg, tmp);
       break;
     case CMD_LOADPGM:
-      sprintf(tmp, "loaded PGM: '%s'", w->msg);
+      if (w->status)
+	sprintf(tmp, "error loading PGM: '%s'", w->msg);
+      else
+	sprintf(tmp, "loaded PGM: '%s'", w->msg);
       forge_message_str(b3s, b3s->uris.sb3_uimsg, tmp);
       break;
     case CMD_SAVEPGM:
-      sprintf(tmp, "saved PGM: '%s'", w->msg);
+      if (w->status)
+	sprintf(tmp, "error saving PGM: '%s'", w->msg);
+      else
+	sprintf(tmp, "saved PGM: '%s'", w->msg);
       forge_message_str(b3s, b3s->uris.sb3_uimsg, tmp);
       break;
     case CMD_SAVECFG:
-      sprintf(tmp, "saved CFG: '%s'", w->msg);
+      if (w->status)
+	sprintf(tmp, "error saving CFG: '%s'", w->msg);
+      else
+	sprintf(tmp, "saved CFG: '%s'", w->msg);
       forge_message_str(b3s, b3s->uris.sb3_uimsg, tmp);
       break;
     break;
