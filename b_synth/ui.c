@@ -1233,7 +1233,7 @@ static void txtentry_render(PuglView* view) {
   const GLfloat mat_g[] = {0.1, 0.9, 0.15, 1.0};
   const GLfloat mat_x[] = {0.1, 0.1, 0.15, 1.0};
 
-  unity_box(view, -1.0, 1.0, 0, .24, mat_x);
+  unity_box(view, -1.0, 1.0, -.12, .12, mat_x);
 
   glPushMatrix();
   glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_b);
@@ -1247,7 +1247,7 @@ static void txtentry_render(PuglView* view) {
   float bb[6];
   ftglGetFontBBox(ui->font_big, ui->textentry_text, -1, bb);
 
-  glTranslatef((bb[3] - bb[0])/-2.0, -1.5 * (1000.0*SCALE), 0);
+  glTranslatef((bb[3] - bb[0])/-2.0, -0.25 * (1000.0*SCALE), 0);
   ftglRenderFont(ui->font_big, ui->textentry_text, FTGL_RENDER_ALL);
 
   glTranslatef((bb[3] - bb[0]), 0, 0);
@@ -1316,7 +1316,7 @@ onDisplay(PuglView* view)
       onReshape(view, ui->width, ui->height);
       ui->queuepopup = 0;
     }
-    unity_box(view, -1.0, 1.0, -.25, .25, mat_dial);
+    unity_box(view, -1.0, 1.0, -.12, .12, mat_dial);
     render_title(view, ui->popupmsg, 0, 0, 0, mat_drawbar_white, 1);
     if (ui->pendingmode) {
       render_text(view, "Press <enter> to confirm, <ESC> to abort, or press button.", 0, 7.0, 0, 1);
@@ -1362,7 +1362,7 @@ onDisplay(PuglView* view)
     const float w = 1.0/2.8 * 22.0 * SCALE;
     const float h = 2.0/24.0 * 22.0 * SCALE;
 
-    render_title(view, (ui->displaymode == 2) ? "set" : "store", 16.5, 7.5, 0.0, mat_drawbar_white, 3);
+    render_title(view, (ui->displaymode == 2) ? "set" : "store", 16.5, 7.3, 0.0, mat_drawbar_white, 3);
 
     for (i=0; i < 128; i++) {
       char txt[40];
@@ -1810,7 +1810,7 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       }
       puglPostRedisplay(view);
       break;
-#if 1 // not ready, yet
+#if 0 // not ready, yet
     case 'L':
       if (ui->displaymode == 0) {
 	dirlist(view, ui->curdir);
