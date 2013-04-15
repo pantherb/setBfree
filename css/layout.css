@@ -49,14 +49,13 @@ h1,h2,h3,h4,h5 {
 
 #container {
 	width:900px;
-	margin: 0px auto;
+	margin: 0px auto 2em auto;
 	border-radius:10px;
-	margin: 0px auto;
 }
 
 #content {
 	width:50em;
-	min-height:300px;
+	min-height:400px;
 	margin: 0px auto;
 	padding:.5em;
 }
