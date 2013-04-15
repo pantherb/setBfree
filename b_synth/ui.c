@@ -58,6 +58,15 @@
 #define BTNLOC_CANC .45, .7, .8, .95
 #define SCROLLBAR -.8, .8, .625, 0.7
 
+enum {
+  HOVER_OK = 1,
+  HOVER_NO = 2,
+  HOVER_YES = 4,
+  HOVER_SAVE = 8,
+  HOVER_CANC = 16,
+  HOVER_SCROLLBAR = 32
+};
+
 #define SIGNUM(a) (a < 0 ? -1 : 1)
 #define CTRLWIDTH2(ctrl) (SCALE * (ctrl).w / 2.0)
 #define CTRLHEIGHT2(ctrl) (SCALE * (ctrl).h / 2.0)
@@ -215,6 +224,8 @@ typedef struct {
   int dir_scroll;
   int dir_scrollgrab;
   int dir_hidedotfiles;
+
+  int mouseover;
 
 } B3ui;
 
@@ -1034,11 +1045,17 @@ unity_box(PuglView* view,
 static void
 unity_button(PuglView* view,
     const float x0, const float x1,
-    const float y0, const float y1)
+    const float y0, const float y1,
+    int hover
+    )
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   const float invaspect = (float) ui->height / (float) ui->width;
-  const GLfloat btncol[] = {0.1, 0.95, 0.15, 1.0 };
+  GLfloat btncol[] = {0.1, 0.95, 0.15, 1.0 };
+
+  if (hover) {
+    btncol[0] = 0.4; btncol[1] = 1.0; btncol[2] = 0.4;
+  }
   float x0A, x0B;
 
   /* button texture: x/3 (left-circle + x/3 (box) + x/3 (right-circle) ;; texture aspect: 4/3
@@ -1320,13 +1337,13 @@ onDisplay(PuglView* view)
     render_title(view, ui->popupmsg, 0, 0, 0, mat_drawbar_white, 1);
     if (ui->pendingmode) {
       render_text(view, "Press <enter> to confirm, <ESC> to abort, or press button.", 0, 7.0, 0, 1);
-      unity_button(view, BTNLOC_NO);
-      unity_button(view, BTNLOC_YES);
+      unity_button(view, BTNLOC_NO, ui->mouseover & HOVER_NO);
+      unity_button(view, BTNLOC_YES, ui->mouseover & HOVER_YES);
       render_title(view, "No", btn_x(BTNLOC_NO), invaspect * btn_y(BTNLOC_NO), 0, mat_drawbar_white, 1);
       render_title(view, "Yes", btn_x(BTNLOC_YES), invaspect * btn_y(BTNLOC_YES), 0, mat_drawbar_white, 1);
     } else {
       render_text(view, "Press <enter> or <ESC> to continue.", 0, 7.0, 0, 1);
-      unity_button(view, BTNLOC_OK);
+      unity_button(view, BTNLOC_OK, ui->mouseover & HOVER_OK);
       render_title(view, "Ok", btn_x(BTNLOC_OK), invaspect * btn_y(BTNLOC_OK), 0, mat_drawbar_white, 1);
     }
     return;
@@ -1414,16 +1431,16 @@ onDisplay(PuglView* view)
 	break;
       case 5:
 	render_title(view, "save .cfg", 0, invaspect * btn_y(BTNLOC_SAVE), 0.0, mat_drawbar_white, 1);
-	unity_button(view, BTNLOC_SAVE);
+	unity_button(view, BTNLOC_SAVE, ui->mouseover & HOVER_SAVE);
 	render_title(view, "Save", btn_x(BTNLOC_SAVE), invaspect * btn_y(BTNLOC_SAVE), 0, mat_drawbar_white, 1);
-	unity_button(view, BTNLOC_CANC);
+	unity_button(view, BTNLOC_CANC, ui->mouseover & HOVER_CANC);
 	render_title(view, "Cancel", btn_x(BTNLOC_CANC), invaspect * btn_y(BTNLOC_CANC), 0, mat_drawbar_white, 1);
 	render_text(view, "select a file or press OK or <enter> to create new.", -20.0, 7.75, 0.0, 3);
 	break;
       case 6:
 	render_title(view, "save .pgm", 0, invaspect * btn_y(BTNLOC_SAVE), 0.0, mat_drawbar_white, 1);
-	unity_button(view, BTNLOC_SAVE);
-	unity_button(view, BTNLOC_CANC);
+	unity_button(view, BTNLOC_SAVE, ui->mouseover & HOVER_SAVE);
+	unity_button(view, BTNLOC_CANC, ui->mouseover & HOVER_CANC);
 	render_title(view, "Cancel", btn_x(BTNLOC_CANC), invaspect * btn_y(BTNLOC_CANC), 0, mat_drawbar_white, 1);
 	render_title(view, "Save", btn_x(BTNLOC_SAVE), invaspect * btn_y(BTNLOC_SAVE), 0, mat_drawbar_white, 1);
 	render_text(view, "select a file or press OK or <enter> to create new.", -20.0, 7.75, 0.0, 3);
@@ -1439,6 +1456,10 @@ onDisplay(PuglView* view)
     if (ui->dirlistlen > 120) {
       GLfloat mat_sbg[] = {0.1, 0.1, 0.1, 1.0};
       GLfloat mat_sfg[] = {0.1, 0.9, 0.15, 1.0};
+      if (ui->mouseover & HOVER_SCROLLBAR || ui->dir_scrollgrab) {
+	mat_sbg[0] = mat_sbg[1] = mat_sbg[2] = 0.15;
+	mat_sfg[0] = 0.4; mat_sfg[1] = 1.0; mat_sfg[2] = 0.4;
+      }
       unity_box(view, SCROLLBAR, mat_sbg);
       int pages = (ui->dirlistlen / 20);
       float ss = 1.6 / (float)pages;
@@ -1872,14 +1893,27 @@ onMotion(PuglView* view, int x, int y)
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   float fx, fy;
+  const int phov = ui->mouseover;
+
+  ui->mouseover = 0;
+  if (ui->textentry_active || ui->popupmsg || ui->displaymode) {
+    fx = (2.0 * x / ui->width ) - 1.0;
+    fy = (2.0 * y / ui->height ) - 1.0;
+    if (MOUSEIN(BTNLOC_OK, fx, fy)) ui->mouseover |= HOVER_OK;
+    if (MOUSEIN(BTNLOC_NO, fx, fy)) ui->mouseover |= HOVER_NO;
+    if (MOUSEIN(BTNLOC_YES, fx, fy)) ui->mouseover |= HOVER_YES;
+    if (MOUSEIN(BTNLOC_SAVE, fx, fy)) ui->mouseover |= HOVER_SAVE;
+    if (MOUSEIN(BTNLOC_CANC, fx, fy)) ui->mouseover |= HOVER_CANC;
+    if (MOUSEIN(SCROLLBAR, fx, fy)) ui->mouseover |= HOVER_SCROLLBAR;
+    if (phov != ui->mouseover) {
+      puglPostRedisplay(view);
+    }
+  }
 
   if (ui->textentry_active || ui->popupmsg) return;
 
   if (ui->displaymode == 2 || ui->displaymode == 3) {
     int pgm_sel = ui->pgm_sel;
-    fx = (2.0 * x / ui->width ) - 1.0;
-    fy = (2.0 * y / ui->height ) - 1.0;
-
     fx /= SCALE * 22.0; fy /= SCALE * 22.0;
     fx += 1.1; fy += 1.0;
     //printf("MX %fx%f --- %f %f \n", fx, fy,   fx * 2.7, fy*12);
@@ -2187,6 +2221,7 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   ui->dir_sel     = -1;
   ui->dir_scroll  = 0;
   ui->dir_scrollgrab = 0;
+  ui->mouseover = 0;
   ui->popupmsg = NULL;
   ui->queuepopup = 0;
   ui->pendingdata = NULL;
