@@ -41,6 +41,7 @@ ifeq ($(LV2AVAIL), yes)
     UIDEPS+=btn_overdrive.c
     UIDEPS+=bg_right_ctrl.c bg_left_ctrl.c bg_leslie_drum.c bg_leslie_horn.c
     UIDEPS+=help_screen_image.c
+    UIDEPS+=ui_button_image.c
     LV2GUI=b_synthUI
     ifeq ($(IS_OSX), yes)
       UIDEPS+=../pugl/pugl_osx.m
