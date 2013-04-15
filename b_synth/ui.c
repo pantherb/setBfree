@@ -51,6 +51,12 @@
 /* ui-model scale -- on screen we use [-1..+1] orthogonal projection */
 #define SCALE (0.04f)
 
+#define BTNLOC_OK -.05,  .05, .55, .7
+#define BTNLOC_NO -.75, -.65, .55, .7
+#define BTNLOC_YES .65,  .75, .55, .7
+#define BTNLOC_SAVE .75, .95, .8, .95
+#define BTNLOC_CANC .45, .7, .8, .95
+#define SCROLLBAR -.8, .8, .625, 0.7
 
 #define SIGNUM(a) (a < 0 ? -1 : 1)
 #define CTRLWIDTH2(ctrl) (SCALE * (ctrl).w / 2.0)
@@ -62,6 +68,30 @@
    && (mousey) >= (ctrl).y * SCALE - CTRLHEIGHT2(ctrl) \
    && (mousey) <= (ctrl).y * SCALE + CTRLHEIGHT2(ctrl) )
 
+
+static inline int MOUSEIN(
+    const float X0, const float X1,
+    const float Y0, const float Y1,
+    const float mousex, const float mousey) {
+  return (
+      (mousex) >= (X0)
+   && (mousex) <= (X1)
+   && (mousey) >= (Y0)
+   && (mousey) <= (Y1)
+   );
+}
+
+static inline float btn_x(
+    const float X0, const float X1,
+    const float Y0, const float Y1) {
+  return (X1 + X0)/2.0 / SCALE;
+}
+
+static inline float btn_y(
+    const float X0, const float X1,
+    const float Y0, const float Y1) {
+  return (Y1 + Y0) / 2.0 / SCALE;
+}
 
 /* total number of interactive objects */
 #define TOTAL_OBJ (33)
@@ -1039,11 +1069,9 @@ int save_cfgpgm(PuglView* view, const char *fn, int mode, int override) {
     return 0;
   }
   if (mode == 6) {
-    printf("saving PGM -> %s\n", fn);
-    //forge_message_str(ui, ui->uris.sb3_savepgm, fn);
+    forge_message_str(ui, ui->uris.sb3_savepgm, fn);
   } else {
-    printf("saving CFG -> %s\n", fn);
-    //forge_message_str(ui, ui->uris.sb3_savecfg, fn);
+    forge_message_str(ui, ui->uris.sb3_savecfg, fn);
   }
   return 0;
 }
@@ -1053,7 +1081,6 @@ void handle_msg_reply(PuglView* view) {
   if (!ui->pendingdata || !ui->pendingmode) return;
 
   if (ui->pendingmode == 5 || ui->pendingmode == 6) {
-    printf("CONTINUE from before save_cfgpgm()\n");
     save_cfgpgm(view, ui->pendingdata, ui->pendingmode, 1);
   } else {
     fprintf(stderr, "B3Lv2UI: invalid pending mode.\n");
@@ -1222,7 +1249,7 @@ onDisplay(PuglView* view)
     setupLight();
     initTextures(ui->view);
     ui->font_big = ftglCreateBufferFont(FONTFILE);
-    ftglSetFontFaceSize(ui->font_big, 80, 72);
+    ftglSetFontFaceSize(ui->font_big, 40, 72);
     ftglSetFontCharMap(ui->font_big, ft_encoding_unicode);
     ui->font_small = ftglCreateBufferFont(FONTFILE);
     ftglSetFontFaceSize(ui->font_small, 20, 72);
@@ -1230,17 +1257,23 @@ onDisplay(PuglView* view)
   }
 
   if (ui->popupmsg) {
+    const float invaspect = (float) ui->height / (float) ui->width;
     if (ui->queuepopup) {
       onReshape(view, ui->width, ui->height);
       ui->queuepopup = 0;
     }
-    unity_box(view, -1.0, 1.0, .25, .25, mat_dial);
+    unity_box(view, -1.0, 1.0, -.25, .25, mat_dial);
     render_title(view, ui->popupmsg, 0, 0, 0, 1);
-    // TODO : OK||Cancel buttons
     if (ui->pendingmode) {
-      render_text(view, "Press <enter> to confirm, <ESC> to abort.", 0, 6.5, 0, 1);
+      render_text(view, "Press <enter> to confirm, <ESC> to abort, or press button.", 0, 7.0, 0, 1);
+      unity_box(view, BTNLOC_NO, mat_lever);
+      unity_box(view, BTNLOC_YES, mat_lever);
+      render_title(view, "No", btn_x(BTNLOC_NO), invaspect * btn_y(BTNLOC_NO), 0, 1);
+      render_title(view, "Yes", btn_x(BTNLOC_YES), invaspect * btn_y(BTNLOC_YES), 0, 1);
     } else {
-      render_text(view, "Press <enter> or <ESC> to continue.", 0, 6.5, 0, 1);
+      render_text(view, "Press <enter> or <ESC> to continue.", 0, 7.0, 0, 1);
+      unity_box(view, BTNLOC_OK, mat_lever);
+      render_title(view, "Ok", btn_x(BTNLOC_OK), invaspect * btn_y(BTNLOC_OK), 0, 1);
     }
     return;
   }
@@ -1275,7 +1308,7 @@ onDisplay(PuglView* view)
     const float w = 1.0/2.8 * 22.0 * SCALE;
     const float h = 2.0/24.0 * 22.0 * SCALE;
 
-    render_title(view, (ui->displaymode == 2) ? "set" : "store", 16.5, 7.25, 0.0, 3);
+    render_title(view, (ui->displaymode == 2) ? "set" : "store", 16.5, 7.5, 0.0, 3);
 
     for (i=0; i < 128; i++) {
       char txt[40];
@@ -1322,8 +1355,24 @@ onDisplay(PuglView* view)
 
     switch(ui->displaymode) {
       case 4:
-	render_title(view, "open .pgm or .cfg", 24.25, 5.75, 0.0, 2);
+	render_title(view, "open .pgm or .cfg", 24.25, 6.75, 0.0, 2);
 	render_text(view, "Note: loading a .cfg will re-initialize the organ.", -20.0, 7.75, 0.0, 3);
+	break;
+      case 5:
+	render_title(view, "save .cfg", 0, invaspect * btn_y(BTNLOC_SAVE), 0.0, 1);
+	unity_box(view, BTNLOC_SAVE, mat_lever);
+	render_title(view, "Save", btn_x(BTNLOC_SAVE), invaspect * btn_y(BTNLOC_SAVE), 0, 1);
+	unity_box(view, BTNLOC_CANC, mat_lever);
+	render_title(view, "Cancel", btn_x(BTNLOC_CANC), invaspect * btn_y(BTNLOC_CANC), 0, 1);
+	render_text(view, "select a file or press OK or <enter> to create new.", -20.0, 7.75, 0.0, 3);
+	break;
+      case 6:
+	render_title(view, "save .pgm", 0, invaspect * btn_y(BTNLOC_SAVE), 0.0, 1);
+	unity_box(view, BTNLOC_SAVE, mat_lever);
+	unity_box(view, BTNLOC_CANC, mat_lever);
+	render_title(view, "Cancel", btn_x(BTNLOC_CANC), invaspect * btn_y(BTNLOC_CANC), 0, 1);
+	render_title(view, "Save", btn_x(BTNLOC_SAVE), invaspect * btn_y(BTNLOC_SAVE), 0, 1);
+	render_text(view, "select a file or press OK or <enter> to create new.", -20.0, 7.75, 0.0, 3);
 	break;
       default:
 	break;
@@ -1336,7 +1385,7 @@ onDisplay(PuglView* view)
     if (ui->dirlistlen > 120) {
       GLfloat mat_sbg[] = {0.1, 0.1, 0.1, 1.0};
       GLfloat mat_sfg[] = {0.1, 0.9, 0.15, 1.0};
-      unity_box(view, -.8, 0.8, 0.625, 0.7, mat_sbg);
+      unity_box(view, SCROLLBAR, mat_sbg);
       int pages = (ui->dirlistlen / 20);
       float ss = 1.6 / (float)pages;
       float sw = 5.0 * ss;
@@ -1678,6 +1727,8 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
 	handle_msg_reply(view);
 	free(ui->pendingdata); ui->pendingdata = NULL;
 	ui->pendingmode = 0;
+      } else if (ui->displaymode == 5 || ui->displaymode == 6) {
+	txtentry_start(view, "Enter File Name:", "" );
       }
       queue_reshape = 1;
       break;
@@ -1706,7 +1757,7 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       puglPostRedisplay(view);
       break;
 #if 0 // not ready, yet
-    case 'X':
+    case 'L':
       if (ui->displaymode == 0) {
 	dirlist(view, ui->curdir);
 	ui->displaymode = 4;
@@ -1849,8 +1900,6 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
   B3ui* ui = (B3ui*)puglGetHandle(view);
   int i;
   float fx, fy;
-  project_mouse(view, x, y, &fx, &fy);
-  //fprintf(stderr, "Mouse %d %s at %.3f,%.3f\n", button, press ? "down" : "up", fx, fy);
 
   if (!press) {
     ui->dndid = -1;
@@ -1859,8 +1908,23 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
   }
 
   if (ui->popupmsg) {
+    fx = (2.0 * x / ui->width ) - 1.0;
+    fy = (2.0 * y / ui->height ) - 1.0;
+
+    if (ui->pendingmode) {
+      if (MOUSEIN(BTNLOC_NO, fx, fy)) { ; } // NO
+      else if (MOUSEIN(BTNLOC_YES, fx, fy)) {  // YES
+	handle_msg_reply(view);
+      } else {
+	return; // clicked elsewhere
+      }
+    } else {
+      if (!MOUSEIN(BTNLOC_OK, fx, fy)) {
+	return; // clicked elsewhere
+      }
+    }
+
     free(ui->popupmsg); ui->popupmsg = NULL;
-    if (0) handle_msg_reply(view); // TODO OK clicked only
     free(ui->pendingdata); ui->pendingdata = NULL;
     ui->pendingmode = 0;
     onReshape(view, ui->width, ui->height);
@@ -1896,7 +1960,11 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     return;
   }
   if (IS_FILEBROWSER(ui)) {
+    fx = (2.0 * x / ui->width ) - 1.0;
+    fy = (2.0 * y / ui->height ) - 1.0;
+
     if (ui->dir_sel >= 0) {
+      /* click on file */
       struct stat fs;
       char * rfn = absfilepath(ui->curdir, ui->dirlist[ui->dir_sel]);
       if(rfn && stat(rfn, &fs) == 0) {
@@ -1920,8 +1988,8 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 	      break;
 	    case 6:
 	    case 5:
-	      printf ("SAVE/OVERRIDE: %s\n", rfn);
 	      if (save_cfgpgm(view, rfn, ui->displaymode, 0)) {
+		/* failed -> retry */
 		free(rfn);
 		puglPostRedisplay(view);
 		return;
@@ -1932,31 +2000,30 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 	}
       }
     } else if (
-	(ui->displaymode == 5 || ui->displaymode == 6)
-	&& ((float) x / ui->width ) > .9
-	&& ((float) y / ui->height ) > .9
+	ui->dirlistlen > 120
+	&& MOUSEIN(SCROLLBAR, fx, fy)
 	) {
-      // handle save OK -> this folder
+	// handle scrollbar
+      int pages = (ui->dirlistlen / 20);
+      float ss = 1.6 / (float)pages;
+      float sw = 5.0 * ss;
+      float sx = ui->dir_scroll * ss - .8;
+      if (fx < sx && ui->dir_scroll > 0) --ui->dir_scroll;
+      else if (fx > sx+sw && ui->dir_scroll < (pages-4)) ++ui->dir_scroll;
+      else if (fx >= sx && fx <= sx+sw) {
+	ui->dir_scrollgrab = 1;
+      }
+      ui->dir_sel = -1;
+      puglPostRedisplay(view);
+      return;
+    } else if (
+	(ui->displaymode == 5 || ui->displaymode == 6)
+	&& MOUSEIN(BTNLOC_SAVE, fx, fy)
+	) {
       txtentry_start(view, "Enter File Name:", "" );
       return;
-    } else if (ui->dirlistlen > 120) {
-	// handle scrollbar
-	fx = (2.0 * x / ui->width ) - 1.0;
-	fy = (2.0 * y / ui->height ) - 1.0;
-	if (fx >= -.8 && fx <= .8 && fy >= 0.625 && fy <= 0.7) {
-	int pages = (ui->dirlistlen / 20);
-	float ss = 1.6 / (float)pages;
-	float sw = 5.0 * ss;
-	float sx = ui->dir_scroll * ss - .8;
-	if (fx < sx && ui->dir_scroll > 0) --ui->dir_scroll;
-	else if (fx > sx+sw && ui->dir_scroll < (pages-4)) ++ui->dir_scroll;
-	else if (fx >= sx && fx <= sx+sw) {
-	  ui->dir_scrollgrab = 1;
-	}
-	ui->dir_sel = -1;
-	puglPostRedisplay(view);
-	return;
-      }
+    } else if (!MOUSEIN(BTNLOC_CANC, fx, fy)) {
+      return;
     }
     ui->dir_sel = -1;
     ui->displaymode = 0;
@@ -1965,7 +2032,10 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     return;
   }
 
+  project_mouse(view, x, y, &fx, &fy);
+
   if (ui->displaymode == 0 && fx >= 1.050 && fx <= 1.150 && fy >= -.27 && fy <= -.19) {
+    // help button -- todo z-offset
     ui->displaymode = 1;
     onReshape(view, ui->width, ui->height);
     puglPostRedisplay(view);

@@ -459,13 +459,15 @@ work(LV2_Handle                  instance,
     case CMD_SAVECFG:
       x = fopen(w->msg, "w");
       if (x) {
-	rc_loop_state(b3s->inst->state, rcsave_cb, (void*) &x);
+	fprintf(x, "# setBfree config file\n# modificaions on top of default config\n");
+	rc_loop_state(b3s->inst->state, rcsave_cb, (void*) x);
 	fclose(x);
       }
       break;
     case CMD_SAVEPGM:
       x = fopen(w->msg, "w");
       if (x) {
+	fprintf(x, "# setBfree midi program file\n");
 	int i;
 	for (i=0 ; i < 128; ++i) {
 	  int pgmNr = i + b3s->inst->progs->MIDIControllerPgmOffset;
