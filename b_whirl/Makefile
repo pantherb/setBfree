@@ -4,9 +4,10 @@ LOADLIBES = -lm
 
 targets=whirl.o eqcomp.o
 
+LV2NAME=b_whirl
+
 ifeq ($(LV2AVAIL), yes)
   targets+=lv2
-  LV2NAME=b_whirl
 endif
 
 all: $(targets)

@@ -4,9 +4,10 @@ LOADLIBES = -lm
 
 targets=reverb.o
 
+LV2NAME=b_reverb
+
 ifeq ($(LV2AVAIL), yes)
   targets+=lv2
-  LV2NAME=b_reverb
 endif
 
 all: $(targets)

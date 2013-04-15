@@ -4,9 +4,10 @@ LOADLIBES = -lm
 
 targets=overdrive.o
 
+LV2NAME=b_overdrive
+
 ifeq ($(LV2AVAIL), yes)
   targets+=lv2
-  LV2NAME=b_overdrive
 endif
 
 ifeq ($(shell pkg-config --exists liblo && echo yes), yes)
