@@ -19,6 +19,7 @@ OBJS= \
 	cfgParser.o \
 	main.o \
 	midnam.o \
+	memstream.o \
 	../b_reverb/reverb.o \
 	../b_whirl/eqcomp.o \
 	../b_whirl/whirl.o \
@@ -36,6 +37,7 @@ HEADERS = \
 	vibrato.h \
 	tonegen.h \
 	defaultpgm.h \
+	memstream.h \
 	../b_reverb/reverb.h \
 	../b_whirl/eqcomp.h \
 	../b_whirl/whirl.h \

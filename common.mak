@@ -44,6 +44,7 @@ ifeq ($(UNAME),Darwin)
   LV2LDFLAGS=-dynamiclib
   LIB_EXT=.dylib
 else
+  CFLAGS+= -DHAVE_MEMSTREAM
   LV2LDFLAGS=-Wl,-Bstatic -Wl,-Bdynamic
   LIB_EXT=.so
 endif

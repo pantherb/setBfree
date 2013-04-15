@@ -347,6 +347,7 @@ int loadProgrammeFile (void *p, char * fileName) {
   }
 }
 
+#ifndef PRG_MAIN
 int loadProgrammeString (void *p, char * pdef) {
   ParserState ps;
   ps.p = p;
@@ -363,4 +364,5 @@ int loadProgrammeString (void *p, char * pdef) {
     return (int) P_ERROR;
   }
 }
+#endif
 /* vi:set ts=8 sts=2 sw=2: */

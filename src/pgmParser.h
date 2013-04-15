@@ -23,6 +23,8 @@
 #ifndef PGMPARSER_H
 #define PGMPARSER_H
 
+#include "memstream.h"
+
 extern int loadProgrammeFile (void *p, char * fileName);
 extern int loadProgrammeString (void *p, char * pdef);
 

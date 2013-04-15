@@ -72,6 +72,7 @@ OBJ= \
   ../src/state.o \
   ../src/tonegen.o \
   ../src/pgmParser.o \
+  ../src/memstream.o \
   ../b_whirl/eqcomp.o \
   ../b_whirl/whirl.o \
   ../b_overdrive/overdrive.o \

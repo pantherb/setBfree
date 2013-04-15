@@ -37,6 +37,16 @@ Copyright:
   2012 Robin Gareus <robin@gareus.org>
 License: CC-BY-SA-3.0
 
+Files: src/memstream.c
+Copyright:
+  2005-2006, 2009-2012 Free Software Foundation, Inc.
+  2010 Free Software Foundation, Inc.
+  2012 Jeff Verkoeyen
+License: GPL-3
+X-Comment:
+ This code is only used on OSX (or other systems w/o GPL libc).
+ Jeff Verkoeyen's part in the file is apache licensed
+
 Files: debian/*
 Copyright:
   2012 Robin Gareus <robin@gareus.org>
