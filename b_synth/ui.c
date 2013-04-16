@@ -2013,10 +2013,10 @@ onMotion(PuglView* view, int x, int y)
     int pgm_sel = ui->pgm_sel;
     fx /= SCALE * 22.0; fy /= SCALE * 22.0;
     fx += 1.1; fy += 1.0;
-    //printf("MX %fx%f --- %f %f \n", fx, fy,   fx * 2.7, fy*12);
     fx *= 2.7; fy *= 12.0;
     if (fx > 0 && fx < 6 && fy > 0 && fy < 24) {
       pgm_sel = floor(fx) * 24 + floor(fy);
+      if (pgm_sel < 0 || pgm_sel > 127) pgm_sel = -1;
     } else {
       pgm_sel = -1;
     }
