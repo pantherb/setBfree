@@ -177,7 +177,7 @@ typedef struct {
   /* OpenGL */
   GLuint * vbo;
   GLuint * vinx;
-  GLuint texID[16]; // textures
+  GLuint texID[17]; // textures
   GLdouble matrix[16]; // used for mouse mapping
   double rot[3], off[3], scale; // global projection
 
@@ -762,6 +762,7 @@ static void drawMesh(PuglView* view, unsigned int index, int apply_transformatio
 #include "help_screen_image.c"
 
 #include "ui_button_image.c"
+#include "ui_proc_image.c"
 
 #define CIMAGE(ID, VARNAME) \
   glGenTextures(1, &ui->texID[ID]); \
@@ -823,6 +824,7 @@ static void initTextures(PuglView* view) {
   CIMAGE(14, help_screen_image);
 
   CIMAGE(15, ui_button_image);
+  CIMAGE(16, ui_proc_image);
 }
 
 
@@ -858,7 +860,7 @@ static void setupOpenGL() {
 static void setupLight() {
   const GLfloat light0_ambient[]  = { 0.2, 0.15, 0.1, 1.0 };
   const GLfloat light0_diffuse[]  = { 1.0, 1.0, 1.0, 1.0 };
-  const GLfloat light0_specular[] = { 0.9, 0.9, 1.0, 1.0 };
+  const GLfloat light0_specular[] = { 0.4, 0.4, 0.5, 1.0 };
   const GLfloat light0_position[] = {  3.0,  2.5, -10.0, 0 };
   const GLfloat spot_direction[]  = { -2.5, -2.5,  9.0 };
 
@@ -1513,7 +1515,41 @@ onDisplay(PuglView* view)
 
   /** step 0 - help button **/
 
-  render_title(view, " ?  ", 1.08/SCALE, -.22/SCALE, .055, mat_drawbar_white, 1);
+  if (1) {
+    glPushMatrix();
+    glLoadIdentity();
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_drawbar_white);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_drawbar_white);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_drawbar_white);
+    glEnable(GL_TEXTURE_2D);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    glBindTexture(GL_TEXTURE_2D, ui->texID[16]);
+    glBegin(GL_QUADS);
+    glTexCoord2f (0.0,  0.0); glVertex3f(0.92, -.25, 0);
+    glTexCoord2f (0.0,  1.0); glVertex3f(0.92, -.16, 0);
+    glTexCoord2f (1.0, 1.0); glVertex3f(1.1,  -.16, 0);
+    glTexCoord2f (1.0, 0.0); glVertex3f(1.1,  -.25, 0);
+    glEnd();
+    glDisable(GL_TEXTURE_2D);
+    glPopMatrix();
+  }
+
+  glPushMatrix();
+  glLoadIdentity();
+  glTranslatef(1.07, -.21, 0.0f);
+  glScalef(SCALE, SCALE, SCALE);
+  glScalef(.6, .6, 1.0);
+  glRotatef(180, 1, 0, 0);
+
+  glMaterialfv(GL_FRONT, GL_AMBIENT, mat_dial);
+  glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_dial);
+  glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
+
+  drawMesh(view, OBJ_PUSHBUTTON, 1);
+  //glDisable(GL_TEXTURE_2D);
+  glPopMatrix();
+
+  render_title(view, "?", 1.07/SCALE, -.21/SCALE, 0.012, mat_drawbar_white, 1);
 
   /** step 1 - draw background -- fixed objects **/
 
@@ -2123,8 +2159,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 
   project_mouse(view, x, y, &fx, &fy);
 
-  if (ui->displaymode == 0 && fx >= 1.050 && fx <= 1.150 && fy >= -.27 && fy <= -.19) {
-    // help button -- todo z-offset
+  if (ui->displaymode == 0 && fx >= 1.04 && fx <= 1.100 && fy >= -.24 && fy <= -.18) {
     ui->displaymode = 1;
     onReshape(view, ui->width, ui->height);
     puglPostRedisplay(view);
