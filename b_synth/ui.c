@@ -67,12 +67,12 @@ enum {
   HOVER_SCROLLBAR = 32
 };
 
-#define MENU_LOAD  -.75, -.25, -.7, -.55
-#define MENU_SAVEC -.75, -.25, -.075, .075
-#define MENU_SAVEP -.75, -.25, .55, .7
-#define MENU_PGML   .25,  .75, -.7, -.55
-#define MENU_PGMS   .25,  .75, -.075, .075
-#define MENU_CANC   .25,  .75, .55, .7
+#define MENU_LOAD  -.75, -.25, -.7, -.5
+#define MENU_SAVEC -.75, -.25, -.1 , .1
+#define MENU_SAVEP -.75, -.25, .5, .7
+#define MENU_PGML   .25,  .75, -.7, -.5
+#define MENU_PGMS   .25,  .75, -.1, .1
+#define MENU_CANC   .25,  .75, .5, .7
 
 enum {
   HOVER_MLOAD = 1,
@@ -1541,12 +1541,12 @@ onDisplay(PuglView* view)
     }
     return;
   } else if (ui->displaymode == 7) {
-    gui_button(view, MENU_SAVEP, HOVER_MSAVEP, "export program");
-    gui_button(view, MENU_SAVEC, HOVER_MSAVEC, "export config");
-    gui_button(view, MENU_LOAD, HOVER_MLOAD, "load pgm or cfg");
-    gui_button(view, MENU_PGML, HOVER_MPGML, "recall program");
-    gui_button(view, MENU_PGMS, HOVER_MPGMS, "store program");
-    gui_button(view, MENU_CANC, HOVER_MCANC, "close menu");
+    gui_button(view, MENU_SAVEP, HOVER_MSAVEP, "Export Program");
+    gui_button(view, MENU_SAVEC, HOVER_MSAVEC, "Export Config");
+    gui_button(view, MENU_LOAD, HOVER_MLOAD, "Load pgm or cfg");
+    gui_button(view, MENU_PGML, HOVER_MPGML, "Recall Program");
+    gui_button(view, MENU_PGMS, HOVER_MPGMS, "Store Program");
+    gui_button(view, MENU_CANC, HOVER_MCANC, "Close Menu");
     return;
   }
 
