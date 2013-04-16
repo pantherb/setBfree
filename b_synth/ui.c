@@ -2168,6 +2168,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     }
     if (MOUSEIN(MENU_CANC, fx, fy)) {
       ui->displaymode = 0;
+      onReshape(view, ui->width, ui->height);
     }
     puglPostRedisplay(view);
     return;
