@@ -67,6 +67,22 @@ enum {
   HOVER_SCROLLBAR = 32
 };
 
+#define MENU_LOAD  -.75, -.25, -.7, -.55
+#define MENU_SAVEC -.75, -.25, -.075, .075
+#define MENU_SAVEP -.75, -.25, .55, .7
+#define MENU_PGMS   .25,  .75, -.7, -.55
+#define MENU_PGML   .25,  .75, -.075, .075
+#define MENU_CANC   .25,  .75, .55, .7
+
+enum {
+  HOVER_MLOAD = 1,
+  HOVER_MSAVEC = 2,
+  HOVER_MSAVEP = 4,
+  HOVER_MPGMS = 8,
+  HOVER_MPGML = 16,
+  HOVER_MCANC = 32,
+};
+
 #define NOSCROLL -1000
 #define SIGNUM(a) (a < 0 ? -1 : 1)
 #define CTRLWIDTH2(ctrl) (SCALE * (ctrl).w / 2.0)
@@ -189,6 +205,7 @@ typedef struct {
    * 4: File-index - load .cfg, load .pgm)
    * 5: File-index save cfg
    * 6: File-index save pgm
+   * 7: /menu/
    */
   int displaymode;
   int pgm_sel;
@@ -1103,6 +1120,20 @@ unity_button(PuglView* view,
 }
 
 static void
+gui_button(PuglView* view,
+    const float x0, const float x1,
+    const float y0, const float y1,
+    int hovermask, const char *label
+    )
+{
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  const GLfloat mat_white[] = { 1.0, 1.0, 1.0, 1.0 };
+  const float invaspect = (float) ui->height / (float) ui->width;
+  unity_button(view, x0, x1, y0, y1, ui->mouseover & hovermask);
+  render_title(view, label, (x1 + x0) / 2.0 / SCALE, invaspect * (y1 + y0) / 2.0 / SCALE, 0, mat_white, 1);
+}
+
+static void
 unity_tri(PuglView* view,
     const float x0,
     const float y0, const float y1,
@@ -1509,6 +1540,14 @@ onDisplay(PuglView* view)
       render_text(view, txt, x, y, .1f, 3);
     }
     return;
+  } else if (ui->displaymode == 7) {
+    gui_button(view, MENU_SAVEP, HOVER_MSAVEP, "save program");
+    gui_button(view, MENU_SAVEC, HOVER_MSAVEC, "save config");
+    gui_button(view, MENU_LOAD,  HOVER_MLOAD,  "load pgm or cfg");
+    gui_button(view, MENU_PGML, HOVER_MPGML, "recall program");
+    gui_button(view, MENU_PGMS, HOVER_MPGMS, "store program");
+    gui_button(view, MENU_CANC, HOVER_MCANC, "close menu");
+    return;
   }
 
   /* main organ */
@@ -1546,7 +1585,6 @@ onDisplay(PuglView* view)
   glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
 
   drawMesh(view, OBJ_PUSHBUTTON, 1);
-  //glDisable(GL_TEXTURE_2D);
   glPopMatrix();
 
   render_title(view, "?", 1.07/SCALE, -.21/SCALE, 0.012, mat_drawbar_white, 1);
@@ -1868,7 +1906,15 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       }
       puglPostRedisplay(view);
       break;
-#if 0 // not ready, yet
+#if 1 // not ready, yet
+    case ' ':
+      if (ui->displaymode == 0) {
+	ui->displaymode = 7;
+      }
+      else if (ui->displaymode == 7) ui->displaymode = 0;
+      queue_reshape = 1;
+      reset_state(view);
+      break;
     case 'L':
       if (ui->displaymode == 0) {
 	dirlist(view, ui->curdir);
@@ -1933,7 +1979,21 @@ onMotion(PuglView* view, int x, int y)
   const int phov = ui->mouseover;
 
   ui->mouseover = 0;
-  if (ui->textentry_active || ui->popupmsg || ui->displaymode) {
+
+  if (ui->displaymode == 7) { // menu
+    fx = (2.0 * x / ui->width ) - 1.0;
+    fy = (2.0 * y / ui->height ) - 1.0;
+    if (MOUSEIN(MENU_SAVEP, fx, fy)) ui->mouseover |= HOVER_MSAVEP;
+    if (MOUSEIN(MENU_SAVEC, fx, fy)) ui->mouseover |= HOVER_MSAVEC;
+    if (MOUSEIN(MENU_LOAD, fx, fy)) ui->mouseover |= HOVER_MLOAD;
+    if (MOUSEIN(MENU_PGMS, fx, fy)) ui->mouseover |= HOVER_MPGMS;
+    if (MOUSEIN(MENU_PGML, fx, fy)) ui->mouseover |= HOVER_MPGML;
+    if (MOUSEIN(MENU_CANC, fx, fy)) ui->mouseover |= HOVER_MCANC;
+    if (phov != ui->mouseover) {
+      puglPostRedisplay(view);
+    }
+  }
+  else if (ui->textentry_active || ui->popupmsg || ui->displaymode) {
     fx = (2.0 * x / ui->width ) - 1.0;
     fy = (2.0 * y / ui->height ) - 1.0;
     if (MOUSEIN(BTNLOC_OK, fx, fy)) ui->mouseover |= HOVER_OK;
@@ -2067,7 +2127,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     return;
   }
 
-  if (ui->displaymode == 3) {
+  else if (ui->displaymode == 3) {
     if (ui->pgm_sel >= 0) {
       txtentry_start(view,"Enter Preset Name:", strlen(ui->midipgm[ui->pgm_sel]) > 0 ? ui->midipgm[ui->pgm_sel] : "User" );
     } else {
@@ -2078,13 +2138,42 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     return;
   }
 
-  if (ui->displaymode == 1) {
+  else if (ui->displaymode == 1) {
     ui->displaymode = 0;
     onReshape(view, ui->width, ui->height);
     puglPostRedisplay(view);
     return;
   }
-  if (IS_FILEBROWSER(ui)) {
+
+  else if (ui->displaymode == 7) {
+    fx = (2.0 * x / ui->width ) - 1.0;
+    fy = (2.0 * y / ui->height ) - 1.0;
+    if (MOUSEIN(MENU_SAVEP, fx, fy)) {
+      dirlist(view, ui->curdir);
+      ui->displaymode = 6;
+    }
+    if (MOUSEIN(MENU_SAVEC, fx, fy)) {
+      dirlist(view, ui->curdir);
+      ui->displaymode = 5;
+    }
+    if (MOUSEIN(MENU_LOAD, fx, fy)) {
+      dirlist(view, ui->curdir);
+      ui->displaymode = 4;
+    }
+    if (MOUSEIN(MENU_PGMS, fx, fy)) {
+      ui->displaymode = 1;
+    }
+    if (MOUSEIN(MENU_PGMS, fx, fy)) {
+      ui->displaymode = 2;
+    }
+    if (MOUSEIN(MENU_CANC, fx, fy)) {
+      ui->displaymode = 0;
+    }
+    puglPostRedisplay(view);
+    return;
+  }
+
+  else if (IS_FILEBROWSER(ui)) { /* displaymode 4,5,6 */
     fx = (2.0 * x / ui->width ) - 1.0;
     fy = (2.0 * y / ui->height ) - 1.0;
 
@@ -2157,10 +2246,21 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     return;
   }
 
+  /* main organ view  */
+
   project_mouse(view, x, y, &fx, &fy);
 
   if (ui->displaymode == 0 && fx >= 1.04 && fx <= 1.100 && fy >= -.24 && fy <= -.18) {
+    /* help button */
     ui->displaymode = 1;
+    onReshape(view, ui->width, ui->height);
+    puglPostRedisplay(view);
+    return;
+  }
+
+  if (ui->displaymode == 0 && fx >= 0.92 && fx <= 1.04 && fy >= -.25 && fy <= -.16) {
+    /* menu button */
+    ui->displaymode = 7;
     onReshape(view, ui->width, ui->height);
     puglPostRedisplay(view);
     return;
