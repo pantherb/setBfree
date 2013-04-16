@@ -70,8 +70,8 @@ enum {
 #define MENU_LOAD  -.75, -.25, -.7, -.55
 #define MENU_SAVEC -.75, -.25, -.075, .075
 #define MENU_SAVEP -.75, -.25, .55, .7
-#define MENU_PGMS   .25,  .75, -.7, -.55
-#define MENU_PGML   .25,  .75, -.075, .075
+#define MENU_PGML   .25,  .75, -.7, -.55
+#define MENU_PGMS   .25,  .75, -.075, .075
 #define MENU_CANC   .25,  .75, .55, .7
 
 enum {
@@ -1541,9 +1541,9 @@ onDisplay(PuglView* view)
     }
     return;
   } else if (ui->displaymode == 7) {
-    gui_button(view, MENU_SAVEP, HOVER_MSAVEP, "save program");
-    gui_button(view, MENU_SAVEC, HOVER_MSAVEC, "save config");
-    gui_button(view, MENU_LOAD,  HOVER_MLOAD,  "load pgm or cfg");
+    gui_button(view, MENU_SAVEP, HOVER_MSAVEP, "export program");
+    gui_button(view, MENU_SAVEC, HOVER_MSAVEC, "export config");
+    gui_button(view, MENU_LOAD, HOVER_MLOAD, "load pgm or cfg");
     gui_button(view, MENU_PGML, HOVER_MPGML, "recall program");
     gui_button(view, MENU_PGMS, HOVER_MPGMS, "store program");
     gui_button(view, MENU_CANC, HOVER_MCANC, "close menu");
@@ -2160,11 +2160,11 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
       dirlist(view, ui->curdir);
       ui->displaymode = 4;
     }
-    if (MOUSEIN(MENU_PGMS, fx, fy)) {
-      ui->displaymode = 1;
+    if (MOUSEIN(MENU_PGML, fx, fy)) {
+      ui->displaymode = 2;
     }
     if (MOUSEIN(MENU_PGMS, fx, fy)) {
-      ui->displaymode = 2;
+      ui->displaymode = 3;
     }
     if (MOUSEIN(MENU_CANC, fx, fy)) {
       ui->displaymode = 0;
