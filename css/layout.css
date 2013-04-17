@@ -69,3 +69,7 @@ h1,h2,h3,h4,h5 {
 #content p + p {
 	text-indent: 1em;
 }
+
+#content img {
+	margin: 1em 0;
+}
