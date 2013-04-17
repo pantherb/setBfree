@@ -1784,6 +1784,8 @@ static void reset_state(PuglView* view) {
   reset_state_ccbind(view);
 }
 
+#define SKD(mode) if (ui->displaymode != mode) break;
+
 static void
 onKeyboard(PuglView* view, bool press, uint32_t key)
 {
@@ -1796,51 +1798,50 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
     txtentry_handle(view, key);
     return;
   }
-  //TODO filter keys depending on displaymode and popupmsg
   switch (key) {
-    case 'a':
+    case 'a': SKD(0)
       if (ui->rot[0] > -55) { ui->rot[0] -= 5; queue_reshape = 1; }
       break;
-    case 'd':
+    case 'd': SKD(0)
       if (ui->rot[0] <  55) { ui->rot[0] += 5; queue_reshape = 1; }
       break;
-    case 'w':
+    case 'w': SKD(0)
       if (ui->rot[1] > -80) { ui->rot[1] -= 5; queue_reshape = 1; }
       break;
-    case 'x':
+    case 'x': SKD(0)
       if (ui->rot[1] <  0)  { ui->rot[1] += 5; queue_reshape = 1; }
       break;
-    case 'z':
+    case 'z': SKD(0)
       if (ui->rot[2] > -30) { ui->rot[2] -= 5; queue_reshape = 1; }
       break;
-    case 'c':
+    case 'c': SKD(0)
       if (ui->rot[2] <  30) { ui->rot[2] += 5; queue_reshape = 1; }
       break;
-    case '+':
+    case '+': SKD(0)
       if (ui->scale < 1.5) { ui->scale += .025; queue_reshape = 1; }
       break;
-    case '-':
+    case '-': SKD(0)
       if (ui->scale > 0.5) { ui->scale -= .025; queue_reshape = 1; }
       break;
-    case 'h':
+    case 'h': SKD(0)
       if (ui->off[0] > -.5) { ui->off[0] -= .025; queue_reshape = 1; }
       break;
-    case 'l':
+    case 'l': SKD(0)
       if (ui->off[0] <  .5) { ui->off[0] += .025; queue_reshape = 1; }
       break;
-    case 'j':
+    case 'j': SKD(0)
       if (ui->off[1] > -.5) { ui->off[1] -= .025; queue_reshape = 1; }
       break;
-    case 'k':
+    case 'k': SKD(0)
       if (ui->off[1] <  .5) { ui->off[1] += .025; queue_reshape = 1; }
       break;
-    case 's':
+    case 's': SKD(0)
       ui->rot[0] = ui->rot[1] = ui->rot[2] = 0.0;
       ui->scale = 0.875;
       ui->off[0] = ui->off[1] = ui->off[2] = 0.0;
       queue_reshape = 1;
       break;
-    case 'e':
+    case 'e': SKD(0)
       ui->scale = 0.9;
       ui->rot[0] = ui->rot[1] = -20;
       ui->off[0] = ui->off[2] = 0.0;
@@ -1888,7 +1889,7 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       }
       queue_reshape = 1;
       break;
-    case 'm':
+    case 'm': SKD(0)
       if (ui->show_mm) {
 	ui->show_mm = 0;
       } else {
@@ -1901,7 +1902,6 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       }
       puglPostRedisplay(view);
       break;
-#if 1 // not ready, yet
     case ' ':
       if (ui->displaymode == 0) {
 	ui->displaymode = 7;
@@ -1937,7 +1937,6 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       queue_reshape = 1;
       reset_state(view);
       break;
-#endif
     default:
       break;
   }
