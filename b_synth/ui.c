@@ -56,6 +56,7 @@
 #define BTNLOC_YES .65,  .75, .55, .7
 #define BTNLOC_SAVE .75, .95, .8, .95
 #define BTNLOC_CANC .45, .7, .8, .95
+#define BTNLOC_CANC2 .68, .96, .73, .88
 #define SCROLLBAR -.8, .8, .625, 0.7
 
 enum {
@@ -64,7 +65,8 @@ enum {
   HOVER_YES = 4,
   HOVER_SAVE = 8,
   HOVER_CANC = 16,
-  HOVER_SCROLLBAR = 32
+  HOVER_CANC2 = 32,
+  HOVER_SCROLLBAR = 64
 };
 
 #define MENU_LOAD  -.75, -.25, -.7, -.5
@@ -1362,7 +1364,6 @@ onDisplay(PuglView* view)
   }
 
   if (ui->popupmsg) {
-    const float invaspect = (float) ui->height / (float) ui->width;
     if (ui->queuepopup) {
       onReshape(view, ui->width, ui->height);
       ui->queuepopup = 0;
@@ -1371,14 +1372,11 @@ onDisplay(PuglView* view)
     render_title(view, ui->popupmsg, 0, 0, 0, mat_drawbar_white, 1);
     if (ui->pendingmode) {
       render_text(view, "Press <enter> to confirm, <ESC> to abort, or press button.", 0, 7.0, 0, 1);
-      unity_button(view, BTNLOC_NO, ui->mouseover & HOVER_NO);
-      unity_button(view, BTNLOC_YES, ui->mouseover & HOVER_YES);
-      render_title(view, "No", btn_x(BTNLOC_NO), invaspect * btn_y(BTNLOC_NO), 0, mat_drawbar_white, 1);
-      render_title(view, "Yes", btn_x(BTNLOC_YES), invaspect * btn_y(BTNLOC_YES), 0, mat_drawbar_white, 1);
+      gui_button(view, BTNLOC_NO, HOVER_NO, "No");
+      gui_button(view, BTNLOC_YES, HOVER_YES, "Yes");
     } else {
       render_text(view, "Press <enter> or <ESC> to continue.", 0, 7.0, 0, 1);
-      unity_button(view, BTNLOC_OK, ui->mouseover & HOVER_OK);
-      render_title(view, "Ok", btn_x(BTNLOC_OK), invaspect * btn_y(BTNLOC_OK), 0, mat_drawbar_white, 1);
+      gui_button(view, BTNLOC_OK, HOVER_OK, "Ok");
     }
     return;
   }
@@ -1413,7 +1411,8 @@ onDisplay(PuglView* view)
     const float w = 1.0/2.8 * 22.0 * SCALE;
     const float h = 2.0/24.0 * 22.0 * SCALE;
 
-    render_title(view, (ui->displaymode == 2) ? "set" : "store", 16.5, 7.3, 0.0, mat_drawbar_white, 3);
+    render_title(view, (ui->displaymode == 2) ? "recall" : "store", 16.5, -.75, 0.0, mat_drawbar_white, 3);
+    gui_button(view, BTNLOC_CANC2, HOVER_CANC2, "Cancel");
 
     for (i=0; i < 128; i++) {
       char txt[40];
@@ -1446,7 +1445,7 @@ onDisplay(PuglView* view)
       //printf("DSC: %s\n", t0);
       while (*t0 && (t1 = strchr(t0, '\n'))) {
 	*t1='\0';
-	render_text(view, t0, 16.5, ++ln*0.5, .1f, 3);
+	render_text(view, t0, 16.5, ++ln*0.5 - .1 , .1f, 3);
 	*t1='\n';
 	t0=t1+1;
       }
@@ -1465,18 +1464,14 @@ onDisplay(PuglView* view)
 	break;
       case 5:
 	render_title(view, "save .cfg", 0, invaspect * btn_y(BTNLOC_SAVE), 0.0, mat_drawbar_white, 1);
-	unity_button(view, BTNLOC_SAVE, ui->mouseover & HOVER_SAVE);
-	render_title(view, "Save", btn_x(BTNLOC_SAVE), invaspect * btn_y(BTNLOC_SAVE), 0, mat_drawbar_white, 1);
-	unity_button(view, BTNLOC_CANC, ui->mouseover & HOVER_CANC);
-	render_title(view, "Cancel", btn_x(BTNLOC_CANC), invaspect * btn_y(BTNLOC_CANC), 0, mat_drawbar_white, 1);
+	gui_button(view, BTNLOC_SAVE, HOVER_SAVE, "Save");
+	gui_button(view, BTNLOC_CANC, HOVER_CANC, "Cancel");
 	render_text(view, "select a file or press OK or <enter> to create new.", -20.0, 7.75, 0.0, 3);
 	break;
       case 6:
 	render_title(view, "save .pgm", 0, invaspect * btn_y(BTNLOC_SAVE), 0.0, mat_drawbar_white, 1);
-	unity_button(view, BTNLOC_SAVE, ui->mouseover & HOVER_SAVE);
-	unity_button(view, BTNLOC_CANC, ui->mouseover & HOVER_CANC);
-	render_title(view, "Cancel", btn_x(BTNLOC_CANC), invaspect * btn_y(BTNLOC_CANC), 0, mat_drawbar_white, 1);
-	render_title(view, "Save", btn_x(BTNLOC_SAVE), invaspect * btn_y(BTNLOC_SAVE), 0, mat_drawbar_white, 1);
+	gui_button(view, BTNLOC_SAVE, HOVER_SAVE, "Save");
+	gui_button(view, BTNLOC_CANC, HOVER_CANC, "Cancel");
 	render_text(view, "select a file or press OK or <enter> to create new.", -20.0, 7.75, 0.0, 3);
 	break;
       default:
@@ -2001,6 +1996,7 @@ onMotion(PuglView* view, int x, int y)
     if (MOUSEIN(BTNLOC_YES, fx, fy)) ui->mouseover |= HOVER_YES;
     if (MOUSEIN(BTNLOC_SAVE, fx, fy)) ui->mouseover |= HOVER_SAVE;
     if (MOUSEIN(BTNLOC_CANC, fx, fy)) ui->mouseover |= HOVER_CANC;
+    if (MOUSEIN(BTNLOC_CANC2, fx, fy)) ui->mouseover |= HOVER_CANC2;
     if (MOUSEIN(SCROLLBAR, fx, fy)) ui->mouseover |= HOVER_SCROLLBAR;
     if (phov != ui->mouseover) {
       puglPostRedisplay(view);
@@ -2120,21 +2116,32 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
   if (ui->textentry_active) return;
 
   if (ui->displaymode == 2) {
-    ui->displaymode = 0;
-    forge_message_int(ui, ui->uris.sb3_midipgm, ui->pgm_sel);
-    onReshape(view, ui->width, ui->height);
-    puglPostRedisplay(view);
+    fx = (2.0 * x / ui->width ) - 1.0;
+    fy = (2.0 * y / ui->height ) - 1.0;
+    if (ui->pgm_sel >= 0) {
+      ui->displaymode = 0;
+      forge_message_int(ui, ui->uris.sb3_midipgm, ui->pgm_sel);
+      onReshape(view, ui->width, ui->height);
+      puglPostRedisplay(view);
+    } else if (MOUSEIN(BTNLOC_CANC2, fx, fy)) {
+      ui->displaymode = 0;
+      onReshape(view, ui->width, ui->height);
+      puglPostRedisplay(view);
+    }
     return;
   }
 
   else if (ui->displaymode == 3) {
+    fx = (2.0 * x / ui->width ) - 1.0;
+    fy = (2.0 * y / ui->height ) - 1.0;
     if (ui->pgm_sel >= 0) {
       txtentry_start(view,"Enter Preset Name:", strlen(ui->midipgm[ui->pgm_sel]) > 0 ? ui->midipgm[ui->pgm_sel] : "User" );
-    } else {
+      puglPostRedisplay(view);
+    } else if (MOUSEIN(BTNLOC_CANC2, fx, fy)) {
       ui->displaymode = 0;
+      onReshape(view, ui->width, ui->height);
+      puglPostRedisplay(view);
     }
-    onReshape(view, ui->width, ui->height);
-    puglPostRedisplay(view);
     return;
   }
 
