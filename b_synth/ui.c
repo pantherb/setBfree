@@ -1974,6 +1974,8 @@ onMotion(PuglView* view, int x, int y)
 
   ui->mouseover = 0;
 
+  /* mouse - button hover */
+
   if (ui->displaymode == 7) { // menu
     fx = (2.0 * x / ui->width ) - 1.0;
     fy = (2.0 * y / ui->height ) - 1.0;
@@ -2004,6 +2006,7 @@ onMotion(PuglView* view, int x, int y)
 
   if (ui->textentry_active || ui->popupmsg) return;
 
+  /* mouse - listview hover */
   if (ui->displaymode == 2 || ui->displaymode == 3) {
     int pgm_sel = ui->pgm_sel;
     fx /= SCALE * 22.0; fy /= SCALE * 22.0;
@@ -2114,143 +2117,146 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 
   if (ui->textentry_active) return;
 
-  if (ui->displaymode == 2) {
-    fx = (2.0 * x / ui->width ) - 1.0;
-    fy = (2.0 * y / ui->height ) - 1.0;
-    if (ui->pgm_sel >= 0) {
-      ui->displaymode = 0;
-      forge_message_int(ui, ui->uris.sb3_midipgm, ui->pgm_sel);
-      onReshape(view, ui->width, ui->height);
-      puglPostRedisplay(view);
-    } else if (MOUSEIN(BTNLOC_CANC2, fx, fy)) {
-      ui->displaymode = 0;
-      onReshape(view, ui->width, ui->height);
-      puglPostRedisplay(view);
-    }
-    return;
-  }
 
-  else if (ui->displaymode == 3) {
-    fx = (2.0 * x / ui->width ) - 1.0;
-    fy = (2.0 * y / ui->height ) - 1.0;
-    if (ui->pgm_sel >= 0) {
-      txtentry_start(view,"Enter Preset Name:", strlen(ui->midipgm[ui->pgm_sel]) > 0 ? ui->midipgm[ui->pgm_sel] : "User" );
-      puglPostRedisplay(view);
-    } else if (MOUSEIN(BTNLOC_CANC2, fx, fy)) {
-      ui->displaymode = 0;
-      onReshape(view, ui->width, ui->height);
-      puglPostRedisplay(view);
-    }
-    return;
-  }
-
-  else if (ui->displaymode == 1) {
-    ui->displaymode = 0;
-    onReshape(view, ui->width, ui->height);
-    puglPostRedisplay(view);
-    return;
-  }
-
-  else if (ui->displaymode == 7) {
-    fx = (2.0 * x / ui->width ) - 1.0;
-    fy = (2.0 * y / ui->height ) - 1.0;
-    if (MOUSEIN(MENU_SAVEP, fx, fy)) {
-      dirlist(view, ui->curdir);
-      ui->displaymode = 6;
-    }
-    if (MOUSEIN(MENU_SAVEC, fx, fy)) {
-      dirlist(view, ui->curdir);
-      ui->displaymode = 5;
-    }
-    if (MOUSEIN(MENU_LOAD, fx, fy)) {
-      dirlist(view, ui->curdir);
-      ui->displaymode = 4;
-    }
-    if (MOUSEIN(MENU_PGML, fx, fy)) {
-      ui->displaymode = 2;
-    }
-    if (MOUSEIN(MENU_PGMS, fx, fy)) {
-      ui->displaymode = 3;
-    }
-    if (MOUSEIN(MENU_CANC, fx, fy)) {
-      ui->displaymode = 0;
-      onReshape(view, ui->width, ui->height);
-    }
-    puglPostRedisplay(view);
-    return;
-  }
-
-  else if (IS_FILEBROWSER(ui)) { /* displaymode 4,5,6 */
-    fx = (2.0 * x / ui->width ) - 1.0;
-    fy = (2.0 * y / ui->height ) - 1.0;
-
-    if (ui->dir_sel >= 0) {
-      /* click on file */
-      struct stat fs;
-      char * rfn = absfilepath(ui->curdir, ui->dirlist[ui->dir_sel]);
-      if(rfn && stat(rfn, &fs) == 0) {
-	if (S_ISDIR(fs.st_mode)) {
-	  free(ui->curdir);
-	  ui->curdir = rfn;
-	  dirlist(view, ui->curdir);
-	  puglPostRedisplay(view);
-	  return;
-	} else if (S_ISREG(fs.st_mode)) {
-	  switch(ui->displaymode) {
-	    case 4:
-	      if (!check_extension(rfn, ".pgm")) {
-		forge_message_str(ui, ui->uris.sb3_loadpgm, rfn);
-	      }
-	      else if (!check_extension(rfn, ".cfg")) {
-		forge_message_str(ui, ui->uris.sb3_loadcfg, rfn);
-	      } else {
-		show_message(view, "file is not a .pgm nor .cfg");
-	      }
-	      break;
-	    case 6:
-	    case 5:
-	      if (save_cfgpgm(view, rfn, ui->displaymode, 0)) {
-		/* failed -> retry */
-		free(rfn);
-		puglPostRedisplay(view);
-		return;
-	      }
-	      break;
-	  }
-	  free(rfn);
-	}
+  switch(ui->displaymode) {
+    case 2:
+      fx = (2.0 * x / ui->width ) - 1.0;
+      fy = (2.0 * y / ui->height ) - 1.0;
+      if (ui->pgm_sel >= 0) {
+	ui->displaymode = 0;
+	forge_message_int(ui, ui->uris.sb3_midipgm, ui->pgm_sel);
+	onReshape(view, ui->width, ui->height);
+	puglPostRedisplay(view);
+      } else if (MOUSEIN(BTNLOC_CANC2, fx, fy)) {
+	ui->displaymode = 0;
+	onReshape(view, ui->width, ui->height);
+	puglPostRedisplay(view);
       }
-    } else if (
-	ui->dirlistlen > 120
-	&& MOUSEIN(SCROLLBAR, fx, fy)
-	) {
-	// handle scrollbar
-      int pages = (ui->dirlistlen / 20);
-      float ss = 1.6 / (float)pages;
-      float sw = 5.0 * ss;
-      float sx = ui->dir_scroll * ss - .8;
-      if (fx < sx && ui->dir_scroll > 0) --ui->dir_scroll;
-      else if (fx > sx+sw && ui->dir_scroll < (pages-4)) ++ui->dir_scroll;
-      else if (fx >= sx && fx <= sx+sw) {
-	ui->dir_scrollgrab = fx - sx;
+      return;
+
+    case 3:
+      fx = (2.0 * x / ui->width ) - 1.0;
+      fy = (2.0 * y / ui->height ) - 1.0;
+      if (ui->pgm_sel >= 0) {
+	txtentry_start(view,"Enter Preset Name:", strlen(ui->midipgm[ui->pgm_sel]) > 0 ? ui->midipgm[ui->pgm_sel] : "User" );
+	puglPostRedisplay(view);
+      } else if (MOUSEIN(BTNLOC_CANC2, fx, fy)) {
+	ui->displaymode = 0;
+	onReshape(view, ui->width, ui->height);
+	puglPostRedisplay(view);
+      }
+      return;
+
+    case 1:
+      ui->displaymode = 0;
+      onReshape(view, ui->width, ui->height);
+      puglPostRedisplay(view);
+      return;
+
+    case 7:
+      fx = (2.0 * x / ui->width ) - 1.0;
+      fy = (2.0 * y / ui->height ) - 1.0;
+      if (MOUSEIN(MENU_SAVEP, fx, fy)) {
+	dirlist(view, ui->curdir);
+	ui->displaymode = 6;
+      }
+      if (MOUSEIN(MENU_SAVEC, fx, fy)) {
+	dirlist(view, ui->curdir);
+	ui->displaymode = 5;
+      }
+      if (MOUSEIN(MENU_LOAD, fx, fy)) {
+	dirlist(view, ui->curdir);
+	ui->displaymode = 4;
+      }
+      if (MOUSEIN(MENU_PGML, fx, fy)) {
+	ui->displaymode = 2;
+      }
+      if (MOUSEIN(MENU_PGMS, fx, fy)) {
+	ui->displaymode = 3;
+      }
+      if (MOUSEIN(MENU_CANC, fx, fy)) {
+	ui->displaymode = 0;
+	onReshape(view, ui->width, ui->height);
+      }
+      puglPostRedisplay(view);
+      return;
+
+    case 4:
+    case 5:
+    case 6: //IS_FILEBROWSER() == displaymode 4,5,6
+      fx = (2.0 * x / ui->width ) - 1.0;
+      fy = (2.0 * y / ui->height ) - 1.0;
+
+      if (ui->dir_sel >= 0) {
+	/* click on file */
+	struct stat fs;
+	char * rfn = absfilepath(ui->curdir, ui->dirlist[ui->dir_sel]);
+	if(rfn && stat(rfn, &fs) == 0) {
+	  if (S_ISDIR(fs.st_mode)) {
+	    free(ui->curdir);
+	    ui->curdir = rfn;
+	    dirlist(view, ui->curdir);
+	    puglPostRedisplay(view);
+	    return;
+	  } else if (S_ISREG(fs.st_mode)) {
+	    switch(ui->displaymode) {
+	      case 4:
+		if (!check_extension(rfn, ".pgm")) {
+		  forge_message_str(ui, ui->uris.sb3_loadpgm, rfn);
+		}
+		else if (!check_extension(rfn, ".cfg")) {
+		  forge_message_str(ui, ui->uris.sb3_loadcfg, rfn);
+		} else {
+		  show_message(view, "file is not a .pgm nor .cfg");
+		}
+		break;
+	      case 6:
+	      case 5:
+		if (save_cfgpgm(view, rfn, ui->displaymode, 0)) {
+		  /* failed -> retry */
+		  free(rfn);
+		  puglPostRedisplay(view);
+		  return;
+		}
+		break;
+	    }
+	    free(rfn);
+	  }
+	}
+      } else if (
+	  ui->dirlistlen > 120
+	  && MOUSEIN(SCROLLBAR, fx, fy)
+	  ) {
+	  // handle scrollbar
+	int pages = (ui->dirlistlen / 20);
+	float ss = 1.6 / (float)pages;
+	float sw = 5.0 * ss;
+	float sx = ui->dir_scroll * ss - .8;
+	if (fx < sx && ui->dir_scroll > 0) --ui->dir_scroll;
+	else if (fx > sx+sw && ui->dir_scroll < (pages-4)) ++ui->dir_scroll;
+	else if (fx >= sx && fx <= sx+sw) {
+	  ui->dir_scrollgrab = fx - sx;
+	}
+	ui->dir_sel = -1;
+	puglPostRedisplay(view);
+	return;
+      } else if (
+	  (ui->displaymode == 5 || ui->displaymode == 6)
+	  && MOUSEIN(BTNLOC_SAVE, fx, fy)
+	  ) {
+	txtentry_start(view, "Enter File Name:", "" );
+	return;
+      } else if (!MOUSEIN(BTNLOC_CANC, fx, fy)) {
+	return;
       }
       ui->dir_sel = -1;
+      ui->displaymode = 0;
+      onReshape(view, ui->width, ui->height);
       puglPostRedisplay(view);
       return;
-    } else if (
-	(ui->displaymode == 5 || ui->displaymode == 6)
-	&& MOUSEIN(BTNLOC_SAVE, fx, fy)
-	) {
-      txtentry_start(view, "Enter File Name:", "" );
-      return;
-    } else if (!MOUSEIN(BTNLOC_CANC, fx, fy)) {
-      return;
-    }
-    ui->dir_sel = -1;
-    ui->displaymode = 0;
-    onReshape(view, ui->width, ui->height);
-    puglPostRedisplay(view);
-    return;
+
+    default:
+      break;
   }
 
   /* main organ view  */
