@@ -2535,6 +2535,7 @@ cleanup(LV2UI_Handle handle)
   ui->exit = true;
   pthread_join(ui->thread, NULL);
 #endif
+  free_dirlist(ui);
   ftglDestroyFont(ui->font_big);
   ftglDestroyFont(ui->font_small);
   puglDestroy(ui->view);
