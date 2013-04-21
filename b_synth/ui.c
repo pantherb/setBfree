@@ -771,34 +771,34 @@ static void drawMesh(PuglView* view, unsigned int index, int apply_transformatio
  * OpenGL textures
  */
 
-#include "wood.c"
-#include "dial.c"
-#include "drawbar.c"
+#include "textures/wood.c"
+#include "textures/dial.c"
+#include "textures/drawbar.c"
 
-#include "btn_vibl.c"
-#include "btn_vibu.c"
-#include "btn_perc.c"
-#include "btn_perc_decay.c"
-#include "btn_perc_harmonic.c"
-#include "btn_perc_volume.c"
-#include "btn_overdrive.c"
+#include "textures/btn_vibl.c"
+#include "textures/btn_vibu.c"
+#include "textures/btn_perc.c"
+#include "textures/btn_perc_decay.c"
+#include "textures/btn_perc_harmonic.c"
+#include "textures/btn_perc_volume.c"
+#include "textures/btn_overdrive.c"
 
-#include "bg_right_ctrl.c"
-#include "bg_left_ctrl.c"
-#include "bg_leslie_drum.c"
-#include "bg_leslie_horn.c"
+#include "textures/bg_right_ctrl.c"
+#include "textures/bg_left_ctrl.c"
+#include "textures/bg_leslie_drum.c"
+#include "textures/bg_leslie_horn.c"
 
-#include "help_screen_image.c"
+#include "textures/help_screen_image.c"
 
-#include "ui_button_image.c"
-#include "ui_proc_image.c"
+#include "textures/ui_button_image.c"
+#include "textures/ui_proc_image.c"
 
-#include "uim_background.c"
-#include "uim_cable1.c"
-#include "uim_cable2.c"
-#include "uim_caps.c"
-#include "uim_tube1.c"
-#include "uim_tube2.c"
+#include "textures/uim_background.c"
+#include "textures/uim_cable1.c"
+#include "textures/uim_cable2.c"
+#include "textures/uim_caps.c"
+#include "textures/uim_tube1.c"
+#include "textures/uim_tube2.c"
 
 #define CIMAGE(ID, VARNAME) \
   glGenTextures(1, &ui->texID[ID]); \

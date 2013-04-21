@@ -28,6 +28,7 @@ targets=
 
 LV2NAME=b_synth
 LV2GUI=b_synthUI
+TX=textures/
 
 ifeq ($(LV2AVAIL), yes)
   targets+=lv2
@@ -37,14 +38,14 @@ ifeq ($(LV2AVAIL), yes)
     #UILIBS=`pkg-config --libs pugl-0`
     UICFLAGS=-I..
     UIDEPS=../pugl/pugl.h ../pugl/pugl_internal.h ui_model.h
-    UIDEPS+=drawbar.c wood.c dial.c
-    UIDEPS+=btn_vibl.c btn_vibu.c
-    UIDEPS+=btn_perc.c btn_perc_decay.c btn_perc_harmonic.c btn_perc_volume.c
-    UIDEPS+=btn_overdrive.c
-    UIDEPS+=bg_right_ctrl.c bg_left_ctrl.c bg_leslie_drum.c bg_leslie_horn.c
-    UIDEPS+=help_screen_image.c
-    UIDEPS+=ui_button_image.c ui_proc_image.c
-    UIDEPS+=uim_background.c uim_cable1.c uim_cable2.c uim_caps.c uim_tube1.c uim_tube2.c
+    UIDEPS+=$(TX)drawbar.c $(TX)wood.c $(TX)dial.c
+    UIDEPS+=$(TX)btn_vibl.c $(TX)btn_vibu.c $(TX)btn_overdrive.c $(TX)btn_perc_volume.c
+    UIDEPS+=$(TX)btn_perc.c $(TX)btn_perc_decay.c $(TX)btn_perc_harmonic.c
+    UIDEPS+=$(TX)bg_right_ctrl.c $(TX)bg_left_ctrl.c $(TX)bg_leslie_drum.c $(TX)bg_leslie_horn.c
+    UIDEPS+=$(TX)help_screen_image.c
+    UIDEPS+=$(TX)ui_button_image.c $(TX)ui_proc_image.c
+    UIDEPS+=$(TX)uim_background.c $(TX)uim_cable1.c $(TX)uim_cable2.c $(TX)uim_caps.c
+    UIDEPS+=$(TX)uim_tube1.c $(TX)uim_tube2.c
     ifeq ($(IS_OSX), yes)
       UIDEPS+=../pugl/pugl_osx.m
       UILIBS=../pugl/pugl_osx.m -framework Cocoa -framework OpenGL
