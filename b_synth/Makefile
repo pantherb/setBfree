@@ -44,6 +44,7 @@ ifeq ($(LV2AVAIL), yes)
     UIDEPS+=bg_right_ctrl.c bg_left_ctrl.c bg_leslie_drum.c bg_leslie_horn.c
     UIDEPS+=help_screen_image.c
     UIDEPS+=ui_button_image.c ui_proc_image.c
+    UIDEPS+=uim_background.c uim_cable1.c uim_cable2.c uim_caps.c uim_tube1.c uim_tube2.c
     ifeq ($(IS_OSX), yes)
       UIDEPS+=../pugl/pugl_osx.m
       UILIBS=../pugl/pugl_osx.m -framework Cocoa -framework OpenGL

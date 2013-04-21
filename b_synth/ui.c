@@ -69,12 +69,20 @@ enum {
   HOVER_SCROLLBAR = 64
 };
 
-#define MENU_LOAD  -.75, -.25, -.7, -.5
-#define MENU_SAVEC -.75, -.25, -.1 , .1
-#define MENU_SAVEP -.75, -.25, .5, .7
-#define MENU_PGML   .25,  .75, -.7, -.5
-#define MENU_PGMS   .25,  .75, -.1, .1
-#define MENU_CANC   .25,  .75, .5, .7
+#define GPX(x) ((x) / 480.0)
+#define GPY(y) ((y) / 160.0)
+
+#define APX(x) (-1.0 + GPX(x))
+#define APY(y) (-1.0 + GPY(y))
+
+#define MENU_SAVEP APX(521.0), APX(521.0 + 133.0), APY(212.0), APY(212.0 + 78.0)
+#define MENU_SAVEC APX(667.0), APX(667.0 + 113.0), APY(228.0), APY(228.0 + 66.0)
+
+#define MENU_LOAD APX(32.0), APX(32.0 + 315.0), -1.0, APY(77.0)
+#define MENU_PGML APX(694.0), APX(694.0 + 140.0), -1.0 , APY(197.0)
+#define MENU_PGMS 1.0-GPX(122.0), 1.0, -1.0 , APY(195.0)
+
+#define MENU_CANC  .8, .98, .82, .95
 
 enum {
   HOVER_MLOAD = 1,
@@ -195,7 +203,7 @@ typedef struct {
   /* OpenGL */
   GLuint * vbo;
   GLuint * vinx;
-  GLuint texID[17]; // textures
+  GLuint texID[23]; // textures
   GLdouble matrix[16]; // used for mouse mapping
   double rot[3], off[3], scale; // global projection
 
@@ -783,6 +791,13 @@ static void drawMesh(PuglView* view, unsigned int index, int apply_transformatio
 #include "ui_button_image.c"
 #include "ui_proc_image.c"
 
+#include "uim_background.c"
+#include "uim_cable1.c"
+#include "uim_cable2.c"
+#include "uim_caps.c"
+#include "uim_tube1.c"
+#include "uim_tube2.c"
+
 #define CIMAGE(ID, VARNAME) \
   glGenTextures(1, &ui->texID[ID]); \
   glBindTexture(GL_TEXTURE_2D, ui->texID[ID]); \
@@ -844,6 +859,13 @@ static void initTextures(PuglView* view) {
 
   CIMAGE(15, ui_button_image);
   CIMAGE(16, ui_proc_image);
+
+  CIMAGE(17, uim_background_image);
+  CIMAGE(18, uim_cable1_image);
+  CIMAGE(19, uim_cable2_image);
+  CIMAGE(20, uim_caps_image);
+  CIMAGE(21, uim_tube1_image);
+  CIMAGE(22, uim_tube2_image);
 }
 
 
@@ -953,8 +975,11 @@ render_title(PuglView* view, const char *text, float x, float y, float z, const 
   glPushMatrix();
   glLoadIdentity();
 
+  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, color);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, color);
   glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, color);
-  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA_SATURATE);
+  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
   glScalef(0.001,0.001,1.00);
   glRotatef(180, 1, 0, 0);
 
@@ -1133,6 +1158,54 @@ gui_button(PuglView* view,
   const float invaspect = (float) ui->height / (float) ui->width;
   unity_button(view, x0, x1, y0, y1, ui->mouseover & hovermask);
   render_title(view, label, (x1 + x0) / 2.0 / SCALE, invaspect * (y1 + y0) / 2.0 / SCALE, 0, mat_white, 1);
+}
+
+static void
+menu_button(PuglView* view,
+    const float x0, const float x1,
+    const float y0, const float y1,
+    int texid,
+    int hovermask, const char *label
+    )
+{
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  const float invaspect = (float) ui->height / (float) ui->width;
+  GLfloat mat_x[] = { 0.5, 0.5, 0.5, 1.0 };
+
+  if (ui->mouseover & hovermask) {
+    mat_x[0] = 1.0;
+    mat_x[1] = 1.0;
+    mat_x[2] = 1.0;
+    mat_x[3] = 1.0;
+  }
+
+  if (texid > 0) {
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_x);
+    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_x);
+    glMaterialfv(GL_FRONT, GL_EMISSION, mat_x);
+    glLoadIdentity();
+    glEnable(GL_TEXTURE_2D);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    glBindTexture(GL_TEXTURE_2D, ui->texID[texid]);
+    glBegin(GL_QUADS);
+    glColor3f(1.0, 1.0, 1.0);
+    glTexCoord2f (0.0, 0.0); glVertex3f(x0, invaspect * y0, 0);
+    glTexCoord2f (0.0, 1.0); glVertex3f(x0, invaspect * y1, 0);
+    glTexCoord2f (1.0, 1.0); glVertex3f(x1, invaspect * y1, 0);
+    glTexCoord2f (1.0, 0.0); glVertex3f(x1, invaspect * y0, 0);
+    glEnd();
+    glDisable(GL_TEXTURE_2D);
+    if (ui->mouseover & hovermask) {
+      const GLfloat mat_w[] = { 1.0, 1.0, 1.0, 1.0 };
+      render_title(view, label, (x1 + x0) / 2.0 / SCALE, invaspect * (y1 + y0) / 2.0 / SCALE, 0.5, mat_w, 1);
+    }
+  } else {
+    const GLfloat mat_w[] = { 1.0, 1.0, 1.0, 1.0 };
+    unity_button(view, x0, x1, y0, y1, ui->mouseover & hovermask);
+    render_title(view, label, (x1 + x0) / 2.0 / SCALE, invaspect * (y1 + y0) / 2.0 / SCALE, 0.5, mat_w, 1);
+  }
+
 }
 
 static void
@@ -1536,12 +1609,31 @@ onDisplay(PuglView* view)
     }
     return;
   } else if (ui->displaymode == 7) {
-    gui_button(view, MENU_SAVEP, HOVER_MSAVEP, "Export Program");
-    gui_button(view, MENU_SAVEC, HOVER_MSAVEC, "Export Config");
-    gui_button(view, MENU_LOAD, HOVER_MLOAD, "Load pgm or cfg");
-    gui_button(view, MENU_PGML, HOVER_MPGML, "Recall Program");
-    gui_button(view, MENU_PGMS, HOVER_MPGMS, "Store Program");
-    gui_button(view, MENU_CANC, HOVER_MCANC, "Close Menu");
+
+    const GLfloat mat_x[] = {0.7, 0.7, 0.7, 1.0};
+    const float invaspect = (float) ui->height / (float) ui->width;
+    glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_x);
+    glMaterialfv(GL_FRONT, GL_AMBIENT, mat_x);
+    glMaterialfv(GL_FRONT, GL_EMISSION, mat_x);
+    glLoadIdentity();
+    glEnable(GL_TEXTURE_2D);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    glBindTexture(GL_TEXTURE_2D, ui->texID[17]);
+    glBegin(GL_QUADS);
+    glColor3f(1.0, 1.0, 1.0);
+    glTexCoord2f (0.0, 0.0); glVertex3f(-1, -invaspect, 0);
+    glTexCoord2f (0.0, 1.0); glVertex3f(-1,  invaspect, 0);
+    glTexCoord2f (1.0, 1.0); glVertex3f( 1,  invaspect, 0);
+    glTexCoord2f (1.0, 0.0); glVertex3f( 1, -invaspect, 0);
+    glEnd();
+    glDisable(GL_TEXTURE_2D);
+
+    menu_button(view, MENU_PGML,  18, HOVER_MPGML, "Recall Program");
+    menu_button(view, MENU_PGMS,  19, HOVER_MPGMS, "Store Program");
+    menu_button(view, MENU_LOAD,  20, HOVER_MLOAD, "Load pgm or cfg");
+    menu_button(view, MENU_SAVEP, 21, HOVER_MSAVEP, "Export Program");
+    menu_button(view, MENU_SAVEC, 22, HOVER_MSAVEC, "Export Config");
+    menu_button(view, MENU_CANC, -1, HOVER_MCANC, "Close");
     return;
   }
 
