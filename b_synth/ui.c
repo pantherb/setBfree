@@ -57,6 +57,7 @@
 #define BTNLOC_SAVE .75, .95, .8, .95
 #define BTNLOC_CANC .45, .7, .8, .95
 #define BTNLOC_CANC2 .68, .96, .73, .88
+#define BTNLOC_CANC3 .68, .96, .78, .93
 #define SCROLLBAR -.8, .8, .625, 0.7
 
 enum {
@@ -66,7 +67,8 @@ enum {
   HOVER_SAVE = 8,
   HOVER_CANC = 16,
   HOVER_CANC2 = 32,
-  HOVER_SCROLLBAR = 64
+  HOVER_CANC3 = 64,
+  HOVER_SCROLLBAR = 128
 };
 
 #define GPX(x) ((x) / 480.0)
@@ -1170,7 +1172,7 @@ menu_button(PuglView* view,
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   const float invaspect = (float) ui->height / (float) ui->width;
-  GLfloat mat_x[] = { 0.5, 0.5, 0.5, 1.0 };
+  GLfloat mat_x[] = { 0.6, 0.6, 0.6, 1.0 };
 
   if (ui->mouseover & hovermask) {
     mat_x[0] = 1.0;
@@ -1532,8 +1534,9 @@ onDisplay(PuglView* view)
 
     switch(ui->displaymode) {
       case 4:
-	render_title(view, "open .pgm or .cfg", 24.25, 6.75, 0.0, mat_drawbar_white, 2);
+	render_title(view, "open .pgm or .cfg", 16.25, 6.5, 0.0, mat_drawbar_white, 2);
 	render_text(view, "Note: loading a .cfg will re-initialize the organ.", -20.0, 7.75, 0.0, 3);
+	gui_button(view, BTNLOC_CANC3, HOVER_CANC3, "Cancel");
 	break;
       case 5:
 	render_title(view, "save .cfg", 0, invaspect * btn_y(BTNLOC_SAVE), 0.0, mat_drawbar_white, 1);
@@ -1610,7 +1613,7 @@ onDisplay(PuglView* view)
     return;
   } else if (ui->displaymode == 7) {
 
-    const GLfloat mat_x[] = {0.7, 0.7, 0.7, 1.0};
+    const GLfloat mat_x[] = {0.5, 0.5, 0.5, 1.0};
     const float invaspect = (float) ui->height / (float) ui->width;
     glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_x);
     glMaterialfv(GL_FRONT, GL_AMBIENT, mat_x);
@@ -1628,11 +1631,11 @@ onDisplay(PuglView* view)
     glEnd();
     glDisable(GL_TEXTURE_2D);
 
-    menu_button(view, MENU_PGML,  18, HOVER_MPGML, "Recall Program");
-    menu_button(view, MENU_PGMS,  19, HOVER_MPGMS, "Store Program");
-    menu_button(view, MENU_LOAD,  20, HOVER_MLOAD, "Load pgm or cfg");
-    menu_button(view, MENU_SAVEP, 21, HOVER_MSAVEP, "Export Program");
-    menu_button(view, MENU_SAVEC, 22, HOVER_MSAVEC, "Export Config");
+    menu_button(view, MENU_PGML,  18, HOVER_MPGML, "Recall PGM");
+    menu_button(view, MENU_PGMS,  19, HOVER_MPGMS, "Store PGM");
+    menu_button(view, MENU_LOAD,  20, HOVER_MLOAD, "Load pgm or cfg File");
+    menu_button(view, MENU_SAVEP, 21, HOVER_MSAVEP, "Export Program File");
+    menu_button(view, MENU_SAVEC, 22, HOVER_MSAVEC, "Export Config File");
     menu_button(view, MENU_CANC, -1, HOVER_MCANC, "Close");
     return;
   }
@@ -2090,6 +2093,7 @@ onMotion(PuglView* view, int x, int y)
     if (MOUSEIN(BTNLOC_SAVE, fx, fy)) ui->mouseover |= HOVER_SAVE;
     if (MOUSEIN(BTNLOC_CANC, fx, fy)) ui->mouseover |= HOVER_CANC;
     if (MOUSEIN(BTNLOC_CANC2, fx, fy)) ui->mouseover |= HOVER_CANC2;
+    if (MOUSEIN(BTNLOC_CANC3, fx, fy)) ui->mouseover |= HOVER_CANC3;
     if (MOUSEIN(SCROLLBAR, fx, fy)) ui->mouseover |= HOVER_SCROLLBAR;
     if (phov != ui->mouseover) {
       puglPostRedisplay(view);
@@ -2338,7 +2342,9 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 	  ) {
 	txtentry_start(view, "Enter File Name:", "" );
 	return;
-      } else if (!MOUSEIN(BTNLOC_CANC, fx, fy)) {
+      } else if (ui->displaymode == 4 && !MOUSEIN(BTNLOC_CANC3, fx, fy)) {
+	return;
+      } else if ((ui->displaymode == 5 || ui->displaymode == 6) && !MOUSEIN(BTNLOC_CANC, fx, fy)) {
 	return;
       }
       ui->dir_sel = -1;
