@@ -1296,7 +1296,6 @@ void listCCAssignments(void *mcfg, FILE * fp) {
 void midi_uiassign_cc (void *mcfg, const char *fname) {
   struct b_midicfg * m = (struct b_midicfg *) mcfg;
   m->ccuimap = getCCFunctionId(fname);
-  printf("CC UI MAP: %d\n", m->ccuimap);
 }
 
 static void midi_print_cc_cb(const char *fnname, const unsigned char chn, const unsigned char cc, const unsigned char flags, void *arg) {
