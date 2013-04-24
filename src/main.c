@@ -447,6 +447,8 @@ static void Usage (int configdoc) {
   "  -D, --noCC        do not load default CC map on startup\n"
   "  -h                Print short help text\n"
   "  -H, --help        Print complete help text with parameter list\n"
+  "  -M <filename>, --midnam <filename>\n"
+  "                    export current controller mapping to .midnam file\n"
   "  -p <filename>, --program <filename>\n"
   "                    Load alternate program file over default\n"
   "  -P, --noprogram   Do not read the default program file\n"
@@ -622,6 +624,7 @@ int main (int argc, char * argv []) {
     { "noconfig",   no_argument,       0, 'C' },
     { "dumpcc",     no_argument,       0, 'd' },
     { "noCC",       no_argument,       0, 'D' },
+    { "midnam",     required_argument, 0, 'M' },
     { "noprogram",  no_argument,       0, 'P' },
     { "randomize",  no_argument,       0, 'r' },
     { "version",    no_argument,       0, 'V' },
