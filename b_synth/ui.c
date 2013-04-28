@@ -433,7 +433,7 @@ static void forge_message_kv(B3ui* ui, LV2_URID uri, int key, const char *val) {
   uint8_t obj_buf[256];
   if (!val || strlen(val) > 32) { return; }
 
-  lv2_atom_forge_set_buffer(&ui->forge, obj_buf, 64);
+  lv2_atom_forge_set_buffer(&ui->forge, obj_buf, 256);
 
   LV2_Atom_Forge_Frame set_frame;
   LV2_Atom* msg = (LV2_Atom*)lv2_atom_forge_blank(&ui->forge, &set_frame, 1, uri);
@@ -447,7 +447,7 @@ static void forge_message_kv(B3ui* ui, LV2_URID uri, int key, const char *val) {
 
 static void forge_message_str(B3ui* ui, LV2_URID uri, const char *key) {
   uint8_t obj_buf[1024];
-  lv2_atom_forge_set_buffer(&ui->forge, obj_buf, 64);
+  lv2_atom_forge_set_buffer(&ui->forge, obj_buf, 1024);
 
   LV2_Atom_Forge_Frame set_frame;
   LV2_Atom* msg = (LV2_Atom*)lv2_atom_forge_blank(&ui->forge, &set_frame, 1, uri);
