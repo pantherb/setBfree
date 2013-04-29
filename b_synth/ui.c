@@ -2032,6 +2032,12 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       queue_reshape = 1;
       reset_state(view);
       break;
+    case '.':
+      if (IS_FILEBROWSER(ui)) {
+	ui->dir_hidedotfiles = !ui->dir_hidedotfiles;
+	dirlist(view, ui->curdir);
+      }
+      break;
     default:
       break;
   }
@@ -2468,6 +2474,7 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   ui->dir_sel     = -1;
   ui->dir_scroll  = 0;
   ui->dir_scrollgrab = NOSCROLL;
+  ui->dir_hidedotfiles = 0;
   ui->mouseover = 0;
   ui->popupmsg = NULL;
   ui->queuepopup = 0;
