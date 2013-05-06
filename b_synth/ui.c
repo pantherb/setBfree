@@ -513,7 +513,7 @@ static void processMotion(PuglView* view, int elem, float dx, float dy) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   if (elem < 0 || elem >= TOTAL_OBJ) return;
 
-  const float dist = -2.0 * (ui->ctrls[elem].type == OBJ_LEVER ? 2.5 * dx : dy);
+  const float dist = ui->ctrls[elem].type == OBJ_LEVER ? (-5 * dx) : (dx - dy);
   const unsigned char oldval = vmap_val_to_midi(view, elem);
 
   switch (ui->ctrls[elem].type) {
