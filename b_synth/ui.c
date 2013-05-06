@@ -1100,10 +1100,10 @@ unity_button(PuglView* view,
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   const float invaspect = (float) ui->height / (float) ui->width;
-  GLfloat btncol[] = {0.1, 0.95, 0.15, 1.0 };
+  GLfloat btncol[] = {0.1, 0.3, 0.1, 1.0 };
 
   if (hover) {
-    btncol[0] = 0.4; btncol[1] = 1.0; btncol[2] = 0.4;
+    btncol[0] = 0.2; btncol[1] = 0.6; btncol[2] = 0.2;
   }
   float x0A, x0B;
 
@@ -2062,6 +2062,7 @@ onScroll(PuglView* view, int x, int y, float dx, float dy)
     if (MOUSEOVER(ui->ctrls[i], fx, fy)) {
       ui->dndval = ui->ctrls[i].cur + SIGNUM(dy);
       processMotion(view, i, 0, 0);
+      break;
     }
   }
 }
