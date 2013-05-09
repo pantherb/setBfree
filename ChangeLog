@@ -1,3 +1,10 @@
+2013-05-09 (0.7.0)  Robin Gareus <robin@gareus.org>
+* complete major work started on LV2 GUI (using openGL, ftgl, vera.ttf)
+* LV2 state support
+* allow to re-init complete state on the fly (LV2 worker)
+* allow to save/recall midi program presets
+* load/export setBfree config and program files
+
 2013-04-08 (0.6.2)  Robin Gareus <robin@gareus.org>
 * major work started on LV2 GUI (using openGL)
 feature-wise the GUI is still work-in-progress
