@@ -5,7 +5,7 @@ Maintainer: Robin Gareus <robin@gareus.org>
 Build-Depends: debhelper (>= 8),
  libasound2-dev,
  libftgl-dev,
- libglu1-mesa-dev,
+ libglu1-mesa-dev | libglu-dev,
  libjack-dev | libjack-jackd2-dev,
  liblo-dev,
  libsndfile1-dev,
