@@ -938,6 +938,7 @@ onReshape(PuglView* view, int width, int height)
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   const float invaspect = (float) height / (float) width;
+  ui->width = width; ui->height = height;
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
