@@ -1,8 +1,8 @@
 include ../common.mak
 
 LOADLIBES = -lm
-CFLAGS+= -I../src -I../b_overdrive -I../b_reverb -I../b_whirl -std=c99
-CFLAGS+=`pkg-config --cflags lv2 lv2core`
+override CFLAGS+= -I../src -I../b_overdrive -I../b_reverb -I../b_whirl -std=c99
+override CFLAGS+=`pkg-config --cflags lv2`
 
 ifeq ($(IS_OSX), yes)
   FONTFILE?=/usr/X11/lib/X11/fonts/TTF/VeraBd.ttf
@@ -98,12 +98,15 @@ ifeq ($(HAVE_UI), yes)
 endif
 
 $(LV2NAME)$(LIB_EXT): lv2.c $(OBJ) uris.h ../src/cfgParser.h ../src/midi.h
-	$(CC) -o $(LV2NAME)$(LIB_EXT) $(CFLAGS) -shared $(LV2LDFLAGS) lv2.c $(OBJ)
+	$(CC) $(CPPFLAGS) $(CFLAGS) \
+		-o $(LV2NAME)$(LIB_EXT) \
+		lv2.c $(OBJ) \
+	  -shared $(LV2LDFLAGS) $(LDFLAGS) $(LOADLIBES)
 
 $(LV2GUI)$(LIB_EXT): ui.c uris.h $(UIDEPS)
-	$(CC) $(CFLAGS) \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(UICFLAGS) \
 		-o $(LV2GUI)$(LIB_EXT) ui.c \
-		$(LDFLAGS) $(UICFLAGS) $(UILIBS) -shared $(LV2LDFLAGS)
+		-shared $(LV2LDFLAGS) $(LDFLAGS) $(UILIBS)
 
 %.o: %.c %.h
 	+$(MAKE) -C ../src $(subst ../src/,,$@)
