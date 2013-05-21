@@ -2889,9 +2889,9 @@ void initToneGenerator (struct b_tonegen *t, void *m) {
   for (i=0; i< MAX_KEYS; ++i)
     t->activeKeys[i] = 0;
   for (i=0; i< CR_PGMMAX; ++i)
-    memset((void*)&t->corePgm[i], sizeof(CoreIns), 0);
+    memset((void*)&t->corePgm[i], 0, sizeof(CoreIns));
   for (i=0; i<= NOF_WHEELS; ++i)
-    memset((void*)&t->oscillators[i], sizeof(struct _oscillator), 0);
+    memset((void*)&t->oscillators[i], 0, sizeof(struct _oscillator));
   for (i=0; i< 128; ++i) {
     t->eqvAtt[i]=0.0; t->eqvSet[i]='\0';
   }
