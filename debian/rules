@@ -1,13 +1,23 @@
 #!/usr/bin/make -f
 
+DPKG_EXPORT_BUILDFLAGS = 1
+include /usr/share/dpkg/buildflags.mk
+
 %:
 	dh $@
 
 override_dh_auto_build:
-	$(MAKE) ENABLE_CONVOLUTION=yes PREFIX=/usr OPTIMIZATIONS=-O2 LDFLAGS=-Wl,--as-needed
+	$(MAKE) \
+		ENABLE_CONVOLUTION=yes \
+		OPTIMIZATIONS="$(CFLAGS)" \
+		LDFLAGS="-Wl,--as-needed $(LDFLAGS)" \
+		PREFIX=/usr
 
 override_dh_auto_install:
-	$(MAKE) install ENABLE_CONVOLUTION=yes DESTDIR=$(CURDIR)/debian/setbfree PREFIX=/usr
+	$(MAKE) install \
+		ENABLE_CONVOLUTION=yes \
+		DESTDIR=$(CURDIR)/debian/setbfree \
+		PREFIX=/usr
 	install -d $(CURDIR)/debian/setbfree/usr/share/applications
 	install -m 644 $(CURDIR)/debian/setbfree.desktop \
 		$(CURDIR)/debian/setbfree/usr/share/applications/

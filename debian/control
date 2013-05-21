@@ -2,7 +2,7 @@ Source: setbfree
 Section: sound
 Priority: optional
 Maintainer: Robin Gareus <robin@gareus.org>
-Build-Depends: debhelper (>= 8),
+Build-Depends: debhelper (>= 8), dpkg-dev (>= 1.16.1~),
  libasound2-dev,
  libftgl-dev,
  libglu1-mesa-dev | libglu-dev,
@@ -16,7 +16,7 @@ Build-Depends: debhelper (>= 8),
  tk-dev,
  ttf-bitstream-vera
 Homepage: http://setbfree.org
-Standards-Version: 3.9.2
+Standards-Version: 3.9.3
 
 Package: setbfree
 Architecture: any
