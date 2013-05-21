@@ -2,7 +2,7 @@ include ../common.mak
 
 IRPATH ?= $(sharedir)/ir
 
-CXXFLAGS+= -DIRPATH=\"$(IRPATH)\"
+override CXXFLAGS += -DIRPATH=\"$(IRPATH)\"
 LOADLIBES = -lm
 
 # nothing to compile here. ../src will call make convolution.o

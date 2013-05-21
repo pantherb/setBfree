@@ -2,8 +2,8 @@ include ../common.mak
 
 INCLUDEPATHS = -I../b_overdrive/ -I../b_whirl  -I../b_reverb -I../b_conv
 
-CFLAGS+= $(INCLUDEPATHS)
-CFLAGS+= -DSHAREDIR="\"$(sharedir)\""
+override CFLAGS += $(INCLUDEPATHS)
+override CFLAGS += -DSHAREDIR="\"$(sharedir)\""
 LOADLIBES = -lm -lpthread
 
 BXCC=$(CC)
@@ -49,20 +49,20 @@ ifeq ($(shell pkg-config --exists jack || echo no), no)
 endif
 
 ifeq ($(shell pkg-config --exists alsa && echo yes), yes)
-  CFLAGS+=-DHAVE_ASEQ `pkg-config --cflags alsa`
+  override CFLAGS+=-DHAVE_ASEQ `pkg-config --cflags alsa`
   LOADLIBES+=`pkg-config --libs alsa`
 else
   $(info "compiling w/o ALSA Sequencer - libasound is missing - JACK-midi is always on")
 endif
 
 
-CFLAGS+=`pkg-config --cflags jack`
+override CFLAGS+=`pkg-config --cflags jack`
 LOADLIBES+=`pkg-config --libs jack`
 
 ifeq ($(shell pkg-config --exists sndfile \
 	&& test -f /usr/include/zita-convolver.h -o -f /usr/local/include/zita-convolver.h \
 	&& echo yes), $(ENABLE_CONVOLUTION))
-  CFLAGS+= -DHAVE_ZITACONVOLVE `pkg-config --cflags sndfile`
+  override CFLAGS+= -DHAVE_ZITACONVOLVE `pkg-config --cflags sndfile`
   LOADLIBES+=-lzita-convolver `pkg-config --libs sndfile`
   OBJS+=../b_conv/convolution.o
   HEADERS+=../b_conv/convolution.h
@@ -74,13 +74,19 @@ endif
 all: setBfree
 
 setBfree: $(HEADERS) $(OBJS)
-	$(BXCC) -o $(@) $(OBJS) $(LOADLIBES) $(CFLAGS) $(LDFLAGS)
+	$(BXCC) $(CPPFLAGS) $(CFLAGS) \
+		-o $(@) $(OBJS) \
+		$(LDFLAGS) $(LOADLIBES)
 
 programd: program.c pgmParser.c program.h pgmParser.h main.h
-	$(CC) -Wall -o $(@) -DPRG_MAIN program.c pgmParser.c $(INCLUDEPATHS)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -Wall \
+		-DPRG_MAIN \
+		-o $(@) program.c pgmParser.c
 
 configd: cfgParser.c main.h
-	$(CC) -Wall -o $(@) -DCFG_MAIN cfgParser.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -Wall \
+		-DCFG_MAIN \
+		-o $(@) cfgParser.c
 
 defaultpgm.h: programd ../pgm/default.pgm
 	$(info re-generating default program include-file)

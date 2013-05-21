@@ -11,14 +11,14 @@ ifeq ($(LV2AVAIL), yes)
 endif
 
 ifeq ($(shell pkg-config --exists liblo && echo yes), yes)
-  CFLAGS+=-DHAVE_LIBLO `pkg-config --cflags liblo`
+  override CFLAGS+=-DHAVE_LIBLO `pkg-config --cflags liblo`
   LOADLIBES+=`pkg-config --libs liblo`
 endif
 
 ifeq ($(shell pkg-config --exists jack && echo yes), yes)
   targets+=jboverdrive
   binaries+=jboverdrive
-  CFLAGS+=-DHAVE_JACK `pkg-config --cflags jack`
+  override CFLAGS+=-DHAVE_JACK `pkg-config --cflags jack`
   LOADLIBES+=`pkg-config --libs jack`
 endif
 
@@ -37,11 +37,13 @@ manifest.ttl:
 	sed "s/@LV2NAME@/$(LV2NAME)/;s/@LIB_EXT@/$(LIB_EXT)/" manifest.ttl.in > manifest.ttl
 
 $(LV2NAME)$(LIB_EXT): lv2.c overdrive.o
-	$(CC) -o $(LV2NAME)$(LIB_EXT) $(CFLAGS) -shared $(LV2LDFLAGS) lv2.c overdrive.o
+	$(CC) $(CPPFLAGS) $(CFLAGS) \
+		-o $(LV2NAME)$(LIB_EXT) lv2.c overdrive.o \
+	  -shared $(LV2LDFLAGS) $(LDFLAGS)
 
 overdrive.o: overmaker overdrive.h ../src/cfgParser.h ../src/midi.h
 	./overmaker > overdrive.c
-	$(CC) -Wall $(OPTIMIZATIONS) -fPIC -c -o overdrive.o overdrive.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o overdrive.o overdrive.c
 
 overmaker:$(OVMSRC) overmakerdefs.h
 	$(CC) -o $(@) $(OVMSRC) -lm

@@ -11,20 +11,20 @@ OBJS=vb3kb.o midi_jack.o
 LOADLIBES=-lm -lpthread
 CFLAGS+=-DVKB_TCLFILE=\"$(TCLFILE)\"
 
-CFLAGS+=-I$(TCLTKPREFIX)/include/tcl`. $(TCLTKPREFIX)/$(TCLTKLIBDIR)/tclConfig.sh && echo \$$TCL_VERSION`
+override CFLAGS+=-I$(TCLTKPREFIX)/include/tcl`. $(TCLTKPREFIX)/$(TCLTKLIBDIR)/tclConfig.sh && echo \$$TCL_VERSION`
 LOADLIBES+=-ltcl`. $(TCLTKPREFIX)/$(TCLTKLIBDIR)/tclConfig.sh && echo \$$TCL_VERSION`
 LOADLIBES+=-ltk`. $(TCLTKPREFIX)/$(TCLTKLIBDIR)/tkConfig.sh && echo \$$TK_VERSION`
 LOADLIBES+=`. $(TCLTKPREFIX)/$(TCLTKLIBDIR)/tkConfig.sh && echo $$TK_LIBS`
 
 ifeq ($(shell pkg-config --exists alsa && echo yes), yes)
-  CFLAGS+=-DHAVE_ASEQ `pkg-config --cflags alsa`
+  override CFLAGS+=-DHAVE_ASEQ `pkg-config --cflags alsa`
   LOADLIBES+=`pkg-config --libs alsa`
   OBJS+=midi_alsa.o
 else
   $(info "compiling w/o ALSA Sequencer, JACK-midi is always on")
 endif
 
-CFLAGS+=`pkg-config --cflags jack`
+override CFLAGS+=`pkg-config --cflags jack`
 LOADLIBES+=`pkg-config --libs jack`
 
 all: vb3kb

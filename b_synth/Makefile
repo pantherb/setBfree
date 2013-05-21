@@ -34,8 +34,6 @@ ifeq ($(LV2AVAIL), yes)
   targets+=lv2
 
   ifeq ($(HAVE_UI), yes)
-    #UICFLAGS=`pkg-config --cflags pugl-0`
-    #UILIBS=`pkg-config --libs pugl-0`
     UICFLAGS=-I..
     UIDEPS=../pugl/pugl.h ../pugl/pugl_internal.h ui_model.h
     UIDEPS+=$(TX)drawbar.c $(TX)wood.c $(TX)dial.c
@@ -52,13 +50,13 @@ ifeq ($(LV2AVAIL), yes)
       UI_TYPE=CocoaUI
     else
       UIDEPS+=../pugl/pugl_x11.c
-      CFLAGS+=`pkg-config --cflags glu`
+      override CFLAGS+=`pkg-config --cflags glu`
       UILIBS=../pugl/pugl_x11.c -lX11 `pkg-config --libs glu`
       UI_TYPE=X11UI
     endif
-    CFLAGS+=`pkg-config --cflags ftgl` -DHAVE_FTGL
+    override CFLAGS+=`pkg-config --cflags ftgl` -DHAVE_FTGL
     UILIBS+=`pkg-config --libs ftgl`
-    CFLAGS+=-DFONTFILE=\"$(FONTFILE)\"
+    override CFLAGS+=-DFONTFILE=\"$(FONTFILE)\"
     targets+=$(LV2GUI)$(LIB_EXT)
   else
     $(warning "openGL/GLU is not available - install glu-dev to include LV2 GUI")

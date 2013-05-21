@@ -18,7 +18,9 @@ manifest.ttl:
 	sed "s/@LV2NAME@/$(LV2NAME)/;s/@LIB_EXT@/$(LIB_EXT)/" manifest.ttl.in > manifest.ttl
 
 $(LV2NAME)$(LIB_EXT): lv2.c reverb.o
-	$(CC) -o $(LV2NAME)$(LIB_EXT) $(CFLAGS) -shared $(LV2LDFLAGS) lv2.c reverb.o
+	$(CC) $(CPPFLAGS) $(CFLAGS) \
+		-o $(LV2NAME)$(LIB_EXT) lv2.c reverb.o \
+	  -shared $(LV2LDFLAGS) $(LDFLAGS)
 
 %.o: %c %.h ../src/cfgParser.h
 

@@ -8,8 +8,9 @@ bindir = $(PREFIX)/bin
 sharedir = $(PREFIX)/share/setBfree
 lv2dir = $(PREFIX)/lib/lv2
 
-CFLAGS = $(OPTIMIZATIONS) -Wall -fPIC
-CFLAGS+= -DVERSION="\"$(VERSION)\""
+CFLAGS = $(OPTIMIZATIONS) -Wall
+override CFLAGS += -fPIC
+override CFLAGS += -DVERSION="\"$(VERSION)\""
 
 CXXFLAGS = $(OPTIMIZATIONS) -Wall
 
@@ -27,12 +28,12 @@ $(foreach tprefix,$(TCLPREFIX), \
 )
 
 # check for LV2
-LV2AVAIL=$(shell pkg-config --exists lv2 lv2core && echo yes)
+LV2AVAIL=$(shell pkg-config --exists lv2 && echo yes)
 
 LV2UIREQ=
 # check for LV2 idle thread -- requires 'lv2', atleast_version='1.4.1
 ifeq ($(shell pkg-config --atleast-version=1.4.2 lv2 || echo no), no)
-  CFLAGS+=-DOLD_SUIL
+  override CFLAGS+=-DOLD_SUIL
 else
   LV2UIREQ=lv2:requiredFeature ui:idle;\\n\\tlv2:extensionData ui:idle;
 endif
@@ -44,7 +45,7 @@ ifeq ($(UNAME),Darwin)
   LV2LDFLAGS=-dynamiclib
   LIB_EXT=.dylib
 else
-  CFLAGS+= -DHAVE_MEMSTREAM
+  override CFLAGS+= -DHAVE_MEMSTREAM
   LV2LDFLAGS=-Wl,-Bstatic -Wl,-Bdynamic
   LIB_EXT=.so
 endif
