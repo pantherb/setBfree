@@ -8,7 +8,7 @@ bindir = $(PREFIX)/bin
 sharedir = $(PREFIX)/share/setBfree
 lv2dir = $(PREFIX)/lib/lv2
 
-CFLAGS = $(OPTIMIZATIONS) -Wall
+CFLAGS ?= $(OPTIMIZATIONS) -Wall
 override CFLAGS += -fPIC
 override CFLAGS += -DVERSION="\"$(VERSION)\""
 

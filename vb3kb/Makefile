@@ -9,7 +9,7 @@ TCLFILE ?= $(sharedir)/vb3kb.tcl
 OBJS=vb3kb.o midi_jack.o
 
 LOADLIBES=-lm -lpthread
-CFLAGS+=-DVKB_TCLFILE=\"$(TCLFILE)\"
+override CFLAGS+=-DVKB_TCLFILE=\"$(TCLFILE)\"
 
 override CFLAGS+=-I$(TCLTKPREFIX)/include/tcl`. $(TCLTKPREFIX)/$(TCLTKLIBDIR)/tclConfig.sh && echo \$$TCL_VERSION`
 LOADLIBES+=-ltcl`. $(TCLTKPREFIX)/$(TCLTKLIBDIR)/tclConfig.sh && echo \$$TCL_VERSION`
