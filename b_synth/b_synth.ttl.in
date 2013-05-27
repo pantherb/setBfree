@@ -9,6 +9,7 @@
 @prefix state: <http://lv2plug.in/ns/ext/state#> .
 @prefix work:  <http://lv2plug.in/ns/ext/worker#> .
 @prefix sb3:   <http://gareus.org/oss/lv2/b_synth#> .
+@prefix rsz:   <http://lv2plug.in/ns/ext/resize-port#> .
 
 <http://gareus.org/>
 	a foaf:Person ;
@@ -44,6 +45,7 @@
 		lv2:designation lv2:control ;
 		lv2:index 1 ;
 		lv2:symbol "notify" ;
+		rsz:minimumSize 4096;
 		lv2:name "MIDI Out";
 	],
 	[
