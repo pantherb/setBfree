@@ -1,3 +1,9 @@
+2013-05-21 (0.7.2)  Robin Gareus <robin@gareus.org>
+* fix idle-interface name (follow lv2 upstream)
+* add LV2 minimum bufsize
+* add LV2 categories where appropriate
+* allow to override CFLAGS on build
+
 2013-05-21 (0.7.1)  Robin Gareus <robin@gareus.org>
 * fix initialization (zero oscillators)
 * build-system flags overhaul (honor CPPFLAGS, etc)
