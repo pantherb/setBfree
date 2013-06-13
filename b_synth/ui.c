@@ -883,12 +883,16 @@ static void setupOpenGL() {
   glEnable(GL_DITHER);
   glEnable(GL_MULTISAMPLE);
   glEnable(GL_NORMALIZE);
-  glEnable(GL_POLYGON_SMOOTH);
-  glEnable (GL_LINE_SMOOTH);
-  glShadeModel(GL_SMOOTH);
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA_SATURATE);
+
+  glEnable(GL_POLYGON_SMOOTH);
+  glEnable (GL_LINE_SMOOTH);
+  glShadeModel(GL_SMOOTH);
+  glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+
+  glEnable(GL_MULTISAMPLE);
 
   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
   glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
