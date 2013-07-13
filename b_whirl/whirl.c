@@ -104,7 +104,7 @@ void initValues(struct b_whirl *w) {
   w->drumRadiusCm = 22.0;
 
   w->airSpeed = 340.0; /* Meters per second */
-  w->micDistCm= 2.0;   /* From mic to origin */
+  w->micDistCm= 42.0;  /* From mic to origin */
 
   w->drumSpacing[0] = 36.0;
   w->drumSpacing[1] = 39.0;
