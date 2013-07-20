@@ -4,6 +4,9 @@ tags
 cscope.files
 cscope.out
 
+*.blend1
+*.blend2
+
 /b_*/*.so
 /b_*/*.dylib
 
