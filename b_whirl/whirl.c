@@ -82,8 +82,8 @@ void initValues(struct b_whirl *w) {
   w->hornAcDc = w->drumAcDc = 0;
 
   /* angular speed - unit: radians / sample / (2*M_PI) */
-  w->hornIncrUI = 0; ///< current angular speed 
-  w->drumIncrUI = 0; ///< current angular speed
+  w->hornIncrGRD = 0; ///< current angular speed
+  w->drumIncrGRD = 0; ///< current angular speed
 
   w->hornTarget = 0; ///< target angular speed
   w->drumTarget = 0; ///< target angular speed
@@ -228,16 +228,16 @@ void useRevOption (struct b_whirl *w, int n) {
   w->hornTarget = w->revoptions[i].hornTarget;
   w->drumTarget = w->revoptions[i].drumTarget;
 
-  if (w->hornIncrUI < w->hornTarget) {
+  if (w->hornIncrGRD < w->hornTarget) {
     w->hornAcDc = 1;
   }
-  else if (w->hornTarget < w->hornIncrUI) {
+  else if (w->hornTarget < w->hornIncrGRD) {
     w->hornAcDc = -1;
   }
-  if (w->drumIncrUI < w->drumTarget) {
+  if (w->drumIncrGRD < w->drumTarget) {
     w->drumAcDc = 1;
   }
-  else if (w->drumTarget < w->drumIncrUI) {
+  else if (w->drumTarget < w->drumIncrGRD) {
     w->drumAcDc = -1;
   }
 
@@ -1003,27 +1003,27 @@ void whirlProc2 (struct b_whirl *w,
   /* compute rotational speeds for this cycle */
   if (w->hornAcDc) {
     const double l = exp(-1.0/(w->SampleRateD / bufferLengthSamples * (w->hornAcDc>0? w->hornAcc : w->hornDec )));
-    w->hornIncrUI += (1-l) * (w->hornTarget - w->hornIncrUI);
+    w->hornIncrGRD += (1-l) * (w->hornTarget - w->hornIncrGRD);
 
-    if (fabs(w->hornTarget - w->hornIncrUI) < (1.0/360.0/w->SampleRateD) ) {
+    if (fabs(w->hornTarget - w->hornIncrGRD) < (1.0/360.0/w->SampleRateD) ) {
 #ifdef DEBUG_SPEED
       printf("AcDc Horn off\n");
 #endif
       w->hornAcDc = 0;
-      w->hornIncrUI = w->hornTarget;
+      w->hornIncrGRD = w->hornTarget;
     }
   }
 
   if (w->drumAcDc) {
     const double l = exp(-1.0/(w->SampleRateD / bufferLengthSamples * (w->drumAcDc>0? w->drumAcc: w->drumDec )));
-    w->drumIncrUI += (1-l) * (w->drumTarget - w->drumIncrUI);
+    w->drumIncrGRD += (1-l) * (w->drumTarget - w->drumIncrGRD);
 
-    if (fabs(w->drumTarget - w->drumIncrUI) < (1.0/360.0/w->SampleRateD)) {
+    if (fabs(w->drumTarget - w->drumIncrGRD) < (1.0/360.0/w->SampleRateD)) {
 #ifdef DEBUG_SPEED
       printf("ACDC Drum off\n");
 #endif
       w->drumAcDc = 0;
-      w->drumIncrUI = w->drumTarget;
+      w->drumIncrGRD = w->drumTarget;
     }
   }
 
@@ -1037,7 +1037,7 @@ void whirlProc2 (struct b_whirl *w,
    */
   if (w->hnBreakPos>0) {
     const double targetPos= w->hnBreakPos - floor(w->hnBreakPos);
-    if (!w->hornAcDc && w->hornIncrUI==0 && w->hornAngleGRD!=targetPos) {
+    if (!w->hornAcDc && w->hornIncrGRD==0 && w->hornAngleGRD!=targetPos) {
       w->hornAngleGRD += 1.0/400.0;
       w->hornAngleGRD = w->hornAngleGRD - floor(w->hornAngleGRD);
       if ((w->hornAngleGRD-targetPos) < (1.0/360.0)) w->hornAngleGRD=targetPos;
@@ -1045,7 +1045,7 @@ void whirlProc2 (struct b_whirl *w,
   }
   if (w->drBreakPos>0) {
     const double targetPos= w->drBreakPos - floor(w->drBreakPos);
-    if (!w->drumAcDc && w->drumIncrUI==0 && w->drumAngleGRD!=targetPos) {
+    if (!w->drumAcDc && w->drumIncrGRD==0 && w->drumAngleGRD!=targetPos) {
       w->drumAngleGRD += 1.0/400.0;
       w->drumAngleGRD = w->drumAngleGRD - floor(w->drumAngleGRD);
       if ((w->drumAngleGRD-targetPos) < (1.0/360.0)) w->drumAngleGRD=targetPos;
@@ -1059,8 +1059,8 @@ void whirlProc2 (struct b_whirl *w,
   unsigned int outpos = w->outpos;
 
   const float leakage = w->leakage;
-  const double hornIncrUI = w->hornIncrUI;
-  const double drumIncrUI = w->drumIncrUI;
+  const double hornIncrGRD = w->hornIncrGRD;
+  const double drumIncrGRD = w->drumIncrGRD;
 
   const int * const hornPhase = w->hornPhase;
   const int * const drumPhase = w->hornPhase;
@@ -1084,8 +1084,6 @@ void whirlProc2 (struct b_whirl *w,
   float * const drfR = w->drfR;
   float * const z = w->z;
 
-  //const float * const * const bfw = w->bfw;
-  //const float * const * const bbw = w->bbw;
   const struct _bw * const bfw = w->bfw;
   const struct _bw * const bbw = w->bfw;
 
@@ -1098,7 +1096,7 @@ void whirlProc2 (struct b_whirl *w,
   if ((fgh++ % (int)(w->SampleRateD/128/5) ) ==0) {
     printf ("H:%.3f D:%.3f | HS:%.3f DS:%.3f [Hz]| HT:%.2f DT:%.2f [Hz]| %s %s\n",
 	(double)hornAngle/DISPLC_SIZE, (double)drumAngle/DISPLC_SIZE,
-	w->SampleRateD*(double)hornIncrUI, w->SampleRateD*(double)drumIncrUI,
+	w->SampleRateD*(double)hornIncrGRD, w->SampleRateD*(double)drumIncrGRD,
 	w->SampleRateD*(double)w->hornTarget, w->SampleRateD*(double)w->drumTarget,
 	acdc[w->hornAcDc+1], acdc[w->drumAcDc+1]
 	);
@@ -1254,17 +1252,17 @@ void whirlProc2 (struct b_whirl *w,
       float y;
       EQ_IIR(drfL, DLbuf[outpos], y);
       if (outL)
-	*outL++ = (float) (y + (hornLevel * HLbuf[outpos]) + leak);
+	*outL++ = y + hornLevel * HLbuf[outpos] + leak;
       if (outHL)
-	*outHL++ = (hornLevel * HLbuf[outpos]) + leak;
+	*outHL++ = hornLevel * HLbuf[outpos] + leak;
       if (outDL)
 	*outDL++ = y;
 
       EQ_IIR(drfR, DRbuf[outpos], y);
       if (outR)
-	*outR++ = (float) (y + (hornLevel * HRbuf[outpos]) + leak);
+	*outR++ =  y + hornLevel * HRbuf[outpos] + leak;
       if (outHR)
-	*outHR++ = (hornLevel * HRbuf[outpos]) + leak;
+	*outHR++ = hornLevel * HRbuf[outpos] + leak;
       if (outDR)
 	*outDR++ = y;
     }
@@ -1274,14 +1272,16 @@ void whirlProc2 (struct b_whirl *w,
     DLbuf[outpos] = 0.0;
     DRbuf[outpos] = 0.0;
 
+    /* rotate speakers */
+
     outpos = (outpos + 1) & BUF_MASK_SAMPLES;
 
-    hornAngleGRD = (hornAngleGRD + hornIncrUI);
-    hornAngleGRD = hornAngleGRD - floor(hornAngleGRD);
+    hornAngleGRD = (hornAngleGRD + hornIncrGRD);
+    hornAngleGRD = hornAngleGRD - floor(hornAngleGRD); // limit to [0..1]
     hornAngle = hornAngleGRD * DISPLC_SIZE;
 
-    drumAngleGRD = (drumAngleGRD + drumIncrUI);
-    drumAngleGRD = drumAngleGRD - floor(drumAngleGRD);
+    drumAngleGRD = (drumAngleGRD + drumIncrGRD);
+    drumAngleGRD = drumAngleGRD - floor(drumAngleGRD); // limit to [0..1]
     drumAngle = drumAngleGRD * DISPLC_SIZE;
   }
 
