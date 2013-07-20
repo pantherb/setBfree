@@ -14,13 +14,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  
+ * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
 #ifndef CONVOLUTION_H
 #define CONVOLUTION_H
 
-/* zita-convolver lib is C++ so we need extern "C" in order to link 
+/* zita-convolver lib is C++ so we need extern "C" in order to link
  * functions using it. */
 #ifdef __cplusplus
 extern "C" {

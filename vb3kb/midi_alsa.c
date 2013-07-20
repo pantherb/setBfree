@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  
+ * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
 #include "vb3kb.h"
@@ -83,7 +83,7 @@ static int
 seq_open(Tcl_Interp *ip, void **private_return)
 {
   const char *var;
-  
+
   if (snd_seq_open(&seq_handle, "default", SND_SEQ_OPEN_OUTPUT, 0) < 0) {
     vkb_error(ip, "can't open sequencer device");
     seq_handle=NULL;
@@ -96,7 +96,7 @@ seq_open(Tcl_Interp *ip, void **private_return)
   else
     snd_seq_set_client_name(seq_handle, DEFAULT_MIDI_NAME);
 
-  my_port = snd_seq_create_simple_port(seq_handle, "midi_out", 
+  my_port = snd_seq_create_simple_port(seq_handle, "midi_out",
       SND_SEQ_PORT_CAP_READ | SND_SEQ_PORT_CAP_SUBS_READ,
       SND_SEQ_PORT_TYPE_MIDI_GENERIC | SND_SEQ_PORT_TYPE_APPLICATION);
 

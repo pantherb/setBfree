@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  
+ * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
 #include "vb3kb.h"
@@ -39,7 +39,7 @@ static void program(Tcl_Interp *ip, void *private, int chan, int bank, int type)
 
 
 static jack_client_t *j_client = NULL;
-static jack_port_t *j_output_port; 
+static jack_port_t *j_output_port;
 static const char *jack_outport_name = NULL;
 
 #define JACK_MIDI_QUEUE_SIZE (1024)

@@ -52,7 +52,6 @@ static void midnam_print_pgm_cb(int num, int pc, const char *name, void *arg) {
 		strncat(escaped, t1, strlen(name) - (t1-name));
 	}
 
-	
 	fprintf(fp,"      <Patch Number=\"%d\" Name=\"%s\" ProgramChange=\"%d\"/>\n",
 			num, escaped, pc);
 	free(escaped);

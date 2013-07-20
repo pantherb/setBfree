@@ -465,13 +465,13 @@ typedef struct fmem fmem_t;
 static int readfn(void *handler, char *buf, int size) {
   fmem_t *mem = handler;
   size_t available = mem->size - mem->pos;
-  
+
   if (size > available) {
     size = available;
   }
   memcpy(buf, mem->buffer + mem->pos, sizeof(char) * size);
   mem->pos += size;
-  
+
   return size;
 }
 

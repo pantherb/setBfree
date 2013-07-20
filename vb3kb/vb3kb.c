@@ -15,7 +15,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.  
+ * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  */
 
 #include "vb3kb.h"
@@ -122,7 +122,7 @@ static int printversion(ClientData clientData, Tcl_Interp *interp, int argc, con
   FILE *of = stderr;
 
   fprintf (of, "%s %s\n\n", name, VERSION);
-  fprintf(of, 
+  fprintf(of,
     "Copyright (c) 2012 Robin Gareus\n"
     "Copyright (c) 1997-2000 Takashi Iwai\n"
     "\n"
@@ -154,7 +154,7 @@ static int seq_on(ClientData clientData, Tcl_Interp *interp, int argc, const cha
     vkb_error(interp, "no output driver found");
     return TCL_ERROR;
   }
-  
+
   if (oper->open(interp, &private)) {
     seq_opened = 1;
     Tcl_SetVar(interp, "seqswitch", "1", TCL_GLOBAL_ONLY);

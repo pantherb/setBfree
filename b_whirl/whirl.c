@@ -45,7 +45,7 @@ void initValues(struct b_whirl *w) {
   w->hnBreakPos=0;
   w->drBreakPos=0;
 
-  for (i=0; i<4; ++i) 
+  for (i=0; i<4; ++i)
     w->z[i] = 0;
 
   /* The current angle of rotating elements */
@@ -62,7 +62,7 @@ void initValues(struct b_whirl *w) {
  *  drum: fast:5.955 Hz, slow: 0.101 Hz (wrong?)
  *
  * alternate values:
- * http://www.dairiki.org/HammondWiki/LeslieRotationSpeed 
+ * http://www.dairiki.org/HammondWiki/LeslieRotationSpeed
  *  horn: fast: 400 RPM, slow: 48 RPM
  *  drum: fast: 342 RPM, slow: 40 RPM
  */
