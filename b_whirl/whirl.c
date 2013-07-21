@@ -1169,7 +1169,7 @@ void whirlProc2 (struct b_whirl *w,
     W[z0] = temp;}
 
     /* 1) apply filters A,B -- horn-speaker characteristics
-     * intput: x
+     * input: x
      * output: x', leak
      */
 
@@ -1194,7 +1194,7 @@ void whirlProc2 (struct b_whirl *w,
 #endif
 
     /* 2) now do doppler shift for the horn -- FM
-     * intput: x' (filtered x)
+     * input: x' (filtered x)
      * output: HLbuf, HRbuf, leak
      */
 
@@ -1221,7 +1221,7 @@ void whirlProc2 (struct b_whirl *w,
     ADDHIST(adx2, w->adi2, x);
 
     /* 1A) do doppler shift for drum (actually orig signal -- FM
-     * intput: x
+     * input: x
      * output: DLbuf, DRbuf
      */
 
