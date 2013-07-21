@@ -368,8 +368,6 @@ static void initTables (struct b_whirl *w) {
     b = drumRadiusSamples * sin (v);
     w->drFwdDispl[i] = sqrt ((a * a) + (b * b));
     w->drBwdDispl[DISPLC_SIZE - (i + 1)] = w->drFwdDispl[i];
-
-    a = (1.0 + cos (v)) / 2.0;	/* Goes from 1, 0.5, 0, 0.5, 1 */
   }
 
   w->hornPhase[0] = 0;
@@ -1114,8 +1112,6 @@ void whirlProc2 (struct b_whirl *w,
     float xa;
     float xx = x;
     float leak = 0;
-
-  //if (IS_DENORMAL(x)) fprintf(stderr,"DENORMAL x!\n");
 
 #define ANGFILTER(BW,DX,DI) {           \
     xa  = BW[k].b[0] * x;                     \
