@@ -1057,33 +1057,35 @@ void whirlProc2 (struct b_whirl *w,
   unsigned int outpos = w->outpos;
 
   const float leakage = w->leakage;
+  const float hornLevel = w->hornLevel;
   const double hornIncrGRD = w->hornIncrGRD;
   const double drumIncrGRD = w->drumIncrGRD;
 
   const int * const hornPhase = w->hornPhase;
-  const int * const drumPhase = w->hornPhase;
+  const int * const drumPhase = w->drumPhase;
   const float * const hornSpacing = w->hornSpacing;
   const float * const drumSpacing = w->drumSpacing;
+  const float * const hnFwdDispl = w->hnFwdDispl;
+  const float * const hnBwdDispl = w->hnBwdDispl;
+  const float * const drFwdDispl = w->drFwdDispl;
+  const float * const drBwdDispl = w->drBwdDispl;
+
   float * const hafw = w->hafw;
   float * const hbfw = w->hbfw;
   float * const HLbuf = w->HLbuf;
   float * const HRbuf = w->HRbuf;
   float * const DLbuf = w->DLbuf;
   float * const DRbuf = w->DRbuf;
-  float * const hnFwdDispl = w->hnFwdDispl;
-  float * const hnBwdDispl = w->hnBwdDispl;
-  float * const drFwdDispl = w->drFwdDispl;
-  float * const drBwdDispl = w->drBwdDispl;
   float * const adx0 = w->adx0;
   float * const adx1 = w->adx1;
   float * const adx2 = w->adx2;
-  const float hornLevel = w->hornLevel;
   float * const drfL = w->drfL;
   float * const drfR = w->drfR;
   float * const z = w->z;
 
   const struct _bw * const bfw = w->bfw;
   const struct _bw * const bbw = w->bfw;
+
 
   int hornAngle = hornAngleGRD * DISPLC_SIZE;
   int drumAngle = drumAngleGRD * DISPLC_SIZE;
@@ -1113,14 +1115,7 @@ void whirlProc2 (struct b_whirl *w,
     float xx = x;
     float leak = 0;
 
-#define ANGFILTER(BW,DX,DI) {           \
-    xa  = BW[k].b[0] * x;                     \
-    xa += BW[k].b[1] * DX[(DI)];              \
-    xa += BW[k].b[2] * DX[((DI)+1) & AGMASK]; \
-    xa += BW[k].b[3] * DX[((DI)+2) & AGMASK]; \
-    xa += BW[k].b[4] * DX[((DI)+3) & AGMASK]; \
-    }
-
+    /* 0) define macros for code below */
 #define ADDHIST(DX,DI,XS) {      \
     DI = (DI + AGMASK) & AGMASK; \
     DX[DI] = XS;}
@@ -1129,7 +1124,11 @@ void whirlProc2 (struct b_whirl *w,
     k = ((hornAngle + hornPhase[(P)]) & DISPLC_MASK);       \
     t = hornSpacing[(P)] + DSP[k] + (float) outpos;         \
     r = floorf (t);                                         \
-    ANGFILTER(BW,DX,DI);                                    \
+    xa  = BW[k].b[0] * x;                                   \
+    xa += BW[k].b[1] * DX[(DI)];                            \
+    xa += BW[k].b[2] * DX[((DI)+1) & AGMASK];               \
+    xa += BW[k].b[3] * DX[((DI)+2) & AGMASK];               \
+    xa += BW[k].b[4] * DX[((DI)+3) & AGMASK];               \
     q = xa * (t - r);                                       \
     n = ((unsigned int) r) & BUF_MASK_SAMPLES;              \
     BUF[n] += xa - q;                                       \
@@ -1147,22 +1146,26 @@ void whirlProc2 (struct b_whirl *w,
     BUF[n] += q;}
 
     /* This is just a bum filter to take some high-end off. */
-#if 1
 #define FILTER_C(W0,W1,I) {           \
     float temp = x;                   \
     x = ((W0) * x) + ((W1) * z[(I)]); \
     z[(I)] = temp; }
-#else
-#define FILTER_C(W0,W1,I) {           \
-    x = ((W0) * x) + ((W1) * z[(I)]); \
-    z[(I)] = x;}
-#endif
 
 #define EQ_IIR(W,X,Y) {                                     \
     float temp = (X) - (W[a1] * W[z0]) - (W[a2] * W[z1]);   \
     Y = (temp * W[b0]) + (W[b1] * W[z0]) + (W[b2] * W[z1]); \
     W[z1] = W[z0]; \
     W[z0] = temp;}
+
+#ifdef HORN_COMB_FILTER
+
+#define COMB(WP,RP,BP,ES,FB,X) { \
+    X += ((*(RP)++) * (FB));     \
+    *(WP)++ = X;                 \
+    if ((RP) == (ES)) RP = BP;   \
+    if ((WP) == (ES)) WP = BP;}
+
+#endif
 
     /* 1) apply filters A,B -- horn-speaker characteristics
      * input: x
@@ -1175,13 +1178,6 @@ void whirlProc2 (struct b_whirl *w,
     leak = x * leakage;
 
 #ifdef HORN_COMB_FILTER
-
-#define COMB(WP,RP,BP,ES,FB,X) { \
-    X += ((*(RP)++) * (FB));     \
-    *(WP)++ = X;                 \
-    if ((RP) == (ES)) RP = BP;   \
-    if ((WP) == (ES)) WP = BP;}
-
     /* only causes hiss-noise - in particular on 'E-4,F-4' ~660Hz
      * no audible benefit to leslie effect so far, needs tweaking
      */
@@ -1221,7 +1217,7 @@ void whirlProc2 (struct b_whirl *w,
      * output: DLbuf, DRbuf
      */
 
-    x = xx; // x is used in macros, xx is the original input siganl
+    x = xx; // use original input signal ('x' was modified by horn filters)
 
     /* --- DRUM --- */
     DR_MOTION(0, DLbuf, drFwdDispl);
