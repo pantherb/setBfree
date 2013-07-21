@@ -380,7 +380,7 @@ static void initTables (struct b_whirl *w) {
   w->hornPhase[5] = ((DISPLC_SIZE * 4) / 6);
 
   for (i = 0; i < 6; i++) {
-    w->hornSpacing[i] += hornRadiusSamples + 1.0;
+    w->hornSpacing[i] = w->hornSpacing[i] * w->SampleRateD / 22100.0 + hornRadiusSamples + 1.0;
   }
 
   w->drumPhase[0] = 0;
@@ -393,7 +393,7 @@ static void initTables (struct b_whirl *w) {
   w->drumPhase[5] = ((DISPLC_SIZE * 4) / 6);
 
   for (i = 0; i < 6; i++) {
-    w->drumSpacing[i] += drumRadiusSamples + 1.0;
+    w->drumSpacing[i] = w->drumSpacing[i] * w->SampleRateD / 22100.0 + drumRadiusSamples + 1.0;
   }
 
   setIIRFilter (w->drfL, w->lpT, w->lpF, w->lpQ, w->lpG, w->SampleRateD);
