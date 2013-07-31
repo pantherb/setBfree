@@ -2838,12 +2838,7 @@ static void setPercEnableFromMIDI (void *d, unsigned char u) {
  */
 static void setPercDecayFromMIDI (void *d, unsigned char u) {
   struct b_tonegen *t = (struct b_tonegen *) d;
-  if (u < 64) {
-    setPercussionFast (t, TRUE);
-  }
-  else {
-    setPercussionFast (t, FALSE);
-  }
+  setPercussionFast (t, u < 64 ? FALSE : TRUE);
 }
 
 /**
