@@ -221,6 +221,10 @@ int splitA_UL;	/* A channel lower region */
  * make no sound. A value of one means that the MIDI notes map back
  * into the nearest octave with a playable key, a mechanism similar to
  * the foldback used in some organ models.
+ *
+ * A value of 2 plays the sound regardless. This is useful
+ * for lower and pedal manuals with midi.[lower|pedals].transpose
+ * otherwise keys mapped out of range after transposing are ignored.
  */
 int userExcursionStrategy;
 
@@ -272,7 +276,7 @@ static void resetMidiCfg(void *mcfg) {
   m->splitA_PL = 0;	/* A channel pedal region */
   m->splitA_UL = 0;	/* A channel lower region */
 
-  m->userExcursionStrategy = 0;
+  m->userExcursionStrategy = 2;
 
   m->hookfn = NULL;
   m->hookarg = NULL;
@@ -611,24 +615,32 @@ static void loadKeyTableRegion (unsigned char * translationTable,
 				int transpose,
 				int excursionStrategy)
 {
-  int note;
-  int offset = transpose + firstKey - first_MIDINote;
-  int firstKeyAdjust = firstKey + 12 - (firstKey % 12);
-  int lastKeyAdjust  = lastKey - (lastKey % 12) - 12;
+  if (excursionStrategy == 2) {
+    int key, note;
+    for (key = firstKey, note=first_MIDINote - transpose; key <= lastKey; key++, note++) {
+      if (note < 1 || note > 127) continue;
+      translationTable[note] = key;
+    }
+  } else {
+    int note;
+    int offset = transpose + firstKey - first_MIDINote;
+    int firstKeyAdjust = firstKey + 12 - (firstKey % 12);
+    int lastKeyAdjust  = lastKey - (lastKey % 12) - 12;
 
-  for (note = first_MIDINote; note <= last_MIDINote; note++) {
-    int key = note + offset;
-    if (key < firstKey) {
-      key = (excursionStrategy == 1) ? firstKeyAdjust + (key % 12) : 255;
+    for (note = first_MIDINote; note <= last_MIDINote; note++) {
+      int key = note + offset;
+      if (key < firstKey) {
+	key = (excursionStrategy == 1) ? firstKeyAdjust + (key % 12) : 255;
+      }
+      else if (lastKey < key) {
+	key = (excursionStrategy == 1) ? lastKeyAdjust + (key % 12) : 255;
+      }
+      /* This may happen if the key range is smaller than an octave. */
+      if ((key < firstKey) || (lastKey < key)) {
+	key = 255;
+      }
+      translationTable[note] = key;
     }
-    else if (lastKey < key) {
-      key = (excursionStrategy == 1) ? lastKeyAdjust + (key % 12) : 255;
-    }
-    /* This may happen if the key range is smaller than an octave. */
-    if ((key < firstKey) || (lastKey < key)) {
-      key = 255;
-    }
-    translationTable[note] = key;
   }
 }
 
