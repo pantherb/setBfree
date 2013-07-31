@@ -1,3 +1,8 @@
+2013-06-08 (0.7.4)  Robin Gareus <robin@gareus.org>
+* fix typo in leslie default config
+* calculate leslie reflections according to samplerate
+* fix slow/fast percussion MIDI-toggle
+
 2013-06-08 (0.7.3)  Robin Gareus <robin@gareus.org>
 * hotfix: increase min buffersize to accommodate preset-names and full config
 
