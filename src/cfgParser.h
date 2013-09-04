@@ -27,7 +27,7 @@
 
 /* some filters - in particular butterworth shelfing -
  * end up producing denormal-values when fed with zeros */
-#define DENORMAL_HACK (1e-20)
+#define DENORMAL_HACK (1e-14)
 #define IS_DENORMAL(f) (((*(unsigned int *)&f)&0x7f800000)==0)
 
 typedef struct _configContext {

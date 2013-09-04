@@ -320,7 +320,7 @@ float * reverb (struct b_reverb *r,
     int j;
     float y;
     const float xo = (*xp++);
-    const float x = y_1 + (inputGain * xo) + DENORMAL_HACK;
+    const float x = y_1 + (inputGain * xo);
     float xa = 0.0;
     /* First we do four feedback comb filters (ie parallel delay lines,
        each with a single tap at the end that feeds back at the start) */
@@ -346,8 +346,8 @@ float * reverb (struct b_reverb *r,
     *yp++ = ((wet * y) + (dry * xo));
   }
 
-  r->y_1 = y_1;
-  r->yy1 = yy1;
+  r->y_1 = y_1 + DENORMAL_HACK;
+  r->yy1 = yy1 + DENORMAL_HACK;
   return outbuf;
 }
 /* vi:set ts=8 sts=2 sw=2: */
