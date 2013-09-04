@@ -1635,7 +1635,6 @@ static void initOscillators (struct b_tonegen *t, int variant, double precision)
 
     /* Compute the number of bytes needed for exactly one wave buffer. */
 
-    wszb = wszs * 2;
     wszb = wszs * sizeof (float);
 
     /* Allocate the wave buffer */
