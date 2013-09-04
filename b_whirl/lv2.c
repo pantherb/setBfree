@@ -285,4 +285,5 @@ int getConfigParameter_dr (char * par, ConfigContext * cfg, double * dp, double 
 int getConfigParameter_d (char * par, ConfigContext * cfg, double * dp) { return 0; }
 int getConfigParameter_ir (char * par, ConfigContext * cfg, int * ip, int lowInc, int highInc) { return 0; }
 int getConfigParameter_i (char * par, ConfigContext * cfg, int * ip) { return 0; }
+void notifyControlChangeByName (void *mcfg, char * cfname, unsigned char val) { }
 /* vi:set ts=8 sts=2 sw=2: */
