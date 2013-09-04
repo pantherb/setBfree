@@ -1491,21 +1491,21 @@ void legacyConfig () {
 
 #ifdef ADWS_GFB
   sprintf (buf,
-	   "else if (getConfigParameter_f (\"%s\", cfg, &v)) { %s(NULL, v); return 1; }",
+	   "else if (getConfigParameter_f (\"%s\", cfg, &v)) { %s(pp, v); return 1; }",
 	   "xov.ctl_biased_gfb", "fctl_biased_gfb");
   codeln (buf);
 #endif
 
 #ifdef TR_BIASED
   sprintf (buf,
-	   "else if (getConfigParameter_f (\"%s\", cfg, &v)) { %s(NULL, v); return 1; }",
+	   "else if (getConfigParameter_f (\"%s\", cfg, &v)) { %s(pp, v); return 1; }",
 	   "xov.ctl_biased", "fctl_biased");
   codeln (buf);
 #endif
 
 #ifdef ADWS_FAT_CTRL
   sprintf (buf,
-	   "else if (getConfigParameter_f (\"%s\", cfg, &v)) { %s(NULL, v); return 1; }",
+	   "else if (getConfigParameter_f (\"%s\", cfg, &v)) { %s(pp, v); return 1; }",
 	   "overdrive.character", "fctl_biased_fat");
   codeln (buf);
 #endif /* ADWS_FAT_CTRL */

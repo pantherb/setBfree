@@ -265,11 +265,11 @@ int main (int argc, char**argv) {
 	    if (!strcasecmp(optarg, "globfeed"))   {ok=1; p_globfeed =pp(t+1);}
 	    if (!strcasecmp(optarg, "gainin"))     {ok=1; p_gainin   =pp(t+1);}
 	    if (!strcasecmp(optarg, "gainout"))    {ok=1; p_gainout  =pp(t+1);}
+	    *t='=';
 	  }
 	  if (!ok) {
 	    fprintf(stderr, "invalid parameter '%s' given.\n", optarg);
 	  }
-	  *t='=';
 	}
 	break;
       case 'V':
