@@ -819,11 +819,13 @@ int main (int argc, char * argv []) {
 #ifdef HAVE_ASEQ
   pthread_t t_midi;
   if (!use_jack_midi) {
-    if (!aseq_open(midi_port))
-      k= pthread_create(&t_midi, NULL, aseq_run, &inst);
-
-    if (k != 0) {
-      fprintf (stderr, "%d : %s\n", k, "pthread_create : MIDIInReader thread");
+    if (!aseq_open(midi_port)) {
+      k = pthread_create(&t_midi, NULL, aseq_run, &inst);
+      if (k != 0) {
+	fprintf (stderr, "%d : %s\n", k, "pthread_create : MIDIInReader thread");
+	return (1);
+      }
+    } else {
       return (1);
     }
   }
