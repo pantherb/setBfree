@@ -81,6 +81,8 @@ puglCreate(PuglNativeWindow parent,
 	PuglView*      view = (PuglView*)calloc(1, sizeof(PuglView));
 	PuglInternals* impl = (PuglInternals*)calloc(1, sizeof(PuglInternals));
 	if (!view || !impl) {
+		free(view);
+		free(impl);
 		return NULL;
 	}
 
