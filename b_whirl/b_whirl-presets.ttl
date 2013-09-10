@@ -6,7 +6,7 @@
 
 bwhirlpreset:default
   a pset:Preset ;
-	lv2:appliesTo bwhirl:extended
+	lv2:appliesTo bwhirl:extended ;
 	rdfs:label "Default Leslie" ;
 	lv2:port [
 		lv2:symbol "rt_speed" ;
@@ -90,7 +90,7 @@ bwhirlpreset:default
 
 bwhirlpreset:oiled
   a pset:Preset ;
-	lv2:appliesTo bwhirl:extended
+	lv2:appliesTo bwhirl:extended ;
 	rdfs:label "Well Oiled Leslie" ;
 	lv2:port [
 		lv2:symbol "rt_speed" ;
