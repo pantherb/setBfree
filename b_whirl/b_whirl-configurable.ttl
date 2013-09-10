@@ -27,7 +27,7 @@
 		lv2:symbol "in" ;
 		lv2:name "In" ;
 		lv2:designation pg:center ;
-	],	
+	],
 	[
 		a lv2:AudioPort ,
 			lv2:OutputPort ;
@@ -102,10 +102,10 @@
 		pp:displayPriority 700 ;
     lv2:scalePoint [
       rdfs:label "Mono/Center" ;
-      rdf:value 0.0
+      rdf:value 0.0 ;
     ] , [
       rdfs:label "90deg stereo" ;
-      rdf:value 1.0
+      rdf:value 1.0 ;
     ];
 	],
 
@@ -116,7 +116,7 @@
 		lv2:symbol "hornrpmslow" ;
 		lv2:name "Horn Speed Slow [rpm]";
 		lv2:default 40.32;
-		lv2:minimum 10.0
+		lv2:minimum 10.0 ;
 		lv2:maximum 200.0 ;
 		pp:displayPriority 300 ;
 	],
@@ -299,8 +299,8 @@
 		lv2:index 20 ;
 		lv2:symbol "drumrpmslow" ;
 		lv2:name "Drum Speed Slow [rpm]";
-		lv2:default 36.0;
-		lv2:minimum 5.0
+		lv2:default 36.0 ;
+		lv2:minimum 5.0 ;
 		lv2:maximum 100.0 ;
 		pp:displayPriority 300 ;
 	],
@@ -349,19 +349,19 @@
 		pp:displayPriority 200 ;
     lv2:scalePoint [
       rdfs:label "Front" ;
-      rdf:value 0.0
+      rdf:value 0.0 ;
     ] , [
       rdfs:label "Right" ;
-      rdf:value .25
+      rdf:value .25 ;
     ] , [
       rdfs:label "Back" ;
-      rdf:value .5
+      rdf:value .5 ;
     ] , [
       rdfs:label "Left" ;
-      rdf:value .75
+      rdf:value .75 ;
     ] , [
       rdfs:label "Front" ;
-      rdf:value 1.0
+      rdf:value 1.0 ;
     ];
 		pp:displayPriority 250 ;
 	],
