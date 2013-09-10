@@ -5,3 +5,5 @@ build-deb.sh export-ignore
 build-osx.sh export-ignore
 release.sh export-ignore
 examples export-ignore
+*.xcf export-ignore
+*.blend export-ignore
