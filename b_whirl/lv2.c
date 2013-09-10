@@ -23,6 +23,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "whirl.h"
 
 #include "lv2/lv2plug.in/ns/lv2core/lv2.h"
@@ -31,26 +32,42 @@
 #define B3W_URI_EXT "http://gareus.org/oss/lv2/b_whirlExt"
 
 typedef enum {
-  B3W_INPUT      = 0,
-  B3W_OUTL       = 1,
-  B3W_OUTR       = 2,
-  B3W_REVSELECT  = 3,
-  B3W_FILTATYPE  = 4,
-  B3W_FILTAFREQ  = 5,
-  B3W_FILTAQUAL  = 6,
-  B3W_FILTAGAIN  = 7,
-  B3W_FILTBTYPE  = 8,
-  B3W_FILTBFREQ  = 9,
-  B3W_FILTBQUAL  =10,
-  B3W_FILTBGAIN  =11,
+  B3W_INPUT = 0,
+  B3W_OUTL,
+  B3W_OUTR,
 
-  B3W_HORNBREAK  =12,
-  B3W_HORNACCEL  =13,
-  B3W_HORNDECEL  =14,
+  B3W_REVSELECT, // 3
 
-  B3W_DRUMBREAK  =15,
-  B3W_DRUMACCEL  =16,
-  B3W_DRUMDECEL  =17,
+  B3W_HORNLVL,
+  B3W_DRUMLVL,
+  B3W_DRUMWIDTH,
+
+  B3W_HORNRPMSLOW, // 7
+  B3W_HORNRPMFAST,
+  B3W_HORNACCEL,
+  B3W_HORNDECEL,
+  B3W_HORNBRAKE,
+
+  B3W_FILTATYPE, // 12
+  B3W_FILTAFREQ,
+  B3W_FILTAQUAL,
+  B3W_FILTAGAIN,
+
+  B3W_FILTBTYPE, // 16
+  B3W_FILTBFREQ,
+  B3W_FILTBQUAL,
+  B3W_FILTBGAIN,
+
+  B3W_DRUMRPMSLOW, // 20
+  B3W_DRUMRPMFAST,
+  B3W_DRUMACCEL,
+  B3W_DRUMDECEL,
+  B3W_DRUMBRAKE,
+
+  B3W_FILTDTYPE, // 25
+  B3W_FILTDFREQ,
+  B3W_FILTDQUAL,
+  B3W_FILTDGAIN,
 } PortIndex;
 
 typedef struct {
@@ -59,24 +76,35 @@ typedef struct {
   float *outR;
 
   float *rev_select;
-  float *filta_type, *filtb_type;
-  float *filta_freq, *filtb_freq;
-  float *filta_qual, *filtb_qual;
-  float *filta_gain, *filtb_gain;
+  float *filta_type, *filtb_type, *filtd_type;
+  float *filta_freq, *filtb_freq, *filtd_freq;
+  float *filta_qual, *filtb_qual, *filtd_qual;
+  float *filta_gain, *filtb_gain, *filtd_gain;
 
-  float *horn_break, *horn_accel, *horn_decel;
-  float *drum_break, *drum_accel, *drum_decel;
+  float *horn_brake, *horn_accel, *horn_decel, *horn_slow, *horn_fast;
+  float *drum_brake, *drum_accel, *drum_decel, *drum_slow, *drum_fast;
+
+  float *horn_level, *drum_level;
+  float *drum_width;
 
   float o_rev_select;
-  float o_filta_type, o_filtb_type;
-  float o_filta_freq, o_filtb_freq;
-  float o_filta_qual, o_filtb_qual;
-  float o_filta_gain, o_filtb_gain;
+  float o_filta_type, o_filtb_type, o_filtd_type;
+  float o_filta_freq, o_filtb_freq, o_filtd_freq;
+  float o_filta_qual, o_filtb_qual, o_filtd_qual;
+  float o_filta_gain, o_filtb_gain, o_filtd_gain;
 
-  float o_horn_break, o_horn_accel, o_horn_decel;
-  float o_drum_break, o_drum_accel, o_drum_decel;
+  float o_horn_brake, o_horn_accel, o_horn_decel, o_horn_slow, o_horn_fast;
+  float o_drum_brake, o_drum_accel, o_drum_decel, o_drum_slow, o_drum_fast;
+
+  float o_horn_level, o_drum_level;
+  float o_drum_width;
 
   struct b_whirl *instance;
+
+  float bufH[2][8192];
+  float bufD[2][8192];
+
+  float _w;
 } B3W;
 
 static LV2_Handle
@@ -101,8 +129,18 @@ instantiate(const LV2_Descriptor*     descriptor,
    * allow to call initWhirl() with new whirlConfig()
    * parameters  during deactive/activate cycles..
    */
+#if 0
+  b3w->instance->hornRadiusCm = 19.2;
+  b3w->instance->drumRadiusCm = 22.0;
+  b3w->instance->micDistCm    = 42.0;
+#endif
 
   initWhirl(b3w->instance, NULL, rate);
+
+  b3w->_w = 2000.0 / rate;
+  b3w->o_horn_level = 1.0;
+  b3w->o_drum_level = 1.0;
+  b3w->o_drum_width = 1.0;
 
   return (LV2_Handle)b3w;
 }
@@ -151,8 +189,20 @@ connect_port(LV2_Handle instance,
     case B3W_FILTBGAIN:
       b3w->filtb_gain = (float*)data;
       break;
-    case B3W_HORNBREAK:
-      b3w->horn_break = (float*)data;
+    case B3W_FILTDTYPE:
+      b3w->filtd_type = (float*)data;
+      break;
+    case B3W_FILTDFREQ:
+      b3w->filtd_freq = (float*)data;
+      break;
+    case B3W_FILTDQUAL:
+      b3w->filtd_qual = (float*)data;
+      break;
+    case B3W_FILTDGAIN:
+      b3w->filtd_gain = (float*)data;
+      break;
+    case B3W_HORNBRAKE:
+      b3w->horn_brake = (float*)data;
       break;
     case B3W_HORNACCEL:
       b3w->horn_accel = (float*)data;
@@ -160,14 +210,35 @@ connect_port(LV2_Handle instance,
     case B3W_HORNDECEL:
       b3w->horn_decel = (float*)data;
       break;
-    case B3W_DRUMBREAK:
-      b3w->drum_break = (float*)data;
+    case B3W_HORNRPMSLOW:
+      b3w->horn_slow = (float*)data;
+      break;
+    case B3W_HORNRPMFAST:
+      b3w->horn_fast = (float*)data;
+      break;
+    case B3W_DRUMBRAKE:
+      b3w->drum_brake = (float*)data;
       break;
     case B3W_DRUMACCEL:
       b3w->drum_accel = (float*)data;
       break;
     case B3W_DRUMDECEL:
       b3w->drum_decel = (float*)data;
+      break;
+    case B3W_DRUMRPMSLOW:
+      b3w->drum_slow = (float*)data;
+      break;
+    case B3W_DRUMRPMFAST:
+      b3w->drum_fast = (float*)data;
+      break;
+    case B3W_HORNLVL:
+      b3w->horn_level = (float*)data;
+      break;
+    case B3W_DRUMLVL:
+      b3w->drum_level = (float*)data;
+      break;
+    case B3W_DRUMWIDTH:
+      b3w->drum_width = (float*)data;
       break;
   }
 }
@@ -185,24 +256,30 @@ activate(LV2_Handle instance)
     } \
   }
 
-#define SETVALUE(VAR, NAME, PROC) \
+#define SETVALUE(VAR, NAME, PROC, FN) \
   if (b3w->NAME) { \
     if (b3w->o_##NAME != *(b3w->NAME)) { \
       b3w->instance->VAR = PROC (*(b3w->NAME)); \
       b3w->o_##NAME = *(b3w->NAME); \
+      FN; \
     } \
   }
+
+static inline float db_to_coefficient(const float d) {
+  return powf(10.0f, 0.05f * d);
+}
 
 static void
 run(LV2_Handle instance, uint32_t n_samples)
 {
   B3W* b3w = (B3W*)instance;
+  uint32_t i;
 
   const float* const input  = b3w->input;
   float* const       outL = b3w->outL;
   float* const       outR = b3w->outR;
 
-  SETPARAM(useRevOption, rev_select, (int) floorf)
+  assert(n_samples <= 8192);
 
   SETPARAM(isetHornFilterAType, filta_type, (int) floorf)
   SETPARAM(fsetHornFilterAFrequency, filta_freq, )
@@ -214,15 +291,50 @@ run(LV2_Handle instance, uint32_t n_samples)
   SETPARAM(fsetHornFilterBQ, filtb_qual, )
   SETPARAM(fsetHornFilterBGain, filtb_gain, )
 
-  SETVALUE(hnBreakPos, horn_break, (double))
-  SETVALUE(hornAcc, horn_accel, )
-  SETVALUE(hornDec, horn_decel, )
+  SETPARAM(isetDrumFilterType, filtd_type, (int) floorf)
+  SETPARAM(fsetDrumFilterFrequency, filtd_freq, )
+  SETPARAM(fsetDrumFilterQ, filtd_qual, )
+  SETPARAM(fsetDrumFilterGain, filtd_gain, )
 
-  SETVALUE(drBreakPos, drum_break, (double))
-  SETVALUE(drumAcc, drum_accel, )
-  SETVALUE(drumDec, drum_decel, )
+  SETVALUE(hnBreakPos, horn_brake, (double), )
+  SETVALUE(hornAcc, horn_accel, , )
+  SETVALUE(hornDec, horn_decel, , )
 
-  whirlProc(b3w->instance, input, outL, outR, n_samples);
+  SETVALUE(hornRPMslow, horn_slow, , computeRotationSpeeds(b3w->instance); b3w->o_rev_select = -1;)
+  SETVALUE(hornRPMfast, horn_fast, , computeRotationSpeeds(b3w->instance); b3w->o_rev_select = -1;)
+  SETVALUE(drumRPMslow, drum_slow, , computeRotationSpeeds(b3w->instance); b3w->o_rev_select = -1;)
+  SETVALUE(drumRPMfast, drum_fast, , computeRotationSpeeds(b3w->instance); b3w->o_rev_select = -1;)
+
+  SETPARAM(useRevOption, rev_select, (int) floorf)
+
+  SETVALUE(drBreakPos, drum_brake, (double), )
+  SETVALUE(drumAcc, drum_accel, , )
+  SETVALUE(drumDec, drum_decel, , )
+
+  whirlProc2(b3w->instance, input, NULL, NULL, b3w->bufH[0], b3w->bufH[1], b3w->bufD[0], b3w->bufD[1], n_samples);
+
+  const float hl = db_to_coefficient(*b3w->horn_level);
+  const float dl = db_to_coefficient(*b3w->drum_level);
+  const float dw = *b3w->drum_width;
+  const float _w = b3w->_w; // TODO * pow n_samples
+
+  b3w->o_horn_level += _w * (hl - b3w->o_horn_level) + 1e-15;
+  b3w->o_drum_level += _w * (dl - b3w->o_drum_level) + 1e-15;
+  b3w->o_drum_width += _w * (dw - b3w->o_drum_width) + 1e-15;
+
+  const float dw2 = b3w->o_drum_width / 2.0;
+
+  const float hll = b3w->o_horn_level;
+  const float hrr = b3w->o_horn_level;
+  const float dll = b3w->o_drum_level * (.5 + dw2);
+  const float dlr = b3w->o_drum_level * (.5 - dw2);
+  const float drl = b3w->o_drum_level * (.5 - dw2);
+  const float drr = b3w->o_drum_level * (.5 + dw2);
+
+  for (i=0; i < n_samples; ++i) {
+    outL[i] = b3w->bufH[0][i] * hll + b3w->bufD[0][i] * dll + b3w->bufD[1][i] * dlr;
+    outR[i] = b3w->bufH[1][i] * hrr + b3w->bufD[0][i] * drl + b3w->bufD[1][i] * drr;
+  }
 }
 
 static void

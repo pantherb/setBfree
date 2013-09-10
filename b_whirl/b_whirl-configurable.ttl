@@ -3,28 +3,20 @@
 @prefix lv2: <http://lv2plug.in/ns/lv2core#> .
 @prefix pg: <http://lv2plug.in/ns/ext/port-groups#> .
 @prefix pp: <http://lv2plug.in/ns/ext/port-props#> .
+@prefix units: <http://lv2plug.in/ns/extensions/units#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix rg: <http://gareus.org/oss/lv2/> .
 
-rg:bwhirl-in a pg:Group ;
-   a pg:MonoGroup ;
-   lv2:symbol "in" .
-  
-rg:bwhirl-out a pg:Group ;
-   a pg:StereoGroup ;
-   lv2:symbol "out" ;
-   pg:source rg:bwhirl-in .
-
-<http://gareus.org/>
+<http://gareus.org/rgareus#me>
 	a foaf:Person ;
 	foaf:name "Robin Gareus" ;
 	foaf:mbox <mailto:robin@gareus.org> ;
 	foaf:homepage <http://gareus.org/> .
 
 <http://gareus.org/oss/lv2/b_whirlExt>
-	a lv2:Plugin;
-	doap:maintainer <http://gareus.org/> ;
+	a  doap:Project, lv2:Plugin, lv2:SimulatorPlugin;
+	doap:maintainer <http://gareus.org/rgareus#me> ;
 	doap:name "B Organ Whirl Speaker Extended Version";
 	doap:license <http://usefulinc.com/doap/licenses/gpl> ;
 	lv2:optionalFeature lv2:hardRTCapable ;
@@ -35,8 +27,7 @@ rg:bwhirl-out a pg:Group ;
 		lv2:index 0 ;
 		lv2:symbol "in" ;
 		lv2:name "In" ;
-	  pg:inGroup rg:bwhirl-in ;
-	  pg:role pg:centerChannel ;
+		lv2:designation pg:center ;
 	],	
 	[
 		a lv2:AudioPort ,
@@ -44,8 +35,7 @@ rg:bwhirl-out a pg:Group ;
 		lv2:index 1 ;
 		lv2:symbol "left" ;
 		lv2:name "Left output" ;
-    pg:inGroup rg:bwhirl-out ;
-    pg:role pg:leftChannel ;
+		lv2:designation pg:left ;
 	],
 	[
 		a lv2:AudioPort ,
@@ -53,155 +43,101 @@ rg:bwhirl-out a pg:Group ;
 		lv2:index 2 ;
 		lv2:symbol "right" ;
 		lv2:name "Right output" ;
-    pg:inGroup rg:bwhirl-out ;
-    pg:role pg:rightChannel ;
+		lv2:designation pg:right ;
 	],
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
 		lv2:index 3 ;
 		lv2:symbol "rt_speed" ;
-		lv2:name "Rotary Type (horn, drum speed off/slow/fast)";
+		lv2:name "Motors (horn, drum speed: off/slow/fast)";
 		lv2:default 4 ;
 		lv2:minimum 0 ;
 		lv2:maximum 8 ;
 		lv2:portProperty lv2:enumeration ;
-		lv2:scalePoint [ rdfs:label "stop, stop"; rdf:value 0 ] ;
-		lv2:scalePoint [ rdfs:label "stop, slow"; rdf:value 1 ] ;
-		lv2:scalePoint [ rdfs:label "stop, fast"; rdf:value 2 ] ;
-		lv2:scalePoint [ rdfs:label "slow, stop"; rdf:value 3 ] ;
-		lv2:scalePoint [ rdfs:label "slow, slow"; rdf:value 4 ] ;
-		lv2:scalePoint [ rdfs:label "slow, fast"; rdf:value 5 ] ;
-		lv2:scalePoint [ rdfs:label "fast, stop"; rdf:value 6 ] ;
-		lv2:scalePoint [ rdfs:label "fast, slow"; rdf:value 7 ] ;
-		lv2:scalePoint [ rdfs:label "fast, fast"; rdf:value 8 ] ;
+		lv2:scalePoint [ rdfs:label "horn: stop, drum:stop"; rdf:value 0 ; ] ;
+		lv2:scalePoint [ rdfs:label "horn: stop, drum:slow"; rdf:value 1 ; ] ;
+		lv2:scalePoint [ rdfs:label "horn: stop, drum:fast"; rdf:value 2 ; ] ;
+		lv2:scalePoint [ rdfs:label "horn: slow, drum:stop"; rdf:value 3 ; ] ;
+		lv2:scalePoint [ rdfs:label "horn: slow, drum:slow"; rdf:value 4 ; ] ;
+		lv2:scalePoint [ rdfs:label "horn: slow, drum:fast"; rdf:value 5 ; ] ;
+		lv2:scalePoint [ rdfs:label "horn: fast, drum:stop"; rdf:value 6 ; ] ;
+		lv2:scalePoint [ rdfs:label "horn: fast, drum:slow"; rdf:value 7 ; ] ;
+		lv2:scalePoint [ rdfs:label "horn: fast, drum:fast"; rdf:value 8 ; ] ;
 		pp:displayPriority 1000 ;
 	],
+
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
 		lv2:index 4 ;
-		lv2:symbol "filtatype" ;
-		lv2:name "Filter Type:";
-		lv2:default 0;
-		lv2:minimum 0 ;
-		lv2:maximum 8 ;
-		lv2:portProperty lv2:enumeration ;
-		lv2:scalePoint [ rdfs:label "LPF low-pass"; rdf:value 0 ] ;
-		lv2:scalePoint [ rdfs:label "HPF high-pass"; rdf:value 1 ] ;
-		lv2:scalePoint [ rdfs:label "BF0 band-pass 0"; rdf:value 2 ] ;
-		lv2:scalePoint [ rdfs:label "BF1 band-pass 1"; rdf:value 3 ] ;
-		lv2:scalePoint [ rdfs:label "NOT notch"; rdf:value 4 ] ;
-		lv2:scalePoint [ rdfs:label "APF all-pass"; rdf:value 5 ] ;
-		lv2:scalePoint [ rdfs:label "PEQ peaking eq"; rdf:value 6 ] ;
-		lv2:scalePoint [ rdfs:label "LSH low shelf"; rdf:value 7 ] ;
-		lv2:scalePoint [ rdfs:label "HSH high shelf"; rdf:value 8 ] ;
-		pp:displayPriority 100 ;
+		lv2:symbol "hornlvl" ;
+		lv2:name "Horn Level [dB]";
+		lv2:default 0.0 ;
+		lv2:minimum -20.0;
+		lv2:maximum +20.0 ;
+		 units:unit units:db;
+		pp:displayPriority 800 ;
 	],
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
 		lv2:index 5 ;
-		lv2:symbol "filtafreq" ;
-		lv2:name "Filter Frequency";
-		lv2:default 4500.0 ;
-		lv2:minimum 250 ;
-		lv2:maximum 8000.0 ;
-		pp:displayPriority 100 ;
+		lv2:symbol "drumlvl" ;
+		lv2:name "Drum Level [dB]";
+		lv2:default 0.0 ;
+		lv2:minimum -20.0;
+		lv2:maximum +20.0 ;
+		 units:unit units:db;
+		pp:displayPriority 800 ;
 	],
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
 		lv2:index 6 ;
-		lv2:symbol "filtaq" ;
-		lv2:name "Filter Quality";
-		lv2:default 2.7456 ;
-		lv2:minimum 0.01 ;
-		lv2:maximum 6.0 ;
-		pp:displayPriority 100 ;
+		lv2:symbol "drumwidth" ;
+		lv2:name "Drum Stereo Width";
+		lv2:default 1.0 ;
+		lv2:minimum 0.0;
+		lv2:maximum 1.0 ;
+		pp:displayPriority 700 ;
+    lv2:scalePoint [
+      rdfs:label "Mono/Center" ;
+      rdf:value 0.0
+    ] , [
+      rdfs:label "90deg stereo" ;
+      rdf:value 1.0
+    ];
 	],
+
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
 		lv2:index 7 ;
-		lv2:symbol "filtagain" ;
-		lv2:name "Filter Gain";
-		lv2:default -30.0 ;
-		lv2:minimum -48.0 ;
-		lv2:maximum  48.0 ;
-		pp:displayPriority 100 ;
+		lv2:symbol "hornrpmslow" ;
+		lv2:name "Horn Speed Slow [rpm]";
+		lv2:default 40.32;
+		lv2:minimum 10.0
+		lv2:maximum 200.0 ;
+		pp:displayPriority 300 ;
 	],
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
 		lv2:index 8 ;
-		lv2:symbol "filtbtype" ;
-		lv2:name "Filter2 Type:";
-		lv2:default 0;
-		lv2:minimum 7 ;
-		lv2:maximum 8 ;
-		lv2:portProperty lv2:enumeration ;
-		lv2:scalePoint [ rdfs:label "LPF low-pass"; rdf:value 0 ] ;
-		lv2:scalePoint [ rdfs:label "HPF high-pass"; rdf:value 1 ] ;
-		lv2:scalePoint [ rdfs:label "BF0 band-pass 0"; rdf:value 2 ] ;
-		lv2:scalePoint [ rdfs:label "BF1 band-pass 1"; rdf:value 3 ] ;
-		lv2:scalePoint [ rdfs:label "NOT notch"; rdf:value 4 ] ;
-		lv2:scalePoint [ rdfs:label "APF all-pass"; rdf:value 5 ] ;
-		lv2:scalePoint [ rdfs:label "PEQ peaking eq"; rdf:value 6 ] ;
-		lv2:scalePoint [ rdfs:label "LSH low shelf"; rdf:value 7 ] ;
-		lv2:scalePoint [ rdfs:label "HSH high shelf"; rdf:value 8 ] ;
-		pp:displayPriority 100 ;
+		lv2:symbol "hornrpmfast" ;
+		lv2:name "Horn Speed Fast [rpm]";
+		lv2:default 423.36;
+		lv2:minimum 100.0;
+		lv2:maximum 1000.0 ;
+		pp:displayPriority 300 ;
 	],
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
 		lv2:index 9 ;
-		lv2:symbol "filtbfreq" ;
-		lv2:name "Filter2 Frequency";
-		lv2:default 300.0 ;
-		lv2:minimum 250 ;
-		lv2:maximum 8000.0 ;
-		pp:displayPriority 100 ;
-	],
-	[
-		a lv2:InputPort ,
-			lv2:ControlPort ;
-		lv2:index 10 ;
-		lv2:symbol "filtbq" ;
-		lv2:name "Filter2 Quality";
-		lv2:default 1.0 ;
-		lv2:minimum 0.01 ;
-		lv2:maximum 6.0 ;
-		pp:displayPriority 100 ;
-	],
-	[
-		a lv2:InputPort ,
-			lv2:ControlPort ;
-		lv2:index 11 ;
-		lv2:symbol "filtbgain" ;
-		lv2:name "Filter2 Gain";
-		lv2:default -30.0 ;
-		lv2:minimum -48.0 ;
-		lv2:maximum  48.0 ;
-		pp:displayPriority 100 ;
-	],
-	[
-		a lv2:InputPort ,
-			lv2:ControlPort ;
-		lv2:index 12 ;
-		lv2:symbol "hornbreak" ;
-		lv2:name "Horn Break Position";
-		lv2:default 0.0 ;
-		lv2:minimum 0.0 ;
-		lv2:maximum 1.0 ;
-		pp:displayPriority 200 ;
-	],
-	[
-		a lv2:InputPort ,
-			lv2:ControlPort ;
-		lv2:index 13 ;
 		lv2:symbol "hornaccel" ;
-		lv2:name "Horn Acceleration";
+		lv2:name "Horn Acceleration [s]";
 		lv2:default 0.161 ;
 		lv2:minimum 0.001 ;
 		lv2:maximum 10.0 ;
@@ -210,9 +146,9 @@ rg:bwhirl-out a pg:Group ;
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 14 ;
+		lv2:index 10 ;
 		lv2:symbol "horndecel" ;
-		lv2:name "Horn Deceleration";
+		lv2:name "Horn Deceleration [s]";
 		lv2:default 0.321 ;
 		lv2:minimum 0.001 ;
 		lv2:maximum 10.0 ;
@@ -221,20 +157,171 @@ rg:bwhirl-out a pg:Group ;
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 15 ;
-		lv2:symbol "drumbreak" ;
-		lv2:name "Drum Break Position";
+		lv2:index 11 ;
+		lv2:symbol "hornbrakepos" ;
+		lv2:name "Horn Brake";
 		lv2:default 0.0 ;
 		lv2:minimum 0.0 ;
 		lv2:maximum 1.0 ;
 		pp:displayPriority 200 ;
+    lv2:scalePoint [
+      rdfs:label "No brake" ;
+      rdf:value 0.0 ;
+    ] , [
+      rdfs:label "Right" ;
+      rdf:value .25 ;
+    ] , [
+      rdfs:label "Back" ;
+      rdf:value .5 ;
+    ] , [
+      rdfs:label "Left" ;
+      rdf:value .75 ;
+    ] , [
+      rdfs:label "Front" ;
+      rdf:value 1.0 ;
+    ];
+		pp:displayPriority 250 ;
+	],
+
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 12 ;
+		lv2:symbol "filtatype" ;
+		lv2:name "Horn Filter-1 Type:";
+		lv2:default 0;
+		lv2:minimum 0 ;
+		lv2:maximum 8 ;
+		lv2:portProperty lv2:enumeration ;
+		lv2:scalePoint [ rdfs:label "low-pass"; rdf:value 0 ] ;
+		lv2:scalePoint [ rdfs:label "high-pass"; rdf:value 1 ] ;
+		lv2:scalePoint [ rdfs:label "band-pass 0 (peak gain = Q)"; rdf:value 2 ] ;
+		lv2:scalePoint [ rdfs:label "band-pass 1 (constant 0dB peak gain)"; rdf:value 3 ] ;
+		lv2:scalePoint [ rdfs:label "notch"; rdf:value 4 ] ;
+		lv2:scalePoint [ rdfs:label "all-pass"; rdf:value 5 ] ;
+		lv2:scalePoint [ rdfs:label "peaking-eq"; rdf:value 6 ] ;
+		lv2:scalePoint [ rdfs:label "low-shelf"; rdf:value 7 ] ;
+		lv2:scalePoint [ rdfs:label "high-shelf"; rdf:value 8 ] ;
+		pp:displayPriority 100 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 13 ;
+		lv2:symbol "filtafreq" ;
+		lv2:name "Horn Filter-1 Frequency [Hz]";
+		lv2:default 4500.0 ;
+		lv2:minimum 250 ;
+		lv2:maximum 8000.0 ;
+		pp:displayPriority 100 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 14 ;
+		lv2:symbol "filtaq" ;
+		lv2:name "Horn Filter-1 Quality";
+		lv2:default 2.7456 ;
+		lv2:minimum 0.01 ;
+		lv2:maximum 6.0 ;
+		pp:displayPriority 100 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 15 ;
+		lv2:symbol "filtagain" ;
+		lv2:name "Horn Filter-1 Gain (shelf) [dB]";
+		lv2:default -38.9291;
+		lv2:minimum -48.0 ;
+		lv2:maximum  48.0 ;
+		 units:unit units:db;
+		pp:displayPriority 100 ;
 	],
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
 		lv2:index 16 ;
+		lv2:symbol "filtbtype" ;
+		lv2:name "Horn Filter-2 Type:";
+		lv2:default 7;
+		lv2:minimum 0 ;
+		lv2:maximum 8 ;
+		lv2:portProperty lv2:enumeration ;
+		lv2:scalePoint [ rdfs:label "low-pass"; rdf:value 0 ] ;
+		lv2:scalePoint [ rdfs:label "high-pass"; rdf:value 1 ] ;
+		lv2:scalePoint [ rdfs:label "band-pass 0 (peak gain = Q)"; rdf:value 2 ] ;
+		lv2:scalePoint [ rdfs:label "band-pass 1 (constant 0dB peak gain)"; rdf:value 3 ] ;
+		lv2:scalePoint [ rdfs:label "notch"; rdf:value 4 ] ;
+		lv2:scalePoint [ rdfs:label "all-pass"; rdf:value 5 ] ;
+		lv2:scalePoint [ rdfs:label "peaking-eq"; rdf:value 6 ] ;
+		lv2:scalePoint [ rdfs:label "low-shelf"; rdf:value 7 ] ;
+		lv2:scalePoint [ rdfs:label "high-shelf"; rdf:value 8 ] ;
+		pp:displayPriority 100 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 17 ;
+		lv2:symbol "filtbfreq" ;
+		lv2:name "Horn Filter-2 Frequency [Hz]";
+		lv2:default 300.0 ;
+		lv2:minimum 250 ;
+		lv2:maximum 8000.0 ;
+		pp:displayPriority 100 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 18 ;
+		lv2:symbol "filtbq" ;
+		lv2:name "Horn Filter-2 Quality";
+		lv2:default 1.0 ;
+		lv2:minimum 0.01 ;
+		lv2:maximum 6.0 ;
+		pp:displayPriority 100 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 19 ;
+		lv2:symbol "filtbgain" ;
+		lv2:name "Horn Filter-2 Gain (shelf) [dB]";
+		lv2:default -30.0 ;
+		lv2:minimum -48.0 ;
+		lv2:maximum  48.0 ;
+		 units:unit units:db;
+		pp:displayPriority 100 ;
+	],
+
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 20 ;
+		lv2:symbol "drumrpmslow" ;
+		lv2:name "Drum Speed Slow [rpm]";
+		lv2:default 36.0;
+		lv2:minimum 5.0
+		lv2:maximum 100.0 ;
+		pp:displayPriority 300 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 21 ;
+		lv2:symbol "drumrpmfast" ;
+		lv2:name "Drum Speed Fast [rpm]";
+		lv2:default 357.3;
+		lv2:minimum 60;
+		lv2:maximum 600.0 ;
+		pp:displayPriority 300 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 22 ;
 		lv2:symbol "drumaccel" ;
-		lv2:name "Drum Acceleration";
+		lv2:name "Drum Acceleration [s]";
 		lv2:default 4.127 ;
 		lv2:minimum 0.01 ;
 		lv2:maximum 20.0 ;
@@ -243,12 +330,96 @@ rg:bwhirl-out a pg:Group ;
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 17 ;
+		lv2:index 23 ;
 		lv2:symbol "drumdecel" ;
-		lv2:name "Drum Deceleration";
+		lv2:name "Drum Deceleration [s]";
 		lv2:default 1.371 ;
 		lv2:minimum 0.01 ;
 		lv2:maximum 20.0 ;
 		pp:displayPriority 200 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 24 ;
+		lv2:symbol "drumbrake" ;
+		lv2:name "Drum Brake Position";
+		lv2:default 0.0 ;
+		lv2:minimum 0.0 ;
+		lv2:maximum 1.0 ;
+		pp:displayPriority 200 ;
+    lv2:scalePoint [
+      rdfs:label "Front" ;
+      rdf:value 0.0
+    ] , [
+      rdfs:label "Right" ;
+      rdf:value .25
+    ] , [
+      rdfs:label "Back" ;
+      rdf:value .5
+    ] , [
+      rdfs:label "Left" ;
+      rdf:value .75
+    ] , [
+      rdfs:label "Front" ;
+      rdf:value 1.0
+    ];
+		pp:displayPriority 250 ;
+	],
+
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 25 ;
+		lv2:symbol "filtdtype" ;
+		lv2:name "Drum Filter Type:";
+		lv2:default 8;
+		lv2:minimum 0 ;
+		lv2:maximum 8 ;
+		lv2:portProperty lv2:enumeration ;
+		lv2:scalePoint [ rdfs:label "low-pass"; rdf:value 0 ] ;
+		lv2:scalePoint [ rdfs:label "high-pass"; rdf:value 1 ] ;
+		lv2:scalePoint [ rdfs:label "band-pass 0 (peak gain = Q)"; rdf:value 2 ] ;
+		lv2:scalePoint [ rdfs:label "band-pass 1 (constant 0dB peak gain)"; rdf:value 3 ] ;
+		lv2:scalePoint [ rdfs:label "notch"; rdf:value 4 ] ;
+		lv2:scalePoint [ rdfs:label "all-pass"; rdf:value 5 ] ;
+		lv2:scalePoint [ rdfs:label "peaking-eq"; rdf:value 6 ] ;
+		lv2:scalePoint [ rdfs:label "low-shelf"; rdf:value 7 ] ;
+		lv2:scalePoint [ rdfs:label "high-shelf"; rdf:value 8 ] ;
+		pp:displayPriority 100 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 26;
+		lv2:symbol "filtdfreq" ;
+		lv2:name "Drum Filter Frequency [Hz]";
+		lv2:default 811.9695 ;
+		lv2:minimum 50 ;
+		lv2:maximum 8000.0 ;
+		pp:displayPriority 100 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 27 ;
+		lv2:symbol "filtdq" ;
+		lv2:name "Drum Filter Quality";
+		lv2:default 1.0 ;
+		lv2:minimum 1.6016 ;
+		lv2:maximum 6.0 ;
+		pp:displayPriority 100 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 28 ;
+		lv2:symbol "filtdgain" ;
+		lv2:name "Drum Filter Gain (shelf) [dB]";
+		lv2:default -38.9291;
+		lv2:minimum -48.0 ;
+		lv2:maximum  48.0 ;
+		 units:unit units:db;
+		pp:displayPriority 100 ;
 	]
 	.

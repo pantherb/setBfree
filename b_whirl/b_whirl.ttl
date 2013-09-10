@@ -6,24 +6,15 @@
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix rg: <http://gareus.org/oss/lv2/> .
 
-rg:bwhirl-in a pg:Group ;
-   a pg:MonoGroup ;
-   lv2:symbol "in" .
-  
-rg:bwhirl-out a pg:Group ;
-   a pg:StereoGroup ;
-   lv2:symbol "out" ;
-   pg:source rg:bwhirl-in .
-
-<http://gareus.org/>
+<http://gareus.org/rgareus#me>
 	a foaf:Person ;
 	foaf:name "Robin Gareus" ;
 	foaf:mbox <mailto:robin@gareus.org> ;
 	foaf:homepage <http://gareus.org/> .
 
 <http://gareus.org/oss/lv2/b_whirl>
-	a lv2:Plugin, lv2:SimulatorPlugin;
-	doap:maintainer <http://gareus.org/> ;
+	a  doap:Project, lv2:Plugin, lv2:SimulatorPlugin;
+	doap:maintainer <http://gareus.org/rgareus#me> ;
 	doap:name "B Organ Whirl Speaker";
 	doap:license <http://usefulinc.com/doap/licenses/gpl> ;
 	lv2:optionalFeature lv2:hardRTCapable ;
@@ -34,8 +25,7 @@ rg:bwhirl-out a pg:Group ;
 		lv2:index 0 ;
 		lv2:symbol "in" ;
 		lv2:name "In" ;
-	  pg:inGroup rg:bwhirl-in ;
-	  pg:role pg:centerChannel ;
+		lv2:designation pg:center ;
 	],	
 	[
 		a lv2:AudioPort ,
@@ -43,8 +33,7 @@ rg:bwhirl-out a pg:Group ;
 		lv2:index 1 ;
 		lv2:symbol "left" ;
 		lv2:name "Left output" ;
-    pg:inGroup rg:bwhirl-out ;
-    pg:role pg:leftChannel ;
+		lv2:designation pg:left ;
 	],
 	[
 		a lv2:AudioPort ,
@@ -52,27 +41,65 @@ rg:bwhirl-out a pg:Group ;
 		lv2:index 2 ;
 		lv2:symbol "right" ;
 		lv2:name "Right output" ;
-    pg:inGroup rg:bwhirl-out ;
-    pg:role pg:rightChannel ;
+		lv2:designation pg:right ;
 	],
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
 		lv2:index 3 ;
 		lv2:symbol "rt_speed" ;
-		lv2:name "Rotary Type (horn, drum speed off/slow/fast)";
+		lv2:name "Motors (horn, drum speed: off/slow/fast)";
 		lv2:default 4 ;
 		lv2:minimum 0 ;
 		lv2:maximum 8 ;
 		lv2:portProperty lv2:enumeration ;
-		lv2:scalePoint [ rdfs:label "stop, stop"; rdf:value 0 ] ;
-		lv2:scalePoint [ rdfs:label "stop, slow"; rdf:value 1 ] ;
-		lv2:scalePoint [ rdfs:label "stop, fast"; rdf:value 2 ] ;
-		lv2:scalePoint [ rdfs:label "slow, stop"; rdf:value 3 ] ;
-		lv2:scalePoint [ rdfs:label "slow, slow"; rdf:value 4 ] ;
-		lv2:scalePoint [ rdfs:label "slow, fast"; rdf:value 5 ] ;
-		lv2:scalePoint [ rdfs:label "fast, stop"; rdf:value 6 ] ;
-		lv2:scalePoint [ rdfs:label "fast, slow"; rdf:value 7 ] ;
-		lv2:scalePoint [ rdfs:label "fast, fast"; rdf:value 8 ] ;
+		lv2:scalePoint [ rdfs:label "horn: stop, drum:stop"; rdf:value 0 ; ] ;
+		lv2:scalePoint [ rdfs:label "horn: stop, drum:slow"; rdf:value 1 ; ] ;
+		lv2:scalePoint [ rdfs:label "horn: stop, drum:fast"; rdf:value 2 ; ] ;
+		lv2:scalePoint [ rdfs:label "horn: slow, drum:stop"; rdf:value 3 ; ] ;
+		lv2:scalePoint [ rdfs:label "horn: slow, drum:slow"; rdf:value 4 ; ] ;
+		lv2:scalePoint [ rdfs:label "horn: slow, drum:fast"; rdf:value 5 ; ] ;
+		lv2:scalePoint [ rdfs:label "horn: fast, drum:stop"; rdf:value 6 ; ] ;
+		lv2:scalePoint [ rdfs:label "horn: fast, drum:slow"; rdf:value 7 ; ] ;
+		lv2:scalePoint [ rdfs:label "horn: fast, drum:fast"; rdf:value 8 ; ] ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 4 ;
+		lv2:symbol "hornlvl" ;
+		lv2:name "Horn Level [dB]";
+		lv2:default 0.0 ;
+		lv2:minimum -20.0;
+		lv2:maximum +20.0 ;
+		 units:unit units:db;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 5 ;
+		lv2:symbol "drumlvl" ;
+		lv2:name "Drum Level [dB]";
+		lv2:default 0.0 ;
+		lv2:minimum -20.0;
+		lv2:maximum +20.0 ;
+		 units:unit units:db;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 6 ;
+		lv2:symbol "drumwidth" ;
+		lv2:name "Drum Stereo Width";
+		lv2:default 1.0 ;
+		lv2:minimum 0.0;
+		lv2:maximum 1.0 ;
+    lv2:scalePoint [
+      rdfs:label "Mono/Center" ;
+      rdf:value 0.0
+    ] , [
+      rdfs:label "90deg stereo" ;
+      rdf:value 1.0
+    ];
 	]
 	.
