@@ -274,7 +274,7 @@ static void setRevOption (struct b_whirl *w,
   w->revoptions[i].drumTarget = drTgt;
 }
 
-static void computeRotationSpeeds (struct b_whirl *w) {
+void computeRotationSpeeds (struct b_whirl *w) {
   const double hfast = w->hornRPMfast / (w->SampleRateD * 60.0);
   const double hslow = w->hornRPMslow / (w->SampleRateD * 60.0);
   const double hstop = 0;
@@ -617,6 +617,12 @@ static void displayFilter (char * id, int T, float F, float Q, float G) {
   displayFilter ("Horn B", w->hbT, w->hbF, w->hbQ, w->hbG); \
 }
 
+#define UPDATE_D_FILTER { \
+  setIIRFilter (w->drfL, w->lpT, w->lpF, w->lpQ, w->lpG, w->SampleRateD); \
+  setIIRFilter (w->drfR, w->lpT, w->lpF, w->lpQ, w->lpG, w->SampleRateD); \
+  displayFilter ("Drum", w->lpT, w->lpF, w->lpQ, w->lpG); \
+}
+
 
 /*
  * Sets the type of the A horn IIR filter.
@@ -741,6 +747,29 @@ void fsetHornFilterBGain (struct b_whirl *w, float v) {
   if (v<-48.0 || v> 48.0) return;
   w->hbG = v;
   UPDATE_B_FILTER;
+}
+
+void isetDrumFilterType (struct b_whirl *w, int v) {
+  w->lpT = (int) (v % 9);
+  UPDATE_D_FILTER;
+}
+
+void fsetDrumFilterFrequency (struct b_whirl *w, float v) {
+  if (v<20.0 || v> 8000.0) return;
+  w->lpF = v;
+  UPDATE_D_FILTER;
+}
+
+void fsetDrumFilterQ (struct b_whirl *w, float v) {
+  if (v<0.01 || v> 6.0) return;
+  w->lpQ = v;
+  UPDATE_D_FILTER;
+}
+
+void fsetDrumFilterGain (struct b_whirl *w, float v) {
+  if (v<-48.0 || v> 48.0) return;
+  w->lpG = v;
+  UPDATE_D_FILTER;
 }
 
 void setHornBreakPosition (void *d, unsigned char uc) {

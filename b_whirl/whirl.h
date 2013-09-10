@@ -230,5 +230,10 @@ extern void isetHornFilterBType (struct b_whirl *w, int v);
 extern void fsetHornFilterBFrequency (struct b_whirl *w, float v);
 extern void fsetHornFilterBQ (struct b_whirl *w, float v);
 extern void fsetHornFilterBGain (struct b_whirl *w, float v);
+extern void isetDrumFilterType (struct b_whirl *w, int v);
+extern void fsetDrumFilterFrequency (struct b_whirl *w, float v);
+extern void fsetDrumFilterQ (struct b_whirl *w, float v);
+extern void fsetDrumFilterGain (struct b_whirl *w, float v);
+extern void computeRotationSpeeds (struct b_whirl *w);
 #endif /* WHIRL_H */
 /* vi:set ts=8 sts=2 sw=2: */
