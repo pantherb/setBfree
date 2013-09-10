@@ -344,7 +344,10 @@ static int dirlist(PuglView* view, const char *dir) {
 
     if (S_ISREG(fs.st_mode)) {
       int fnl = strlen(rfn);
-      if (fnl <= 4) continue;
+      if (fnl <= 4) {
+	free(rfn);
+	continue;
+      }
       if ((strcmp(&rfn[fnl-4], ".pgm") && strcmp(&rfn[fnl-4], ".cfg"))
 	  || (ui->dir_hidedotfiles && dd->d_name[0] == '.')
 	 ) {
@@ -372,8 +375,20 @@ static int dirlist(PuglView* view, const char *dir) {
     strcat(ui->dirlist[ui->dirlistlen], "/");
     ui->dirlistlen++;
   }
-  qsort(ui->dirlist, ui->dirlistlen, sizeof(ui->dirlist[0]), cmpstringp);
-  qsort(filelist, filelistlen, sizeof(filelist[0]), cmpstringp);
+
+  if (ui->dirlistlen > 0) {
+    qsort(ui->dirlist, ui->dirlistlen, sizeof(ui->dirlist[0]), cmpstringp);
+  }
+  if (filelistlen > 0) {
+    qsort(filelist, filelistlen, sizeof(filelist[0]), cmpstringp);
+  }
+
+  if (ui->dirlistlen + filelistlen == 0) {
+    free(filelist);
+    free_dirlist(ui);
+    ui->dirlist = NULL;
+    return -1;
+  }
 
   ui->dirlist = realloc(ui->dirlist, (ui->dirlistlen + filelistlen) * sizeof(char*));
   int i;
@@ -2116,7 +2131,7 @@ onMotion(PuglView* view, int x, int y)
 
   /* mouse - listview hover */
   if (ui->displaymode == 2 || ui->displaymode == 3) {
-    int pgm_sel = ui->pgm_sel;
+    int pgm_sel; // = ui->pgm_sel;
     fx /= SCALE * 22.0; fy /= SCALE * 22.0;
     fx += 1.1; fy += 1.0;
     fx *= 2.7; fy *= 12.0;
@@ -2150,7 +2165,7 @@ onMotion(PuglView* view, int x, int y)
     return;
   }
   else if (IS_FILEBROWSER(ui)) {
-    int dir_sel = ui->dir_sel;
+    int dir_sel; // = ui->dir_sel;
     fx = (2.0 * x / ui->width ) - 1.0;
     fy = (2.0 * y / ui->height ) - 1.0;
 
@@ -2328,9 +2343,9 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 		}
 		break;
 	    }
-	    free(rfn);
 	  }
 	}
+	free(rfn);
       } else if (
 	  ui->dirlistlen > 120
 	  && MOUSEIN(SCROLLBAR, fx, fy)
