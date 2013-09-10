@@ -4,15 +4,15 @@
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
-<http://gareus.org/>
+<http://gareus.org/rgareus#me>
 	a foaf:Person ;
 	foaf:name "Robin Gareus" ;
 	foaf:mbox <mailto:robin@gareus.org> ;
 	foaf:homepage <http://gareus.org/> .
 
 <http://gareus.org/oss/lv2/b_overdrive>
-	a lv2:Plugin, lv2:DistortionPlugin;
-	doap:maintainer <http://gareus.org/> ;
+	a doap:Project, lv2:Plugin, lv2:DistortionPlugin;
+	doap:maintainer <http://gareus.org/rgareus#me> ;
 	doap:name "B Organ Overdrive";
 	doap:license <http://usefulinc.com/doap/licenses/gpl> ;
 	lv2:optionalFeature lv2:hardRTCapable ;

@@ -11,7 +11,7 @@
 @prefix sb3:   <http://gareus.org/oss/lv2/b_synth#> .
 @prefix rsz:   <http://lv2plug.in/ns/ext/resize-port#> .
 
-<http://gareus.org/>
+<http://gareus.org/rgareus#me>
 	a foaf:Person ;
 	foaf:name "Robin Gareus" ;
 	foaf:mbox <mailto:robin@gareus.org> ;
@@ -19,7 +19,7 @@
 
 <http://gareus.org/oss/lv2/b_synth>
 	a lv2:Plugin, lv2:InstrumentPlugin, doap:Project;
-	doap:maintainer <http://gareus.org/> ;
+	doap:maintainer <http://gareus.org/rgareus#me> ;
 	doap:name "setBfree DSP Tonewheel Organ";
 	doap:license <http://usefulinc.com/doap/licenses/gpl> ;
 	lv2:optionalFeature lv2:hardRTCapable ;
@@ -31,8 +31,7 @@
 			lv2:InputPort ;
 		atom:bufferType atom:Sequence ;
 		lv2:designation lv2:control ;
-		atom:supports <http://lv2plug.in/ns/ext/midi#MidiEvent>,
-			sb3:controlmsg;
+		atom:supports <http://lv2plug.in/ns/ext/midi#MidiEvent> ;
 		lv2:index 0 ;
 		lv2:symbol "control" ;
 		lv2:name "MIDI In"
@@ -40,8 +39,7 @@
 		a atom:AtomPort ,
 			lv2:OutputPort ;
 		atom:bufferType atom:Sequence ;
-		atom:supports <http://lv2plug.in/ns/ext/midi#MidiEvent>,
-			sb3:controlmsg;
+		atom:supports <http://lv2plug.in/ns/ext/midi#MidiEvent> ;
 		lv2:designation lv2:control ;
 		lv2:index 1 ;
 		lv2:symbol "notify" ;
