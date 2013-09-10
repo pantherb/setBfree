@@ -14,7 +14,7 @@ all: $(targets)
 
 lv2: manifest.ttl $(LV2NAME)$(LIB_EXT) 
 
-manifest.ttl:
+manifest.ttl: manifest.ttl.in
 	sed "s/@LV2NAME@/$(LV2NAME)/;s/@LIB_EXT@/$(LIB_EXT)/" manifest.ttl.in > manifest.ttl
 
 $(LV2NAME)$(LIB_EXT): lv2.c whirl.o eqcomp.o whirl.h eqcomp.h ../src/cfgParser.h
