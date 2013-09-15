@@ -1,8 +1,10 @@
-2013-09-10 (unreleased)  Robin Gareus <robin@gareus.org>
+2013-09-10 (0.7.5)  Robin Gareus <robin@gareus.org>
 * setBfree: exit if ALSA and JACK MIDI port cannot be created
 * fix assignment of lower and pedal manual keys with transpose enable
 * various leslie/LV2 fixes and improvements
 * cleanup: remove cruft, fix possible mem-leaks
+* add presets for leslie LV2
+* update FSF address in GPL
 
 2013-06-08 (0.7.4)  Robin Gareus <robin@gareus.org>
 * fix typo in leslie default config
