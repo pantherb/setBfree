@@ -348,7 +348,7 @@
 		lv2:maximum 1.0 ;
 		pp:displayPriority 200 ;
     lv2:scalePoint [
-      rdfs:label "Front" ;
+      rdfs:label "No brake" ;
       rdf:value 0.0 ;
     ] , [
       rdfs:label "Right" ;
