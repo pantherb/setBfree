@@ -101,5 +101,6 @@
       rdfs:label "90deg stereo" ;
       rdf:value 1.0
     ];
-	]
+	];
+	rdfs:comment "Leslie speker emulation (simple version)."
 	.

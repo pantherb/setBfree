@@ -420,5 +420,6 @@
 		lv2:maximum  48.0 ;
 		 units:unit units:db;
 		pp:displayPriority 100 ;
-	]
+	];
+	rdfs:comment "Leslie speker emulation (extended version)."
 	.
