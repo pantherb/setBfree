@@ -1277,7 +1277,12 @@ void parse_raw_midi_data(void *inst, uint8_t *buffer, size_t size) {
       break;
     case 0xE0: // pitch-bend
       bev.type=CONTROL_CHANGE;
+#if 0 // map full range
       bev.d.control.value=buffer[2]&0x7f; // MSB; TODO shift zero?
+#else  // map lower-half range (default leslie: fast)
+      int val = (buffer[2]&0x7f) * 1.3;
+      bev.d.control.value=val > 90 ? 90 : val;
+#endif
       {
 	struct b_instance * instp = (struct b_instance *) inst;
 	struct b_midicfg * m = (struct b_midicfg *) instp->midicfg;
