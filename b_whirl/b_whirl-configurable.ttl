@@ -187,7 +187,7 @@
 			lv2:ControlPort ;
 		lv2:index 12 ;
 		lv2:symbol "filtatype" ;
-		lv2:name "Horn Filter-1 Type:";
+		lv2:name "Horn Filter-1 Type";
 		lv2:default 0;
 		lv2:minimum 0 ;
 		lv2:maximum 8 ;
@@ -242,7 +242,7 @@
 			lv2:ControlPort ;
 		lv2:index 16 ;
 		lv2:symbol "filtbtype" ;
-		lv2:name "Horn Filter-2 Type:";
+		lv2:name "Horn Filter-2 Type";
 		lv2:default 7;
 		lv2:minimum 0 ;
 		lv2:maximum 8 ;
@@ -371,7 +371,7 @@
 			lv2:ControlPort ;
 		lv2:index 25 ;
 		lv2:symbol "filtdtype" ;
-		lv2:name "Drum Filter Type:";
+		lv2:name "Drum Filter Type";
 		lv2:default 8;
 		lv2:minimum 0 ;
 		lv2:maximum 8 ;
