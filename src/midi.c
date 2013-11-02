@@ -1276,6 +1276,9 @@ void parse_raw_midi_data(void *inst, uint8_t *buffer, size_t size) {
       bev.d.control.value=buffer[2]&0x7f;
       break;
     case 0xE0: // pitch-bend
+#if 1 // NOT READY FOR PRODUCTION
+      return;
+#else // quick/dirty hacks
       bev.type=CONTROL_CHANGE;
 #if 0 // map full range
       bev.d.control.value=buffer[2]&0x7f; // MSB; TODO shift zero?
@@ -1291,6 +1294,7 @@ void parse_raw_midi_data(void *inst, uint8_t *buffer, size_t size) {
 	}
 	bev.d.control.param= m->pitchbendcc;
       }
+#endif
       break;
     case 0xC0:
       bev.type=PROGRAM_CHANGE;
