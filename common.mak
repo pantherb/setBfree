@@ -32,7 +32,7 @@ LV2AVAIL=$(shell pkg-config --exists lv2 && echo yes)
 
 LV2UIREQ=
 # check for LV2 idle thread -- requires 'lv2', atleast_version='1.4.1
-ifeq ($(shell pkg-config --atleast-version=1.4.2 lv2 || echo no), no)
+ifeq ($(shell pkg-config --atleast-version=1.4.6 lv2 || echo no), no)
   override CFLAGS+=-DOLD_SUIL
 else
   LV2UIREQ=lv2:requiredFeature ui:idleInterface;\\n\\tlv2:extensionData ui:idleInterface;
