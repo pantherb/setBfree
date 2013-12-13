@@ -53,7 +53,7 @@ ifneq ($(strip $(binaries)),)
 	-install -d $(DESTDIR)$(bindir)
 	install -m755 $(binaries) $(DESTDIR)$(bindir)
 endif
-ifneq ($(strip $(LV2NAME)),)
+ifeq ($(LV2AVAIL), yes)
 	install -d $(DESTDIR)$(lv2dir)/$(LV2NAME)
 	install -m755 $(LV2NAME)$(LIB_EXT) $(DESTDIR)$(lv2dir)/$(LV2NAME)
 	install -m644 manifest.ttl $(LV2NAME).ttl $(DESTDIR)$(lv2dir)/$(LV2NAME)

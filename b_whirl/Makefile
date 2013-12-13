@@ -23,7 +23,7 @@ $(LV2NAME)$(LIB_EXT): lv2.c whirl.o eqcomp.o whirl.h eqcomp.h ../src/cfgParser.h
 	  -shared $(LV2LDFLAGS) $(LDFLAGS)
 
 install: $(targets)
-ifneq ($(strip $(LV2NAME)),)
+ifeq ($(LV2AVAIL), yes)
 	install -d $(DESTDIR)$(lv2dir)/$(LV2NAME)
 	install -m755 $(LV2NAME)$(LIB_EXT) $(DESTDIR)$(lv2dir)/$(LV2NAME)
 	install -m644 manifest.ttl $(LV2NAME)*.ttl $(DESTDIR)$(lv2dir)/$(LV2NAME)
