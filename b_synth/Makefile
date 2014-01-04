@@ -68,16 +68,16 @@ endif
 OBJ= \
   ../src/midi.c \
   ../src/cfgParser.c \
-  ../src/program.o \
-  ../src/vibrato.o \
-  ../src/state.o \
-  ../src/tonegen.o \
-  ../src/pgmParser.o \
-  ../src/memstream.o \
-  ../b_whirl/eqcomp.o \
-  ../b_whirl/whirl.o \
-  ../b_overdrive/overdrive.o \
-  ../b_reverb/reverb.o \
+  ../src/program.c \
+  ../src/vibrato.c \
+  ../src/state.c \
+  ../src/tonegen.c \
+  ../src/pgmParser.c \
+  ../src/memstream.c \
+  ../b_whirl/eqcomp.c \
+  ../b_whirl/whirl.c \
+  ../b_overdrive/overdrive.c \
+  ../b_reverb/reverb.c \
 
 all: $(targets)
 
@@ -105,9 +105,6 @@ $(LV2GUI)$(LIB_EXT): ui.c uris.h $(UIDEPS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(UICFLAGS) \
 		-o $(LV2GUI)$(LIB_EXT) ui.c \
 		-shared $(LV2LDFLAGS) $(LDFLAGS) $(UILIBS)
-
-%.o: %.c %.h
-	+$(MAKE) -C ../src $(subst ../src/,,$@)
 
 install: $(targets)
 ifeq ($(LV2AVAIL), yes)

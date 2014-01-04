@@ -214,9 +214,12 @@
  * 2001-11-30/FK Oscillator test using a sample buffer for the basic
  *               sinusoid and 9 individually updated read positions.
  */
+#define _XOPEN_SOURCE 700
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <ctype.h>
 #include <limits.h>
 #include <math.h>
@@ -1478,7 +1481,7 @@ static void writeSamples (float * buf,
 
     for (j = 0; j < MAX_PARTIALS; j++) {
       s +=
-	apl[j] * sin (drem ((plHz[j] * fullCircle * (double) i) / SampleRateD,
+	apl[j] * sin (remainder ((plHz[j] * fullCircle * (double) i) / SampleRateD,
 			    fullCircle));
     }
 

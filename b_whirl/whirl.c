@@ -22,6 +22,7 @@
 //#define DEBUG_SPEED  // debug acceleration,deceleration
 //#define HORN_COMB_FILTER
 
+#define _XOPEN_SOURCE 700
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

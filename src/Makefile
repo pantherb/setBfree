@@ -20,10 +20,10 @@ OBJS= \
 	main.o \
 	midnam.o \
 	memstream.o \
-	../b_reverb/reverb.o \
-	../b_whirl/eqcomp.o \
-	../b_whirl/whirl.o \
-	../b_overdrive/overdrive.o
+	../b_reverb/reverb.c \
+	../b_whirl/eqcomp.c \
+	../b_whirl/whirl.c \
+	../b_overdrive/overdrive.c
 
 HEADERS = \
 	cfgParser.h \
@@ -88,7 +88,7 @@ configd: cfgParser.c main.h
 		-DCFG_MAIN \
 		-o $(@) cfgParser.c
 
-defaultpgm.h: programd ../pgm/default.pgm
+program: programd ../pgm/default.pgm
 	$(info re-generating default program include-file)
 	./programd ../pgm/default.pgm > defaultpgm.h
 
@@ -117,7 +117,7 @@ program.o: defaultpgm.h
 	+$(MAKE) -C ../b_conv convolution.o
 
 clean:
-	rm -f *.o core *.log *~ setBfree configd programd defaultpgm.h
+	rm -f *.o core *.log *~ setBfree configd programd
 
 install: setBfree
 	install -d $(DESTDIR)$(bindir)
@@ -139,4 +139,4 @@ uninstall:
 	-rmdir $(DESTDIR)$(sharedir)/pgm
 	-rmdir $(DESTDIR)$(sharedir)
 
-.PHONY: clean all install uninstall
+.PHONY: clean all install uninstall program

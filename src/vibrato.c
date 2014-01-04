@@ -29,6 +29,7 @@
  * 04-apr-2004/FK This must be the oldest piece of code that remains.
  *                Added MIDI controller support and edited some comments.
  */
+#define _XOPEN_SOURCE 700
 
 #include <stdio.h>
 #include <stdlib.h>

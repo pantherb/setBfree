@@ -27,6 +27,7 @@
  * Based on 'Cookbook formulae for audio EQ biquad filter coefficents'
  * by Robert Bristow-Johnson <robert@wavemechanics.com>
  */
+#define _XOPEN_SOURCE 700
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>

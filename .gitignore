@@ -18,10 +18,6 @@ cscope.out
 /b_overdrive/jboverdrive
 /b_overdrive/overmaker
 
-# generated files
-/src/defaultpgm.h
-/b_overdrive/overdrive.c
-
 # generated LV2 metadata
 /b_overdrive/manifest.ttl
 /b_whirl/manifest.ttl

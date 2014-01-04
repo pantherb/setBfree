@@ -41,12 +41,14 @@ $(LV2NAME)$(LIB_EXT): lv2.c overdrive.o
 		-o $(LV2NAME)$(LIB_EXT) lv2.c overdrive.o \
 	  -shared $(LV2LDFLAGS) $(LDFLAGS)
 
-overdrive.o: overmaker overdrive.h ../src/cfgParser.h ../src/midi.h
-	./overmaker > overdrive.c
+overdrive.o: overdrive.c overdrive.h ../src/cfgParser.h ../src/midi.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o overdrive.o overdrive.c
 
 overmaker:$(OVMSRC) overmakerdefs.h
 	$(CC) -o $(@) $(OVMSRC) -lm
+
+overdrive: overmaker
+	./overmaker > overdrive.c
 
 install: $(targets)
 ifneq ($(strip $(binaries)),)
@@ -69,6 +71,6 @@ endif
 	-rmdir $(DESTDIR)$(lv2dir)/$(LV2NAME)
 
 clean:
-	rm -f *.o jboverdrive overmaker manifest.ttl $(LV2NAME)$(LIB_EXT) overdrive.c
+	rm -f *.o jboverdrive overmaker manifest.ttl $(LV2NAME)$(LIB_EXT)
 
-.PHONY: clean all install uninstall lv2
+.PHONY: clean all install uninstall lv2 overdrive
