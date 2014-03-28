@@ -60,7 +60,7 @@ struct bmidi_event_t {
   } d;
 };
 
-extern void process_midi_event(void *inst, const struct bmidi_event_t *ev);
+void process_midi_event(void *inst, const struct bmidi_event_t *ev);
 
 #endif /* MIDI_TYPES_H */
 

@@ -24,6 +24,7 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <fcntl.h>
+#include <sys/types.h>
 #include <alsa/asoundlib.h>
 
 /*

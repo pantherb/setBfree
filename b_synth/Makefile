@@ -1,7 +1,7 @@
 include ../common.mak
 
 LOADLIBES = -lm
-override CFLAGS+= -I../src -I../b_overdrive -I../b_reverb -I../b_whirl -std=c99
+override CFLAGS+= -I../src -I../b_overdrive -I../b_reverb -I../b_whirl
 override CFLAGS+=`pkg-config --cflags lv2`
 
 ifeq ($(IS_OSX), yes)

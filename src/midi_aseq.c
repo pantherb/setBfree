@@ -20,6 +20,7 @@
 
 #ifdef HAVE_ASEQ /* ALSA SEQUENCER MIDI INTERFACE */
 
+#include <sys/types.h>
 #include <alsa/asoundlib.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -125,7 +126,7 @@ void *aseq_run(void *arg) {
   struct pollfd *pfds;
 
   npfds = snd_seq_poll_descriptors_count(seq, POLLIN);
-  pfds = (struct pollfd*) alloca(sizeof(*pfds) * npfds);
+  pfds = (struct pollfd*) malloc(sizeof(*pfds) * npfds);
   while (1) {
     snd_seq_poll_descriptors(seq, pfds, npfds, POLLIN);
     if (poll(pfds, npfds, 1) < 0) break;
@@ -137,6 +138,7 @@ void *aseq_run(void *arg) {
     } while (err > 0);
     if (aseq_stop) break;
   }
+  free(pfds);
   pthread_exit(NULL);
   return (NULL);
 }

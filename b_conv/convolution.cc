@@ -32,7 +32,7 @@
 #error "This programs requires zita-convolver 3.x.x"
 #endif
 
-#define _S (char*)
+#define _S (const char*)
 
 #ifndef DFLT_IR_FILE
 #define DFLT_IR_FILE IRPATH "/ir_leslie-%04d.wav"
@@ -130,7 +130,7 @@ int convolutionConfig (ConfigContext * cfg) {
       if ((0 < n) && (n <= AUDIO_CHANNELS))
 	ir_delay[n-1] = atoi(cfg->value);
     }
-  } else if (::getConfigParameter_d (_S"convolution.mix", cfg, &d) == 1) {
+  } else if (getConfigParameter_d (_S"convolution.mix", cfg, &d) == 1) {
     fsetConvolutionMix(d);
   } else {
     return 0;

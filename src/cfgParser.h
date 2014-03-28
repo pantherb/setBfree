@@ -51,49 +51,49 @@ typedef struct _configDoc {
   char * desc; /**< descition */
 } ConfigDoc;
 
-extern void parseConfigurationLine (
-				    void * instance,
-				    char * fname,
-				    int    lineNumber,
-				    char * oneLine);
+void parseConfigurationLine (
+    void * instance,
+    char * fname,
+    int    lineNumber,
+    char * oneLine);
 
-extern int  parseConfigurationFile (void * instance, char * fname);
-extern void dumpConfigDoc ();
-extern int evaluateConfigKeyValue(void *inst, const char *key, const char *value);
-extern void showConfigfileContext (ConfigContext * cfg, char * msg);
-extern void configIntUnparsable (ConfigContext * cfg);
-extern void configIntOutOfRange (ConfigContext * cfg, int min, int max);
-extern void configDoubleUnparsable (ConfigContext * cfg);
+int  parseConfigurationFile (void * instance, char * fname);
+void dumpConfigDoc ();
+int evaluateConfigKeyValue(void *inst, const char *key, const char *value);
+void showConfigfileContext (ConfigContext * cfg, char * msg);
+void configIntUnparsable (ConfigContext * cfg);
+void configIntOutOfRange (ConfigContext * cfg, int min, int max);
+void configDoubleUnparsable (ConfigContext * cfg);
 
-extern void setConfigRangeInt (int * vp, ConfigContext * cfg);
-extern void setConfigInt (int * vp, ConfigContext * cfg);
-extern void setConfigDouble (double * vp, ConfigContext * cfg);
-extern const char * getConfigValue (ConfigContext * cfg);
-extern int  getConfigParameter_d (char * par,
-				  ConfigContext * cfg,
-				  double * dp);
-extern int  getConfigParameter_i (char * par,
-				  ConfigContext * cfg,
-				  int * dp);
-extern int  getConfigParameter_f (char * par,
-				  ConfigContext * cfg,
-				  float * dp);
+void setConfigRangeInt (int * vp, ConfigContext * cfg);
+void setConfigInt (int * vp, ConfigContext * cfg);
+void setConfigDouble (double * vp, ConfigContext * cfg);
+const char * getConfigValue (ConfigContext * cfg);
+int  getConfigParameter_d (char * par,
+                           ConfigContext * cfg,
+                           double * dp);
+int  getConfigParameter_i (char * par,
+                           ConfigContext * cfg,
+                           int * dp);
+int  getConfigParameter_f (char * par,
+                           ConfigContext * cfg,
+                           float * dp);
 
-extern int getConfigParameter_ir (char * par,
-				  ConfigContext * cfg,
-				  int * ip,
-				  int lowInc,
-				  int highInc);
+int getConfigParameter_ir (char * par,
+                           ConfigContext * cfg,
+                           int * ip,
+                           int lowInc,
+                           int highInc);
 
-extern int getConfigParameter_dr (char * par,
-				  ConfigContext * cfg,
-				  double * dp,
-				  double lowInc,
-				  double highInc);
+int getConfigParameter_dr (char * par,
+                           ConfigContext * cfg,
+                           double * dp,
+                           double lowInc,
+                           double highInc);
 
-extern int getConfigParameter_fr (char * par,
-				  ConfigContext * cfg,
-				  float * fp,
-				  float lowInc,
-				  float highInc);
+int getConfigParameter_fr (char * par,
+                           ConfigContext * cfg,
+                           float * fp,
+                           float lowInc,
+                           float highInc);
 #endif /* _CONFIG_H_ */

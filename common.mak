@@ -49,3 +49,9 @@ else
   LV2LDFLAGS=-Wl,-Bstatic -Wl,-Bdynamic
   LIB_EXT=.so
 endif
+
+ifeq ($(ENABLE_CONVOLUTION)$(COMPILE_VB3KB), yes)
+	CC=$(CXX)
+else
+override CFLAGS+= -std=c99
+endif

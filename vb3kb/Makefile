@@ -1,3 +1,4 @@
+COMPILE_VB3KB=indeed
 include ../common.mak
 
 ifeq ($(TCLTKPREFIX),)

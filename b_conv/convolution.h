@@ -21,12 +21,12 @@
 
 /* zita-convolver lib is C++ so we need extern "C" in order to link
  * functions using it. */
+#include "../src/cfgParser.h"
+#include "../src/midi.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#include "../src/cfgParser.h"
-#include "../src/midi.h"
 
 extern void setConvolutionMix (unsigned char u);
 
