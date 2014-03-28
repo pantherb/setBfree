@@ -294,7 +294,7 @@ static void rcstate_cb(int fnid, const char *key, const char *kv, unsigned char 
   } else {
     sprintf(tmp, "M %s=%d\n", key, val);
   }
-  *cfg = realloc(*cfg, strlen(*cfg) + strlen(tmp) +1);
+  *cfg = (char*) realloc(*cfg, strlen(*cfg) + strlen(tmp) +1);
   strcat(*cfg, tmp);
 }
 
@@ -307,7 +307,7 @@ save(LV2_Handle                instance,
 {
   B3S* b3s = (B3S*)instance;
 
-  char *cfg = calloc(1, sizeof(char));
+  char *cfg = (char*) calloc(1, sizeof(char));
   rc_loop_state(b3s->inst->state, rcstate_cb, (void*) &cfg);
 
   int i;
@@ -324,7 +324,7 @@ save(LV2_Handle                instance,
   }
   fclose(x);
 
-  cfg = realloc(cfg, strlen(cfg) + strlen(out) +1);
+  cfg = (char*) realloc(cfg, strlen(cfg) + strlen(out) +1);
   strcat(cfg, out);
 
   store(handle, b3s->uris.sb3_state,
@@ -358,7 +358,7 @@ restore(LV2_Handle                  instance,
     return LV2_STATE_ERR_UNKNOWN;
   }
 
-  b3s->inst_offline = calloc(1, sizeof(struct b_instance));
+  b3s->inst_offline = (b_instance*) calloc(1, sizeof(struct b_instance));
   allocSynth(b3s->inst_offline);
 
   const char* cfg = (const char*)value;
@@ -447,10 +447,10 @@ work(LV2_Handle                  instance,
     case CMD_LOADCFG:
       if (b3s->inst_offline) {
 	fprintf(stderr, "B3LV2: restore ignored. re-init in progress\n");
-	return LV2_STATE_ERR_UNKNOWN;
+	return LV2_WORKER_ERR_UNKNOWN;
       }
       fprintf(stderr, "B3LV2: loading cfg file: %s\n", w->msg);
-      b3s->inst_offline = calloc(1, sizeof(struct b_instance));
+      b3s->inst_offline = (b_instance*) calloc(1, sizeof(struct b_instance));
       allocSynth(b3s->inst_offline);
       w->status = parseConfigurationFile (b3s->inst_offline, w->msg);
       initSynth(b3s->inst_offline, SampleRateD);
@@ -635,7 +635,7 @@ instantiate(const LV2_Descriptor*     descriptor,
   b3s->update_gui_now = 0;
   b3s->update_pgm_now = 0;
 
-  b3s->inst = calloc(1, sizeof(struct b_instance));
+  b3s->inst = (b_instance*) calloc(1, sizeof(struct b_instance));
   b3s->inst_offline = NULL;
 
   allocSynth(b3s->inst);
@@ -701,7 +701,7 @@ run(LV2_Handle instance, uint32_t n_samples)
 	if (written + BUFFER_SIZE_SAMPLES < ev->time.frames
 	    && ev->time.frames < n_samples) {
 	  /* first syntheize sound up until the message timestamp */
-	  written = synthSound(instance, written, ev->time.frames, audio);
+	  written = synthSound(b3s, written, ev->time.frames, audio);
 	}
 	/* send midi message to synth, CC's will trigger hook -> update GUI */
 	parse_raw_midi_data(b3s->inst, (uint8_t*)(ev+1), ev->body.size);
@@ -769,7 +769,7 @@ run(LV2_Handle instance, uint32_t n_samples)
   }
 
   /* synthesize [remaining] sound */
-  synthSound(instance, written, n_samples, audio);
+  synthSound(b3s, written, n_samples, audio);
 
   /* check for new instances */
   postrun(b3s);

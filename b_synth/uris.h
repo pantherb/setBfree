@@ -161,8 +161,8 @@ get_cc_key_value(
 	}
 	//printf("UIcom: Rx '%s' -> %d \n", (char*)LV2_ATOM_BODY(key), ((LV2_Atom_Int*)value)->body);
 
-	*k = LV2_ATOM_BODY(key);
-	*v = ((LV2_Atom_Int*)value)->body;
+	*k = (char*) LV2_ATOM_BODY(key);
+	*v = (int) ((LV2_Atom_Int*)value)->body;
 
 	return 0;
 }
@@ -191,8 +191,8 @@ get_cc_midi_mapping(
 		return -1;
 	}
 
-	*fnname = LV2_ATOM_BODY(key);
-	*mms = LV2_ATOM_BODY(value);
+	*fnname = (char*) LV2_ATOM_BODY(key);
+	*mms    = (char*) LV2_ATOM_BODY(value);
 
 	return 0;
 }
@@ -226,9 +226,9 @@ get_pgm_midi_mapping(
 		return -1;
 	}
 
-	*pgmdesc = LV2_ATOM_BODY(descr);
-	*pgmname = LV2_ATOM_BODY(value);
-	*pgmnum = ((LV2_Atom_Int*)key)->body;
+	*pgmdesc = (char*) LV2_ATOM_BODY(descr);
+	*pgmname = (char*) LV2_ATOM_BODY(value);
+	*pgmnum  = (int) ((LV2_Atom_Int*)key)->body;
 
 	return 0;
 }

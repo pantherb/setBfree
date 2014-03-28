@@ -39,7 +39,7 @@
 #define BUF_MASK_SAMPLES (BUF_SIZE_SAMPLES - 1)
 
 void initValues(struct b_whirl *w) {
-  int i;
+  unsigned int i;
 
   w->bypass=0;
   w->hnBreakPos=0;
@@ -164,7 +164,7 @@ void initValues(struct b_whirl *w) {
   memset(w->hnBwdDispl, 0, sizeof(float) * WHIRL_DISPLC_SIZE);
   memset(w->drBwdDispl, 0, sizeof(float) * WHIRL_DISPLC_SIZE);
 
-  for (i=0; i<WHIRL_DISPLC_SIZE; i++) {
+  for (i=0; i < WHIRL_DISPLC_SIZE; i++) {
     memset(&w->bfw[i], 0, sizeof(struct _bw));
     memset(&w->bbw[i], 0, sizeof(struct _bw));
   }
@@ -344,8 +344,8 @@ static void _ipoldraw (struct b_whirl *sw, double degrees, double level, int par
  *
  */
 static void initTables (struct b_whirl *w) {
-  int i;
-  int j;
+  unsigned int i;
+  unsigned int j;
   double ipx;
   double ipy;
   double sum;
@@ -1013,7 +1013,7 @@ void whirlProc2 (struct b_whirl *w,
 		 size_t bufferLengthSamples) {
 
   const float * xp = inbuffer;
-  int i;
+  unsigned int i;
 
   if (w->bypass) {
     for (i = 0; i < bufferLengthSamples; i++) {

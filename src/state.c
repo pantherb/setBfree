@@ -48,7 +48,7 @@ struct b_kv {
 };
 
 static void *kvstore_alloc() {
-  struct b_kv *kv = calloc(1, sizeof(struct b_kv));
+  struct b_kv *kv = (struct b_kv *) calloc(1, sizeof(struct b_kv));
   return kv;
 }
 
@@ -79,7 +79,7 @@ static void kvstore_store(void *kvs, const char *key, const char *value) {
   }
   if (!it) {
     /* allocate new terminal node */
-    it = calloc(1, sizeof(struct b_kv));
+    it = (struct b_kv *) calloc(1, sizeof(struct b_kv));
     kv->next = it;
     it = kv;
     it->key = strdup(key);
@@ -116,13 +116,13 @@ void *allocRunningConfig(void) {
   if (!rc) return NULL;
 
   mccc = rc->mrc.mccc = getCCFunctionCount();
-  rc->mrc.mcc = malloc(mccc * sizeof(int));
+  rc->mrc.mcc = (int*) malloc(mccc * sizeof(int));
   if (!rc->mrc.mcc) {
     free(rc);
     return NULL;
   }
 
-  rc->rrc = kvstore_alloc();
+  rc->rrc = (struct b_kv*) kvstore_alloc();
 
   if (!rc->rrc) {
     free(rc->mrc.mcc);

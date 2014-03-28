@@ -292,7 +292,7 @@ static void free_dirlist(B3ui* ui) {
 
 static char * absfilepath(const char *dir, const char *file) {
   if (!dir || !file) return NULL;
-  char *fn = malloc((strlen(dir) + strlen(file) + 2)*sizeof(char));
+  char *fn = (char*) malloc((strlen(dir) + strlen(file) + 2)*sizeof(char));
   strcpy(fn, dir);
   strcat(fn, "/");
   strcat(fn, file);
@@ -353,8 +353,8 @@ static int dirlist(PuglView* view, const char *dir) {
 	free(rfn);
 	continue;
       }
-      filelist = realloc(filelist, (filelistlen+1) * sizeof(char*));
-      filelist[filelistlen] = malloc(1024*sizeof(char));
+      filelist = (char**) realloc(filelist, (filelistlen+1) * sizeof(char*));
+      filelist[filelistlen] = (char*) malloc(1024*sizeof(char));
       strncpy(filelist[filelistlen], dd->d_name, 1024);
       filelistlen++;
       free(rfn);
@@ -367,8 +367,8 @@ static int dirlist(PuglView* view, const char *dir) {
     else if (delen == 2 && dd->d_name[0] == '.' && dd->d_name[1] == '.') ; // '..' -> OK
     else if (ui->dir_hidedotfiles && dd->d_name[0] == '.') continue;
 
-    ui->dirlist = realloc(ui->dirlist, (ui->dirlistlen+1) * sizeof(char*));
-    ui->dirlist[ui->dirlistlen] = malloc(1024*sizeof(char));
+    ui->dirlist = (char**) realloc(ui->dirlist, (ui->dirlistlen+1) * sizeof(char*));
+    ui->dirlist[ui->dirlistlen] = (char*) malloc(1024*sizeof(char));
     strncpy(ui->dirlist[ui->dirlistlen], dd->d_name, 1022);
     ui->dirlist[ui->dirlistlen][1022] = '\0';
     strcat(ui->dirlist[ui->dirlistlen], "/");
@@ -389,7 +389,7 @@ static int dirlist(PuglView* view, const char *dir) {
     return -1;
   }
 
-  ui->dirlist = realloc(ui->dirlist, (ui->dirlistlen + filelistlen) * sizeof(char*));
+  ui->dirlist = (char**) realloc(ui->dirlist, (ui->dirlistlen + filelistlen) * sizeof(char*));
   int i;
   for (i = 0; i < filelistlen; i++) {
     ui->dirlist[ui->dirlistlen + i] = filelist[i];
@@ -1292,7 +1292,7 @@ void handle_msg_reply(PuglView* view) {
  * openGL text entry
  */
 
-static int txtentry_start(PuglView* view, const char *title, char *defaulttext) {
+static int txtentry_start(PuglView* view, const char *title, const char *defaulttext) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   if (ui->textentry_active) return -1;
 

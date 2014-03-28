@@ -308,7 +308,7 @@ float * reverb (struct b_reverb *r,
   const float wet = r->wet;
   const float dry = r->dry;
 
-  int i;
+  unsigned int i;
   const float * xp =  inbuf;
   float * yp =  outbuf;
 

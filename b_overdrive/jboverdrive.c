@@ -143,8 +143,8 @@ void catchsig (int sig) {
 
 int jack_audio_callback (jack_nframes_t nframes, void *arg) {
   jack_default_audio_sample_t *in, *out;
-  in = jack_port_get_buffer (j_input_port, nframes);
-  out = jack_port_get_buffer (j_output_port, nframes);
+  in = (jack_default_audio_sample_t*) jack_port_get_buffer (j_input_port, nframes);
+  out = (jack_default_audio_sample_t*) jack_port_get_buffer (j_output_port, nframes);
   overdrive(arg, in, out, nframes);
   return(0);
 }

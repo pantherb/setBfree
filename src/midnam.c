@@ -41,7 +41,7 @@ static void midnam_print_pgm_cb(int num, int pc, const char *name, void *arg) {
 		escaped = strdup(name);
 	} else {
 		const char *t1, *t2;
-		escaped = malloc((strlen(name) + ent * 4 + 1) * sizeof(char));
+		escaped = (char*) malloc((strlen(name) + ent * 4 + 1) * sizeof(char));
 		escaped[0] = '\0';
 		t1=name;
 		while ((t2=strchr(t1, '&'))) {

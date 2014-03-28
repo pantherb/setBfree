@@ -436,7 +436,7 @@ static void initValues (struct b_tonegen *t) {
 /**
  * Gear ratios for a 60 Hertz organ.
  */
-static const double const gears60ratios [12][2] = {
+static double const gears60ratios [12][2] = {
   {85, 104},			/* c  */
   {71,  82},			/* c# */
   {67,  73},			/* d  */
@@ -454,7 +454,7 @@ static const double const gears60ratios [12][2] = {
 /**
  * Gear ratios for a 50 Hertz organ (estimated).
  */
-static const double const gears50ratios [12][2] = {
+static double const gears50ratios [12][2] = {
   {17, 26},			/* c  */
   {57, 82},			/* c# */
   {11, 15},			/* d  */
@@ -473,7 +473,7 @@ static const double const gears50ratios [12][2] = {
  * This table is indexed by frequency number, i.e. the tone generator number
  * on the 91 oscillator generator. The first frequency/generator is numbered 1.
  */
-static const short const wheelPairs [92] = {
+static short const wheelPairs [92] = {
   0,				/* 0: not used */
   49, 50, 51, 52,  53, 54, 55, 56,  57, 58, 59, 60, /* 1-12 */
   61, 62, 63, 64,  65, 66, 67, 68,  69, 70, 71, 72, /* 13-24 */
@@ -495,7 +495,7 @@ static const short const wheelPairs [92] = {
  * description of rows of transformers mounted on top of
  * the tonegenerator for the upper (north) manual
  */
-static const short const northTransformers [] = {
+static short const northTransformers [] = {
   85, 66, 90, 71, 47, 64, 86, 69, 45, 62, 86, 67, 91, 72, 48, 65, 89, 70,
   46, 63, 87, 68, 44, 61,
   0
@@ -505,7 +505,7 @@ static const short const northTransformers [] = {
  * description of rows of transformers mounted on top of
  * the tonegenerator for the lower (south) manual
  */
-static const short const southTransformers [] = {
+static short const southTransformers [] = {
   78, 54, 83, 59, 76, 52, 81, 57, 74, 50, 79, 55, 84, 60, 77, 53, 82, 58,
   75, 51, 80, 56, 73, 49,
   0
@@ -516,7 +516,7 @@ static const short const southTransformers [] = {
  * This array describes how oscillators are arranged on the terminal
  * soldering strip.
  */
-static const short const terminalStrip [] = {
+static short const terminalStrip [] = {
   85, 42, 30, 76, 66, 18,  6, 54, 90, 35, 83, 71, 23, 11, 59, 47, 40,
   28, 76, 64, 16,  4, 52, 88, 33, 81, 69, 21,  9, 57, 45, 34, 26, 74,
   62, 14,  2, 50, 86, 43, 31, 79, 67, 19,  7, 55, 91, 36, 84, 72, 24,
@@ -966,7 +966,7 @@ static void applyDefaultCrosstalk (struct b_tonegen *t, int keyOffset, int busOf
 /**
  * Find east-west neighbours.
  */
-static int findEastWestNeighbours (const short const * v, int w, int * ep, int * wp) {
+static int findEastWestNeighbours (short const * const v, int w, int * ep, int * wp) {
   int i;
 
   assert (v  != NULL);

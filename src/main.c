@@ -151,7 +151,7 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
 
   if (!synth_ready) {
     for (i=0;i<AUDIO_CHANNELS;i++) {
-      out[i] = jack_port_get_buffer (j_output_port[i], nframes);
+      out[i] = (jack_default_audio_sample_t*) jack_port_get_buffer (j_output_port[i], nframes);
       memset(out[i], 0, nframes*sizeof(jack_default_audio_sample_t));
     }
     return (0);
@@ -163,7 +163,7 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
   }
 
   for (i=0;i<AUDIO_CHANNELS;i++) {
-    out[i] = jack_port_get_buffer (j_output_port[i], nframes);
+    out[i] = (jack_default_audio_sample_t*) jack_port_get_buffer (j_output_port[i], nframes);
   }
 
   static int boffset = BUFFER_SIZE_SAMPLES;
@@ -244,8 +244,8 @@ int open_jack(void) {
   jack_set_process_callback(j_client,jack_audio_callback, &inst);
   jack_set_sample_rate_callback (j_client, jack_srate_callback, NULL);
 
-  j_output_port= calloc(AUDIO_CHANNELS,sizeof(jack_port_t*));
-  j_output_bufferptrs = calloc(AUDIO_CHANNELS,sizeof(jack_default_audio_sample_t*));
+  j_output_port = (jack_port_t**) calloc(AUDIO_CHANNELS,sizeof(jack_port_t*));
+  j_output_bufferptrs = (jack_default_audio_sample_t**) calloc(AUDIO_CHANNELS,sizeof(jack_default_audio_sample_t*));
 
   for (i=0;i<AUDIO_CHANNELS;i++) {
 #if 0

@@ -285,7 +285,7 @@ static void resetMidiCfg(void *mcfg) {
 }
 
 void *allocMidiCfg(void *stateptr) {
-  struct b_midicfg * mcfg = calloc(1, sizeof(struct b_midicfg));
+  struct b_midicfg * mcfg = (struct b_midicfg *) calloc(1, sizeof(struct b_midicfg));
   if (!mcfg) return NULL;
   resetMidiCfg(mcfg);
   mcfg->rcstate = stateptr;
@@ -415,7 +415,7 @@ void useMIDIControlFunction (void *mcfg, char * cfname, void (* f) (void *, unsi
 static void reverse_cc_map(struct b_midicfg *m, int x, uint8_t chn, uint8_t param) {
   midiCCmap *newmm, *tmp;
 
-  newmm = malloc(sizeof(midiCCmap));
+  newmm = (midiCCmap *) malloc(sizeof(midiCCmap));
   newmm->next = NULL;
   newmm->channel = chn;
   newmm->param = param;
@@ -793,9 +793,9 @@ static void loadStatusTable (struct b_midicfg * m) {
   m->keyTable[m->rcvChB] = m->keyTableB;
   m->keyTable[m->rcvChC] = m->keyTableC;
 
-  m->ctrlvec[m->rcvChA] = (void *) m->ctrlvecA;
-  m->ctrlvec[m->rcvChB] = (void *) m->ctrlvecB;
-  m->ctrlvec[m->rcvChC] = (void *) m->ctrlvecC;
+  m->ctrlvec[m->rcvChA] = (ctrl_function *) m->ctrlvecA;
+  m->ctrlvec[m->rcvChB] = (ctrl_function *) m->ctrlvecB;
+  m->ctrlvec[m->rcvChC] = (ctrl_function *) m->ctrlvecC;
 }
 
 /*
