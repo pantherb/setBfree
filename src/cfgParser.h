@@ -57,7 +57,7 @@ void parseConfigurationLine (
     int    lineNumber,
     char * oneLine);
 
-int  parseConfigurationFile (void * instance, char * fname);
+int  parseConfigurationFile (void * instance, const char * fname);
 void dumpConfigDoc ();
 int evaluateConfigKeyValue(void *inst, const char *key, const char *value);
 void showConfigfileContext (ConfigContext * cfg, const char * msg);

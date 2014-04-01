@@ -116,40 +116,36 @@ void parseConfigurationLine (void *inst, const char * fname, int lineNumber, cha
   if ((name = strtok (s, delim)) != NULL) {
     int i;
 
-	for (i = strlen (name) - 1; isspace (name[i]); name[i] = '\0', i--);
+    for (i = strlen (name) - 1; isspace (name[i]); name[i] = '\0', i--);
 
-	if ((value = strtok (NULL, delim)) != NULL) {
-	  char * t;
-	  while (isspace (value[0])) value++;
-	  for (t = value; *t != '\0'; t++) {
-	    if (*t == '#') {	/* Terminate value at comment */
-	      *t = '\0';
-	      break;
-	    }
-	  }
-	}
-	else {
-	  value = "";
-	}
-
-	i = strlen (value);
-	if (0 < i) {
-	  for (i = i - 1;  isspace (value[i]); value[i] = '\0', i--);
-	}
-
-	if (strcasecmp (name, "config.read") == 0) {
-	  parseConfigurationFile (inst, value);
-	}
-	else {
-	  ConfigContext cfg;
-	  cfg.fname  = fname;
-	  cfg.linenr = lineNumber;
-	  cfg.name   = name;
-	  cfg.value  = value;
-	  distributeParameter ((b_instance*) inst, & cfg);
+    if ((value = strtok (NULL, delim)) != NULL) {
+      char * t;
+      while (isspace (value[0])) value++;
+      for (t = value; *t != '\0'; t++) {
+	if (*t == '#') {	/* Terminate value at comment */
+	  *t = '\0';
+	  break;
 	}
       }
 
+      i = strlen (value);
+      if (0 < i) {
+	for (i = i - 1; isspace (value[i]); value[i] = '\0', i--);
+      }
+    }
+
+    if (strcasecmp (name, "config.read") == 0) {
+      parseConfigurationFile (inst, value);
+    }
+    else {
+      ConfigContext cfg;
+      cfg.fname  = fname;
+      cfg.linenr = lineNumber;
+      cfg.name   = name;
+      cfg.value  = value ? value : "";
+      distributeParameter ((b_instance*) inst, & cfg);
+    }
+  }
 }
 
 int evaluateConfigKeyValue(void *inst, const char *key, const char *value) {
@@ -273,7 +269,7 @@ void dumpConfigDoc () {
 /*
  *
  */
-int parseConfigurationFile (void *inst, char * fname) {
+int parseConfigurationFile (void *inst, const char * fname) {
   int lineNumber = 0;
   char lineBuf [LINEBUFSZ];
   FILE * fp;
