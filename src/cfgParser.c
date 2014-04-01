@@ -96,7 +96,7 @@ static int distributeParameter (b_instance* inst, ConfigContext * cfg) {
 /*
  *
  */
-void parseConfigurationLine (void *inst, char * fname, int lineNumber, char * oneLine) {
+void parseConfigurationLine (void *inst, const char * fname, int lineNumber, char * oneLine) {
   char delim[] = "=\n";
   char * s = oneLine;
   char * name;
@@ -168,7 +168,7 @@ const char *conftypenames[CFG_LAST] = { "S", "D", "F", "I" };
 /*
  *
  */
-void formatDoc (char *modulename, const ConfigDoc *d) {
+static void formatDoc (const char *modulename, const ConfigDoc *d) {
   printf("Parameters for '%s':\n", modulename);
   while (d && d->name) {
     if (strlen(d->name) >= 40) {
@@ -298,7 +298,7 @@ int parseConfigurationFile (void *inst, char * fname) {
 /*
  *
  */
-void showConfigfileContext (ConfigContext * cfg, char * msg) {
+void showConfigfileContext (ConfigContext * cfg, const char * msg) {
 
   assert (cfg != NULL);
   assert (msg != NULL);
@@ -432,7 +432,7 @@ const char * getConfigValue (ConfigContext * cfg) {
  *             the context, 1 if it did and an assignment was made
  *             -1 if the name matched but no assignment was made.
  */
-int getConfigParameter_d (char * par, ConfigContext * cfg, double * dp) {
+int getConfigParameter_d (const char * par, ConfigContext * cfg, double * dp) {
 
   assert (par != NULL);
   assert (cfg != NULL);
@@ -464,7 +464,7 @@ int getConfigParameter_d (char * par, ConfigContext * cfg, double * dp) {
  *             the context, 1 if it did and an assignment was made
  *             -1 if the name matched but no assignment was made.
  */
-int getConfigParameter_i (char * par, ConfigContext * cfg, int * ip) {
+int getConfigParameter_i (const char * par, ConfigContext * cfg, int * ip) {
 
   assert (par != NULL);
   assert (cfg != NULL);
@@ -496,7 +496,7 @@ int getConfigParameter_i (char * par, ConfigContext * cfg, int * ip) {
  *             the context, 1 if it did and an assignment was made
  *             -1 if the name matched but no assignment was made.
  */
-int getConfigParameter_f (char * par, ConfigContext * cfg, float * fp) {
+int getConfigParameter_f (const char * par, ConfigContext * cfg, float * fp) {
 
   assert (par != NULL);
   assert (cfg != NULL);
@@ -527,7 +527,7 @@ int getConfigParameter_f (char * par, ConfigContext * cfg, float * fp) {
  *             the context, 1 if it did and an assignment was made
  *             -1 if the name matched but no assignment was made.
  */
-int getConfigParameter_ir (char * par,
+int getConfigParameter_ir (const char * par,
 			   ConfigContext * cfg,
 			   int * ip,
 			   int lowInc,
@@ -560,7 +560,7 @@ int getConfigParameter_ir (char * par,
  *             the context, 1 if it did and an assignment was made
  *             -1 if the name matched but no assignment was made.
  */
-int getConfigParameter_dr (char * par,
+int getConfigParameter_dr (const char * par,
 			   ConfigContext * cfg,
 			   double * dp,
 			   double lowInc,
@@ -590,7 +590,7 @@ int getConfigParameter_dr (char * par,
  *             the context, 1 if it did and an assignment was made
  *             -1 if the name matched but no assignment was made.
  */
-int getConfigParameter_fr (char * par,
+int getConfigParameter_fr (const char * par,
 			   ConfigContext * cfg,
 			   float * fp,
 			   float lowInc,

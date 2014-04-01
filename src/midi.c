@@ -386,7 +386,7 @@ static void assignMIDIControllerFunction (ctrl_function *vec,
  *                  implemented by the function pointed to by the f parameter.
  * @param f         Pointer to function that acts on the controller message.
  */
-void useMIDIControlFunction (void *mcfg, char * cfname, void (* f) (void *, unsigned char), void *d) {
+void useMIDIControlFunction (void *mcfg, const char * cfname, void (* f) (void *, unsigned char), void *d) {
   struct b_midicfg * m = (struct b_midicfg *) mcfg;
 
   int x = getCCFunctionId (cfname);
@@ -475,7 +475,7 @@ static inline void execControlFunction (void *mcfg, ctrl_function *ctrlF, unsign
   }
 }
 
-void callMIDIControlFunction (void *mcfg, char * cfname, unsigned char val) {
+void callMIDIControlFunction (void *mcfg, const char * cfname, unsigned char val) {
   struct b_midicfg * m = (struct b_midicfg *) mcfg;
   int x = getCCFunctionId (cfname);
   if (x >= 0 && m->ctrlvecF[x].fn) {
@@ -484,7 +484,7 @@ void callMIDIControlFunction (void *mcfg, char * cfname, unsigned char val) {
   }
 }
 
-void notifyControlChangeByName (void *mcfg, char * cfname, unsigned char val) {
+void notifyControlChangeByName (void *mcfg, const char * cfname, unsigned char val) {
   struct b_midicfg * m = (struct b_midicfg *) mcfg;
   int x = getCCFunctionId (cfname);
   if (x >= 0 && m->ctrlvecF[x].fn) {
@@ -802,7 +802,7 @@ static void loadStatusTable (struct b_midicfg * m) {
  * Auxillary function to midiPrimeControllerMapping below.
  */
 static void loadCCMap (struct b_midicfg * m,
-		       char * cfname,
+		       const char * cfname,
 		       int ccn,
 		       unsigned char * A,
 		       unsigned char * B,

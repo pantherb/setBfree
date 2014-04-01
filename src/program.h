@@ -129,10 +129,10 @@ extern struct b_programme *allocProgs ();
 extern void freeProgs (struct b_programme *p);
 
 extern int bindToProgram (void * pp,
-			  char * fileName,
-			  int    lineNumber,
-			  int    pgmnr,
-			  char * sym,
-			  char * val);
+			  const char * fileName,
+			  const int    lineNumber,
+			  const int    pgmnr,
+			  const char * sym,
+			  const char * val);
 
 #endif /* PROGRAM_H */

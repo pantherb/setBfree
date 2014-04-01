@@ -32,13 +32,11 @@
 #error "This programs requires zita-convolver 3.x.x"
 #endif
 
-#define _S (const char*)
-
 #ifndef DFLT_IR_FILE
 #define DFLT_IR_FILE IRPATH "/ir_leslie-%04d.wav"
 #endif
 
-#define DFLT_IR_STRING _S(DFLT_IR_FILE)
+#define DFLT_IR_STRING DFLT_IR_FILE
 
 //#define PRINT_WARNINGS // not RT-safe
 #define AUDIO_CHANNELS 2 // see src/main.c
@@ -112,25 +110,25 @@ void setConvolutionMix (void *d, unsigned char u) {
 int convolutionConfig (ConfigContext * cfg) {
   double d;
   int n;
-  if (strcasecmp (cfg->name, _S"convolution.ir.file") == 0) {
+  if (strcasecmp (cfg->name, "convolution.ir.file") == 0) {
     free(ir_fn);
     ir_fn = strdup(cfg->value);
-  } else if (!strncasecmp (cfg->name, _S"convolution.ir.channel.", 23)) {
-    if (sscanf (cfg->name, _S"convolution.ir.channel.%d", &n) == 1) {
+  } else if (!strncasecmp (cfg->name, "convolution.ir.channel.", 23)) {
+    if (sscanf (cfg->name, "convolution.ir.channel.%d", &n) == 1) {
       if ((0 < n) && (n <= AUDIO_CHANNELS))
 	ir_chan[n-1] = atoi(cfg->value);
     }
-  } else if (!strncasecmp (cfg->name, _S"convolution.ir.gain.", 20)) {
-    if (sscanf (cfg->name, _S"convolution.ir.gain.%d", &n) == 1) {
+  } else if (!strncasecmp (cfg->name, "convolution.ir.gain.", 20)) {
+    if (sscanf (cfg->name, "convolution.ir.gain.%d", &n) == 1) {
       if ((0 < n) && (n <= AUDIO_CHANNELS))
 	ir_gain[n-1] = atof(cfg->value);
     }
-  } else if (!strncasecmp (cfg->name, _S"convolution.ir.delay.", 21)) {
-    if (sscanf (cfg->name, _S"convolution.ir.delay.%d", &n) == 1) {
+  } else if (!strncasecmp (cfg->name, "convolution.ir.delay.", 21)) {
+    if (sscanf (cfg->name, "convolution.ir.delay.%d", &n) == 1) {
       if ((0 < n) && (n <= AUDIO_CHANNELS))
 	ir_delay[n-1] = atoi(cfg->value);
     }
-  } else if (getConfigParameter_d (_S"convolution.mix", cfg, &d) == 1) {
+  } else if (getConfigParameter_d ("convolution.mix", cfg, &d) == 1) {
     fsetConvolutionMix(d);
   } else {
     return 0;
@@ -139,11 +137,11 @@ int convolutionConfig (ConfigContext * cfg) {
 }
 
 static const ConfigDoc doc[] = {
-  {_S"convolution.mix", CFG_DOUBLE,   _S"0.0",  _S"Note: modifies dry/wet. [0..1]"},
-  {_S"convolution.ir.file", CFG_TEXT, _S("\"" DFLT_IR_FILE "\""),     _S"convolution sample filename"},
-  {_S"convolution.ir.channel.<int>", CFG_INT, _S"-",    _S"<int> 1:Left, 2:Right; value: channel-number in IR file to use, default: 1->1, 2->2"},
-  {_S"convolution.ir.gain.<int>",    CFG_DOUBLE, _S"0.5", _S"gain-factor to apply to IR data on load. <int> 1:left-channel, 2:right-channel."},
-  {_S"convolution.ir.delay.<int>",   CFG_INT,   _S"0",    _S"delay IR in audio-samples."},
+  {"convolution.mix", CFG_DOUBLE,   "0.0",  "Note: modifies dry/wet. [0..1]"},
+  {"convolution.ir.file", CFG_TEXT, ("\"" DFLT_IR_FILE "\""),     "convolution sample filename"},
+  {"convolution.ir.channel.<int>", CFG_INT, "-",    "<int> 1:Left, 2:Right; value: channel-number in IR file to use, default: 1->1, 2->2"},
+  {"convolution.ir.gain.<int>",    CFG_DOUBLE, "0.5", "gain-factor to apply to IR data on load. <int> 1:left-channel, 2:right-channel."},
+  {"convolution.ir.delay.<int>",   CFG_INT,   "0",    "delay IR in audio-samples."},
   {NULL}
 };
 
@@ -261,7 +259,7 @@ void initConvolution (
     exit (1);
   }
 
-  useMIDIControlFunction (m, _S"convolution.mix", setConvolutionMix, NULL);
+  useMIDIControlFunction (m, "convolution.mix", setConvolutionMix, NULL);
 }
 
 void freeConvolution () {

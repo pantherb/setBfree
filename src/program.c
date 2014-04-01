@@ -127,7 +127,7 @@ enum propertyId {
 };
 
 typedef struct _symbolmap {
-  char * propertyName;
+  const char * propertyName;
   int property;
 } SymbolMap;
 
@@ -174,7 +174,7 @@ static const SymbolMap propertySymbols [] = {
 /**
  * Look up the property string and return the internal property value.
  */
-static int getPropertyIndex (char * sym) {
+static int getPropertyIndex (const char * sym) {
   int i;
   for (i = 0; propertySymbols[i].propertyName != NULL; i++) {
     if (!strcasecmp (propertySymbols[i].propertyName, sym)) {
@@ -191,10 +191,10 @@ static int getPropertyIndex (char * sym) {
  * Returns the given return code, so that it may be called in a return
  * statement from within a parsing function.
  */
-static int stateMessage (char * fileName,
-			 int lineNumber,
-			 char * msg,
-			 int code) {
+static int stateMessage (const char * fileName,
+			 const int lineNumber,
+			 const char * msg,
+			 const int code) {
   fprintf (stderr, "%s in file %s on line %d\n", msg, fileName, lineNumber);
   return code;
 }
@@ -206,14 +206,14 @@ static int stateMessage (char * fileName,
  * @param lineNumber The linenumber in the input file.
  * @param fileName   The name of the current input file.
  */
-static int parseDrawbarRegistration (char * drw,
+static int parseDrawbarRegistration (const char * drw,
 				     unsigned int bar[],
-				     int    lineNumber,
-				     char * fileName) {
+				     const int    lineNumber,
+				     const char * fileName) {
 
   char msg[MESSAGEBUFFERSIZE];
   int bus = 0;
-  char * t = drw;
+  const char * t = drw;
 
   while (bus < 9) {
     if (*t == '\0') {
@@ -244,7 +244,7 @@ static int parseDrawbarRegistration (char * drw,
 /**
  * Return TRUE if the supplied string can be interpreted as an enabling arg.
  */
-static int isAffirmative (char * value) {
+static int isAffirmative (const char * value) {
   int n;
   if (!strcasecmp (value, "on")) return TRUE;
   if (!strcasecmp (value, "yes")) return TRUE;
@@ -259,7 +259,7 @@ static int isAffirmative (char * value) {
 /**
  * Return TRUE if the supplied string can be interpreted as a disabling arg.
  */
-static int isNegatory (char * value) {
+static int isNegatory (const char * value) {
   int n;
   if (!strcasecmp (value, "off")) return TRUE;
   if (!strcasecmp (value, "no")) return TRUE;
@@ -276,7 +276,7 @@ static int isNegatory (char * value) {
  * This function parses a transpose argument. It expects an integer in the
  * range -127 .. 127. It is a helper function to bindToProgram () below.
  */
-static int parseTranspose (char * val, int * vp, char * msg) {
+static int parseTranspose (const char * val, int * vp, char * msg) {
   if (sscanf (val, "%d", vp) == 0) {
     sprintf (msg, "Transpose: integer expected : '%s'", val);
     return -1;
@@ -293,11 +293,11 @@ static int parseTranspose (char * val, int * vp, char * msg) {
  * Return: 0 OK, non-zero error.
  */
 int bindToProgram (void * pp,
-		   char * fileName,
-		   int    lineNumber,
-		   int    pgmnr,
-		   char * sym,
-		   char * val)
+		   const char * fileName,
+		   const int    lineNumber,
+		   const int    pgmnr,
+		   const char * sym,
+		   const char * val)
 {
   struct b_programme *p = (struct b_programme *)pp;
   int prop;

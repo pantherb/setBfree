@@ -30,7 +30,7 @@
 #define IS_DENORMAL(f) (((*(unsigned int *)&f)&0x7f800000)==0)
 
 typedef struct _configContext {
-  char * fname;
+  const char * fname;
   int    linenr;
   const char * name;
   const char * value;
@@ -45,22 +45,22 @@ enum conftype {
 };
 
 typedef struct _configDoc {
-  char * name; /**< parameter name */
+  const char * name; /**< parameter name */
 	enum conftype type;
-  char * dflt; /**< default value as text */
-  char * desc; /**< descition */
+  char const * dflt; /**< default value as text */
+  char const * desc; /**< descition */
 } ConfigDoc;
 
 void parseConfigurationLine (
     void * instance,
-    char * fname,
+    const char * fname,
     int    lineNumber,
     char * oneLine);
 
 int  parseConfigurationFile (void * instance, char * fname);
 void dumpConfigDoc ();
 int evaluateConfigKeyValue(void *inst, const char *key, const char *value);
-void showConfigfileContext (ConfigContext * cfg, char * msg);
+void showConfigfileContext (ConfigContext * cfg, const char * msg);
 void configIntUnparsable (ConfigContext * cfg);
 void configIntOutOfRange (ConfigContext * cfg, int min, int max);
 void configDoubleUnparsable (ConfigContext * cfg);
@@ -69,29 +69,29 @@ void setConfigRangeInt (int * vp, ConfigContext * cfg);
 void setConfigInt (int * vp, ConfigContext * cfg);
 void setConfigDouble (double * vp, ConfigContext * cfg);
 const char * getConfigValue (ConfigContext * cfg);
-int  getConfigParameter_d (char * par,
+int  getConfigParameter_d (const char * par,
                            ConfigContext * cfg,
                            double * dp);
-int  getConfigParameter_i (char * par,
+int  getConfigParameter_i (const char * par,
                            ConfigContext * cfg,
                            int * dp);
-int  getConfigParameter_f (char * par,
+int  getConfigParameter_f (const char * par,
                            ConfigContext * cfg,
                            float * dp);
 
-int getConfigParameter_ir (char * par,
+int getConfigParameter_ir (const char * par,
                            ConfigContext * cfg,
                            int * ip,
                            int lowInc,
                            int highInc);
 
-int getConfigParameter_dr (char * par,
+int getConfigParameter_dr (const char * par,
                            ConfigContext * cfg,
                            double * dp,
                            double lowInc,
                            double highInc);
 
-int getConfigParameter_fr (char * par,
+int getConfigParameter_fr (const char * par,
                            ConfigContext * cfg,
                            float * fp,
                            float lowInc,

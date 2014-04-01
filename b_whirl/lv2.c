@@ -391,10 +391,10 @@ lv2_descriptor(uint32_t index)
   }
 }
 
-void useMIDIControlFunction (void *m, char * cfname, void (* f) (void *d, unsigned char), void *d) { }
-int getConfigParameter_dr (char * par, ConfigContext * cfg, double * dp, double lowInc, double highInc) { return 0; }
-int getConfigParameter_d (char * par, ConfigContext * cfg, double * dp) { return 0; }
-int getConfigParameter_ir (char * par, ConfigContext * cfg, int * ip, int lowInc, int highInc) { return 0; }
-int getConfigParameter_i (char * par, ConfigContext * cfg, int * ip) { return 0; }
-void notifyControlChangeByName (void *mcfg, char * cfname, unsigned char val) { }
+void useMIDIControlFunction (void *m, const char * cfname, void (* f) (void *d, unsigned char), void *d) { }
+int getConfigParameter_dr (const char * par, ConfigContext * cfg, double * dp, double lowInc, double highInc) { return 0; }
+int getConfigParameter_d (const char * par, ConfigContext * cfg, double * dp) { return 0; }
+int getConfigParameter_ir (const char * par, ConfigContext * cfg, int * ip, int lowInc, int highInc) { return 0; }
+int getConfigParameter_i (const char * par, ConfigContext * cfg, int * ip) { return 0; }
+void notifyControlChangeByName (void *mcfg, const char * cfname, unsigned char val) { }
 /* vi:set ts=8 sts=2 sw=2: */

@@ -50,7 +50,7 @@ typedef int ParseReturnCode;
 
 typedef struct _parserstate {
   void * p;
-  char * fileName;
+  const char * fileName;
   FILE * fp;
   int    lineNumber;
   TokenType nextToken;
@@ -246,7 +246,7 @@ static ParseReturnCode parseExpression (ParserState * ps, char * value) {
  */
 static ParseReturnCode stateMessage (ParserState * ps,
 				     ParseReturnCode code,
-				     char * msg) {
+				     const char * msg) {
   if (code == P_WARNING) {
     fprintf(stderr, "WARNING : ");
   }
@@ -261,7 +261,7 @@ static ParseReturnCode stateMessage (ParserState * ps,
  * Parses a list of programme property assignments and sends each to the
  * application via a call to bindToProgram(...);
  */
-static ParseReturnCode parseAssignmentList (ParserState * ps, int pgmNr) {
+static ParseReturnCode parseAssignmentList (ParserState * ps, const int pgmNr) {
   ParseReturnCode R;
   char symbol[SYMBOLSIZE];
   char value[VALUESIZE];

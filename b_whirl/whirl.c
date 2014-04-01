@@ -599,7 +599,7 @@ static void initTables (struct b_whirl *w) {
 /*
  * Displays the settings of a filter.
  */
-static void displayFilter (char * id, int T, float F, float Q, float G) {
+static void displayFilter (const char * id, int T, float F, float Q, float G) {
 #if 0 // not in RT callback
   const char * type = eqGetTypeString (T);
   printf ("\n%s:T=%3.3s:F=%10.4f:Q=%10.4f:G=%10.4f", id, type, F, Q, G);

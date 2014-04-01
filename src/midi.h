@@ -26,9 +26,9 @@
 
 #include "cfgParser.h"
 
-void useMIDIControlFunction (void *m, char * cfname, void (* f) (void *, unsigned char), void *d);
-void callMIDIControlFunction (void *m, char * cfname, unsigned char val);
-void notifyControlChangeByName (void *mcfg, char * cfname, unsigned char val);
+void useMIDIControlFunction (void *m, const char * cfname, void (* f) (void *, unsigned char), void *d);
+void callMIDIControlFunction (void *m, const char * cfname, unsigned char val);
+void notifyControlChangeByName (void *mcfg, const char * cfname, unsigned char val);
 void notifyControlChangeById (void *mcfg, int id, unsigned char val);
 
 extern int  getCCFunctionCount ();

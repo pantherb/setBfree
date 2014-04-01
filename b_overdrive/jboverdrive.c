@@ -45,9 +45,9 @@ float p_globfeed = 0.5826;
 float p_gainin   = 0.3567;
 float p_gainout  = 0.07873;
 
-void useMIDIControlFunction (void *m, char * cfname, void (* f) (void *, unsigned char), void *d) {}
-int getConfigParameter_fr (char * par, ConfigContext * cfg, float * fp, float lowInc, float highInc) {return 0;}
-int getConfigParameter_f (char * par, ConfigContext * cfg, float * fp) {return 0;}
+void useMIDIControlFunction (void *m, const char * cfname, void (* f) (void *, unsigned char), void *d) {}
+int getConfigParameter_fr (const char * par, ConfigContext * cfg, float * fp, float lowInc, float highInc) {return 0;}
+int getConfigParameter_f (const char * par, ConfigContext * cfg, float * fp) {return 0;}
 
 void cleanup() {
   jack_deactivate(j_client);
@@ -167,7 +167,7 @@ static void connect_jack_ports() {
   }
 }
 
-static void usage (char *name, int status) {
+static void usage (const char *name, int status) {
   fprintf (status?stderr:stdout,
 "%s - the B Preamp/Overdrive Emulator\n\n", name);
   fprintf (status?stderr:stdout,
