@@ -155,7 +155,7 @@ struct b_preamp {
 /* Remember to call this first with the filter definitions */
 /* ipolDef is the interpolation filter definition */
 /* aalDef is the anti-aliasing filter definition */
-void mixFilterWeights (void *pa, const float * ipolDef, const float * aalDef) {
+static void mixFilterWeights (void *pa, const float * ipolDef, const float * aalDef) {
   struct b_preamp *pp = (struct b_preamp *) pa;
   int i;
   float sum = 0.0;
@@ -234,7 +234,7 @@ float * overdrive (void *pa, const float * inBuf, float * outBuf, size_t buflen)
   const float * xp = inBuf;
   float * yp = outBuf;
   int i;
-  int n;
+  size_t n;
   
   for (n = 0; n < buflen; n++) {
     float xin;

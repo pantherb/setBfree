@@ -76,7 +76,7 @@ typedef struct _parserstate {
 static int getToken (FILE * fp, int * linePtr, char * tokbuf, size_t tblen)
 {
   int c;
-  int tp = 0;
+  size_t tp = 0;
   int tokType = TKN_VOID;
   int state = 1;
 

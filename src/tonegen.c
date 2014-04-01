@@ -1455,7 +1455,7 @@ static void writeSamples (float * buf,
   double aplSum;
   double U;
   float * yp = buf;
-  int i;
+  unsigned int i;
 
   for (i = 0, aplSum = 0.0; i < MAX_PARTIALS; i++) {
     /* Select absolute amplitude */

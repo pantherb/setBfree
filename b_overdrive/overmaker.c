@@ -752,7 +752,7 @@ void preIpolMixer () {
   commentln ("ipolDef is the interpolation filter definition");
   commentln ("aalDef is the anti-aliasing filter definition");
 
-  codeln ("void mixFilterWeights (void *pa, const float * ipolDef, const float * aalDef) {");
+  codeln ("static void mixFilterWeights (void *pa, const float * ipolDef, const float * aalDef) {");
   pushIndent ();
   codeln ("struct b_preamp *pp = (struct b_preamp *) pa;");
   codeln ("int i;");
@@ -865,7 +865,7 @@ void funcVarDef () {
   codeln ("const float * xp = inBuf;");
   codeln ("float * yp = outBuf;");
   codeln ("int i;");
-  codeln ("int n;");
+  codeln ("size_t n;");
 }
 
 /*

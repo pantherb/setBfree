@@ -316,7 +316,7 @@ float * vibratoProc (struct b_vibrato* v, float * inbuffer, float * outbuffer, s
 {
   const float fnorm   = 1.0 / 65536.0;
   const float mixnorm = 0.7071067811865475; /* 1/sqrt(2) */
-  int i;
+  unsigned int i;
   float * xp = inbuffer;
   float * yp = outbuffer;
 

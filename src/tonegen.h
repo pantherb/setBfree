@@ -128,7 +128,7 @@ struct _oscillator {
   size_t  lengthSamples;	/**< Nof samples in wave */
   double  frequency;		/**< The frequency (Hertz) */
   double  attenuation;		/**< Signal level (0.0 -- 1.0) */
-  int     pos;			/**< Read position */
+  size_t  pos;			/**< Read position */
 
   int     aclPos;		/**< Position in active list */
   unsigned short rflags;	/**< Rendering flags */

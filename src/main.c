@@ -598,7 +598,7 @@ int main (int argc, char * argv []) {
   int printCCTable = FALSE;
   int doDefaultCC = TRUE;
   char * configOverride [NOF_CFG_OVERS];
-  size_t configOverEnd = 0;
+  int configOverEnd = 0;
   unsigned int randomPreset[9];
   unsigned int defaultPreset[9] = {8,8,8, 0,0,0,0, 0,0};
   unsigned int * presetSelect = defaultPreset;
@@ -688,7 +688,7 @@ int main (int argc, char * argv []) {
     }
   }
 
-  for (i = optind; i < argc; i++) {
+  for (i = optind; i < argc; ++i) {
     char * av = argv[i];
     if (strchr (av, '=') != NULL) {
       /* Remember this as a config parameter */
