@@ -1,7 +1,7 @@
 /* setBfree - DSP tonewheel organ
  *
  * Copyright (C) 2003-2004 Fredrik Kilander <fk@dsv.su.se>
- * Copyright (C) 2008-2012 Robin Gareus <robin@gareus.org>
+ * Copyright (C) 2008-2014 Robin Gareus <robin@gareus.org>
  * Copyright (C) 2012 Will Panther <pantherb@setbfree.org>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -446,6 +446,8 @@ static void Usage (int configdoc) {
   "  -D, --noCC        do not load default CC map on startup\n"
   "  -h                Print short help text\n"
   "  -H, --help        Print complete help text with parameter list\n"
+  "  -l <pgm>          Load a MIDI program-preset at startup\n"
+  "                    (may override previous settings given with -r, -U,..)\n"
   "  -M <filename>, --midnam <filename>\n"
   "                    export current controller mapping to .midnam file\n"
   "  -p <filename>, --program <filename>\n"
@@ -453,6 +455,9 @@ static void Usage (int configdoc) {
   "  -P, --noprogram   Do not read the default program file\n"
   "                    the built-in programs are cleared as well\n"
   "  -r, --randomize   Randomize initial preset (whacky but true)\n"
+  "  -U, --upper <drawbar settings>\n"
+  "                    Specify initial drawbar settings, for the upper\n"
+  "                    manual as 9 digits. e.g. 808000000\n"
   "  -V, --version     Print version information\n"
   "\n");
   if (configdoc) {
@@ -512,6 +517,8 @@ static void Usage (int configdoc) {
   printf (
   "%s jack.out.left=system:playback_7 jack.out.right=system:playback_8\n", name);
   printf (
+  "%s -U 868000000\n", name);
+  printf (
   "\n"
   "Report bugs at <http://github.com/pantherb/setBfree/issues>.\n"
   "Website and manual: <http://setbfree.org>\n"
@@ -522,7 +529,7 @@ static void PrintVersion () {
   printf ("%s %s\n\n", name, VERSION);
   printf(
 "Copyright (C) 2003-2004 Fredrik Kilander <fk@dsv.su.se>\n"
-"Copyright (C) 2008-2012 Robin Gareus <robin@gareus.org>\n"
+"Copyright (C) 2008-2014 Robin Gareus <robin@gareus.org>\n"
 "Copyright (C) 2010 Ken Restivo <ken@restivo.org>\n"
 "Copyright (C) 2012 Will Panther <pantherb@setbfree.org>\n"
 "\n"
@@ -588,6 +595,19 @@ const ConfigDoc *mainDoc () {
   return doc;
 }
 
+static void parse_preset(unsigned int *p, const char *c) {
+  unsigned int i;
+  for (i=0; i < strlen(c); ++i) {
+    if (c[i] < '0' || c[i] > '9') {
+      p[i] = 0;
+    } else {
+      p[i] = c[i] - '0';
+    }
+  }
+  for (;i < 9; ++i) {
+    p[i] = 0;
+  }
+}
 /*
  * Main program.
  */
@@ -599,6 +619,7 @@ int main (int argc, char * argv []) {
   int doDefaultCC = TRUE;
   char * configOverride [NOF_CFG_OVERS];
   int configOverEnd = 0;
+  int loadProgram = -1;
   unsigned int randomPreset[9];
   unsigned int defaultPreset[9] = {8,8,8, 0,0,0,0, 0,0};
   unsigned int * presetSelect = defaultPreset;
@@ -615,8 +636,8 @@ int main (int argc, char * argv []) {
     jack_port[i] = NULL;
   jack_ports = strdup("system:playback_");
 
-  const char *optstring = "c:CdDhHM:p:PrV";
-  struct option long_options[] = {
+  const char *optstring = "c:CdDhHl:M:p:PrU:V";
+  const struct option long_options[] = {
     { "help",       no_argument,       0, 'H' },
     { "program",    required_argument, 0, 'p' },
     { "config",     required_argument, 0, 'c' },
@@ -626,6 +647,7 @@ int main (int argc, char * argv []) {
     { "midnam",     required_argument, 0, 'M' },
     { "noprogram",  no_argument,       0, 'P' },
     { "randomize",  no_argument,       0, 'r' },
+    { "upper",      required_argument, 0, 'U' },
     { "version",    no_argument,       0, 'V' },
     { 0, 0, 0, 0 }
   };
@@ -652,6 +674,9 @@ int main (int argc, char * argv []) {
 	Usage(1);
 	return (0);
 	break;
+      case 'l':
+	loadProgram = atoi(optarg);
+	break;
       case 'M':
 	midnam = optarg;
 	break;
@@ -677,6 +702,9 @@ int main (int argc, char * argv []) {
 	break;
       case 'P':
 	doDefaultProgram = FALSE;
+	break;
+      case 'U':
+	parse_preset(defaultPreset, optarg);
 	break;
       case 'V':
 	PrintVersion();
@@ -837,6 +865,11 @@ int main (int argc, char * argv []) {
   setDrawBars (&inst, 1, presetSelect); /* 838 000 000 */
   setDrawBars (&inst, 2, presetSelect); /* 86 - */
 #endif
+
+  const int pgm_off = inst.progs->MIDIControllerPgmOffset;
+  if (loadProgram >= 0 && loadProgram >= pgm_off) {
+    installProgram(&inst, (loadProgram - pgm_off));
+  }
 
 #ifndef _WIN32
   signal (SIGHUP, catchsig);
