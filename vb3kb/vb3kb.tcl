@@ -166,7 +166,7 @@ proc BCtrlCreate {w channel basecc} {
     set colormap(1) { SaddleBrown SaddleBrown white white black white black black white }
     set colormap(2) { SaddleBrown IndianRed4 SaddleBrown gray80 gray30 gray80 gray30 gray30 gray80 }
 
-    set barname { "16" "5⅓" "8" "4" "2⅔" "2" "1⅗" "1⅓" "1" }
+    set barname { "16" "5\u2153" "8" "4" "2\u2154" "2" "1\u2157" "1\u2153" "1" }
     set manname { "Upper" "Lower" "Pedals" }
 
     $w create text [expr $barwid * (25.5 - $channel *10)] [expr 10 + $barhgt / 2 ] -font {courier 14} -fill gray -text [lindex $manname	 $channel]
