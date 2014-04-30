@@ -17,11 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
+#if defined _WIN32 && !defined WIN32
+#define WIN32 // jack2 sysdeps
+#endif
+
+#define _XOPEN_SOURCE 700
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/ioctl.h>
+#include <strings.h>
+#include <stdint.h>
 #include <fcntl.h>
 #include <ctype.h>
 #include <math.h>
@@ -32,10 +38,12 @@
 #include <getopt.h>
 #include <jack/jack.h>
 #include <jack/midiport.h>
-#include <sys/mman.h>
-
 #ifndef _WIN32
+#include <sys/ioctl.h>
+#include <sys/mman.h>
 #include <signal.h>
+#else
+#include <windows.h>
 #endif
 #include "global_inst.h"
 #include "vibrato.h"
@@ -799,10 +807,11 @@ int main (int argc, char * argv []) {
   /*
    * Having configured the initialization phase we can now actually do it.
    */
-
+#ifndef _WIN32
   if (mlockall (MCL_CURRENT | MCL_FUTURE)) {
     fprintf(stderr, "Warning: Can not lock memory.\n");
   }
+#endif
 
   initAll ();
 
@@ -883,7 +892,12 @@ int main (int argc, char * argv []) {
   fprintf(stderr,"All systems go. press CTRL-C, or send SIGINT or SIGHUP to terminate\n");
 
   while (j_client)
-    sleep (1); /* jack callback is doing this the work now */
+  /* jack callback is doing this the work now */
+#ifdef _WIN32
+    Sleep (1000);
+#else
+    sleep (1);
+#endif
 
   /* shutdown and cleanup */
 #ifdef HAVE_ASEQ
@@ -905,7 +919,9 @@ int main (int argc, char * argv []) {
     free(jack_port[i]);
 
   freeAll();
+#ifndef _WIN32
   munlockall();
+#endif
 
   fprintf(stderr, "bye\n");
   return 0;

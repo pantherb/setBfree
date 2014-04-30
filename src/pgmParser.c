@@ -348,7 +348,7 @@ int loadProgrammeFile (void *p, char * fileName) {
   }
 }
 
-#ifndef PRG_MAIN
+#ifdef LV2SYNTH
 int loadProgrammeString (void *p, char * pdef) {
   ParserState ps;
   ps.p = p;

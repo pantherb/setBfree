@@ -32,6 +32,10 @@
 #include "eqcomp.h"
 #include "whirl.h"
 
+#ifndef M_PI
+# define M_PI 3.14159265358979323846/* pi */
+#endif
+
 #define DISPLC_SIZE ((unsigned int) (1 << 11))
 #define DISPLC_MASK ((DISPLC_SIZE) - 1)
 

@@ -2,7 +2,7 @@ include ../common.mak
 
 LOADLIBES = -lm
 override CFLAGS+= -I../src -I../b_overdrive -I../b_reverb -I../b_whirl
-override CFLAGS+=`pkg-config --cflags lv2`
+override CFLAGS+=`pkg-config --cflags lv2` -DLV2SYNTH
 
 ifeq ($(IS_OSX), yes)
   FONTFILE?=/usr/X11/lib/X11/fonts/TTF/VeraBd.ttf
