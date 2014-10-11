@@ -1,6 +1,7 @@
 include ../common.mak
 
 LOADLIBES = -lm
+override CFLAGS+=`pkg-config --cflags lv2`
 
 targets=reverb.o
 
