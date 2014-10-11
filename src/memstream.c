@@ -293,7 +293,7 @@ verify (sizeof (int) <= sizeof (ssize_t));
 static int
 mem_write (void *c, const char *buf, int n)
 {
-  data *cookie = c;
+  data *cookie = (data*) c;
   char *cbuf = *cookie->buf;
 
   /* Be sure we don't overflow.  */
@@ -311,7 +311,7 @@ mem_write (void *c, const char *buf, int n)
       size_t newsize = cookie->allocated * 3 / 2;
       if (newsize < cookie->pos + n + 1)
         newsize = cookie->pos + n + 1;
-      cbuf = realloc (cbuf, newsize);
+      cbuf = (char*)realloc (cbuf, newsize);
       if (!cbuf)
         return EOF;
       *cookie->buf = cbuf;
@@ -338,7 +338,7 @@ mem_write (void *c, const char *buf, int n)
 static fpos_t
 mem_seek (void *c, fpos_t pos, int whence)
 {
-  data *cookie = c;
+  data *cookie = (data*)c;
   off_t offset = pos;
 
   if (whence == SEEK_CUR)
@@ -378,11 +378,11 @@ mem_seek (void *c, fpos_t pos, int whence)
 static int
 mem_close (void *c)
 {
-  data *cookie = c;
+  data *cookie = (data*)c;
   char *buf;
 
   /* Be nice and try to reduce excess memory.  */
-  buf = realloc (*cookie->buf, *cookie->len + 1);
+  buf = (char*)realloc (*cookie->buf, *cookie->len + 1);
   if (buf)
     *cookie->buf = buf;
   free (cookie);
@@ -400,9 +400,9 @@ open_memstream (char **buf, size_t *len)
       errno = EINVAL;
       return NULL;
     }
-  if (!(cookie = malloc (sizeof *cookie)))
+  if (!(cookie = (data*)malloc (sizeof *cookie)))
     return NULL;
-  if (!(*buf = malloc (INITIAL_ALLOC)))
+  if (!(*buf = (char*)malloc (INITIAL_ALLOC)))
     {
       free (cookie);
       errno = ENOMEM;
@@ -463,7 +463,7 @@ struct fmem {
 typedef struct fmem fmem_t;
 
 static int readfn(void *handler, char *buf, int size) {
-  fmem_t *mem = handler;
+  fmem_t *mem = (fmem_t*)handler;
   size_t available = mem->size - mem->pos;
 
   if (size > available) {
@@ -476,7 +476,7 @@ static int readfn(void *handler, char *buf, int size) {
 }
 
 static int writefn(void *handler, const char *buf, int size) {
-  fmem_t *mem = handler;
+  fmem_t *mem = (fmem_t*)handler;
   size_t available = mem->size - mem->pos;
 
   if (size > available) {
@@ -490,7 +490,7 @@ static int writefn(void *handler, const char *buf, int size) {
 
 static fpos_t seekfn(void *handler, fpos_t offset, int whence) {
   size_t pos;
-  fmem_t *mem = handler;
+  fmem_t *mem = (fmem_t*)handler;
 
   switch (whence) {
     case SEEK_SET: pos = offset; break;
@@ -520,7 +520,7 @@ FILE *fmemopen(void *buf, size_t size, const char *mode) {
   memset(mem, 0, sizeof(fmem_t));
 
   mem->size = size;
-  mem->buffer = buf;
+  mem->buffer = (char*)buf;
 
   // funopen's man page: https://developer.apple.com/library/mac/#documentation/Darwin/Reference/ManPages/man3/funopen.3.html
   return funopen(mem, readfn, writefn, seekfn, closefn);
