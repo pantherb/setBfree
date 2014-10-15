@@ -907,7 +907,7 @@ static void setupOpenGL() {
   glEnable(GL_CULL_FACE);
   glEnable(GL_DITHER);
   glEnable(GL_MULTISAMPLE);
-  glEnable(GL_NORMALIZE);
+  glEnable(GL_RESCALE_NORMAL);
 
   glEnable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA_SATURATE);
