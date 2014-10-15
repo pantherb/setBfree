@@ -159,8 +159,6 @@ void
 puglDisplay(PuglView* view)
 {
 	wglMakeCurrent(view->impl->hdc, view->impl->hglrc);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glLoadIdentity();
 
 	if (view->displayFunc) {
 		view->displayFunc(view);

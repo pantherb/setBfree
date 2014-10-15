@@ -1464,6 +1464,8 @@ onDisplay(PuglView* view)
     ftglSetFontFaceSize(ui->font_small, 20, 72);
     ftglSetFontCharMap(ui->font_small, ft_encoding_unicode);
   }
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  onReshape(view, ui->width, ui->height); // XXX
 
   if (ui->popupmsg) {
     if (ui->queuepopup) {
