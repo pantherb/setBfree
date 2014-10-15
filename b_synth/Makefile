@@ -47,15 +47,16 @@ ifeq ($(LV2AVAIL), yes)
     ifeq ($(IS_OSX), yes)
       UIDEPS+=../pugl/pugl_osx.m
       UILIBS=../pugl/pugl_osx.m -framework Cocoa -framework OpenGL
+      UILIBS+=`pkg-config --variable=libdir ftgl`/libftgl.a `pkg-config --variable=libdir ftgl`/libfreetype.a
+      UILIBS+=-lm -lz -lbz2 --stdlib=libstdc++ -mmacosx-version-min=10.5
       UI_TYPE=CocoaUI
     else
       UIDEPS+=../pugl/pugl_x11.c
       override CFLAGS+=`pkg-config --cflags glu`
-      UILIBS=../pugl/pugl_x11.c -lX11 `pkg-config --libs glu`
+      UILIBS=../pugl/pugl_x11.c -lX11 `pkg-config --libs glu ftgl`
       UI_TYPE=X11UI
     endif
-    override CFLAGS+=`pkg-config --cflags ftgl` -DHAVE_FTGL
-    UILIBS+=`pkg-config --libs ftgl`
+    override CFLAGS+=`pkg-config --cflags freetype2 ftgl` -DHAVE_FTGL
     override CFLAGS+=-DFONTFILE=\"$(FONTFILE)\"
     targets+=$(LV2GUI)$(LIB_EXT)
   else

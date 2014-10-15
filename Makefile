@@ -3,6 +3,10 @@ export VERSION
 
 include common.mak
 
+ifneq ($(FONTFILE),)
+export FONTFILE
+endif
+
 SUBDIRS = b_overdrive b_whirl b_reverb b_conv src b_synth
 
 ifeq ($(TCLTKPREFIX),)
