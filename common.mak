@@ -35,7 +35,7 @@ LV2UIREQ=
 ifeq ($(shell pkg-config --atleast-version=1.4.6 lv2 || echo no), no)
   override CFLAGS+=-DOLD_SUIL
 else
-  LV2UIREQ=lv2:requiredFeature ui:idleInterface;\\n\\tlv2:extensionData ui:idleInterface;
+  LV2UIREQ=lv2:requiredFeature ui:idleInterface; lv2:extensionData ui:idleInterface;
 endif
 
 IS_OSX=
