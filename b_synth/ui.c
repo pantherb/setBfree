@@ -538,7 +538,7 @@ static void processMotion(PuglView* view, int elem, float dx, float dy) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   if (elem < 0 || elem >= TOTAL_OBJ) return;
 
-  const float dist = ui->ctrls[elem].type == OBJ_LEVER ? (-5 * dx) : (dx - dy);
+  float dist = ui->ctrls[elem].type == OBJ_LEVER ? (-5 * dx) : (dx - dy);
   const unsigned char oldval = vmap_val_to_midi(view, elem);
 
   switch (ui->ctrls[elem].type) {
@@ -556,7 +556,7 @@ static void processMotion(PuglView* view, int elem, float dx, float dy) {
       break;
     case OBJ_LEVER:
     case OBJ_DRAWBAR:
-      ui->ctrls[elem].cur = ui->dndval + dist * (ui->ctrls[elem].max - ui->ctrls[elem].min);
+      ui->ctrls[elem].cur = ui->dndval + dist * 2.5 * (ui->ctrls[elem].max - ui->ctrls[elem].min);
       if (ui->ctrls[elem].cur > ui->ctrls[elem].max) ui->ctrls[elem].cur = ui->ctrls[elem].max;
       if (ui->ctrls[elem].cur < ui->ctrls[elem].min) ui->ctrls[elem].cur = ui->ctrls[elem].min;
       break;
@@ -2109,6 +2109,7 @@ onScroll(PuglView* view, int x, int y, float dx, float dy)
   if (ui->popupmsg) return;
   if (ui->displaymode) return;
   if (ui->textentry_active) return;
+  if (fabs(dy) < .1) return;
   project_mouse(view, x, y, &fx, &fy);
   int i;
   for (i = 0; i < TOTAL_OBJ ; ++i) {
