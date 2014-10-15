@@ -1,18 +1,48 @@
 #!/bin/bash
 
+: ${SBFARCH=-arch x86_64 -arch i386}
+: ${OSXCOMPAT=-mmacosx-version-min=10.5 -DMAC_OS_X_VERSION_MAX_ALLOWED=1090}
+
 eval `grep "VERSION=" Makefile`
+
+set -e
 
 TARGET=/tmp/bpkg
 PRODUCTDIR=$TARGET/setBfree.app
 
-make clean
+make clean FONTFILE="VeraBd.ttf"
 make \
 	ENABLE_CONVOLUTION=yes \
-	OPTIMIZATIONS="-O3 -arch ppc -arch i386 -arch x86_64" \
+	OPTIMIZATIONS="-msse -msse2 -mfpmath=sse -ffast-math -fomit-frame-pointer -O3 -fno-finite-math-only ${OSXCOMPAT} ${SBFARCH}" \
 	TCLFILE="../Resources/vb3kb.tcl" \
 	IRPATH="../Resources/ir" \
+	FONTFILE="VeraBd.ttf" \
+	TCLPREFIX="" \
 	|| exit
 
+# zip-up LV2
+LV2TMPDIR=/tmp
+
+mkdir -p ${LV2TMPDIR}/b_synth.lv2/
+cp -v b_synth/*.ttl ${LV2TMPDIR}/b_synth.lv2/
+cp -v b_synth/*.dylib ${LV2TMPDIR}/b_synth.lv2/
+cp -v b_synth/VeraBd.ttf ${LV2TMPDIR}/b_synth.lv2/
+otool -L -arch all ${LV2TMPDIR}/b_synth.lv2/*dylib
+cd ${LV2TMPDIR}
+rm -f  setbfree_lv2_osx-${VERSION}.zip
+zip -r setbfree_lv2_osx-${VERSION}.zip b_synth.lv2/
+cd -
+
+# local deploy for testing
+if test -d ~/.lv2/b_synth.lv2/; then
+rsync -Pa ${LV2TMPDIR}/b_synth.lv2/ ~/.lv2/b_synth.lv2/
+fi
+
+if test ! -f vb3kb/vb3kb; then
+	exit
+fi
+
+echo "!!! Warning: old OSX package with tcl/tk"
 
 mkdir -p $PRODUCTDIR/Contents
 mkdir -p $PRODUCTDIR/Contents/MacOS
