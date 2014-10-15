@@ -36,6 +36,8 @@
                      defer:(BOOL)flag;
 - (void) setPuglview:(PuglView*)view;
 - (BOOL) windowShouldClose:(id)sender;
+- (void) becomeKeyWindow:(id)sender;
+- (BOOL) canBecomeKeyWindow:(id)sender;
 @end
 
 @implementation PuglWindow
@@ -54,7 +56,7 @@
 	[result setAcceptsMouseMovedEvents:YES];
 	[result setLevel: CGShieldingWindowLevel() + 1];
 
-	return result;
+	return (PuglWindow *)result;
 }
 
 - (void)setPuglview:(PuglView*)view
@@ -70,6 +72,16 @@
 	return YES;
 }
 
+- (void)becomeKeyWindow:(id)sender
+{
+
+}
+
+- (BOOL) canBecomeKeyWindow:(id)sender{
+	// forward key-events
+	return NO;
+}
+
 @end
 
 void
@@ -82,8 +94,6 @@ puglDisplay(PuglView* view)
 
 @interface PuglOpenGLView : NSOpenGLView
 {
-	int colorBits;
-	int depthBits;
 @public
 	PuglView* puglview;
 
@@ -91,8 +101,7 @@ puglDisplay(PuglView* view)
 }
 
 - (id) initWithFrame:(NSRect)frame
-           colorBits:(int)numColorBits
-           depthBits:(int)numDepthBits;
+;
 - (void) reshape;
 - (void) drawRect:(NSRect)rect;
 - (void) mouseMoved:(NSEvent*)event;
@@ -110,22 +119,16 @@ puglDisplay(PuglView* view)
 @implementation PuglOpenGLView
 
 - (id) initWithFrame:(NSRect)frame
-           colorBits:(int)numColorBits
-           depthBits:(int)numDepthBits
 {
-	colorBits = numColorBits;
-	depthBits = numDepthBits;
-
 	NSOpenGLPixelFormatAttribute pixelAttribs[16] = {
 		NSOpenGLPFADoubleBuffer,
 		NSOpenGLPFAAccelerated,
 		NSOpenGLPFAColorSize,
-		colorBits,
+		8,
 		NSOpenGLPFADepthSize,
-		depthBits,
+		8,
 		0
 	};
-
 	NSOpenGLPixelFormat* pixelFormat = [[NSOpenGLPixelFormat alloc]
 		              initWithAttributes:pixelAttribs];
 
@@ -218,7 +221,7 @@ getModifiers(PuglView* view, NSEvent* ev)
 - (void) mouseMoved:(NSEvent*)event
 {
 	if (puglview->motionFunc) {
-		NSPoint loc = [event locationInWindow];
+		NSPoint loc = [self convertPoint:[event locationInWindow] fromView:nil];
 		puglview->mods = getModifiers(puglview, event);
 		puglview->motionFunc(puglview, loc.x, puglview->height - loc.y);
 	}
@@ -227,7 +230,7 @@ getModifiers(PuglView* view, NSEvent* ev)
 - (void) mouseDragged:(NSEvent*)event
 {
 	if (puglview->motionFunc) {
-		NSPoint loc = [event locationInWindow];
+		NSPoint loc = [self convertPoint:[event locationInWindow] fromView:nil];
 		puglview->mods = getModifiers(puglview, event);
 		puglview->motionFunc(puglview, loc.x, puglview->height - loc.y);
 	}
@@ -236,7 +239,7 @@ getModifiers(PuglView* view, NSEvent* ev)
 - (void) mouseDown:(NSEvent*)event
 {
 	if (puglview->mouseFunc) {
-		NSPoint loc = [event locationInWindow];
+		NSPoint loc = [self convertPoint:[event locationInWindow] fromView:nil];
 		puglview->mods = getModifiers(puglview, event);
 		puglview->mouseFunc(puglview, 1, true, loc.x, puglview->height - loc.y);
 	}
@@ -245,7 +248,7 @@ getModifiers(PuglView* view, NSEvent* ev)
 - (void) mouseUp:(NSEvent*)event
 {
 	if (puglview->mouseFunc) {
-		NSPoint loc = [event locationInWindow];
+		NSPoint loc = [self convertPoint:[event locationInWindow] fromView:nil];
 		puglview->mods = getModifiers(puglview, event);
 		puglview->mouseFunc(puglview, 1, false, loc.x, puglview->height - loc.y);
 	}
@@ -255,7 +258,7 @@ getModifiers(PuglView* view, NSEvent* ev)
 - (void) rightMouseDown:(NSEvent*)event
 {
 	if (puglview->mouseFunc) {
-		NSPoint loc = [event locationInWindow];
+		NSPoint loc = [self convertPoint:[event locationInWindow] fromView:nil];
 		puglview->mods = getModifiers(puglview, event);
 		puglview->mouseFunc(puglview, 3, true, loc.x, puglview->height - loc.y);
 	}
@@ -264,7 +267,7 @@ getModifiers(PuglView* view, NSEvent* ev)
 - (void) rightMouseUp:(NSEvent*)event
 {
 	if (puglview->mouseFunc) {
-		NSPoint loc = [event locationInWindow];
+		NSPoint loc = [self convertPoint:[event locationInWindow] fromView:nil];
 		puglview->mods = getModifiers(puglview, event);
 		puglview->mouseFunc(puglview, 3, false, loc.x, puglview->height - loc.y);
 	}
@@ -273,7 +276,7 @@ getModifiers(PuglView* view, NSEvent* ev)
 - (void) scrollWheel:(NSEvent*)event
 {
 	if (puglview->scrollFunc) {
-		NSPoint loc = [event locationInWindow];
+		NSPoint loc = [self convertPoint:[event locationInWindow] fromView:nil];
 		puglview->mods = getModifiers(puglview, event);
 		puglview->scrollFunc(puglview, loc.x, puglview->height - loc.y, [event deltaX], [event deltaY]);
 	}
@@ -342,26 +345,31 @@ puglCreate(PuglNativeWindow parent,
 	[NSAutoreleasePool new];
 	[NSApplication sharedApplication];
 
-	NSString* titleString = [[NSString alloc]
-		                        initWithBytes:title
-		                               length:strlen(title)
-		                             encoding:NSUTF8StringEncoding];
-
-	id window = [[PuglWindow new]retain];
-
-	[window setPuglview:view];
-	[window setTitle:titleString];
-
-	impl->glview       = [PuglOpenGLView new];
-	impl->window     = window;
+	impl->glview = [PuglOpenGLView new];
 	impl->glview->puglview = view;
 
-	[window setContentView:impl->glview];
-	[NSApp activateIgnoringOtherApps:YES];
-	[window makeFirstResponder:impl->glview];
-
-	[window makeKeyAndOrderFront:window];
-
+	if (parent) {
+		NSView* pview = (NSView*) parent;
+		[impl->glview setWantsLayer:YES];
+		[pview addSubview:impl->glview];
+		[impl->glview setHidden:NO];
+	} else {
+		NSString* titleString = [[NSString alloc]
+			initWithBytes:title
+			length:strlen(title)
+			encoding:NSUTF8StringEncoding];
+		id window = [[PuglWindow new]retain];
+		[window setPuglview:view];
+		[window setTitle:titleString];
+		impl->window = window;
+		if (resizable) {
+			[impl->glview setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
+		}
+		[window setContentView:impl->glview];
+		[NSApp activateIgnoringOtherApps:YES];
+		[window makeFirstResponder:impl->glview];
+		[window makeKeyAndOrderFront:window];
+	}
 	return view;
 }
 
@@ -369,9 +377,14 @@ void
 puglDestroy(PuglView* view)
 {
 	view->impl->glview->puglview = NULL;
-	[view->impl->window close];
+	[view->impl->glview removeFromSuperview];
+	if (view->impl->window) {
+		[view->impl->window close];
+	}
 	[view->impl->glview release];
-	[view->impl->window release];
+	if (view->impl->window) {
+		[view->impl->window release];
+	}
 	free(view->impl);
 	free(view);
 }
@@ -388,6 +401,7 @@ void
 puglPostRedisplay(PuglView* view)
 {
 	view->redisplay = true;
+	[view->impl->glview setNeedsDisplay: YES];
 }
 
 PuglNativeWindow
