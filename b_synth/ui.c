@@ -37,6 +37,9 @@
 #include "pugl/pugl.h"
 
 #ifdef __APPLE__
+#include <mach-o/dyld.h>
+#include <libgen.h>
+#include <string.h>
 #include "OpenGL/glu.h"
 #else
 #include <GL/glu.h>
@@ -1448,6 +1451,27 @@ onDisplay(PuglView* view)
   const GLfloat mat_w[] = {3.5, 3.5, 3.5, 1.0};
 
   if (!ui->initialized) {
+
+#ifdef __APPLE__
+    char fontfilepath[1024] = FONTFILE;
+    uint32_t i;
+    uint32_t ic = _dyld_image_count();
+    for (i = 0; i < ic; ++i) {
+      if (strstr(_dyld_get_image_name(i), "/b_synthUI.dylib")) {
+	char *tmp = strdup(_dyld_get_image_name(i));
+	strcpy(fontfilepath, dirname(tmp));
+	free(tmp);
+	strcat(fontfilepath, (const char*)"/");
+	tmp = strdup(FONTFILE);
+	strcat(fontfilepath, basename(tmp));
+	free(tmp);
+	break;
+      }
+    }
+#else
+    const char *fontfilepath = FONTFILE;
+#endif
+
     /* initialization needs to happen from event context
      * after pugl set glXMakeCurrent() - this /should/ otherwise
      * be done during initialization()
@@ -1457,10 +1481,10 @@ onDisplay(PuglView* view)
     initMesh(ui->view);
     setupLight();
     initTextures(ui->view);
-    ui->font_big = ftglCreateBufferFont(FONTFILE);
+    ui->font_big = ftglCreateBufferFont(fontfilepath);
     ftglSetFontFaceSize(ui->font_big, 40, 72);
     ftglSetFontCharMap(ui->font_big, ft_encoding_unicode);
-    ui->font_small = ftglCreateBufferFont(FONTFILE);
+    ui->font_small = ftglCreateBufferFont(fontfilepath);
     ftglSetFontFaceSize(ui->font_small, 20, 72);
     ftglSetFontCharMap(ui->font_small, ft_encoding_unicode);
   }
