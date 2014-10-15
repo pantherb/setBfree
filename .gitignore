@@ -8,7 +8,9 @@ cscope.out
 *.blend2
 
 /b_*/*.so
-/b_*/*.dylib
+*.dylib
+*.plist
+DWARF
 
 # binaries
 /src/setBfree
