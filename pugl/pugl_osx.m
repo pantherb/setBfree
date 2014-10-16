@@ -100,8 +100,7 @@ puglDisplay(PuglView* view)
 	NSTrackingArea* trackingArea;
 }
 
-- (id) initWithFrame:(NSRect)frame
-;
+- (id) initWithFrame:(NSRect)frame;
 - (void) reshape;
 - (void) drawRect:(NSRect)rect;
 - (void) mouseMoved:(NSEvent*)event;
@@ -123,10 +122,8 @@ puglDisplay(PuglView* view)
 	NSOpenGLPixelFormatAttribute pixelAttribs[16] = {
 		NSOpenGLPFADoubleBuffer,
 		NSOpenGLPFAAccelerated,
-		NSOpenGLPFAColorSize,
-		8,
-		NSOpenGLPFADepthSize,
-		8,
+		NSOpenGLPFAColorSize, 32,
+		NSOpenGLPFADepthSize, 32,
 		0
 	};
 	NSOpenGLPixelFormat* pixelFormat = [[NSOpenGLPixelFormat alloc]
@@ -135,14 +132,14 @@ puglDisplay(PuglView* view)
 	if (pixelFormat) {
 		self = [super initWithFrame:frame pixelFormat:pixelFormat];
 		[pixelFormat release];
-		if (self) {
-			[[self openGLContext] makeCurrentContext];
-			[self reshape];
-		}
 	} else {
-		self = nil;
+		self = [super initWithFrame:frame];
 	}
 
+	if (self) {
+		[[self openGLContext] makeCurrentContext];
+		[self reshape];
+	}
 	return self;
 }
 
@@ -350,7 +347,6 @@ puglCreate(PuglNativeWindow parent,
 
 	if (parent) {
 		NSView* pview = (NSView*) parent;
-		[impl->glview setWantsLayer:YES];
 		[pview addSubview:impl->glview];
 		[impl->glview setHidden:NO];
 	} else {
