@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <strings.h>
 #include <getopt.h>
 #include <jack/jack.h>
 #include "overdrive.h"
