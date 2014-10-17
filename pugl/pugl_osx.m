@@ -41,7 +41,6 @@ __attribute__ ((visibility ("hidden")))
 - (BOOL) canBecomeKeyWindow:(id)sender;
 @end
 
-__attribute__ ((visibility ("hidden")))
 @implementation PuglWindow
 
 - (id)initWithContentRect:(NSRect)contentRect
