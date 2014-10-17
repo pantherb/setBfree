@@ -24,6 +24,7 @@
 
 #include "pugl_internal.h"
 
+__attribute__ ((visibility ("hidden")))
 @interface PuglWindow : NSWindow
 {
 @public
@@ -40,6 +41,7 @@
 - (BOOL) canBecomeKeyWindow:(id)sender;
 @end
 
+__attribute__ ((visibility ("hidden")))
 @implementation PuglWindow
 
 - (id)initWithContentRect:(NSRect)contentRect
@@ -84,7 +86,7 @@
 
 @end
 
-void
+static void
 puglDisplay(PuglView* view)
 {
 	if (view->displayFunc) {
@@ -92,6 +94,7 @@ puglDisplay(PuglView* view)
 	}
 }
 
+__attribute__ ((visibility ("hidden")))
 @interface PuglOpenGLView : NSOpenGLView
 {
 @public
@@ -352,8 +355,8 @@ puglCreate(PuglNativeWindow parent,
 	} else {
 		NSString* titleString = [[NSString alloc]
 			initWithBytes:title
-			length:strlen(title)
-			encoding:NSUTF8StringEncoding];
+			       length:strlen(title)
+			     encoding:NSUTF8StringEncoding];
 		id window = [[PuglWindow new]retain];
 		[window setPuglview:view];
 		[window setTitle:titleString];
