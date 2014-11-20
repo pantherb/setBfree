@@ -34,6 +34,7 @@ struct PuglViewImpl {
 	PuglMotionFunc   motionFunc;
 	PuglMouseFunc    mouseFunc;
 	PuglReshapeFunc  reshapeFunc;
+	PuglResizeFunc   resizeFunc;
 	PuglScrollFunc   scrollFunc;
 	PuglSpecialFunc  specialFunc;
 
@@ -41,10 +42,16 @@ struct PuglViewImpl {
 
 	int      width;
 	int      height;
+	int      min_width;
+	int      min_height;
 	int      mods;
 	bool     mouse_in_view;
 	bool     ignoreKeyRepeat;
 	bool     redisplay;
+	bool     user_resizable;
+	bool     set_window_hints;
+	bool     ontop;
+	bool     resize;
 	uint32_t event_timestamp_ms;
 };
 
@@ -72,13 +79,14 @@ puglGetModifiers(PuglView* view)
 	return view->mods;
 }
 
-void
+static void
 puglDefaultReshape(PuglView* view, int width, int height)
 {
 	glViewport(0, 0, width, height);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0, width, height, 0, 0, 1);
+	glOrtho (-1.0f, 1.0f, -1.0f, 1.0f, -1.0f, 1.0f);
+	glClear (GL_COLOR_BUFFER_BIT);
 
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
@@ -124,6 +132,12 @@ void
 puglSetReshapeFunc(PuglView* view, PuglReshapeFunc reshapeFunc)
 {
 	view->reshapeFunc = reshapeFunc;
+}
+
+void
+puglSetResizeFunc(PuglView* view, PuglResizeFunc resizeFunc)
+{
+	view->resizeFunc = resizeFunc;
 }
 
 void

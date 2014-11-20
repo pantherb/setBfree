@@ -37,21 +37,10 @@
 #    include "GL/gl.h"
 #endif
 
-#ifdef PUGL_SHARED
-#    ifdef _WIN32
-#        define PUGL_LIB_IMPORT __declspec(dllimport)
-#        define PUGL_LIB_EXPORT __declspec(dllexport)
-#    else
-#        define PUGL_LIB_IMPORT __attribute__((visibility("default")))
-#        define PUGL_LIB_EXPORT __attribute__((visibility("default")))
-#    endif
-#    ifdef PUGL_INTERNAL
-#        define PUGL_API PUGL_LIB_EXPORT
-#    else
-#        define PUGL_API PUGL_LIB_IMPORT
-#    endif
+#ifdef _WIN32
+#define PUGL_API
 #else
-#    define PUGL_API
+#define PUGL_API __attribute__((visibility("hidden")))
 #endif
 
 #ifdef __cplusplus
@@ -188,6 +177,16 @@ typedef void (*PuglMouseFunc)(
 typedef void (*PuglReshapeFunc)(PuglView* view, int width, int height);
 
 /**
+   Called outside glx-context when the plugin schedules a resize via puglPostResize.
+
+   @param view The view being resized.
+   @param width view width to resize to (variable is initialized to current size)
+   @param height view height to resize to (variable is initialized to current size)
+   @param set_hints if non-zero set window-hints
+ */
+typedef void (*PuglResizeFunc)(PuglView* view, int *width, int *height, int *set_hints);
+
+/**
    A function called on scrolling (e.g. mouse wheel or track pad).
 
    The distances used here are in "lines", a single tick of a clicking mouse
@@ -225,9 +224,13 @@ typedef void (*PuglSpecialFunc)(PuglView* view, bool press, PuglKey key);
 PUGL_API PuglView*
 puglCreate(PuglNativeWindow parent,
            const char*      title,
+           int              min_width,
+           int              min_height,
            int              width,
            int              height,
-           bool             resizable);
+           bool             resizable,
+           bool             ontop,
+           unsigned long    transientId);
 
 /**
    Set the handle to be passed to all callbacks.
@@ -341,6 +344,30 @@ puglPostRedisplay(PuglView* view);
 */
 PUGL_API void
 puglDestroy(PuglView* view);
+
+/**
+   Set callback function to change window size.
+*/
+PUGL_API void
+puglSetResizeFunc(PuglView* view, PuglResizeFunc resizeFunc);
+
+/**
+   Request a resize on the next call to puglProcessEvents().
+*/
+PUGL_API void
+puglPostResize(PuglView* view);
+
+/**
+   Show Window (external ui)
+ */
+PUGL_API void
+puglHideWindow(PuglView* view);
+
+/**
+   Hide Window (external ui)
+ */
+PUGL_API void
+puglShowWindow(PuglView* view);
 
 /**
    @}

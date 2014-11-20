@@ -24,8 +24,14 @@
 
 #include "pugl_internal.h"
 
+// screw apple, their lack of -fvisibility=internal and namespaces
+#define CONCAT(A,B) A ## B
+#define XCONCAT(A,B) CONCAT(A,B)
+#define RobTKPuglWindow XCONCAT(RobTKPuglWindow, UINQHACK)
+#define RobTKPuglOpenGLView XCONCAT(RobTKPuglOpenGLView, UINQHACK)
+
 __attribute__ ((visibility ("hidden")))
-@interface PuglWindow : NSWindow
+@interface RobTKPuglWindow : NSWindow
 {
 @public
 	PuglView* puglview;
@@ -41,7 +47,7 @@ __attribute__ ((visibility ("hidden")))
 - (BOOL) canBecomeKeyWindow:(id)sender;
 @end
 
-@implementation PuglWindow
+@implementation RobTKPuglWindow
 
 - (id)initWithContentRect:(NSRect)contentRect
                 styleMask:(unsigned int)aStyle
@@ -55,9 +61,7 @@ __attribute__ ((visibility ("hidden")))
 	                                      backing:NSBackingStoreBuffered defer:NO];
 
 	[result setAcceptsMouseMovedEvents:YES];
-	[result setLevel: CGShieldingWindowLevel() + 1];
-
-	return (PuglWindow *)result;
+	return (RobTKPuglWindow *)result;
 }
 
 - (void)setPuglview:(PuglView*)view
@@ -94,7 +98,7 @@ puglDisplay(PuglView* view)
 }
 
 __attribute__ ((visibility ("hidden")))
-@interface PuglOpenGLView : NSOpenGLView
+@interface RobTKPuglOpenGLView : NSOpenGLView
 {
 @public
 	PuglView* puglview;
@@ -118,7 +122,7 @@ __attribute__ ((visibility ("hidden")))
 
 @end
 
-@implementation PuglOpenGLView
+@implementation RobTKPuglOpenGLView
 
 - (id) initWithFrame:(NSRect)frame
 {
@@ -329,16 +333,20 @@ getModifiers(PuglView* view, NSEvent* ev)
 @end
 
 struct PuglInternalsImpl {
-	PuglOpenGLView* glview;
-	id              window;
+	RobTKPuglOpenGLView* glview;
+	id                   window;
 };
 
 PuglView*
 puglCreate(PuglNativeWindow parent,
            const char*      title,
+           int              min_width,
+           int              min_height,
            int              width,
            int              height,
-           bool             resizable)
+           bool             resizable,
+           bool             ontop,
+           unsigned long    transientId)
 {
 	PuglView*      view = (PuglView*)calloc(1, sizeof(PuglView));
 	PuglInternals* impl = (PuglInternals*)calloc(1, sizeof(PuglInternals));
@@ -349,11 +357,13 @@ puglCreate(PuglNativeWindow parent,
 	view->impl   = impl;
 	view->width  = width;
 	view->height = height;
+	view->ontop  = ontop;
+	view->user_resizable = resizable; // unused
 
 	[NSAutoreleasePool new];
 	[NSApplication sharedApplication];
 
-	impl->glview = [PuglOpenGLView new];
+	impl->glview = [RobTKPuglOpenGLView new];
 	impl->glview->puglview = view;
 
 	if (parent) {
@@ -365,13 +375,19 @@ puglCreate(PuglNativeWindow parent,
 			initWithBytes:title
 			       length:strlen(title)
 			     encoding:NSUTF8StringEncoding];
-		id window = [[PuglWindow new]retain];
+		id window = [[RobTKPuglWindow new]retain];
 		[window setPuglview:view];
 		[window setTitle:titleString];
+		[window setContentMinSize:NSMakeSize(min_width, min_height)];
+		if (ontop) {
+			[window setLevel: NSStatusWindowLevel];
+		}
 		impl->window = window;
+#if 0
 		if (resizable) {
 			[impl->glview setAutoresizingMask:NSViewWidthSizable|NSViewHeightSizable];
 		}
+#endif
 		[window setContentView:impl->glview];
 		[NSApp activateIgnoringOtherApps:YES];
 		[window makeFirstResponder:impl->glview];
@@ -399,15 +415,45 @@ puglDestroy(PuglView* view)
 PuglStatus
 puglProcessEvents(PuglView* view)
 {
-	[view->impl->glview setNeedsDisplay: YES];
+	//[view->impl->glview setNeedsDisplay: YES];
 
 	return PUGL_SUCCESS;
+}
+
+static void
+puglResize(PuglView* view)
+{
+	int set_hints; // ignored
+	view->resize = false;
+	if (!view->resizeFunc) { return; }
+	view->resizeFunc(view, &view->width, &view->height, &set_hints);
+	[view->impl->window setContentSize:NSMakeSize(view->width, view->height) ];
+	[view->impl->glview reshape];
+}
+
+void
+puglPostResize(PuglView* view)
+{
+	view->resize = true;
+	puglResize(view);
+}
+
+void
+puglShowWindow(PuglView* view)
+{
+	[view->impl->window setIsVisible:YES];
+}
+
+void
+puglHideWindow(PuglView* view)
+{
+	[view->impl->window setIsVisible:NO];
 }
 
 void
 puglPostRedisplay(PuglView* view)
 {
-	view->redisplay = true;
+	//view->redisplay = true; // unused
 	[view->impl->glview setNeedsDisplay: YES];
 }
 

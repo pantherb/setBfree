@@ -56,7 +56,7 @@ ifeq ($(LV2AVAIL), yes)
       UILIBS=../pugl/pugl_x11.c -lX11 `pkg-config --libs glu ftgl`
       UI_TYPE=X11UI
     endif
-    override CFLAGS+=`pkg-config --cflags freetype2 ftgl` -DHAVE_FTGL
+    override CFLAGS+=`pkg-config --cflags freetype2 ftgl` -DHAVE_FTGL -DUINQHACK=Sbf
     override CFLAGS+=-DFONTFILE=\"$(FONTFILE)\"
     targets+=$(LV2GUI)$(LIB_EXT)
   else

@@ -2568,7 +2568,12 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   ui->vinx = (GLuint *)malloc(OBJECTS_COUNT * sizeof(GLuint));
 
   /* Set up GL UI */
-  ui->view = puglCreate(parent, "setBfree", ui->width, ui->height, true);
+  ui->view = puglCreate(
+      parent,
+      "setBfree",
+      ui->width, ui->height,
+      ui->width, ui->height,
+      true, true, 0);
   puglSetHandle(ui->view, ui);
   puglSetDisplayFunc(ui->view, onDisplay);
   puglSetReshapeFunc(ui->view, onReshape);

@@ -1,6 +1,7 @@
 /*
   Copyright 2012 David Robillard <http://drobilla.net>
   Copyright 2011-2012 Ben Loftis, Harrison Consoles
+  Copyright 2013 Robin Gareus <robin@gareus.org>
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose with or without fee is hereby granted, provided that the above
@@ -35,7 +36,11 @@
  * where no keyboard events are passed through even if the
  * app has mouse-focus and all other events are working.
  */
-#define XKEYFOCUSGRAB
+//#define XKEYFOCUSGRAB
+
+/* show messages during initalization
+ */
+//#define VERBOSE_PUGL
 
 struct PuglInternalsImpl {
 	Display*   display;
@@ -76,9 +81,13 @@ static int attrListDbl[] = {
 PuglView*
 puglCreate(PuglNativeWindow parent,
            const char*      title,
+           int              min_width,
+           int              min_height,
            int              width,
            int              height,
-           bool             resizable)
+           bool             resizable,
+           bool             ontop,
+           unsigned long    transientId)
 {
 	PuglView*      view = (PuglView*)calloc(1, sizeof(PuglView));
 	PuglInternals* impl = (PuglInternals*)calloc(1, sizeof(PuglInternals));
@@ -91,6 +100,9 @@ puglCreate(PuglNativeWindow parent,
 	view->impl   = impl;
 	view->width  = width;
 	view->height = height;
+	view->ontop  = ontop;
+	view->set_window_hints = true;
+	view->user_resizable = resizable;
 
 	impl->display = XOpenDisplay(0);
 	impl->screen  = DefaultScreen(impl->display);
@@ -143,14 +155,22 @@ puglCreate(PuglNativeWindow parent,
 
 	XSizeHints sizeHints;
 	memset(&sizeHints, 0, sizeof(sizeHints));
-	if (!resizable) {
+	if (view->set_window_hints) {
 		sizeHints.flags      = PMinSize|PMaxSize;
-		sizeHints.min_width  = width;
-		sizeHints.min_height = height;
-		sizeHints.max_width  = width;
-		sizeHints.max_height = height;
+		sizeHints.min_width  = min_width;
+		sizeHints.min_height = min_height;
+		sizeHints.max_width  = resizable ? 2048 : width;
+		sizeHints.max_height = resizable ? 2048 : height;
+		if (min_width != width) {
+			sizeHints.flags |= PAspect;
+			sizeHints.min_aspect.x=min_width;
+			sizeHints.min_aspect.y=min_height;
+			sizeHints.max_aspect.x=min_width;
+			sizeHints.max_aspect.y=min_height;
+		}
 		XSetNormalHints(impl->display, impl->win, &sizeHints);
 	}
+	XResizeWindow(view->impl->display, view->impl->win, width, height);
 
 	if (title) {
 		XStoreName(impl->display, impl->win, title);
@@ -161,7 +181,21 @@ puglCreate(PuglNativeWindow parent,
 		XSetWMProtocols(impl->display, impl->win, &wmDelete, 1);
 	}
 
-	XMapRaised(impl->display, impl->win);
+	if (!parent && view->ontop) { /* TODO stay on top  */
+		Atom type = XInternAtom(impl->display, "_NET_WM_STATE_ABOVE", False);
+		XChangeProperty(impl->display, impl->win,
+				XInternAtom(impl->display, "_NET_WM_STATE", False),
+				XInternAtom(impl->display, "ATOM", False),
+				32, PropModeReplace, (unsigned char *)&type, 1);
+	}
+
+	if (transientId > 0) {
+		XSetTransientForHint(impl->display, impl->win, (Window)(transientId));
+	}
+
+	if (parent) {
+		XMapRaised(impl->display, impl->win);
+	}
 
 	if (glXIsDirect(impl->display, impl->ctx)) {
 #ifdef VERBOSE_PUGL
@@ -189,6 +223,17 @@ puglDestroy(PuglView* view)
 	XCloseDisplay(view->impl->display);
 	free(view->impl);
 	free(view);
+	view = NULL;
+}
+
+PUGL_API void
+puglShowWindow(PuglView* view) {
+	XMapRaised(view->impl->display, view->impl->win);
+}
+
+PUGL_API void
+puglHideWindow(PuglView* view) {
+	XUnmapWindow(view->impl->display, view->impl->win);
 }
 
 static void
@@ -210,6 +255,10 @@ static void
 puglDisplay(PuglView* view)
 {
 	glXMakeCurrent(view->impl->display, view->impl->win, view->impl->ctx);
+#if 0
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glLoadIdentity();
+#endif
 
 	view->redisplay = false;
 	if (view->displayFunc) {
@@ -220,7 +269,37 @@ puglDisplay(PuglView* view)
 	if (view->impl->doubleBuffered) {
 		glXSwapBuffers(view->impl->display, view->impl->win);
 	}
+}
 
+static void
+puglResize(PuglView* view)
+{
+	int set_hints = 1;
+	view->resize = false;
+	if (!view->resizeFunc) { return; }
+	/* ask the plugin about the new size */
+	view->resizeFunc(view, &view->width, &view->height, &set_hints);
+
+	XSizeHints *hints = XAllocSizeHints();
+	hints->min_width = view->width;
+	hints->min_height = view->height;
+	hints->max_width = view->user_resizable ? 2048 : view->width;
+	hints->max_height = view->user_resizable ? 2048 : view->height;
+	hints->flags = PMaxSize | PMinSize;
+
+	if (set_hints) {
+		XSetWMNormalHints(view->impl->display, view->impl->win, hints);
+	}
+	XResizeWindow(view->impl->display, view->impl->win, view->width, view->height);
+	XFlush(view->impl->display);
+	XFree(hints);
+
+#ifdef VERBOSE_PUGL
+	printf("puGL: window resize (%dx%d)\n", view->width, view->height);
+#endif
+
+	/* and call Reshape in glX context */
+	puglReshape(view, view->width, view->height);
 }
 
 static PuglKey
@@ -361,6 +440,12 @@ puglProcessEvents(PuglView* view)
 			if (!repeated) {
 				KeySym sym = XLookupKeysym(&event.xkey, 0);
 				PuglKey special = keySymToSpecial(sym);
+#if 1 // close on 'Esc'
+				if (sym == XK_Escape && view->closeFunc) {
+					view->closeFunc(view);
+					view->redisplay = false;
+				} else
+#endif
 				if (view->keyboardFunc) {
 					if (!special) {
 						view->keyboardFunc(view, false, sym);
@@ -390,6 +475,10 @@ puglProcessEvents(PuglView* view)
 		}
 	}
 
+	if (view->resize) {
+		puglResize(view);
+	}
+
 	if (view->redisplay) {
 		puglDisplay(view);
 	}
@@ -401,6 +490,12 @@ void
 puglPostRedisplay(PuglView* view)
 {
 	view->redisplay = true;
+}
+
+void
+puglPostResize(PuglView* view)
+{
+	view->resize = true;
 }
 
 PuglNativeWindow
