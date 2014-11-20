@@ -109,6 +109,7 @@ __attribute__ ((visibility ("hidden")))
 - (void) mouseDragged:(NSEvent*)event;
 - (void) mouseDown:(NSEvent*)event;
 - (void) mouseUp:(NSEvent*)event;
+- (void) rightMouseDragged:(NSEvent*)event;
 - (void) rightMouseDown:(NSEvent*)event;
 - (void) rightMouseUp:(NSEvent*)event;
 - (void) keyDown:(NSEvent*)event;
@@ -231,6 +232,14 @@ getModifiers(PuglView* view, NSEvent* ev)
 	if (puglview->motionFunc) {
 		NSPoint loc = [self convertPoint:[event locationInWindow] fromView:nil];
 		puglview->mods = getModifiers(puglview, event);
+		puglview->motionFunc(puglview, loc.x, puglview->height - loc.y);
+	}
+}
+
+- (void) rightMouseDragged:(NSEvent*)event
+{
+	if (puglview->motionFunc) {
+		NSPoint loc = [self convertPoint:[event locationInWindow] fromView:nil];
 		puglview->motionFunc(puglview, loc.x, puglview->height - loc.y);
 	}
 }

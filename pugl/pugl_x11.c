@@ -55,6 +55,7 @@ static int attrListSgl[] = {
 	GLX_GREEN_SIZE, 4,
 	GLX_BLUE_SIZE, 4,
 	GLX_DEPTH_SIZE, 16,
+	GLX_ARB_multisample, 1,
 	None
 };
 
@@ -68,6 +69,7 @@ static int attrListDbl[] = {
 	GLX_GREEN_SIZE, 4,
 	GLX_BLUE_SIZE, 4,
 	GLX_DEPTH_SIZE, 16,
+	GLX_ARB_multisample, 1,
 	None
 };
 
@@ -97,15 +99,21 @@ puglCreate(PuglNativeWindow parent,
 	if (!vi) {
 		vi = glXChooseVisual(impl->display, impl->screen, attrListSgl);
 		impl->doubleBuffered = False;
-		printf("singlebuffered rendering will be used, no doublebuffering available\n");
+#ifdef VERBOSE_PUGL
+		printf("puGL: singlebuffered rendering will be used, no doublebuffering available\n");
+#endif
 	} else {
 		impl->doubleBuffered = True;
-		printf("doublebuffered rendering available\n");
+#ifdef VERBOSE_PUGL
+		printf("puGL: doublebuffered rendering available\n");
+#endif
 	}
 
 	int glxMajor, glxMinor;
 	glXQueryVersion(impl->display, &glxMajor, &glxMinor);
-	printf("GLX-Version %d.%d\n", glxMajor, glxMinor);
+#ifdef VERBOSE_PUGL
+	printf("puGL: GLX-Version : %d.%d\n", glxMajor, glxMinor);
+#endif
 
 	impl->ctx = glXCreateContext(impl->display, vi, 0, GL_TRUE);
 
@@ -156,13 +164,16 @@ puglCreate(PuglNativeWindow parent,
 	XMapRaised(impl->display, impl->win);
 
 	if (glXIsDirect(impl->display, impl->ctx)) {
-		printf("DRI enabled\n");
+#ifdef VERBOSE_PUGL
+		printf("puGL: DRI enabled\n");
+#endif
 	} else {
-		printf("No DRI available\n");
+#ifdef VERBOSE_PUGL
+		printf("puGL: No DRI available\n");
+#endif
 	}
 
 	XFree(vi);
-
 	return view;
 }
 
@@ -200,6 +211,7 @@ puglDisplay(PuglView* view)
 {
 	glXMakeCurrent(view->impl->display, view->impl->win, view->impl->ctx);
 
+	view->redisplay = false;
 	if (view->displayFunc) {
 		view->displayFunc(view);
 	}
@@ -209,7 +221,6 @@ puglDisplay(PuglView* view)
 		glXSwapBuffers(view->impl->display, view->impl->win);
 	}
 
-	view->redisplay = false;
 }
 
 static PuglKey
@@ -347,13 +358,15 @@ puglProcessEvents(PuglView* view)
 				}
 			}
 
-			if (!repeated && view->keyboardFunc) {
+			if (!repeated) {
 				KeySym sym = XLookupKeysym(&event.xkey, 0);
 				PuglKey special = keySymToSpecial(sym);
-				if (!special) {
-					view->keyboardFunc(view, false, sym);
-				} else if (view->specialFunc) {
-					view->specialFunc(view, false, special);
+				if (view->keyboardFunc) {
+					if (!special) {
+						view->keyboardFunc(view, false, sym);
+					} else if (view->specialFunc) {
+						view->specialFunc(view, false, special);
+					}
 				}
 			}
 		} break;
@@ -363,6 +376,7 @@ puglProcessEvents(PuglView* view)
 			            "WM_PROTOCOLS")) {
 				if (view->closeFunc) {
 					view->closeFunc(view);
+					view->redisplay = false;
 				}
 			}
 			break;

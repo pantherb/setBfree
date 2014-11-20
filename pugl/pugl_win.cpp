@@ -36,6 +36,9 @@
 #ifndef WHEEL_DELTA
 #    define WHEEL_DELTA 120
 #endif
+#ifndef GWL_USERDATA
+#    define GWL_USERDATA (-21)
+#endif
 
 const int LOCAL_CLOSE_MSG = WM_USER + 50;
 
@@ -70,7 +73,8 @@ puglCreate(PuglNativeWindow parent,
 	// Should class be a parameter?  Does this make sense on other platforms?
 	static int wc_count = 0;
 	char classNameBuf[256];
-	_snprintf(classNameBuf, sizeof(classNameBuf), "%s_%d\n", title, wc_count++);
+	_snprintf(classNameBuf, sizeof(classNameBuf), "%s_%d", title, wc_count++);
+	classNameBuf[sizeof(classNameBuf)-1] = '\0';
 
 	impl->wc.style         = CS_OWNDC;
 	impl->wc.lpfnWndProc   = wndProc;
@@ -85,14 +89,14 @@ puglCreate(PuglNativeWindow parent,
 	RegisterClass(&impl->wc);
 
 	// Adjust the overall window size to accomodate our requested client size
+	int winFlags = WS_POPUPWINDOW | WS_CAPTION | (view->user_resizable ? WS_SIZEBOX : 0);
 	RECT wr = { 0, 0, width, height };
-	AdjustWindowRectEx(
-		&wr, WS_SIZEBOX | WS_POPUPWINDOW | WS_CAPTION, FALSE, WS_EX_TOPMOST);
+	AdjustWindowRectEx(&wr, winFlags, FALSE, WS_EX_TOPMOST);
 
 	impl->hwnd = CreateWindowEx(
 		WS_EX_TOPMOST,
- 		classNameBuf, title,
-		WS_VISIBLE | (parent ? WS_CHILD : (WS_SIZEBOX | WS_POPUPWINDOW | WS_CAPTION)),
+		classNameBuf, title, (resizable ? WS_SIZEBOX : 0) |
+		(parent ? (WS_CHILD | WS_VISIBLE) : (WS_POPUPWINDOW | WS_CAPTION)),
 		0, 0, wr.right-wr.left, wr.bottom-wr.top,
 		(HWND)parent, NULL, NULL, NULL);
 
@@ -101,8 +105,12 @@ puglCreate(PuglNativeWindow parent,
 		free(view);
 		return NULL;
 	}
-		
-	SetWindowLongPtr(impl->hwnd, GWL_USERDATA, (LONG)view);
+
+	SetWindowLongPtr(impl->hwnd, GWL_USERDATA, (LONG_PTR)view);
+
+	SetWindowPos (impl->hwnd,
+			ontop ? HWND_TOPMOST : HWND_NOTOPMOST,
+			0, 0, 0, 0, (ontop ? 0 : SWP_NOACTIVATE) | SWP_ASYNCWINDOWPOS | SWP_NOMOVE | SWP_NOSIZE);
 
 	impl->hdc = GetDC(impl->hwnd);
 
@@ -120,6 +128,13 @@ puglCreate(PuglNativeWindow parent,
 	SetPixelFormat(impl->hdc, format, &pfd);
 
 	impl->hglrc = wglCreateContext(impl->hdc);
+	if (!impl->hglrc) {
+		printf("Cannot create openGL context\n");
+		ReleaseDC (impl->hwnd, impl->hdc);
+		DestroyWindow (impl->hwnd);
+		UnregisterClass (impl->wc.lpszClassName, NULL);
+		return NULL;
+	}
 	wglMakeCurrent(impl->hdc, impl->hglrc);
 
 	view->width  = width;
@@ -159,7 +174,10 @@ void
 puglDisplay(PuglView* view)
 {
 	wglMakeCurrent(view->impl->hdc, view->impl->hglrc);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glLoadIdentity();
 
+	view->redisplay = false;
 	if (view->displayFunc) {
 		view->displayFunc(view);
 	}
@@ -234,7 +252,6 @@ setModifiers(PuglView* view)
 static LRESULT
 handleMessage(PuglView* view, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	MSG         msg;
 	PAINTSTRUCT ps;
 	PuglKey     key;
 
@@ -243,7 +260,7 @@ handleMessage(PuglView* view, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_CREATE:
 	case WM_SHOWWINDOW:
 	case WM_SIZE:
-		RECT rect; 
+		RECT rect;
 		GetClientRect(view->impl->hwnd, &rect);
 		puglReshape(view, rect.right, rect.bottom);
 		view->width = rect.right;
@@ -281,7 +298,7 @@ handleMessage(PuglView* view, UINT message, WPARAM wParam, LPARAM lParam)
 		if (view->scrollFunc) {
 			view->scrollFunc(
 				view, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam),
-				(int16_t)HIWORD(wParam) / (float)WHEEL_DELTA);
+				(int16_t)HIWORD(wParam) / (float)WHEEL_DELTA, 0);
 		}
 		break;
 	case WM_MOUSEHWHEEL:

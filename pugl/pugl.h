@@ -196,6 +196,8 @@ typedef void (*PuglReshapeFunc)(PuglView* view, int width, int height);
    so programs should handle any value gracefully.
 
    @param view The view being scrolled.
+   @param x The window-relative x coordinate of the pointer.
+   @param y The window-relative y coordinate of the pointer.
    @param dx The scroll x distance.
    @param dx The scroll y distance.
 */
