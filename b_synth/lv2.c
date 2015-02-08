@@ -238,7 +238,7 @@ static void pgm_cb(int num, int pc, const char *name, void *arg) {
 #endif
   LV2_Atom_Forge_Frame frame;
   lv2_atom_forge_frame_time(&b3s->forge, 0);
-  lv2_atom_forge_blank(&b3s->forge, &frame, 1, b3s->uris.sb3_midipgm);
+  x_forge_object(&b3s->forge, &frame, 1, b3s->uris.sb3_midipgm);
 
   lv2_atom_forge_property_head(&b3s->forge, b3s->uris.sb3_cckey, 0);
   lv2_atom_forge_int(&b3s->forge, pco);
@@ -259,7 +259,7 @@ static void mcc_cb(const char *fnname, const unsigned char chn, const unsigned c
 
   LV2_Atom_Forge_Frame frame;
   lv2_atom_forge_frame_time(&b3s->forge, 0);
-  lv2_atom_forge_blank(&b3s->forge, &frame, 1, b3s->uris.sb3_uimccset);
+  x_forge_object(&b3s->forge, &frame, 1, b3s->uris.sb3_uimccset);
 
   lv2_atom_forge_property_head(&b3s->forge, b3s->uris.sb3_cckey, 0);
   lv2_atom_forge_string(&b3s->forge, fnname, strlen(fnname));
@@ -502,7 +502,7 @@ work(LV2_Handle                  instance,
 static void forge_message_str(B3S *b3s, LV2_URID uri, const char *msg) {
   LV2_Atom_Forge_Frame frame;
   lv2_atom_forge_frame_time(&b3s->forge, 0);
-  lv2_atom_forge_blank(&b3s->forge, &frame, 1, uri);
+  x_forge_object(&b3s->forge, &frame, 1, uri);
   lv2_atom_forge_property_head(&b3s->forge, b3s->uris.sb3_uimsg, 0);
   lv2_atom_forge_string(&b3s->forge, msg, strlen(msg));
   lv2_atom_forge_pop(&b3s->forge, &frame);
@@ -707,7 +707,7 @@ run(LV2_Handle instance, uint32_t n_samples)
 	}
 	/* send midi message to synth, CC's will trigger hook -> update GUI */
 	parse_raw_midi_data(b3s->inst, (uint8_t*)(ev+1), ev->body.size);
-      } else if (ev->body.type == b3s->uris.atom_Blank) {
+      } else if (ev->body.type == b3s->uris.atom_Blank || ev->body.type == b3s->uris.atom_Object) {
 	/* process messages from GUI */
 	const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;
 	if (obj->body.otype == b3s->uris.sb3_uiinit) {

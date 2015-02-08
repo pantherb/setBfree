@@ -472,7 +472,7 @@ static void forge_message_kv(B3ui* ui, LV2_URID uri, int key, const char *val) {
   lv2_atom_forge_set_buffer(&ui->forge, obj_buf, 256);
 
   LV2_Atom_Forge_Frame set_frame;
-  LV2_Atom* msg = (LV2_Atom*)lv2_atom_forge_blank(&ui->forge, &set_frame, 1, uri);
+  LV2_Atom* msg = (LV2_Atom*)x_forge_object(&ui->forge, &set_frame, 1, uri);
   lv2_atom_forge_property_head(&ui->forge, ui->uris.sb3_cckey, 0);
   lv2_atom_forge_int(&ui->forge, key);
   lv2_atom_forge_property_head(&ui->forge, ui->uris.sb3_ccval, 0);
@@ -486,7 +486,7 @@ static void forge_message_str(B3ui* ui, LV2_URID uri, const char *key) {
   lv2_atom_forge_set_buffer(&ui->forge, obj_buf, 1024);
 
   LV2_Atom_Forge_Frame set_frame;
-  LV2_Atom* msg = (LV2_Atom*)lv2_atom_forge_blank(&ui->forge, &set_frame, 1, uri);
+  LV2_Atom* msg = (LV2_Atom*)x_forge_object(&ui->forge, &set_frame, 1, uri);
   if (key) {
     lv2_atom_forge_property_head(&ui->forge, ui->uris.sb3_cckey, 0);
     lv2_atom_forge_string(&ui->forge, key, strlen(key));
@@ -500,7 +500,7 @@ static void forge_message_int(B3ui* ui, LV2_URID uri, const int val) {
   lv2_atom_forge_set_buffer(&ui->forge, obj_buf, 64);
 
   LV2_Atom_Forge_Frame set_frame;
-  LV2_Atom* msg = (LV2_Atom*)lv2_atom_forge_blank(&ui->forge, &set_frame, 1, uri);
+  LV2_Atom* msg = (LV2_Atom*)x_forge_object(&ui->forge, &set_frame, 1, uri);
   lv2_atom_forge_property_head(&ui->forge, ui->uris.sb3_cckey, 0);
   lv2_atom_forge_int(&ui->forge, val);
   lv2_atom_forge_pop(&ui->forge, &set_frame);
@@ -2806,8 +2806,8 @@ port_event(LV2UI_Handle handle,
     return;
   }
 
-  if (atom->type != ui->uris.atom_Blank) {
-    fprintf(stderr, "B3Lv2UI: not an atom:Blank msg.\n");
+  if (atom->type != ui->uris.atom_Blank && atom->type != ui->uris.atom_Object) {
+    fprintf(stderr, "B3Lv2UI: not an atom:Blank|Object msg.\n");
     return;
   }
 

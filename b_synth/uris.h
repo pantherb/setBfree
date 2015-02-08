@@ -28,6 +28,12 @@
 
 #define SB3_URI "http://gareus.org/oss/lv2/b_synth"
 
+#ifdef HAVE_LV2_1_8
+#define x_forge_object lv2_atom_forge_object
+#else
+#define x_forge_object lv2_atom_forge_blank
+#endif
+
 #define SB3__state   SB3_URI "#state"
 #define SB3__uiinit  SB3_URI "#uiinit"
 #define SB3__uimccq  SB3_URI "#uimccquery"
@@ -46,6 +52,7 @@
 
 typedef struct {
 	LV2_URID atom_Blank;
+	LV2_URID atom_Object;
 	LV2_URID atom_Path;
 	LV2_URID atom_String;
 	LV2_URID atom_Int;
@@ -76,6 +83,7 @@ static inline void
 map_setbfree_uris(LV2_URID_Map* map, setBfreeURIs* uris)
 {
 	uris->atom_Blank         = map->map(map->handle, LV2_ATOM__Blank);
+	uris->atom_Object        = map->map(map->handle, LV2_ATOM__Object);
 	uris->atom_Path          = map->map(map->handle, LV2_ATOM__Path);
 	uris->atom_String        = map->map(map->handle, LV2_ATOM__String);
 	uris->atom_Int           = map->map(map->handle, LV2_ATOM__Int);
@@ -126,7 +134,7 @@ forge_kvcontrolmessage(LV2_Atom_Forge* forge,
 
 	LV2_Atom_Forge_Frame frame;
 	lv2_atom_forge_frame_time(forge, 0);
-	LV2_Atom* msg = (LV2_Atom*)lv2_atom_forge_blank(forge, &frame, 1, uris->sb3_control);
+	LV2_Atom* msg = (LV2_Atom*)x_forge_object(forge, &frame, 1, uris->sb3_control);
 
 	lv2_atom_forge_property_head(forge, uris->sb3_cckey, 0);
 	lv2_atom_forge_string(forge, key, strlen(key));
