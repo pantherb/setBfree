@@ -91,7 +91,7 @@ extern void rtk_osx_api_err(const char *msg);
 #include "lv2/lv2plug.in/ns/ext/time/time.h"
 #include "lv2/lv2plug.in/ns/ext/worker/worker.h"
 
-#include "./gl/xternalui.h"
+#include "xternalui.h"
 
 #ifndef WIN32
 #include <signal.h>
