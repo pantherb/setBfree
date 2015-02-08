@@ -69,6 +69,8 @@ extern void rtk_osx_api_err(const char *msg);
 
 #ifndef _WIN32
 #include <sys/mman.h>
+#else
+#include <sys/timeb.h>
 #endif
 
 #ifdef USE_WEAK_JACK
@@ -883,12 +885,18 @@ static void main_loop(void) {
 		if (client_state == Exit) break;
 
 #ifdef _WIN32
-		Sleep(1000/UI_UPDATE_FPS);
+		//Sleep(1000/UI_UPDATE_FPS);
+#if (defined(__MINGW64__) || defined(__MINGW32__)) && __MSVCRT_VERSION__ >= 0x0601
+		_ftime64(&timeout);
 #else
+		_ftime(&timeout);
+#endif
+
+#else // POSIX
 		clock_gettime(CLOCK_REALTIME, &timeout);
+#endif
 		timeout.tv_nsec += 1000000000 / (UI_UPDATE_FPS);
 		if (timeout.tv_nsec >= 1000000000) {timeout.tv_nsec -= 1000000000; timeout.tv_sec+=1;}
-#endif
 		pthread_cond_timedwait (&data_ready, &gui_thread_lock, &timeout);
 
 	} /* while running */
@@ -973,8 +981,10 @@ int main (int argc, char **argv) {
 	}
 #endif
 
-#if (defined _WIN32 && defined RTK_STATIC_INIT)
+#ifdef _WIN32
 	pthread_win32_process_attach_np();
+#endif
+#if (defined _WIN32 && defined RTK_STATIC_INIT)
 	glib_init_static();
 	gobject_init_ctor();
 #endif
@@ -1203,8 +1213,10 @@ int main (int argc, char **argv) {
 
 out:
 	cleanup(0);
-#if (defined _WIN32 && defined RTK_STATIC_INIT)
+#ifdef _WIN32
 	pthread_win32_process_detach_np();
+#endif
+#if (defined _WIN32 && defined RTK_STATIC_INIT)
 	glib_cleanup_static();
 #endif
 	return(rv);
