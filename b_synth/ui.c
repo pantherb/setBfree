@@ -36,6 +36,11 @@
 #include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
 #include "pugl/pugl.h"
 
+#ifdef XTERNAL_UI
+#undef OLD_SUIL
+#include "../ui/xternalui.h"
+#endif
+
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #include <libgen.h>
@@ -267,6 +272,12 @@ typedef struct {
 
   int mouseover;
 
+#ifdef XTERNAL_UI
+  struct lv2_external_ui_host *extui;
+  struct lv2_external_ui xternal_ui;
+  void (* ui_closed)(void* controller);
+  bool close_ui; // used by xternalui
+#endif
 } B3ui;
 
 
@@ -2505,6 +2516,34 @@ static int idle(LV2UI_Handle handle) {
 }
 #endif
 
+#ifdef XTERNAL_UI
+
+static void onClose(PuglView* view) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  ui->close_ui = true;
+}
+
+static void x_run (struct lv2_external_ui * handle) {
+  B3ui* ui = (B3ui*)handle->self;
+  puglProcessEvents(ui->view);
+  if (ui->close_ui && ui->ui_closed) {
+    ui->close_ui = false;
+    puglHideWindow(ui->view);
+    ui->ui_closed(ui->controller);
+  }
+}
+
+static void x_show (struct lv2_external_ui * handle) {
+  B3ui* ui = (B3ui*)handle->self;
+  puglShowWindow(ui->view);
+  forge_message_str(ui, ui->uris.sb3_uiinit, NULL);
+}
+
+static void x_hide (struct lv2_external_ui * handle) {
+  B3ui* ui = (B3ui*)handle->self;
+  puglHideWindow(ui->view);
+}
+#endif
 
 /******************************************************************************
  * main GUI setup
@@ -2556,9 +2595,22 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
     } else if (!strcmp(features[i]->URI, LV2_UI__resize)) {
       resize = (LV2UI_Resize*)features[i]->data;
     }
+#ifdef XTERNAL_UI
+    else if (!strcmp(features[i]->URI, LV2_EXTERNAL_UI_URI) && !ui->extui) {
+      ui->extui = (struct lv2_external_ui_host*) features[i]->data;
+    }
+    else if (!strcmp(features[i]->URI, LV2_EXTERNAL_UI_URI__KX__Host)) {
+      ui->extui = (struct lv2_external_ui_host*) features[i]->data;
+    }
+#endif
   }
 
-  if (!parent) {
+  if (!parent
+#ifdef XTERNAL_UI
+      && !ui->extui
+#endif
+     )
+  {
     fprintf(stderr, "B3Lv2UI error: No parent window provided.\n");
     return -1;
   }
@@ -2574,6 +2626,7 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
       ui->width, ui->height,
       ui->width, ui->height,
       true, true, 0);
+
   puglSetHandle(ui->view, ui);
   puglSetDisplayFunc(ui->view, onDisplay);
   puglSetReshapeFunc(ui->view, onReshape);
@@ -2581,6 +2634,15 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   puglSetMotionFunc(ui->view, onMotion);
   puglSetMouseFunc(ui->view, onMouse);
   puglSetScrollFunc(ui->view, onScroll);
+
+#ifdef XTERNAL_UI
+  ui->ui_closed = NULL;
+  ui->close_ui = false;
+  if (ui->extui) {
+    puglSetCloseFunc(ui->view, onClose);
+    ui->ui_closed = ui->extui->ui_closed;
+  }
+#endif
 
   if (resize) {
     resize->ui_resize(resize->handle, ui->width, ui->height);
@@ -2660,6 +2722,9 @@ instantiate(const LV2UI_Descriptor*   descriptor,
   ui->map        = NULL;
   ui->write      = write_function;
   ui->controller = controller;
+#ifdef XTERNAL_UI
+  ui->extui = NULL;
+#endif
 
   for (i = 0; features[i]; ++i) {
     if (!strcmp(features[i]->URI, LV2_URID__map)) {
@@ -2684,7 +2749,18 @@ instantiate(const LV2UI_Descriptor*   descriptor,
   memset(ui->midipgm, 0, 128 * 32 * sizeof(char));
   memset(ui->mididsc, 0, 128 * 256 * sizeof(char));
 
-  *widget = (void*)puglGetNativeWindow(ui->view);
+#ifdef XTERNAL_UI
+  if (ui->extui) {
+    ui->xternal_ui.run  = &x_run;
+    ui->xternal_ui.show = &x_show;
+    ui->xternal_ui.hide = &x_hide;
+    ui->xternal_ui.self = (void*) ui;
+    *widget = (void*) &ui->xternal_ui;
+  } else
+#endif
+  {
+    *widget = (void*)puglGetNativeWindow(ui->view);
+  }
 
   /* ask plugin about current state */
   forge_message_str(ui, ui->uris.sb3_uiinit, NULL);
