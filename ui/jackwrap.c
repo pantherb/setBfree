@@ -87,6 +87,7 @@ extern void rtk_osx_api_err(const char *msg);
 #include "lv2/lv2plug.in/ns/ext/atom/forge.h"
 #include "lv2/lv2plug.in/ns/ext/midi/midi.h"
 #include "lv2/lv2plug.in/ns/ext/time/time.h"
+#include "lv2/lv2plug.in/ns/ext/worker/worker.h"
 
 #include "./gl/xternalui.h"
 
@@ -225,6 +226,14 @@ uint32_t  portmap_atom_to_ui = -1;
 uint32_t  portmap_atom_from_ui = -1;
 
 static uint32_t uri_to_id(LV2_URI_Map_Callback_Data callback_data, const char* uri);
+
+
+static jack_ringbuffer_t*    worker_requests = NULL;
+static jack_ringbuffer_t*    worker_responses = NULL;
+static pthread_t             worker_thread;
+static pthread_mutex_t       worker_lock = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t        worker_ready = PTHREAD_COND_INITIALIZER;
+static LV2_Worker_Interface* worker_iface = NULL;
 
 struct DelayBuffer **delayline = NULL;
 uint32_t worst_capture_latency = 0;
@@ -489,6 +498,23 @@ int process (jack_nframes_t nframes, void *arg) {
 		}
 	}
 
+	/* handle worker emit response */
+	if (worker_responses) {
+		uint32_t read_space = jack_ringbuffer_read_space(worker_responses);
+		while (read_space) {
+			uint32_t size = 0;
+			char worker_response[4096];
+			jack_ringbuffer_read(worker_responses, (char*)&size, sizeof(size));
+			jack_ringbuffer_read(worker_responses, worker_response, size);
+			worker_iface->work_response(plugin_instance, size, worker_response);
+			read_space -= sizeof(size) + size;
+		}
+	}
+	/* signal worker end of process run */
+	if (worker_iface && worker_iface->end_run) {
+		worker_iface->end_run(plugin_instance);
+	}
+
 	/* wake up UI */
 	if (jack_ringbuffer_read_space(rb_ctrl_to_ui) > sizeof(uint32_t) + sizeof(float)
 			|| jack_ringbuffer_read_space(rb_atom_to_ui) > sizeof(LV2_Atom)
@@ -686,6 +712,67 @@ void write_function(
 	}
 }
 
+// LV2 Worker
+
+static LV2_Worker_Status
+lv2_worker_respond(LV2_Worker_Respond_Handle unused,
+                   uint32_t                  size,
+                   const void*               data)
+{
+	jack_ringbuffer_write(worker_responses, (const char*)&size, sizeof(size));
+	jack_ringbuffer_write(worker_responses, (const char*)data, size);
+	return LV2_WORKER_SUCCESS;
+}
+
+
+static void* worker_func(void* data) {
+	pthread_mutex_lock (&worker_lock);
+	while (1) {
+		char buf[4096];
+		uint32_t size = 0;
+
+		if (jack_ringbuffer_read_space(worker_requests) <= sizeof(size)) {
+			pthread_cond_wait(&worker_ready, &worker_lock);
+		}
+
+		if (client_state == Exit) break;
+
+		jack_ringbuffer_read(worker_requests, (char*)&size, sizeof(size));
+
+		if (size > 4096) {
+			fprintf(stderr, "Worker information is too large. Abort.\n");
+			break;
+		}
+
+		jack_ringbuffer_read(worker_requests, buf, size);
+		worker_iface->work(plugin_instance, lv2_worker_respond, NULL, size, buf);
+	}
+	pthread_mutex_unlock (&worker_lock);
+	return NULL;
+}
+
+static void worker_init() {
+	worker_requests  = jack_ringbuffer_create(4096);
+	worker_responses = jack_ringbuffer_create(4096);
+	jack_ringbuffer_mlock(worker_requests);
+	jack_ringbuffer_mlock(worker_responses);
+	pthread_create(&worker_thread, NULL, worker_func, NULL);
+}
+
+LV2_Worker_Status
+lv2_worker_schedule(LV2_Worker_Schedule_Handle unused,
+                    uint32_t                   size,
+                    const void*                data)
+{
+	assert(worker_requests);
+	jack_ringbuffer_write(worker_requests, (const char*)&size, sizeof(size));
+	jack_ringbuffer_write(worker_requests, (const char*)data, size);
+	if (pthread_mutex_trylock (&worker_lock) == 0) {
+		pthread_cond_signal (&worker_ready);
+		pthread_mutex_unlock (&worker_lock);
+	}
+	return LV2_WORKER_SUCCESS;
+}
 
 /******************************************************************************
  * MAIN
@@ -695,6 +782,17 @@ static void cleanup(int sig) {
 	if (j_client) {
 		jack_client_close (j_client);
 		j_client=NULL;
+	}
+
+	if (worker_requests) {
+		pthread_mutex_lock (&worker_lock);
+		pthread_cond_signal (&worker_ready);
+		pthread_mutex_unlock (&worker_lock);
+
+		pthread_join(worker_thread, NULL);
+
+		jack_ringbuffer_free(worker_requests);
+		jack_ringbuffer_free(worker_responses);
 	}
 
 	if (plugin_dsp && plugin_instance && plugin_dsp->deactivate) {
@@ -886,8 +984,11 @@ int main (int argc, char **argv) {
 	const LV2_Feature map_feature   = { LV2_URID__map, &uri_map};
 	const LV2_Feature unmap_feature = { LV2_URID__unmap, NULL };
 
+	LV2_Worker_Schedule schedule = { NULL, lv2_worker_schedule };
+	LV2_Feature schedule_feature  = { LV2_WORKER__schedule, &schedule };
+
 	const LV2_Feature* features[] = {
-		&map_feature, &unmap_feature, NULL
+		&map_feature, &unmap_feature, &schedule_feature, NULL
 	};
 
 	const LV2_Feature external_lv_feature = { LV2_EXTERNAL_UI_URI, &extui_host};
@@ -1053,6 +1154,11 @@ int main (int argc, char **argv) {
 				jack_ringbuffer_write(rb_ctrl_to_ui, (char *) &plugin_ports_pre[p], sizeof(float));
 			}
 		}
+	}
+
+	worker_iface = (LV2_Worker_Interface*) plugin_dsp->extension_data (LV2_WORKER__interface);
+	if (worker_iface) {
+		worker_init();
 	}
 
 	if (plugin_dsp->activate) {
