@@ -131,6 +131,9 @@ __attribute__ ((visibility ("hidden")))
 		NSOpenGLPFAAccelerated,
 		NSOpenGLPFAColorSize, 32,
 		NSOpenGLPFADepthSize, 32,
+		NSOpenGLPFAMultisample,
+		NSOpenGLPFASampleBuffers, 1,
+		NSOpenGLPFASamples, 4,
 		0
 	};
 	NSOpenGLPixelFormat* pixelFormat = [[NSOpenGLPixelFormat alloc]

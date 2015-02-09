@@ -932,7 +932,7 @@ static void setupOpenGL() {
   glShadeModel(GL_SMOOTH);
   glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-  glEnable(GL_MULTISAMPLE);
+  glEnable(GL_MULTISAMPLE_ARB);
 
   glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
   glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
