@@ -11,12 +11,13 @@ cscope.out
 *.dylib
 *.plist
 DWARF
+.DS_STORE
 
 # binaries
 /src/setBfree
 /src/configd
 /src/programd
-/vb3kb/vb3kb
+/ui/setBfreeUI
 /b_overdrive/jboverdrive
 /b_overdrive/overmaker
 
@@ -28,6 +29,10 @@ DWARF
 /b_synth/manifest.ttl
 /b_synth/b_synth.ttl
 
+# generated xxd/font
+/b_synth/verabd.h
+
 /*.tar.gz
 /doc/html
 /site
+
