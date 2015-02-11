@@ -517,12 +517,13 @@ static void forge_message_int(B3ui* ui, LV2_URID uri, const int val) {
   ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
 }
 
-static void forge_note(B3ui* ui, const int chan, const int note, const bool onoff) {
+static void forge_note(B3ui* ui, const int manual, const int note, const bool onoff) {
   uint8_t obj_buf[16];
   lv2_atom_forge_set_buffer(&ui->forge, obj_buf, 16);
 
+  // TODO translate manual to channel (IFF user re-assigned channels,..)
   uint8_t buffer[3];
-  buffer[0] = (onoff ? 0x90 : 0x80) | (chan & 0xf);
+  buffer[0] = (onoff ? 0x90 : 0x80) | (manual & 0xf);
   buffer[1] = note & 0x7f;
   buffer[2] = (onoff ? 0x7f : 0x00);
 
