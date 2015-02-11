@@ -45,6 +45,9 @@ $(LV2GUI)$(LIB_EXT): ui.c uris.h $(UIDEPS)
 		-o $(LV2GUI)$(LIB_EXT) ui.c \
 		-shared $(LV2LDFLAGS) $(LDFLAGS) $(UILIBS)
 
+verabd.h: VeraBd.ttf
+	xxd -i VeraBd.ttf > verabd.h
+
 install: $(targets)
 ifeq ($(LV2AVAIL), yes)
 	install -d $(DESTDIR)$(lv2dir)/$(LV2NAME)

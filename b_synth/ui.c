@@ -56,8 +56,12 @@ using namespace FTGL;
 #define FTGL_RENDER_ALL RENDER_ALL
 #endif
 
-#ifndef FONTFILE
-#define FONTFILE "/usr/share/fonts/truetype/ttf-bitstream-vera/VeraBd.ttf"
+#ifdef BUILTINFONT
+#  include "verabd.h"
+#else
+#  ifndef FONTFILE
+#    define FONTFILE "/usr/share/fonts/truetype/ttf-bitstream-vera/VeraBd.ttf"
+#  endif
 #endif
 
 #include "uris.h"
@@ -1463,12 +1467,13 @@ onDisplay(PuglView* view)
 
   if (!ui->initialized) {
 
-#ifdef __APPLE__
+#ifndef BUILTINFONT
+#  ifdef __APPLE__
     char fontfilepath[1024] = FONTFILE;
     uint32_t i;
     uint32_t ic = _dyld_image_count();
     for (i = 0; i < ic; ++i) {
-      if (strstr(_dyld_get_image_name(i), "/b_synthUI.dylib")) {
+      if (strstr(_dyld_get_image_name(i), "/b_synthUI.dylib") || strstr(_dyld_get_image_name(i), "/setBfreeUI")) {
 	char *tmp = strdup(_dyld_get_image_name(i));
 	strcpy(fontfilepath, dirname(tmp));
 	free(tmp);
@@ -1479,8 +1484,9 @@ onDisplay(PuglView* view)
 	break;
       }
     }
-#else
+#  else
     const char *fontfilepath = FONTFILE;
+#  endif
 #endif
 
     /* initialization needs to happen from event context
@@ -1492,10 +1498,16 @@ onDisplay(PuglView* view)
     initMesh(ui->view);
     setupLight();
     initTextures(ui->view);
+#ifndef BUILTINFONT
     ui->font_big = ftglCreateBufferFont(fontfilepath);
+    ui->font_small = ftglCreateBufferFont(fontfilepath);
+#else
+    ui->font_big = ftglCreateBufferFontMem(VeraBd_ttf, VeraBd_ttf_len);
+    ui->font_small = ftglCreateBufferFontMem(VeraBd_ttf, VeraBd_ttf_len);
+#endif
+
     ftglSetFontFaceSize(ui->font_big, 40, 72);
     ftglSetFontCharMap(ui->font_big, ft_encoding_unicode);
-    ui->font_small = ftglCreateBufferFont(fontfilepath);
     ftglSetFontFaceSize(ui->font_small, 20, 72);
     ftglSetFontCharMap(ui->font_small, ft_encoding_unicode);
   }
