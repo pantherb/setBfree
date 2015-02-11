@@ -49,6 +49,8 @@
 #define SB3__loadcfg SB3_URI "#loadcfg"
 #define SB3__savecfg SB3_URI "#savecfg"
 #define SB3__uimsg   SB3_URI "#uimessage"
+#define SB3__kactive SB3_URI "#activekeys"
+#define SB3__karray  SB3_URI "#keyarray"
 
 typedef struct {
 	LV2_URID atom_Blank;
@@ -56,6 +58,7 @@ typedef struct {
 	LV2_URID atom_Path;
 	LV2_URID atom_String;
 	LV2_URID atom_Int;
+	LV2_URID atom_Vector;
 	LV2_URID atom_URID;
 	LV2_URID atom_eventTransfer;
 
@@ -74,6 +77,8 @@ typedef struct {
 	LV2_URID sb3_loadcfg;
 	LV2_URID sb3_savecfg;
 	LV2_URID sb3_uimsg;
+	LV2_URID sb3_activekeys;
+	LV2_URID sb3_keyarrary;
 
 	LV2_URID midi_MidiEvent;
 	LV2_URID atom_Sequence;
@@ -87,6 +92,7 @@ map_setbfree_uris(LV2_URID_Map* map, setBfreeURIs* uris)
 	uris->atom_Path          = map->map(map->handle, LV2_ATOM__Path);
 	uris->atom_String        = map->map(map->handle, LV2_ATOM__String);
 	uris->atom_Int           = map->map(map->handle, LV2_ATOM__Int);
+	uris->atom_Vector        = map->map(map->handle, LV2_ATOM__Vector);
 	uris->atom_URID          = map->map(map->handle, LV2_ATOM__URID);
 	uris->atom_eventTransfer = map->map(map->handle, LV2_ATOM__eventTransfer);
 	uris->sb3_state          = map->map(map->handle, SB3__state);
@@ -100,12 +106,14 @@ map_setbfree_uris(LV2_URID_Map* map, setBfreeURIs* uris)
 	uris->sb3_ccval          = map->map(map->handle, SB3__ccval);
 	uris->sb3_ccdsc          = map->map(map->handle, SB3__ccdsc);
 	uris->midi_MidiEvent     = map->map(map->handle, LV2_MIDI__MidiEvent);
-  uris->atom_Sequence      = map->map(map->handle, LV2_ATOM__Sequence);
+	uris->atom_Sequence      = map->map(map->handle, LV2_ATOM__Sequence);
 	uris->sb3_loadpgm        = map->map(map->handle, SB3__loadpgm);
 	uris->sb3_savepgm        = map->map(map->handle, SB3__savepgm);
 	uris->sb3_loadcfg        = map->map(map->handle, SB3__loadcfg);
 	uris->sb3_savecfg        = map->map(map->handle, SB3__savecfg);
 	uris->sb3_uimsg          = map->map(map->handle, SB3__uimsg);
+	uris->sb3_activekeys     = map->map(map->handle, SB3__kactive);
+	uris->sb3_keyarrary      = map->map(map->handle, SB3__karray);
 }
 
 static inline void

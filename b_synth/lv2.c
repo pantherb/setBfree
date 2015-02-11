@@ -81,6 +81,8 @@ typedef struct {
   short update_pgm_now;
   short swap_instances;
 
+  unsigned int active_keys [MAX_KEYS/32];
+
   struct b_instance *inst;
   struct b_instance *inst_offline;
 } B3S;
@@ -772,6 +774,23 @@ run(LV2_Handle instance, uint32_t n_samples)
 
   /* synthesize [remaining] sound */
   synthSound(b3s, written, n_samples, audio);
+
+  /* send active keys to GUI - IFF changed */
+  bool keychanged = false;
+  for (int i = 0 ; i < MAX_KEYS/32; ++i) {
+    if (b3s->active_keys[i] != b3s->inst->synth->_activeKeys[i]) {
+      keychanged = true;
+    }
+    b3s->active_keys[i] = b3s->inst->synth->_activeKeys[i];
+  }
+  if (keychanged) {
+    LV2_Atom_Forge_Frame frame;
+    lv2_atom_forge_frame_time(&b3s->forge, 0);
+    x_forge_object(&b3s->forge, &frame, 1, b3s->uris.sb3_activekeys);
+    lv2_atom_forge_property_head(&b3s->forge, b3s->uris.sb3_keyarrary, 0);
+    lv2_atom_forge_vector(&b3s->forge, sizeof(unsigned int), b3s->uris.atom_Int, MAX_KEYS/32, b3s->active_keys);
+    lv2_atom_forge_pop(&b3s->forge, &frame);
+  }
 
   /* check for new instances */
   postrun(b3s);

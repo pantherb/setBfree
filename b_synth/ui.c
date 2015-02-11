@@ -280,6 +280,8 @@ typedef struct {
   int lower_key;
   int pedal_key;
 
+  unsigned int active_keys [5]; // MAX_KEYS/32;
+
 #ifdef XTERNAL_UI
   struct lv2_external_ui_host *extui;
   struct lv2_external_ui xternal_ui;
@@ -1463,7 +1465,7 @@ static void txtentry_render(PuglView* view) {
 
 }
 
-static void piano_manual(float y0, float z0, int active_key) {
+static void piano_manual(float y0, float z0, int active_key, unsigned int *active_keys) {
 
   const GLfloat no_mat[] = { 0.0, 0.0, 0.0, 1.0 };
   const GLfloat mat_key_white[] = { 0.7, 0.8, 0.8, 1.0 };
@@ -1487,7 +1489,7 @@ static void piano_manual(float y0, float z0, int active_key) {
 
       glMaterialfv(GL_FRONT, GL_AMBIENT, mat_key_white);
 
-      if (i == active_key) {
+      if (/* i == active_key || */ active_keys[i/32] & (1<<(i%32))) {
 	glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, glow_red);
 	glRotatef(-5, 1, 0, 0);
@@ -1603,7 +1605,7 @@ static void piano_manual(float y0, float z0, int active_key) {
       glMaterialfv(GL_FRONT, GL_AMBIENT, mat_key_black);
       glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_key_black);
 
-      if (i == active_key) {
+      if (/* i == active_key || */ active_keys[i/32] & (1<<(i%32))) {
 	glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
 	glTranslatef(0.f, .0f, -.1f);
 	glRotatef(-5, 1, 0, 0);
@@ -1648,7 +1650,7 @@ static void piano_manual(float y0, float z0, int active_key) {
   }
 }
 
-static void piano_pedals(int active_key) {
+static void piano_pedals(int active_key, unsigned int active_keys) {
 
   const float y0 = -7;
   const float z0 = 18;
@@ -1674,7 +1676,7 @@ static void piano_pedals(int active_key) {
 
       glMaterialfv(GL_FRONT, GL_AMBIENT, mat_key_white);
 
-      if (i == active_key) {
+      if (/*i == active_key || */ active_keys & (1<<i)) {
 	glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, glow_red);
 	glRotatef(-7, 1, 0, 0);
@@ -1726,7 +1728,7 @@ static void piano_pedals(int active_key) {
       glMaterialfv(GL_FRONT, GL_AMBIENT, mat_key_black);
       glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_key_black);
 
-      if (i == active_key) {
+      if (/*i == active_key || */ active_keys & (1<<i)) {
 	glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
 	glTranslatef(0.f, .0f, -.1f);
 	glRotatef(-7, 1, 0, 0);
@@ -2277,9 +2279,9 @@ onDisplay(PuglView* view)
 
   /** step 3 - keyboard & pedals **/
 
-  piano_manual(7.0, 1.5, ui->upper_key);
-  piano_manual(12.5, 3.5, ui->lower_key);
-  piano_pedals(ui->pedal_key);
+  piano_manual(7.0, 1.5, ui->upper_key, &ui->active_keys[0]);
+  piano_manual(12.5, 3.5, ui->lower_key, &ui->active_keys[2]);
+  piano_pedals(ui->pedal_key, ui->active_keys[4]);
 }
 
 static void reset_state_ccbind(PuglView* view) {
@@ -3032,6 +3034,10 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   ui->lower_key = -1;
   ui->pedal_key = -1;
 
+  for (int i = 0; i < 5; ++i) {
+    ui->active_keys[i] = 0;
+  }
+
   if (getenv("HOME")) {
     ui->curdir = strdup(getenv("HOME"));
   } else {
@@ -3269,6 +3275,23 @@ port_event(LV2UI_Handle handle,
   }
 
   LV2_Atom_Object* obj = (LV2_Atom_Object*)atom;
+
+  if (obj->body.otype == ui->uris.sb3_activekeys) {
+    LV2_Atom *a0 = NULL;
+    if (1 == lv2_atom_object_get(obj, ui->uris.sb3_keyarrary, &a0, NULL)
+	&& a0->type == ui->uris.atom_Vector)
+    {
+      LV2_Atom_Vector* voi = (LV2_Atom_Vector*)LV2_ATOM_BODY(a0);
+      const size_t n_elem = (a0->size - sizeof(LV2_Atom_Vector_Body)) / voi->atom.size;
+      const unsigned int *data = (unsigned int*) LV2_ATOM_BODY(&voi->atom);
+      if (n_elem == 5 /* sizeof(ui->active_keys) / sizeof(unsigned int) */) {
+	memcpy(ui->active_keys, data, 5 * sizeof(unsigned int));
+      }
+      puglPostRedisplay(ui->view);
+    }
+    return;
+  }
+
   if (!get_cc_key_value(&ui->uris, obj, &k, &v)) {
     if (!strcmp(k, "special.midimap")) {
       ui->uiccbind = -1;
