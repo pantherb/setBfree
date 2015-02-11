@@ -174,6 +174,11 @@ __attribute__ ((visibility ("hidden")))
 
 		puglview->width  = width;
 		puglview->height = height;
+
+		[self removeTrackingArea:trackingArea];
+		[trackingArea release];
+		trackingArea = nil;
+		[self updateTrackingAreas];
 	}
 }
 
@@ -202,6 +207,7 @@ getModifiers(PuglView* view, NSEvent* ev)
 -(void)updateTrackingAreas
 {
 	if (trackingArea != nil) {
+		return;
 		[self removeTrackingArea:trackingArea];
 		[trackingArea release];
 	}
