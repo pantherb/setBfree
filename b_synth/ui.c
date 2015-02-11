@@ -2623,6 +2623,10 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
   float fx, fy;
   float kx, ky;
 
+  if (ui->displaymode || ui->textentry_active || ui->popupmsg) {
+    if (button != 1) return;
+  }
+
   if (!press) {
     if (ui->upper_key >= 0) {
       forge_note(ui, 0, ui->upper_key + 36, false);
@@ -2825,21 +2829,24 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 
   project_mouse(view, x, y, -.5, &fx, &fy);
 
-  if (ui->displaymode == 0 && fx >= 1.04 && fx <= 1.100 && fy >= -.24 && fy <= -.18) {
+  if (button == 1 && ui->displaymode == 0 && fx >= 1.04 && fx <= 1.100 && fy >= -.24 && fy <= -.18) {
     /* help button */
+    reset_state_ccbind(view);
     ui->displaymode = 1;
     onReshape(view, ui->width, ui->height);
     puglPostRedisplay(view);
     return;
   }
 
-  if (ui->displaymode == 0 && fx >= 0.92 && fx <= 1.04 && fy >= -.25 && fy <= -.16) {
+  if (button == 1 && ui->displaymode == 0 && fx >= 0.92 && fx <= 1.04 && fy >= -.25 && fy <= -.16) {
     /* menu button */
+    reset_state_ccbind(view);
     ui->displaymode = 7;
     onReshape(view, ui->width, ui->height);
     puglPostRedisplay(view);
     return;
   }
+
   if (puglGetModifiers(view) & PUGL_MOD_CTRL && button == 2) {
     for (i = 0; i < TOTAL_OBJ; ++i) {
       if (!MOUSEOVER(ui->ctrls[i], fx, fy)) {
@@ -2853,6 +2860,10 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
   }
 
   reset_state_ccbind(view);
+
+  if (button != 1) {
+    return;
+  }
 
   for (i = 0; i < TOTAL_OBJ; ++i) {
     if (!MOUSEOVER(ui->ctrls[i], fx, fy)) {
