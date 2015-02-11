@@ -2332,10 +2332,10 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       if (ui->rot[1] <  0)  { ui->rot[1] += 5; queue_reshape = 1; }
       break;
     case 'z': SKD(0)
-      if (ui->rot[2] > -30) { ui->rot[2] -= 5; queue_reshape = 1; }
+      if (ui->rot[2] > -35) { ui->rot[2] -= 5; queue_reshape = 1; }
       break;
     case 'c': SKD(0)
-      if (ui->rot[2] <  30) { ui->rot[2] += 5; queue_reshape = 1; }
+      if (ui->rot[2] <  35) { ui->rot[2] += 5; queue_reshape = 1; }
       break;
     case '+': SKD(0)
       if (ui->scale < 1.5) { ui->scale += .025; queue_reshape = 1; }
@@ -2344,29 +2344,33 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       if (ui->scale > 0.5) { ui->scale -= .025; queue_reshape = 1; }
       break;
     case 'h': SKD(0)
-      if (ui->off[0] > -.5) { ui->off[0] -= .025; queue_reshape = 1; }
+      if (ui->off[0] > -.9) { ui->off[0] -= .025; queue_reshape = 1; }
       break;
     case 'l': SKD(0)
-      if (ui->off[0] <  .5) { ui->off[0] += .025; queue_reshape = 1; }
+      if (ui->off[0] <  .9) { ui->off[0] += .025; queue_reshape = 1; }
       break;
     case 'j': SKD(0)
-      if (ui->off[1] > -.5) { ui->off[1] -= .025; queue_reshape = 1; }
+      if (ui->off[1] > -.9) { ui->off[1] -= .025; queue_reshape = 1; }
       break;
     case 'k': SKD(0)
-      if (ui->off[1] <  .5) { ui->off[1] += .025; queue_reshape = 1; }
+      if (ui->off[1] <  .9) { ui->off[1] += .025; queue_reshape = 1; }
       break;
     case 's': SKD(0)
       ui->rot[0] = ui->rot[1] = ui->rot[2] = 0.0;
-      ui->scale = 0.875;
-      ui->off[0] = ui->off[1] = ui->off[2] = 0.0;
+      ui->scale =   0.875;
+      ui->off[0] =  0.0;
+      ui->off[1] = -0.22;
+      ui->off[2] =  0.0;
       queue_reshape = 1;
       break;
     case 'e': SKD(0)
-      ui->scale = 0.9;
-      ui->rot[0] = ui->rot[1] = -20;
-      ui->off[0] = ui->off[2] = 0.0;
+      ui->scale  = 0.9;
+      ui->rot[0] = -15;
+      ui->rot[1] = -20;
+      ui->rot[2] =   0;
+      ui->off[0] =  0.0f;
       ui->off[1] = -0.1f;
-      ui->rot[2] = 0;
+      ui->off[2] =  0.0f;
       queue_reshape = 1;
       break;
     case 'p':
@@ -3052,13 +3056,13 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
     ui->curdir = strdup("/");
   }
 
-  ui->rot[0]     = -20;
-  ui->rot[1]     = -20;
-  ui->rot[2]     =  0.0;
-  ui->scale      =  0.9;
-  ui->off[0]     =  0.0f;
-  ui->off[1]     = -0.1f;
-  ui->off[2]     =  0.0f;
+  ui->scale  = 0.9;
+  ui->rot[0] = -15;
+  ui->rot[1] = -20;
+  ui->rot[2] =   0;
+  ui->off[0] =  0.0f;
+  ui->off[1] = -0.1f;
+  ui->off[2] =  0.0f;
 
   for (int i = 0; features && features[i]; ++i) {
     if (!strcmp(features[i]->URI, LV2_UI__parent)) {
