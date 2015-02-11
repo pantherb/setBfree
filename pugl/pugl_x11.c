@@ -78,7 +78,24 @@ static int attrListDbl[] = {
 	None
 };
 
-PuglView*
+/**
+   Attributes for double-buffered RGBA with multi-sampling
+	 (antialiasing)
+*/
+static int attrListDblMS[] = {
+	GLX_RGBA,
+	GLX_DOUBLEBUFFER    , True,
+	GLX_RED_SIZE        , 4,
+	GLX_GREEN_SIZE      , 4,
+	GLX_BLUE_SIZE       , 4,
+	GLX_ALPHA_SIZE      , 4,
+	GLX_DEPTH_SIZE      , 16,
+	GLX_SAMPLE_BUFFERS  , 1,
+	GLX_SAMPLES         , 4,
+	None
+};
+
+	PuglView*
 puglCreate(PuglNativeWindow parent,
            const char*      title,
            int              min_width,
@@ -106,18 +123,22 @@ puglCreate(PuglNativeWindow parent,
 
 	impl->display = XOpenDisplay(0);
 	impl->screen  = DefaultScreen(impl->display);
+	impl->doubleBuffered = True;
 
-	XVisualInfo* vi = glXChooseVisual(impl->display, impl->screen, attrListDbl);
+	XVisualInfo* vi = glXChooseVisual(impl->display, impl->screen, attrListDblMS);
+
+	if (!vi) {
+		vi = glXChooseVisual(impl->display, impl->screen, attrListDbl);
+#ifdef VERBOSE_PUGL
+		printf("puGL: multisampling (antialiasing) is not available\n");
+#endif
+	}
+
 	if (!vi) {
 		vi = glXChooseVisual(impl->display, impl->screen, attrListSgl);
 		impl->doubleBuffered = False;
 #ifdef VERBOSE_PUGL
 		printf("puGL: singlebuffered rendering will be used, no doublebuffering available\n");
-#endif
-	} else {
-		impl->doubleBuffered = True;
-#ifdef VERBOSE_PUGL
-		printf("puGL: doublebuffered rendering available\n");
 #endif
 	}
 
