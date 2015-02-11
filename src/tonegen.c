@@ -2884,6 +2884,8 @@ void initToneGenerator (struct b_tonegen *t, void *m) {
   }
   for (i=0; i< MAX_KEYS; ++i)
     t->activeKeys[i] = 0;
+  for (i=0; i< MAX_KEYS/32; ++i)
+    t->_activeKeys[i] = 0;
   for (i=0; i< CR_PGMMAX; ++i)
     memset((void*)&t->corePgm[i], 0, sizeof(CoreIns));
   for (i=0; i<= NOF_WHEELS; ++i)
@@ -3031,6 +3033,7 @@ void oscKeyOff (struct b_tonegen *t, unsigned char keyNumber) {
   if (t->activeKeys[keyNumber] != 0) {
     /* Flag the key as inactive */
     t->activeKeys[keyNumber] = 0;
+    t->_activeKeys[keyNumber/32] &= ~(1<<(keyNumber%32));
     /* Track upper manual keys for percussion trigger */
     if (keyNumber < 64) {
       t->upperKeyCount--;
@@ -3063,6 +3066,7 @@ void oscKeyOn (struct b_tonegen *t, unsigned char keyNumber) {
   }
   /* Mark the key as active */
   t->activeKeys[keyNumber] = 1;
+  t->_activeKeys[keyNumber/32] |= (1<<(keyNumber%32));
   /* Track upper manual for percussion trigger */
   if (keyNumber < 64) {
     t->upperKeyCount++;

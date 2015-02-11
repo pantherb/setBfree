@@ -302,8 +302,14 @@ struct _oscillator oscillators [NOF_WHEELS + 1];
 /*
  * Vector of active keys, used to correctly manage
  * sounding and non-sounding keys.
+ * boolean 0,1
  */
 unsigned int activeKeys [MAX_KEYS];
+
+/* bitwise compact active keys - used for GUI comm.
+ * TODO supersede activeKeys[] above
+ */
+unsigned int _activeKeys [MAX_KEYS/32];
 
 /**
  * The array drawBarGain holds the instantaneous amplification value for
