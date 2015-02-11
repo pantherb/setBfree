@@ -1841,7 +1841,7 @@ onDisplay(PuglView* view)
     ui->font_small = ftglCreateBufferFontMem(VeraBd_ttf, VeraBd_ttf_len);
 #endif
 
-    ftglSetFontFaceSize(ui->font_big, 40, 72);
+    ftglSetFontFaceSize(ui->font_big, 36, 72);
     ftglSetFontCharMap(ui->font_big, ft_encoding_unicode);
     ftglSetFontFaceSize(ui->font_small, 20, 72);
     ftglSetFontCharMap(ui->font_small, ft_encoding_unicode);
