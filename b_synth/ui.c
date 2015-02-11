@@ -1336,7 +1336,7 @@ void handle_msg_reply(PuglView* view) {
     save_cfgpgm(view, ui->pendingdata, ui->pendingmode, 1);
   } else {
     fprintf(stderr, "B3Lv2UI: invalid pending mode.\n");
-}
+  }
 }
 
 /******************************************************************************
@@ -1929,7 +1929,6 @@ onDisplay(PuglView* view)
     if (ui->pgm_sel >= 0) {
       char *t0, *t1; int ln = 0;
       t0 = ui->mididsc[ui->pgm_sel];
-      //printf("DSC: %s\n", t0);
       while (*t0 && (t1 = strchr(t0, '\n'))) {
 	*t1='\0';
 	render_text(view, t0, 16.5, ++ln*0.5 - .1 , .1f, 3);
@@ -2048,7 +2047,7 @@ onDisplay(PuglView* view)
     menu_button(view, MENU_LOAD,  20, HOVER_MLOAD, "Load pgm or cfg File");
     menu_button(view, MENU_SAVEP, 21, HOVER_MSAVEP, "Export Program File");
     menu_button(view, MENU_SAVEC, 22, HOVER_MSAVEC, "Export Config File");
-    menu_button(view, MENU_CANC, -1, HOVER_MCANC, "Close");
+    menu_button(view, MENU_CANC, -1,  HOVER_MCANC, "Close");
     return;
   }
 
@@ -3324,7 +3323,6 @@ port_event(LV2UI_Handle handle,
     strncpy(ui->mididsc[v], dsc, 256);
     ui->midipgm[v][31] = '\0';
     ui->mididsc[v][255] = '\0';
-    //printf("%d %s %s", v, ui->midipgm[v], ui->mididsc[v]);
     puglPostRedisplay(ui->view);
   } else if (obj->body.otype == ui->uris.sb3_uimsg) {
     const LV2_Atom* msg = NULL;
