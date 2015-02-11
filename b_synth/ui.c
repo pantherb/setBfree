@@ -1398,6 +1398,7 @@ static void txtentry_handle(PuglView* view, uint32_t key) {
   int pos = strlen(ui->textentry_text);
   switch (key) {
     case 8: // backspace
+    case 127: // delete
       if (pos > 0) pos--;
       break;
     case 27: // ESC
