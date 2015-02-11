@@ -1015,6 +1015,7 @@ onReshape(PuglView* view, int width, int height)
   glOrtho(-1.0, 1.0, invaspect, -invaspect, 3.0, -3.0);
 
   if (ui->displaymode || ui->textentry_active || ui->popupmsg) {
+    glViewport(0, 0, width, height);
     glMatrixMode(GL_MODELVIEW);
     return;
   }
@@ -1146,8 +1147,7 @@ unity_box(PuglView* view,
     const float y0, const float y1,
     const GLfloat color[4])
 {
-  B3ui* ui = (B3ui*)puglGetHandle(view);
-  const float invaspect = (float) ui->height / (float) ui->width;
+  const float invaspect = 320. / 960.;
   glPushMatrix();
   glLoadIdentity();
   glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, color);
@@ -1170,7 +1170,7 @@ unity_button(PuglView* view,
     )
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
-  const float invaspect = (float) ui->height / (float) ui->width;
+  const float invaspect = 320. / 960.;
   GLfloat btncol[] = {0.1, 0.3, 0.1, 1.0 };
 
   if (hover) {
@@ -1228,7 +1228,7 @@ gui_button(PuglView* view,
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   const GLfloat mat_white[] = { 1.0, 1.0, 1.0, 1.0 };
-  const float invaspect = (float) ui->height / (float) ui->width;
+  const float invaspect = 320. / 960.;
   unity_button(view, x0, x1, y0, y1, ui->mouseover & hovermask);
   render_title(view, label, (x1 + x0) / 2.0 / SCALE, invaspect * (y1 + y0) / 2.0 / SCALE, 0, mat_white, 1);
 }
@@ -1242,7 +1242,7 @@ menu_button(PuglView* view,
     )
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
-  const float invaspect = (float) ui->height / (float) ui->width;
+  const float invaspect = 320. / 960.;
   GLfloat mat_x[] = { 0.6, 0.6, 0.6, 1.0 };
 
   if (ui->mouseover & hovermask) {
@@ -1287,8 +1287,7 @@ unity_tri(PuglView* view,
     const float y0, const float y1,
     const GLfloat color[4])
 {
-  B3ui* ui = (B3ui*)puglGetHandle(view);
-  const float invaspect = (float) ui->height / (float) ui->width;
+  const float invaspect = 320. / 960.;
   glPushMatrix();
   glLoadIdentity();
   glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, color);
@@ -1875,7 +1874,7 @@ onDisplay(PuglView* view)
 
   if (ui->displaymode == 1) {
     /* Help screen */
-    const float invaspect = (float) ui->height / (float) ui->width;
+    const float invaspect = 320. / 960.;
     glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_w);
     glMaterialfv(GL_FRONT, GL_AMBIENT, mat_w);
     glLoadIdentity();
@@ -1894,7 +1893,7 @@ onDisplay(PuglView* view)
   } else if (ui->displaymode == 2 || ui->displaymode == 3) {
     /* midi program list */
     int i;
-    const float invaspect = (float) ui->height / (float) ui->width;
+    const float invaspect = 320. / 960.;
     const float w = 1.0/2.8 * 22.0 * SCALE;
     const float h = 2.0/24.0 * 22.0 * SCALE;
 
@@ -1940,7 +1939,7 @@ onDisplay(PuglView* view)
     return;
   } else if (IS_FILEBROWSER(ui)) {
     int i;
-    const float invaspect = (float) ui->height / (float) ui->width;
+    const float invaspect = 320. / 960.;
     const float w = 1.0/2.8 * 22.0 * SCALE;
     const float h = 2.0/24.0 * 22.0 * SCALE;
 
@@ -2026,7 +2025,7 @@ onDisplay(PuglView* view)
   } else if (ui->displaymode == 7) {
 
     const GLfloat mat_x[] = {0.5, 0.5, 0.5, 1.0};
-    const float invaspect = (float) ui->height / (float) ui->width;
+    const float invaspect = 320. / 960.;
     glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_x);
     glMaterialfv(GL_FRONT, GL_AMBIENT, mat_x);
     glMaterialfv(GL_FRONT, GL_EMISSION, mat_x);
@@ -2508,6 +2507,7 @@ onMotion(PuglView* view, int x, int y)
   if (ui->displaymode == 7) { // menu
     fx = (2.0 * x / ui->width ) - 1.0;
     fy = (2.0 * y / ui->height ) - 1.0;
+    fy *= (ui->height / (float) ui->width) / (320. / 960.);
     if (MOUSEIN(MENU_SAVEP, fx, fy)) ui->mouseover |= HOVER_MSAVEP;
     if (MOUSEIN(MENU_SAVEC, fx, fy)) ui->mouseover |= HOVER_MSAVEC;
     if (MOUSEIN(MENU_LOAD, fx, fy)) ui->mouseover |= HOVER_MLOAD;
@@ -2521,6 +2521,7 @@ onMotion(PuglView* view, int x, int y)
   else if (ui->textentry_active || ui->popupmsg || ui->displaymode) {
     fx = (2.0 * x / ui->width ) - 1.0;
     fy = (2.0 * y / ui->height ) - 1.0;
+    fy *= (ui->height / (float) ui->width) / (320. / 960.);
     if (MOUSEIN(BTNLOC_OK, fx, fy)) ui->mouseover |= HOVER_OK;
     if (MOUSEIN(BTNLOC_NO, fx, fy)) ui->mouseover |= HOVER_NO;
     if (MOUSEIN(BTNLOC_YES, fx, fy)) ui->mouseover |= HOVER_YES;
@@ -2575,6 +2576,7 @@ onMotion(PuglView* view, int x, int y)
     int dir_sel; // = ui->dir_sel;
     fx = (2.0 * x / ui->width ) - 1.0;
     fy = (2.0 * y / ui->height ) - 1.0;
+    fy *= (ui->height / (float) ui->width) / (320. / 960.);
 
     fx /= SCALE * 22.0; fy /= SCALE * 22.0;
     fx += 1.1; fy += 1.0;
@@ -2669,6 +2671,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     case 2:
       fx = (2.0 * x / ui->width ) - 1.0;
       fy = (2.0 * y / ui->height ) - 1.0;
+      fy *= (ui->height / (float) ui->width) / (320. / 960.);
       if (ui->pgm_sel >= 0) {
 	ui->displaymode = 0;
 	forge_message_int(ui, ui->uris.sb3_midipgm, ui->pgm_sel);
@@ -2684,6 +2687,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     case 3:
       fx = (2.0 * x / ui->width ) - 1.0;
       fy = (2.0 * y / ui->height ) - 1.0;
+      fy *= (ui->height / (float) ui->width) / (320. / 960.);
       if (ui->pgm_sel >= 0) {
 	txtentry_start(view,"Enter Preset Name:", strlen(ui->midipgm[ui->pgm_sel]) > 0 ? ui->midipgm[ui->pgm_sel] : "User" );
 	puglPostRedisplay(view);
@@ -2703,6 +2707,8 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     case 7:
       fx = (2.0 * x / ui->width ) - 1.0;
       fy = (2.0 * y / ui->height ) - 1.0;
+      fy *= (ui->height / (float) ui->width) / (320. / 960.);
+
       if (MOUSEIN(MENU_SAVEP, fx, fy)) {
 	dirlist(view, ui->curdir);
 	ui->displaymode = 6;
@@ -2733,6 +2739,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     case 6: //IS_FILEBROWSER() == displaymode 4,5,6
       fx = (2.0 * x / ui->width ) - 1.0;
       fy = (2.0 * y / ui->height ) - 1.0;
+      fy *= (ui->height / (float) ui->width) / (320. / 960.);
 
       if (ui->dir_sel >= 0) {
 	/* click on file */
