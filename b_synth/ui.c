@@ -1230,7 +1230,7 @@ gui_button(PuglView* view,
   const GLfloat mat_white[] = { 1.0, 1.0, 1.0, 1.0 };
   const float invaspect = 320. / 960.;
   unity_button(view, x0, x1, y0, y1, ui->mouseover & hovermask);
-  render_title(view, label, (x1 + x0) / 2.0 / SCALE, invaspect * (y1 + y0) / 2.0 / SCALE, 0, mat_white, 1);
+  render_title(view, label, (x1 + x0) / 2.0 / SCALE, invaspect * (y1 + y0) / 2.0 / SCALE, 0.5, mat_white, 1);
 }
 
 static void
@@ -1445,7 +1445,7 @@ static void txtentry_render(PuglView* view) {
   float bb[6];
   ftglGetFontBBox(ui->font_big, ui->textentry_text, -1, bb);
 
-  glTranslatef((bb[3] - bb[0])/-2.0, -0.25 * (1000.0*SCALE), 0);
+  glTranslatef((bb[3] - bb[0])/-2.0, -0.25 * (1000.0*SCALE), 0.1);
   ftglRenderFont(ui->font_big, ui->textentry_text, FTGL_RENDER_ALL);
 
   glTranslatef((bb[3] - bb[0]), 0, 0);
@@ -1457,7 +1457,7 @@ static void txtentry_render(PuglView* view) {
   glRotatef(180, 1, 0, 0);
   ftglGetFontBBox(ui->font_big, ui->textentry_title, -1, bb);
   glTranslatef((bb[3] - bb[0])/-2.0, (bb[4] - bb[1])/-2.0, 0);
-  glTranslatef(0, 4.5 * (1000.0*SCALE), 0);
+  glTranslatef(0, 4.5 * (1000.0*SCALE), 0.1);
   ftglRenderFont(ui->font_big, ui->textentry_title, FTGL_RENDER_ALL);
 
   glPopMatrix();
@@ -1855,7 +1855,7 @@ onDisplay(PuglView* view)
       ui->queuepopup = 0;
     }
     unity_box(view, -1.0, 1.0, -.12, .12, mat_dial);
-    render_title(view, ui->popupmsg, 0, 0, 0, mat_drawbar_white, 1);
+    render_title(view, ui->popupmsg, 0, 0, 0.1, mat_drawbar_white, 1);
     if (ui->pendingmode) {
       render_text(view, "Press <enter> to confirm, <ESC> to abort, or press button.", 0, 7.0, 0, 1);
       gui_button(view, BTNLOC_NO, HOVER_NO, "No");
@@ -1897,7 +1897,7 @@ onDisplay(PuglView* view)
     const float w = 1.0/2.8 * 22.0 * SCALE;
     const float h = 2.0/24.0 * 22.0 * SCALE;
 
-    render_title(view, (ui->displaymode == 2) ? "recall" : "store", 16.5, -.75, 0.0, mat_drawbar_white, 3);
+    render_title(view, (ui->displaymode == 2) ? "recall" : "store", 16.5, -.75, 0.1, mat_drawbar_white, 3);
     gui_button(view, BTNLOC_CANC2, HOVER_CANC2, "Cancel");
 
     for (i=0; i < 128; i++) {
@@ -1945,18 +1945,18 @@ onDisplay(PuglView* view)
 
     switch(ui->displaymode) {
       case 4:
-	render_title(view, "open .pgm or .cfg", 16.25, 6.5, 0.0, mat_drawbar_white, 2);
+	render_title(view, "open .pgm or .cfg", 16.25, 6.5, 0.1, mat_drawbar_white, 2);
 	render_text(view, "Note: loading a .cfg will re-initialize the organ.", -20.0, 7.75, 0.0, 3);
 	gui_button(view, BTNLOC_CANC3, HOVER_CANC3, "Cancel");
 	break;
       case 5:
-	render_title(view, "save .cfg", 0, invaspect * btn_y(BTNLOC_SAVE), 0.0, mat_drawbar_white, 1);
+	render_title(view, "save .cfg", 0, invaspect * btn_y(BTNLOC_SAVE), 0.1, mat_drawbar_white, 1);
 	gui_button(view, BTNLOC_SAVE, HOVER_SAVE, "Save");
 	gui_button(view, BTNLOC_CANC, HOVER_CANC, "Cancel");
 	render_text(view, "select a file or press OK or <enter> to create new.", -20.0, 7.75, 0.0, 3);
 	break;
       case 6:
-	render_title(view, "save .pgm", 0, invaspect * btn_y(BTNLOC_SAVE), 0.0, mat_drawbar_white, 1);
+	render_title(view, "save .pgm", 0, invaspect * btn_y(BTNLOC_SAVE), 0.1, mat_drawbar_white, 1);
 	gui_button(view, BTNLOC_SAVE, HOVER_SAVE, "Save");
 	gui_button(view, BTNLOC_CANC, HOVER_CANC, "Cancel");
 	render_text(view, "select a file or press OK or <enter> to create new.", -20.0, 7.75, 0.0, 3);
