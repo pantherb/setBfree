@@ -177,7 +177,6 @@ autoconfbuild --enable-static
 src lv2-1.10.0 tar.bz2 http://lv2plug.in/spec/lv2-1.10.0.tar.bz2
 wafbuild --no-plugins
 
-exit
 ################################################################################
 cd ${BUILDD}
 #rm -rf setBfree

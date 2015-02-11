@@ -27,7 +27,8 @@ make \
 	|| exit
 
 # zip-up LV2
-LV2TMPDIR=/tmp
+export LV2TMPDIR=`mktemp -d -t lv2tmp`
+trap "rm -rf $LV2TMPDIR" EXIT
 
 mkdir -p ${LV2TMPDIR}/b_synth.lv2/
 cp -v b_synth/*.ttl ${LV2TMPDIR}/b_synth.lv2/
@@ -50,7 +51,7 @@ export RSRC_DIR="$(pwd)/doc/"
 export APPNAME="${PRODUCT_NAME}.app"
 
 export BUNDLEDIR=`mktemp -d -t bundle`
-trap "rm -rf $BUNDLEDIR" EXIT
+trap "rm -rf $BUNDLEDIR $LV2TMPDIR" EXIT
 
 export TARGET_BUILD_DIR="${BUNDLEDIR}/${APPNAME}/"
 export TARGET_CONTENTS="${TARGET_BUILD_DIR}Contents/"
@@ -63,14 +64,14 @@ mkdir ${TARGET_BUILD_DIR}Contents/Resources
 #############################################################################
 # DEPLOY TO LOCAL APP DIR
 
-cp -v ui/setBfreeUI ${TARGET_CONTENTS}/MacOS/setBfreeUI
-cp -v pgm/default.pgm ${TARGET_CONTENTS}/Resources/
+cp -v ui/setBfreeUI ${TARGET_CONTENTS}MacOS/setBfreeUI
+cp -v pgm/default.pgm ${TARGET_CONTENTS}Resources/
 cp -v ${RSRC_DIR}/${PRODUCT_NAME}.icns ${TARGET_CONTENTS}Resources/
-cp -av b_conv/ir ${TARGET_CONTENTS}/Resources/
+cp -av b_conv/ir ${TARGET_CONTENTS}Resources/
 
 echo "APPL~~~~" > ${TARGET_CONTENTS}PkgInfo
 
-cat > ${TARGET_CONTENTS}/Info.plist << EOF
+cat > ${TARGET_CONTENTS}Info.plist << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -104,14 +105,14 @@ VOLNAME=$PRODUCT_NAME-${VERSION}
 EXTRA_SPACE_MB=5
 
 
-DMGMEGABYTES=$[ `du -sk "${TARGET_BUILD_DIR}" | cut -f 1` * 1024 / 1048576 + $EXTRA_SPACE_MB ]
+DMGMEGABYTES=$[ `du -sck "${TARGET_BUILD_DIR}" "${LV2TMPDIR}" | tail -n 1 | cut -f 1` * 1024 / 1048576 + $EXTRA_SPACE_MB ]
 echo "DMG MB = " $DMGMEGABYTES
 
 MNTPATH=`mktemp -d -t mntpath`
 TMPDMG=`mktemp -t tmpdmg`
 ICNSTMP=`mktemp -t appicon`
 
-trap "rm -rf $MNTPATH $TMPDMG ${TMPDMG}.dmg $ICNSTMP $BUNDLEDIR" EXIT
+trap "rm -rf $MNTPATH $TMPDMG ${TMPDMG}.dmg $ICNSTMP $BUNDLEDIR $LV2TMPDIR" EXIT
 
 rm -f $UC_DMG "$TMPDMG" "${TMPDMG}.dmg" "$ICNSTMP ${ICNSTMP}.icns ${ICNSTMP}.rsrc"
 rm -rf "$MNTPATH"
@@ -122,9 +123,12 @@ TMPDMG="${TMPDMG}.dmg"
 hdiutil create -megabytes $DMGMEGABYTES "$TMPDMG"
 DiskDevice=$(hdid -nomount "$TMPDMG" | grep Apple_HFS | cut -f 1 -d ' ')
 newfs_hfs -v "${VOLNAME}" "${DiskDevice}"
-mount -t hfs "${DiskDevice}" "${MNTPATH}"
+mount -t hfs -o nobrowse "${DiskDevice}" "${MNTPATH}"
 
 cp -a ${TARGET_BUILD_DIR} "${MNTPATH}/${APPNAME}"
+cp -a ${LV2TMPDIR}/b_synth.lv2 "${MNTPATH}/b_synth.lv2"
+cp ${RSRC_DIR}/osx_readme.txt "${MNTPATH}/README.txt"
+
 mkdir "${MNTPATH}/.background"
 cp -vi ${DMGBACKGROUND} "${MNTPATH}/.background/dmgbg.png"
 
@@ -146,7 +150,7 @@ echo '
 	   set current view of container window to icon view
 	   set toolbar visible of container window to false
 	   set statusbar visible of container window to false
-	   set the bounds of container window to {400, 200, 800, 440}
+	   set the bounds of container window to {400, 200, 800, 580}
 	   set theViewOptions to the icon view options of container window
 	   set arrangement of theViewOptions to not arranged
 	   set icon size of theViewOptions to 64
@@ -154,6 +158,8 @@ echo '
 	   make new alias file at container window to POSIX file "/Applications" with properties {name:"Applications"}
 	   set position of item "'${APPNAME}'" of container window to {100, 100}
 	   set position of item "Applications" of container window to {310, 100}
+	   set position of item "b_synth.lv2" of container window to {100, 260}
+	   set position of item "README.txt" of container window to {310, 260}
 	   close
 	   open
 	   update without registering applications
@@ -167,7 +173,6 @@ echo '
 	hdiutil eject "${DiskDevice}"
 	exit 1
 }
-
 
 set +e
 chmod -Rf go-w "${MNTPATH}"
