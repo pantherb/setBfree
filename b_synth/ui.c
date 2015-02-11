@@ -1791,8 +1791,8 @@ onDisplay(PuglView* view)
   const GLfloat mat_organ[] = { 0.5, 0.25, 0.1, 1.0 };
   const GLfloat mat_dial[] = { 0.1, 0.1, 0.1, 1.0 };
   const GLfloat mat_lever[] = { 0.3, 0.3, 0.3, 1.0 };
-  const GLfloat mat_switch[] = { 1.0, 1.0, 0.94, 1.0 };
-  const GLfloat glow_red[] = { 1.0, 0.0, 0.00, 0.3 };
+  const GLfloat mat_switch[] = { 0.9, 0.9, 0.84, 1.0 };
+  const GLfloat glow_red[] = { 1.0, 0.0, 0.00, 1.0 };
   const GLfloat mat_drawbar_white[] = { 1.0, 1.0, 1.0, 1.0 };
   const GLfloat mat_drawbar_brown[] = { 0.39, 0.25, 0.1, 1.0 };
   const GLfloat mat_drawbar_black[] = { 0.0, 0.0, 0.0, 1.0 };
@@ -2169,6 +2169,7 @@ onDisplay(PuglView* view)
     float y = ui->ctrls[i].y;
 
     if (ui->ctrls[i].type == OBJ_DRAWBAR) { /* drawbar */
+      y += 6.0;
       y -= (float) vmap_val_to_midi(view, i) / 12.7;
     }
 
@@ -2197,9 +2198,9 @@ onDisplay(PuglView* view)
 	glMaterialfv(GL_FRONT, GL_AMBIENT, mat_switch);
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_switch);
 	if (ui->ctrls[i].cur == ui->ctrls[i].max) {
-	  glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
+	  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, glow_red);
 	} else {
-	  glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
+	  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, no_mat);
 	}
 	glRotatef((vmap_val_to_midi(view, i) < 64 ? -12 : 12.0), 1, 0, 0); // XXX
 	break;
@@ -2243,7 +2244,14 @@ onDisplay(PuglView* view)
     }
 
     if (ui->ctrls[i].texID > 0) {
-      glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+      switch(ui->ctrls[i].type) {
+	case OBJ_SWITCH:
+	  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	  break;
+	default:
+	  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+	  break;
+      }
       glEnable(GL_TEXTURE_2D);
       glBindTexture(GL_TEXTURE_2D, ui->texID[ui->ctrls[i].texID]);
     }
@@ -3114,11 +3122,11 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
 
   /* drawbars */
   for (i = 0; i < 9; ++i)
-    CTRLELEM(i, OBJ_DRAWBAR, 0, 8, 0, 3.6 + 1.4 * i, 7, 1.2, 25, 1);
+    CTRLELEM(i, OBJ_DRAWBAR, 0, 8, 0,   3.6 + 1.4 * i,      1.0, 1.2, 12, 1);
   for (; i < 18; ++i)
-    CTRLELEM(i, OBJ_DRAWBAR, 0, 8, 0, -10.5 + 1.4 * (i-9), 7, 1.2, 25, 1);
+    CTRLELEM(i, OBJ_DRAWBAR, 0, 8, 0, -10.5 + 1.4 * (i-9),  1.0, 1.2, 12, 1);
   for (; i < 20; ++i)
-    CTRLELEM(i, OBJ_DRAWBAR, 0, 8, 0, -14.8 + 1.4 * (i-18), 7, 1.2, 25, 1);
+    CTRLELEM(i, OBJ_DRAWBAR, 0, 8, 0, -14.8 + 1.4 * (i-18), 1.0, 1.2, 12, 1);
 
   /* btn - perc 20 - 23*/
   for (; i < 24; ++i)
