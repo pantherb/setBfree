@@ -55,3 +55,68 @@ ifeq ($(ENABLE_CONVOLUTION)$(COMPILE_VB3KB), yes)
 else
 override CFLAGS+= -std=c99
 endif
+
+#LV2 / GL-GUI
+
+ifeq ($(IS_OSX), yes)
+  FONTFILE?=/usr/X11/lib/X11/fonts/TTF/VeraBd.ttf
+else
+  FONTFILE?=/usr/share/fonts/truetype/ttf-bitstream-vera/VeraBd.ttf
+endif
+
+ifeq ($(shell test -f $(FONTFILE) || echo no ), no)
+  $(warning UI font can not be found on this system, install bitstream-vera TTF or set the FONTFILE variable to a ttf file)
+  $(warning LV2 GUI will not be built)
+  FONT_FOUND=no
+else
+  FONT_FOUND=yes
+endif
+
+ifeq ($(IS_OSX), yes)
+  HAVE_UI=$(shell pkg-config --exists ftgl && echo $(FONT_FOUND))
+else
+  HAVE_UI=$(shell pkg-config --exists glu ftgl && echo $(FONT_FOUND))
+endif
+
+ifeq ($(LV2AVAIL)$(HAVE_UI), yesyes)
+  UICFLAGS=-I..
+  UIDEPS=../pugl/pugl.h ../pugl/pugl_internal.h ../b_synth/ui_model.h
+  UIDEPS+=$(TX)drawbar.c $(TX)wood.c $(TX)dial.c
+  UIDEPS+=$(TX)btn_vibl.c $(TX)btn_vibu.c $(TX)btn_overdrive.c $(TX)btn_perc_volume.c
+  UIDEPS+=$(TX)btn_perc.c $(TX)btn_perc_decay.c $(TX)btn_perc_harmonic.c
+  UIDEPS+=$(TX)bg_right_ctrl.c $(TX)bg_left_ctrl.c $(TX)bg_leslie_drum.c $(TX)bg_leslie_horn.c
+  UIDEPS+=$(TX)help_screen_image.c
+  UIDEPS+=$(TX)ui_button_image.c $(TX)ui_proc_image.c
+  UIDEPS+=$(TX)uim_background.c $(TX)uim_cable1.c $(TX)uim_cable2.c $(TX)uim_caps.c
+  UIDEPS+=$(TX)uim_tube1.c $(TX)uim_tube2.c
+  ifeq ($(IS_OSX), yes)
+    UIDEPS+=../pugl/pugl_osx.m
+    UILIBS=../pugl/pugl_osx.m -framework Cocoa -framework OpenGL
+    UILIBS+=`pkg-config --variable=libdir ftgl`/libftgl.a `pkg-config --variable=libdir ftgl`/libfreetype.a
+    UILIBS+=-lm -lz -lbz2 --stdlib=libstdc++ -mmacosx-version-min=10.5
+    UI_TYPE=CocoaUI
+  else
+    UIDEPS+=../pugl/pugl_x11.c
+    override CFLAGS+=`pkg-config --cflags glu`
+    UILIBS=../pugl/pugl_x11.c -lX11 `pkg-config --libs glu ftgl`
+    UI_TYPE=X11UI
+  endif
+  UICFLAGS+=`pkg-config --cflags freetype2` `pkg-config --cflags ftgl` -DHAVE_FTGL -DUINQHACK=Sbf
+  UICFLAGS+=-DFONTFILE=\"$(FONTFILE)\"
+endif
+
+#NOTE: midi.c and cfgParser.c needs to be re-compiled w/o HAVE_ASEQ
+# and HAVE_ZITACONVOLVE. Other objects are identical.
+LV2OBJ= \
+  ../src/midi.c \
+  ../src/cfgParser.c \
+  ../src/program.c \
+  ../src/vibrato.c \
+  ../src/state.c \
+  ../src/tonegen.c \
+  ../src/pgmParser.c \
+  ../src/memstream.c \
+  ../b_whirl/eqcomp.c \
+  ../b_whirl/whirl.c \
+  ../b_overdrive/overdrive.c \
+  ../b_reverb/reverb.c \
