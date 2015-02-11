@@ -956,7 +956,9 @@ static void setupOpenGL() {
   glEnable(GL_POLYGON_SMOOTH);
   glEnable (GL_LINE_SMOOTH);
   glShadeModel(GL_SMOOTH);
+#if 0 // OpenGL 3.1
   glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+#endif
 
   glEnable(GL_MULTISAMPLE_ARB);
 

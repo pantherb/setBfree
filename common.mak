@@ -76,7 +76,7 @@ ifeq ($(LV2AVAIL)$(HAVE_UI), yesyes)
     UIDEPS+=../pugl/pugl_osx.m
     UILIBS=../pugl/pugl_osx.m -framework Cocoa -framework OpenGL
     UILIBS+=`pkg-config --variable=libdir ftgl`/libftgl.a `pkg-config --variable=libdir ftgl`/libfreetype.a
-    UILIBS+=-lm --stdlib=libstdc++ -mmacosx-version-min=10.5
+    UILIBS+=-lm -mmacosx-version-min=10.5
     UI_TYPE=CocoaUI
     UICFLAGS+=-DBUILTINFONT
     override FONTFILE=verabd.h
