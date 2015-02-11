@@ -276,6 +276,10 @@ typedef struct {
 
   int mouseover;
 
+  int upper_key;
+  int lower_key;
+  int pedal_key;
+
 #ifdef XTERNAL_UI
   struct lv2_external_ui_host *extui;
   struct lv2_external_ui xternal_ui;
@@ -511,6 +515,25 @@ static void forge_message_int(B3ui* ui, LV2_URID uri, const int val) {
   ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
 }
 
+static void forge_note(B3ui* ui, const int chan, const int note, const bool onoff) {
+  uint8_t obj_buf[16];
+  lv2_atom_forge_set_buffer(&ui->forge, obj_buf, 16);
+
+  uint8_t buffer[3];
+  buffer[0] = (onoff ? 0x90 : 0x80) | (chan & 0xf);
+  buffer[1] = note & 0x7f;
+  buffer[2] = (onoff ? 0x7f : 0x00);
+
+  LV2_Atom midiatom;
+  midiatom.type = ui->uris.midi_MidiEvent;
+  midiatom.size = 3;
+
+  lv2_atom_forge_raw(&ui->forge, &midiatom, sizeof(LV2_Atom));
+  lv2_atom_forge_raw(&ui->forge, buffer, 3);
+  lv2_atom_forge_pad(&ui->forge, sizeof(LV2_Atom) + 3);
+  ui->write(ui->controller, 0, lv2_atom_total_size(&midiatom), ui->uris.atom_eventTransfer, obj_buf);
+}
+
 /* called from port_event -- plugin tells GUI a new value */
 static void processCCevent(B3ui* ui, const char *k, int v) {
   int i;
@@ -735,11 +758,11 @@ static void print4x4(GLdouble *m) {
 #endif
 
 /* apply reverse projection to mouse-pointer, project Z-axis to screen. */
-static void project_mouse(PuglView* view, int mx, int my, float *x, float *y) {
+static void project_mouse(PuglView* view, int mx, int my, float zo, float *x, float *y) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   const double fx =  2.0 * (float)mx / ui->width  - 1.0;
   const double fy = -2.0 * (float)my / ui->height + 1.0;
-  const double fz = -(fx * ui->matrix[2] + fy * ui->matrix[6]) / ui->matrix[10];
+  const double fz = - ui->matrix[14] -(fx * ui->matrix[2] + fy * ui->matrix[6] - SCALE * zo) / ui->matrix[10];
 
   *x = fx * ui->matrix[0] + fy * ui->matrix[4] + fz * ui->matrix[8] + ui->matrix[12];
   *y = fx * ui->matrix[1] + fy * ui->matrix[5] + fz * ui->matrix[9] + ui->matrix[13];
@@ -1440,6 +1463,316 @@ static void txtentry_render(PuglView* view) {
 
 }
 
+static void piano_manual(float y0, float z0, int active_key) {
+
+  const GLfloat no_mat[] = { 0.0, 0.0, 0.0, 1.0 };
+  const GLfloat mat_key_white[] = { 0.7, 0.8, 0.8, 1.0 };
+  const GLfloat mat_key_black[] = { 0.2, 0.15, 0.05, 1.0 };
+  const GLfloat glow_red[] = { 1.0, 0.0, 0.00, 1.0 };
+
+  int i;
+  for (i = 0; i < 61; ++i) {
+    glPushMatrix();
+    glLoadIdentity();
+    glScalef(SCALE, SCALE, SCALE);
+
+    const int octave  = i / 12;
+    const int key  = i % 12;
+    const int bwk  = key >= 5 ? key + 1 : key;
+
+    if (bwk % 2 == 0) {
+      float x0 = (octave * 7.0 + bwk / 2.0) * 1.00;
+      glTranslatef(-16.f + x0, y0, z0);
+      glRotatef(180, 0, 1, 0);
+
+      glMaterialfv(GL_FRONT, GL_AMBIENT, mat_key_white);
+
+      if (i == active_key) {
+	glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, glow_red);
+	glRotatef(-5, 1, 0, 0);
+      } else {
+	glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_key_white);
+      }
+
+      float k0 = 0.05f;
+      float k1 = 0.95f;
+      switch(key) {
+	case 0:
+	case 5:
+	  k0=.45;
+	  break;
+	case 4:
+	case 11:
+	  k1=.55;
+	  break;
+	case 2:
+	  k0=.25;
+	  k1=.75;
+	  break;
+	case 7:
+	  k0=.35;
+	  k1=.75;
+	  break;
+	case 9:
+	  k0=.25;
+	  k1=.65;
+	  break;
+	default:
+	  break;
+      }
+
+      if (i == 60) {
+	k0 = 0.05f;
+	k1 = 0.95f;
+      }
+
+      glBegin(GL_QUADS);
+      // TOP
+      glVertex3f(k0, 3.f, 0.f);
+      glVertex3f(k0, 0.f, 0.f);
+      glVertex3f(k1, 0.f, 0.f);
+      glVertex3f(k1, 3.f, 0.f);
+      // front
+      glVertex3f(k0, 3.f,  0.f);
+      glVertex3f(k1, 3.f,  0.f);
+      glVertex3f(k1, 3.f, -.5f);
+      glVertex3f(k0, 3.f, -.5f);
+      // back
+      glVertex3f(k0, 0.f,  0.f);
+      glVertex3f(k1, 0.f,  0.f);
+      glVertex3f(k1, 0.f, -.5f);
+      glVertex3f(k0, 0.f, -.5f);
+      // left
+      glVertex3f(k0, 0.f, -.5f);
+      glVertex3f(k0, 3.f, -.5f);
+      glVertex3f(k0, 3.f,  0.f);
+      glVertex3f(k0, 0.f,  0.f);
+      // right
+      glVertex3f(k1, 3.f, -.5f);
+      glVertex3f(k1, 0.f, -.5f);
+      glVertex3f(k1, 0.f,  0.f);
+      glVertex3f(k1, 3.f,  0.f);
+      // bottom
+      glVertex3f(k0, 3.f, -.5f);
+      glVertex3f(k0, 0.f, -.5f);
+      glVertex3f(k1, 0.f, -.5f);
+      glVertex3f(k1, 3.f, -.5f);
+
+      // TOP
+      glVertex3f(.05f, 5.f, 0.f);
+      glVertex3f(.05f, 3.f, 0.f);
+      glVertex3f(.95f, 3.f, 0.f);
+      glVertex3f(.95f, 5.f, 0.f);
+      // front
+      glVertex3f(.05f, 5.f,  0.f);
+      glVertex3f(.95f, 5.f,  0.f);
+      glVertex3f(.95f, 5.f, -.5f);
+      glVertex3f(.05f, 5.f, -.5f);
+      // back
+      glVertex3f(.05f, 3.f,  0.f);
+      glVertex3f(.95f, 3.f,  0.f);
+      glVertex3f(.95f, 3.f, -.5f);
+      glVertex3f(.05f, 3.f, -.5f);
+      // left
+      glVertex3f(.05f, 3.f, -.5f);
+      glVertex3f(.05f, 5.f, -.5f);
+      glVertex3f(.05f, 5.f,  0.f);
+      glVertex3f(.05f, 3.f,  0.f);
+      // right
+      glVertex3f(.95f, 5.f, -.5f);
+      glVertex3f(.95f, 3.f, -.5f);
+      glVertex3f(.95f, 3.f,  0.f);
+      glVertex3f(.95f, 5.f,  0.f);
+      // bottom
+      glVertex3f(.05f, 5.f, -.5f);
+      glVertex3f(.05f, 3.f, -.5f);
+      glVertex3f(.95f, 3.f, -.5f);
+      glVertex3f(.95f, 5.f, -.5f);
+      glEnd();
+
+    } else {
+      float x0 = (octave * 7.0 + bwk / 2.0) * 1.00 - .1;
+      if (key == 1 || key == 6) x0 -= .2;
+      if (key == 8) x0 -= .1;
+
+      glTranslatef(-16.f + x0, y0, z0 - .3f);
+      glRotatef(180, 0, 1, 0);
+
+      glMaterialfv(GL_FRONT, GL_AMBIENT, mat_key_black);
+      glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_key_black);
+
+      if (i == active_key) {
+	glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
+	glTranslatef(0.f, .0f, -.1f);
+	glRotatef(-5, 1, 0, 0);
+      } else {
+	glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
+      }
+
+      glBegin(GL_QUADS);
+      // top
+      glVertex3f(0.f, 2.9, 0.f);
+      glVertex3f(0.f, 0.f, 0.f);
+      glVertex3f(.6f, 0.f, 0.f);
+      glVertex3f(.6f, 2.9, 0.f);
+      // front
+      glVertex3f(0.f, 2.9,  0.f);
+      glVertex3f(.6f, 2.9,  0.f);
+      glVertex3f(.6f, 2.9, -.5f);
+      glVertex3f(0.f, 2.9, -.5f);
+      // back
+      glVertex3f(0.f, 0.f,  0.f);
+      glVertex3f(.6f, 0.f,  0.f);
+      glVertex3f(.6f, 0.f, -.5f);
+      glVertex3f(0.f, 0.f, -.5f);
+      // left
+      glVertex3f(0.f, 0.f, -.5f);
+      glVertex3f(0.f, 2.9, -.5f);
+      glVertex3f(0.f, 2.9,  0.f);
+      glVertex3f(0.f, 0.f,  0.f);
+      // right
+      glVertex3f(.6f, 2.9, -.5f);
+      glVertex3f(.6f, 0.f, -.5f);
+      glVertex3f(.6f, 0.f,  0.f);
+      glVertex3f(.6f, 2.9,  0.f);
+      // bottom
+      glVertex3f(0.f, 2.9, -.5f);
+      glVertex3f(0.f, 0.f, -.5f);
+      glVertex3f(.6f, 0.f, -.5f);
+      glVertex3f(.6f, 2.9, -.5f);
+      glEnd();
+    }
+    glPopMatrix();
+  }
+}
+
+static void piano_pedals(int active_key) {
+
+  const float y0 = -7;
+  const float z0 = 18;
+  const GLfloat mat_key_white[] = { 0.6, 0.55, 0.45, 1.0 };
+  const GLfloat mat_key_black[] = { 0.3, 0.25, 0.15, 1.0 };
+  const GLfloat no_mat[] = { 0.0, 0.0, 0.0, 1.0 };
+  const GLfloat glow_red[] = { 1.0, 0.0, 0.00, 1.0 };
+
+  int i;
+  for (i = 0; i < 25; ++i) {
+    glPushMatrix();
+    glLoadIdentity();
+    glScalef(SCALE, SCALE, SCALE);
+
+    const int octave  = i / 12;
+    const int key  = i % 12;
+    const int bwk  = key >= 5 ? key + 1 : key;
+
+    if (bwk % 2 == 0) {
+      float x0 = (octave * 7.0 + bwk / 2.0) * 2.00;
+      glTranslatef(-13.f + x0, y0, z0);
+      glRotatef(180, 0, 1, 0);
+
+      glMaterialfv(GL_FRONT, GL_AMBIENT, mat_key_white);
+
+      if (i == active_key) {
+	glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, glow_red);
+	glRotatef(-7, 1, 0, 0);
+      } else {
+	glRotatef(-2, 1, 0, 0);
+	glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
+	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_key_white);
+      }
+
+      glBegin(GL_QUADS);
+      // TOP
+      glVertex3f(.05f, 14.f, 0.f);
+      glVertex3f(.05f, 0.f, 0.f);
+      glVertex3f(.95f, 0.f, 0.f);
+      glVertex3f(.95f, 14.f, 0.f);
+      // front
+      glVertex3f(.05f, 14.f,  0.f);
+      glVertex3f(.95f, 14.f,  0.f);
+      glVertex3f(.95f, 14.f, -.5f);
+      glVertex3f(.05f, 14.f, -.5f);
+      // back
+      glVertex3f(.05f, 0.f,  0.f);
+      glVertex3f(.95f, 0.f,  0.f);
+      glVertex3f(.95f, 0.f, -.5f);
+      glVertex3f(.05f, 0.f, -.5f);
+      // left
+      glVertex3f(.05f, 0.f, -.5f);
+      glVertex3f(.05f, 14.f, -.5f);
+      glVertex3f(.05f, 14.f,  0.f);
+      glVertex3f(.05f, 0.f,  0.f);
+      // right
+      glVertex3f(.95f, 14.f, -.5f);
+      glVertex3f(.95f, 0.f, -.5f);
+      glVertex3f(.95f, 0.f,  0.f);
+      glVertex3f(.95f, 14.f,  0.f);
+      // bottom
+      glVertex3f(.05f, 14.f, -.5f);
+      glVertex3f(.05f, 0.f, -.5f);
+      glVertex3f(.95f, 0.f, -.5f);
+      glVertex3f(.95f, 14.f, -.5f);
+      glEnd();
+
+    } else {
+      float x0 = (octave * 7.0 + bwk / 2.0) * 2.00 - .2;
+
+      glTranslatef(-13.f + x0, y0, z0 - .3f);
+      glRotatef(180, 0, 1, 0);
+
+      glMaterialfv(GL_FRONT, GL_AMBIENT, mat_key_black);
+      glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_key_black);
+
+      if (i == active_key) {
+	glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
+	glTranslatef(0.f, .0f, -.1f);
+	glRotatef(-7, 1, 0, 0);
+      } else {
+	glRotatef(-2, 1, 0, 0);
+	glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
+      }
+
+      glBegin(GL_QUADS);
+      // top
+      glVertex3f(0.f, 4.9, 0.f);
+      glVertex3f(0.f, 0.f, 0.f);
+      glVertex3f(.6f, 0.f, 0.f);
+      glVertex3f(.6f, 4.9, 0.f);
+      // front
+      glVertex3f(0.f, 4.9,  0.f);
+      glVertex3f(.6f, 4.9,  0.f);
+      glVertex3f(.6f, 4.9, -.5f);
+      glVertex3f(0.f, 4.9, -.5f);
+      // back
+      glVertex3f(0.f, 0.f,  0.f);
+      glVertex3f(.6f, 0.f,  0.f);
+      glVertex3f(.6f, 0.f, -.5f);
+      glVertex3f(0.f, 0.f, -.5f);
+      // left
+      glVertex3f(0.f, 0.f, -.5f);
+      glVertex3f(0.f, 4.9, -.5f);
+      glVertex3f(0.f, 4.9,  0.f);
+      glVertex3f(0.f, 0.f,  0.f);
+      // right
+      glVertex3f(.6f, 4.9, -.5f);
+      glVertex3f(.6f, 0.f, -.5f);
+      glVertex3f(.6f, 0.f,  0.f);
+      glVertex3f(.6f, 4.9,  0.f);
+      // bottom
+      glVertex3f(0.f, 4.9, -.5f);
+      glVertex3f(0.f, 0.f, -.5f);
+      glVertex3f(.6f, 0.f, -.5f);
+      glVertex3f(.6f, 4.9, -.5f);
+      glEnd();
+    }
+    glPopMatrix();
+  }
+}
+
+
 /**
  * main display fn
  */
@@ -1933,6 +2266,12 @@ onDisplay(PuglView* view)
       render_text(view, "move slider", x, y-.8, 1.6f, 1);
     }
   }
+
+  /** step 3 - keyboard & pedals **/
+
+  piano_manual(7.0, 1.5, ui->upper_key);
+  piano_manual(12.5, 3.5, ui->lower_key);
+  piano_pedals(ui->pedal_key);
 }
 
 static void reset_state_ccbind(PuglView* view) {
@@ -2133,7 +2472,7 @@ onScroll(PuglView* view, int x, int y, float dx, float dy)
   if (ui->displaymode) return;
   if (ui->textentry_active) return;
   if (fabs(dy) < .1) return;
-  project_mouse(view, x, y, &fx, &fy);
+  project_mouse(view, x, y, -.5, &fx, &fy);
   int i;
   for (i = 0; i < TOTAL_OBJ ; ++i) {
     if (MOUSEOVER(ui->ctrls[i], fx, fy)) {
@@ -2249,7 +2588,7 @@ onMotion(PuglView* view, int x, int y)
 
   if (ui->dndid < 0) return;
 
-  project_mouse(view, x, y, &fx, &fy);
+  project_mouse(view, x, y, -.5, &fx, &fy);
 
   const float dx = (fx - ui->dndx);
   const float dy = (fy - ui->dndy);
@@ -2263,9 +2602,26 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
   B3ui* ui = (B3ui*)puglGetHandle(view);
   int i;
   float fx, fy;
+  float kx, ky;
 
   if (!press) {
+    if (ui->upper_key >= 0) {
+      forge_note(ui, 0, ui->upper_key + 36, false);
+      puglPostRedisplay(view);
+    }
+    if (ui->lower_key >= 0) {
+      forge_note(ui, 1, ui->lower_key + 36, false);
+      puglPostRedisplay(view);
+    }
+    if (ui->pedal_key >= 0) {
+      forge_note(ui, 2, ui->pedal_key + 24, false);
+      puglPostRedisplay(view);
+    }
+
     ui->dndid = -1;
+    ui->upper_key = -1;
+    ui->lower_key = -1;
+    ui->pedal_key = -1;
     ui->dir_scrollgrab = NOSCROLL;
     return;
   }
@@ -2443,7 +2799,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 
   /* main organ view  */
 
-  project_mouse(view, x, y, &fx, &fy);
+  project_mouse(view, x, y, -.5, &fx, &fy);
 
   if (ui->displaymode == 0 && fx >= 1.04 && fx <= 1.100 && fy >= -.24 && fy <= -.18) {
     /* help button */
@@ -2460,7 +2816,6 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     puglPostRedisplay(view);
     return;
   }
-
   if (puglGetModifiers(view) & PUGL_MOD_CTRL && button == 2) {
     for (i = 0; i < TOTAL_OBJ; ++i) {
       if (!MOUSEOVER(ui->ctrls[i], fx, fy)) {
@@ -2472,6 +2827,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
       return;
     }
   }
+
   reset_state_ccbind(view);
 
   for (i = 0; i < TOTAL_OBJ; ++i) {
@@ -2501,8 +2857,86 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
       default:
 	break;
     }
-    break;
+    return;
   }
+
+  // upper manual
+  project_mouse(view, x, y, 1.5, &kx, &ky);
+  if (kx >= -.677 && kx <= .760 && ky >= .3 && ky <= .5) {
+    int key;
+    if (ky >= .41) {
+      // white key
+      int wk = floor((kx + .677) * 36. / (.760 + .677));
+      key = 12 * (wk / 7) + (wk % 7) * 2;
+      if (wk % 7 > 2) {
+	key--;
+      }
+    } else {
+      // white or black key
+      key = floor(.5 + (kx + .677) * 61. / (.760 + .677));
+    }
+    // top-most white key is "special" (no upper black)
+    if (key > 60) key = 60;
+    ui->upper_key = key;
+    forge_note(ui, 0, key + 36, true);
+    puglPostRedisplay(view);
+    return;
+  }
+
+  // lower manual
+  project_mouse(view, x, y, 3.5, &kx, &ky);
+  if (kx >= -.677 && kx <= .760 && ky >= .5 && ky <= .7) {
+    int key;
+    if (ky >= .62) {
+      // white key
+      int wk = floor((kx + .677) * 36. / (.760 + .677));
+      key = 12 * (wk / 7) + (wk % 7) * 2;
+      if (wk % 7 > 2) {
+	key--;
+      }
+    } else {
+      // white or black key
+      key = floor(.5 + (kx + .677) * 61. / (.760 + .677));
+    }
+    // top-most white key is "special" (no upper black)
+    if (key > 60) key = 60;
+    ui->lower_key = key;
+    forge_note(ui, 1, key + 36, true);
+    puglPostRedisplay(view);
+    return;
+  }
+
+  // pedals
+  project_mouse(view, x, y, 18.5, &kx, &ky);
+  if (kx >= -.554 && kx <= .600 && ky >= -.360 && ky <= .3) {
+    int key = -1;
+    int wk = floor((kx + .554) * 29. / (.600 + .554));
+    if (ky >= -.08) {
+      // white keys only
+      if (wk % 2 == 0) {
+	key = wk;
+      }
+    } else {
+      // white or black key
+      key = wk;
+      if (wk ==  5) key = -1;
+      if (wk == 13) key = -1;
+      if (wk == 19) key = -1;
+      if (wk == 27) key = -1;
+    }
+    if (key >= 0) {
+      if (wk >=  5) --key;
+      if (wk >= 13) --key;
+      if (wk >= 19) --key;
+      if (wk >= 27) --key;
+
+      ui->pedal_key = key;
+      forge_note(ui, 2, key + 24, true);
+      puglPostRedisplay(view);
+    }
+    return;
+  }
+
 }
 
 
@@ -2586,6 +3020,9 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   ui->queuepopup = 0;
   ui->pendingdata = NULL;
   ui->pendingmode = 0;
+  ui->upper_key = -1;
+  ui->lower_key = -1;
+  ui->pedal_key = -1;
 
   if (getenv("HOME")) {
     ui->curdir = strdup(getenv("HOME"));
