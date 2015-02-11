@@ -16,33 +16,10 @@ Quick-start
 -----------
 
  - start jackd [http://jackaudio.org] or configure JACK autostart
- - run `setBfree-start`
+ - run `setBfreeUI`
  - connect JACK Audio/MIDI ports (using qjackctl or you favorite JACK
    connection manager -- note: enable JACK-MIDI or use `a2jmidid` to expose
 	 MIDI-devices to JACK, alternatively run `setBfree midi.driver=alsa`)
-
-
-About
------
-
-setBfree is based on the code of Fredrik Kilander's Beatrix organ emulator. He
-gave permission to Will to use the Beatrix code in a GPL app. Robin Gareus
-changed the OSS based code to a JACK interface and moved the overdrive, reverb,
-and leslie functionality into LV2 plugins. The LV2 plugins allow users to mix
-and match any of the components with any other JACK supported app. Robin also
-added a TCL/TK GUI for testing and added leslie cabinet simulation using Ken
-Restivo's IR sample.
-
-While this works now in its first beta release, we are using this as a starting
-point for building a high quality emulator players familiar with the great
-Hammond organs of the past will enjoy. There will be two major milestones to
-reach this goal. The first is to clean up its first beta functionality
-including improving and cleaning up the current code, and adding a slicker GUI
-interface. For the second milestone, we will modify much of the code to make
-the organ more dynamic. A user will be able to adjust to taste from the 'like a
-bird' quality of chill players to the knocking, screaming organ sounds of
-gospel vamps, and rock and roll.
-
 
 Usage
 -----
@@ -54,15 +31,17 @@ lengthy list of available options and properties than can be modified.
 or ALSA-sequencer) and outputs audio to JACK. The engine does not have any
 graphical user interface (GUI). It is usually started from the commandline.
 
-The GUI `vb3kb` is a standalone application that simply sends MIDI messages to
-setBfree. `setBfree-start` is a shell-script that launches both and connects
-the GUI to the synth.
+The GUI `setBfreeUI` is a standalone application that wraps the LV2 plugin.
+
+The organ itself, as well as broken out parts (leslie, reverv, overdrive) are
+available as LV2 plugins.
 
 Examples:
 
 	setBfree midi.driver="alsa" midi.port="129" jack.connect="jack_rack:in_"
 	setBfree jack.out.left="system:playback_7" jack.out.left="system:playback_8"
-	setBfree-start midi.driver="alsa"
+	setBfreeUI
+	jalv.gtk http://gareus.org/oss/lv2/b_synth # LV2 in jalv-host
 
 
 Getting started - standalone app

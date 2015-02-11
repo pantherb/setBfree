@@ -8,20 +8,14 @@ Source: git://github.com/pantherb/setBfree.git
 Files: *
 Copyright:
   2003-2004 Fredrik Kilander <fk@dsv.su.se>
-  2008-2012 Robin Gareus <robin@gareus.org>
+  2008-2015 Robin Gareus <robin@gareus.org>
   2012 Will Panther <pantherb@setbfree.org>
-License: GPL-2+
-
-Files: vb3kb/*
-Copyright:
-  1997-2000 by Takashi Iwai
-  2012 Robin Gareus <robin@gareus.org>
 License: GPL-2+
 
 Files: b_whirl/*
 Copyright:
   2003-2004 Fredrik Kilander <fk@dsv.su.se>
-  2008-2012 Robin Gareus <robin@gareus.org>
+  2008-2015 Robin Gareus <robin@gareus.org>
   2010 Ken Restivo <ken@restivo.org>
   2012 Will Panther <pantherb@setbfree.org>
 License: GPL-2+
@@ -29,6 +23,11 @@ License: GPL-2+
 Files: b_conv/*
 Copyright:
   2012 Robin Gareus <robin@gareus.org>
+License: GPL-2+
+
+Files: ui/*
+Copyright:
+  2015 Robin Gareus <robin@gareus.org>
 License: GPL-2+
 
 Files: b_conv/ir/ir_leslie-*.wav

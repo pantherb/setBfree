@@ -126,9 +126,6 @@ install: setBfree
 	install -d $(DESTDIR)$(sharedir)/pgm
 	install -m644 ../cfg/*.cfg $(DESTDIR)$(sharedir)/cfg
 	install -m644 ../pgm/*.pgm $(DESTDIR)$(sharedir)/pgm
-ifneq ($(TCLTKPREFIX),)
-	install -m755 setBfree-start.sh $(DESTDIR)$(bindir)/setBfree-start
-endif
 
 uninstall:
 	rm -f $(DESTDIR)$(bindir)/setBfree
