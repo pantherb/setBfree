@@ -51,12 +51,11 @@ export PKG_CONFIG_PATH=${PREFIX}/lib/pkgconfig
 export PREFIX
 export SRCDIR
 
-export PATH=$HOME/bin:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin
+export PATH=${PREFIX}/bin:$HOME/bin:/usr/local/git/bin/:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin
 
 function autoconfbuild {
 set -e
 echo "======= $(pwd) ======="
-	PATH=${PREFIX}/bin:$PATH \
 	CPPFLAGS="-I${PREFIX}/include$CPPFLAGS" \
 	CFLAGS="${SBFARCH}${OSXCOMPAT:+ $OSXCOMPAT}$CFLAGS" \
 	CXXFLAGS="${SBFARCH}${OSXCOMPAT:+ $OSXCOMPAT}$CXXFLAGS" \
@@ -92,28 +91,93 @@ cd $1
 }
 
 ################################################################################
-#src zlib-1.2.7 tar.gz ftp://ftp.simplesystems.org/pub/libpng/png/src/history/zlib/zlib-1.2.7.tar.gz
+
+src m4-1.4.17 tar.gz http://ftp.gnu.org/gnu/m4/m4-1.4.17.tar.gz
+autoconfbuild
+
+src pkg-config-0.28 tar.gz http://pkgconfig.freedesktop.org/releases/pkg-config-0.28.tar.gz
+./configure --prefix=$PREFIX --with-internal-glib
+make $MAKEFLAGS
+make install
+
+src autoconf-2.69 tar.xz http://ftp.gnu.org/gnu/autoconf/autoconf-2.69.tar.gz
+autoconfbuild
+hash autoconf
+hash autoreconf
+
+src automake-1.14 tar.gz http://ftp.gnu.org/gnu/automake/automake-1.14.tar.gz
+autoconfbuild
+hash automake
+
+src libtool-2.4 tar.gz http://ftp.gnu.org/gnu/libtool/libtool-2.4.tar.gz
+autoconfbuild
+hash libtoolize
+
+src make-4.1 tar.gz http://ftp.gnu.org/gnu/make/make-4.1.tar.gz
+autoconfbuild
+hash make
+
+################################################################################
+
+download jack_headers.tar.gz http://robin.linuxaudio.org/jack_headers.tar.gz
+cd "$PREFIX"
+tar xzf ${SRCDIR}/jack_headers.tar.gz
+"$PREFIX"/update_pc_prefix.sh
+
+cd "$PREFIX"
+mkdir src/ && cd src
+git clone git://github.com/x42/weakjack.git
+
+################################################################################
 
 src liblo-0.28 tar.gz http://downloads.sourceforge.net/liblo/liblo-0.28.tar.gz
 autoconfbuild
 
-src freetype-2.5.3 tar.gz http://download.savannah.gnu.org/releases/freetype/freetype-2.5.3.tar.gz
-autoconfbuild -with-harfbuzz=no --with-png=no
+#src freetype-2.5.3 tar.gz http://download.savannah.gnu.org/releases/freetype/freetype-2.5.3.tar.gz
+#autoconfbuild -with-harfbuzz=no --with-png=no --with-bzip2=no --with-zlib=no
 
 src freetype-2.5.3 tar.gz http://download.savannah.gnu.org/releases/freetype/freetype-2.5.3.tar.gz
-autoconfbuild --with-harfbuzz=no --with-png=no --enable-static
+autoconfbuild --with-harfbuzz=no --with-png=no --enable-static --with-bzip2=no --with-zlib=no
 
 download ftgl-2.1.3-rc5.tar.gz http://downloads.sourceforge.net/project/ftgl/FTGL%20Source/2.1.3~rc5/ftgl-2.1.3-rc5.tar.gz
 cd ${BUILDD}
 rm -rf ftgl-2.1.3~rc5
 tar xf ${SRCDIR}/ftgl-2.1.3-rc5.tar.gz
 cd ftgl-2.1.3~rc5
+patch -p1 << EOF
+diff --git a/src/FTFont/FTFontGlue.cpp b/src/FTFont/FTFontGlue.cpp
+index b23e787..03ee840 100644
+--- a/src/FTFont/FTFontGlue.cpp
++++ b/src/FTFont/FTFontGlue.cpp
+@@ -57,6 +57,9 @@ C_TOR(ftglCreateBitmapFont, (const char *fontname),
+ C_TOR(ftglCreateBufferFont, (const char *fontname),
+       FTBufferFont, (fontname), FONT_BUFFER);
+ 
++C_TOR(ftglCreateBufferFontMem, (const unsigned char *pBufferBytes, size_t bufferSizeInBytes),
++      FTBufferFont, (pBufferBytes,bufferSizeInBytes), FONT_BUFFER);
++
+ // FTExtrudeFont::FTExtrudeFont();
+ C_TOR(ftglCreateExtrudeFont, (const char *fontname),
+       FTExtrudeFont, (fontname), FONT_EXTRUDE);
+diff --git a/src/FTGL/FTBufferFont.h b/src/FTGL/FTBufferFont.h
+index 15d358d..b3d40ab 100644
+--- a/src/FTGL/FTBufferFont.h
++++ b/src/FTGL/FTBufferFont.h
+@@ -92,6 +92,7 @@ FTGL_BEGIN_C_DECLS
+  * @see  FTGLfont
+  */
+ FTGL_EXPORT FTGLfont *ftglCreateBufferFont(const char *file);
++FTGL_EXPORT FTGLfont *ftglCreateBufferFontMem(const unsigned char *pBufferBytes, size_t bufferSizeInBytes);
+ 
+ FTGL_END_C_DECLS
+EOF
 MAKEFLAGS=ECHO="/bin/echo" \
 autoconfbuild --enable-static
 
 src lv2-1.10.0 tar.bz2 http://lv2plug.in/spec/lv2-1.10.0.tar.bz2
 wafbuild --no-plugins
 
+exit
 ################################################################################
 cd ${BUILDD}
 #rm -rf setBfree

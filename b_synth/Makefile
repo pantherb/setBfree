@@ -14,8 +14,14 @@ ifeq ($(LV2AVAIL), yes)
   ifeq ($(HAVE_UI), yes)
     targets+=$(LV2GUI)$(LIB_EXT)
   else
-    $(warning "openGL/GLU is not available - install glu-dev to include LV2 GUI")
+    $(warning "GUI will not be built")
+    $(warning "either openGL/GLU is not available - install glu-dev, ftgl-dev")
+    $(warning "or $(FONTFILE) cannot be found")
   endif
+endif
+
+ifeq ($(IS_OSX), yes)
+  CC=$(CXX)
 endif
 
 all: $(targets)
@@ -40,7 +46,7 @@ $(LV2NAME)$(LIB_EXT): lv2.c $(LV2OBJ) uris.h ../src/cfgParser.h ../src/midi.h
 		lv2.c $(LV2OBJ) \
 	  -shared $(LV2LDFLAGS) $(LDFLAGS) $(LOADLIBES)
 
-$(LV2GUI)$(LIB_EXT): ui.c uris.h $(UIDEPS)
+$(LV2GUI)$(LIB_EXT): ui.c uris.h $(UIDEPS) $(FONTFILE)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(UICFLAGS) \
 		-o $(LV2GUI)$(LIB_EXT) ui.c \
 		-shared $(LV2LDFLAGS) $(LDFLAGS) $(UILIBS)

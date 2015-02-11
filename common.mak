@@ -3,6 +3,7 @@
 PREFIX ?= /usr/local
 OPTIMIZATIONS ?= -msse -msse2 -mfpmath=sse -ffast-math -fomit-frame-pointer -O3 -fno-finite-math-only
 ENABLE_CONVOLUTION ?= no
+FONTFILE?=/usr/share/fonts/truetype/ttf-bitstream-vera/VeraBd.ttf
 
 bindir = $(PREFIX)/bin
 sharedir = $(PREFIX)/share/setBfree
@@ -13,19 +14,6 @@ override CFLAGS += -fPIC
 override CFLAGS += -DVERSION="\"$(VERSION)\""
 
 CXXFLAGS = $(OPTIMIZATIONS) -Wall
-
-# detect Tcl/Tk
-TCLPREFIX=/usr /usr/local
-TCLLIBDIR=lib64 lib
-
-$(foreach tprefix,$(TCLPREFIX), \
-  $(foreach tlibdir,$(TCLLIBDIR), \
-    $(if $(shell test -f $(tprefix)/$(tlibdir)/tclConfig.sh -a $(tprefix)/$(tlibdir)/tkConfig.sh && echo yes), \
-      $(eval TCLTKPREFIX=$(tprefix))\
-      $(eval TCLTKLIBDIR=$(tlibdir))\
-    )\
-  )\
-)
 
 # check for LV2
 LV2AVAIL=$(shell pkg-config --exists lv2 && echo yes)
@@ -55,30 +43,20 @@ else
   LIB_EXT=.so
 endif
 
-ifeq ($(ENABLE_CONVOLUTION)$(COMPILE_VB3KB), yes)
-	CC=$(CXX)
-else
-override CFLAGS+= -std=c99
+ifeq ($(ENABLE_CONVOLUTION), yes)
+  CC=$(CXX)
 endif
 
 #LV2 / GL-GUI
 
-ifeq ($(IS_OSX), yes)
-  FONTFILE?=/usr/X11/lib/X11/fonts/TTF/VeraBd.ttf
-else
-  FONTFILE?=/usr/share/fonts/truetype/ttf-bitstream-vera/VeraBd.ttf
-endif
-
 ifeq ($(shell test -f $(FONTFILE) || echo no ), no)
-  $(warning UI font can not be found on this system, install bitstream-vera TTF or set the FONTFILE variable to a ttf file)
-  $(warning LV2 GUI will not be built)
   FONT_FOUND=no
 else
   FONT_FOUND=yes
 endif
 
 ifeq ($(IS_OSX), yes)
-  HAVE_UI=$(shell pkg-config --exists ftgl && echo $(FONT_FOUND))
+  HAVE_UI=$(shell pkg-config --exists ftgl && echo yes)
 else
   HAVE_UI=$(shell pkg-config --exists glu ftgl && echo $(FONT_FOUND))
 endif
@@ -98,16 +76,18 @@ ifeq ($(LV2AVAIL)$(HAVE_UI), yesyes)
     UIDEPS+=../pugl/pugl_osx.m
     UILIBS=../pugl/pugl_osx.m -framework Cocoa -framework OpenGL
     UILIBS+=`pkg-config --variable=libdir ftgl`/libftgl.a `pkg-config --variable=libdir ftgl`/libfreetype.a
-    UILIBS+=-lm -lz -lbz2 --stdlib=libstdc++ -mmacosx-version-min=10.5
+    UILIBS+=-lm --stdlib=libstdc++ -mmacosx-version-min=10.5
     UI_TYPE=CocoaUI
+    UICFLAGS+=-DBUILTINFONT
+    override FONTFILE=verabd.h
   else
     UIDEPS+=../pugl/pugl_x11.c
-    override CFLAGS+=`pkg-config --cflags glu`
+    override CFLAGS+=`pkg-config --cflags glu` -std=c99
     UILIBS=../pugl/pugl_x11.c -lX11 `pkg-config --libs glu ftgl`
     UI_TYPE=X11UI
+    UICFLAGS+=-DFONTFILE=\"$(FONTFILE)\"
   endif
   UICFLAGS+=`pkg-config --cflags freetype2` `pkg-config --cflags ftgl` -DHAVE_FTGL -DUINQHACK=Sbf
-  UICFLAGS+=-DFONTFILE=\"$(FONTFILE)\"
 endif
 
 #NOTE: midi.c and cfgParser.c needs to be re-compiled w/o HAVE_ASEQ

@@ -1,23 +1,29 @@
 #!/bin/bash
 
 : ${SBFARCH=-arch x86_64 -arch i386}
+: ${SBFSTACK=$HOME/src/sbf_stack}
 : ${OSXCOMPAT=-mmacosx-version-min=10.5 -DMAC_OS_X_VERSION_MAX_ALLOWED=1090}
 
+VERSION=`git describe --tags`
+if test -z "$VERSION"; then
 eval `grep "VERSION=" Makefile`
+fi
 
 set -e
 
 TARGET=/tmp/bpkg
 PRODUCTDIR=$TARGET/setBfree.app
 
-make clean FONTFILE="VeraBd.ttf"
+PATH=$HOME/bin:${SBFSTACK}/bin/:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin
+PKG_CONFIG_PATH=${SBFSTACK}/lib/pkgconfig
+
+make clean
 make \
-	ENABLE_CONVOLUTION=yes \
-	OPTIMIZATIONS="-msse -msse2 -mfpmath=sse -ffast-math -fomit-frame-pointer -O3 -fno-finite-math-only ${OSXCOMPAT} ${SBFARCH}" \
-	TCLFILE="../Resources/vb3kb.tcl" \
+	ENABLE_CONVOLUTION=no \
+	CFLAGS="-msse -msse2 -mfpmath=sse -ffast-math -fomit-frame-pointer -O3 -fno-finite-math-only ${OSXCOMPAT} ${SBFARCH} -I${SBFSTACK}/src -DUSE_WEAK_JACK" \
 	IRPATH="../Resources/ir" \
-	FONTFILE="VeraBd.ttf" \
-	TCLPREFIX="" \
+	WEAKJACK="${SBFSTACK}/src/weakjack/weak_libjack.c" \
+	SUBDIRS="b_synth ui" \
 	|| exit
 
 # zip-up LV2
@@ -26,7 +32,6 @@ LV2TMPDIR=/tmp
 mkdir -p ${LV2TMPDIR}/b_synth.lv2/
 cp -v b_synth/*.ttl ${LV2TMPDIR}/b_synth.lv2/
 cp -v b_synth/*.dylib ${LV2TMPDIR}/b_synth.lv2/
-cp -v b_synth/VeraBd.ttf ${LV2TMPDIR}/b_synth.lv2/
 otool -L -arch all ${LV2TMPDIR}/b_synth.lv2/*dylib
 cd ${LV2TMPDIR}
 rm -f  setbfree_lv2_osx-${VERSION}.zip
@@ -38,118 +43,40 @@ if test -d ~/.lv2/b_synth.lv2/; then
 rsync -Pa ${LV2TMPDIR}/b_synth.lv2/ ~/.lv2/b_synth.lv2/
 fi
 
-if test ! -f vb3kb/vb3kb; then
-	exit
-fi
+#############################################################################
+# Create LOCAL APP DIR
+export PRODUCT_NAME="setBfree"
+export RSRC_DIR="$(pwd)/doc/"
+export APPNAME="${PRODUCT_NAME}.app"
 
-echo "!!! Warning: old OSX package with tcl/tk"
+export BUNDLEDIR=`mktemp -d -t bundle`
+trap "rm -rf $BUNDLEDIR" EXIT
 
-mkdir -p $PRODUCTDIR/Contents
-mkdir -p $PRODUCTDIR/Contents/MacOS
-mkdir -p $PRODUCTDIR/Contents/Resources
-mkdir -p $PRODUCTDIR/Contents/Frameworks
+export TARGET_BUILD_DIR="${BUNDLEDIR}/${APPNAME}/"
+export TARGET_CONTENTS="${TARGET_BUILD_DIR}Contents/"
 
-cp -v src/setBfree $PRODUCTDIR/Contents/MacOS/setBfree-bin
-cp -v vb3kb/vb3kb $PRODUCTDIR/Contents/MacOS/vb3kb
+mkdir ${TARGET_BUILD_DIR}
+mkdir ${TARGET_BUILD_DIR}Contents
+mkdir ${TARGET_BUILD_DIR}Contents/MacOS
+mkdir ${TARGET_BUILD_DIR}Contents/Resources
 
-cp -v vb3kb/vb3kb.tcl $PRODUCTDIR/Contents/Resources
+#############################################################################
+# DEPLOY TO LOCAL APP DIR
 
-cp -v pgm/default.pgm $PRODUCTDIR/Contents/Resources
-cp -v doc/setBfree.icns $PRODUCTDIR/Contents/Resources
-cp -v doc/dmgbg.png $TARGET/dmgbg.png
+cp -v ui/setBfreeUI ${TARGET_CONTENTS}/MacOS/setBfreeUI
+cp -v pgm/default.pgm ${TARGET_CONTENTS}/Resources/
+cp -v ${RSRC_DIR}/${PRODUCT_NAME}.icns ${TARGET_CONTENTS}Resources/
+cp -av b_conv/ir ${TARGET_CONTENTS}/Resources/
 
-cp -av b_conv/ir $PRODUCTDIR/Contents/Resources/
+echo "APPL~~~~" > ${TARGET_CONTENTS}PkgInfo
 
-
-# install shared libraries
-
-follow_dependencies () {
-	dependencies=`otool -arch all -L "$1"  | egrep '\/((opt|usr)\/local\/lib|gtk\/inst\/lib)'| awk '{print $1}'`
-	for l in $dependencies; do
-		libname=`basename $l`
-		libpath=`dirname $l`
-		echo "$libname" | grep "libjack" >/dev/null && continue 
-		if [ ! -f "$PRODUCTDIR/Contents/Frameworks/$libname" ]; then
-			deploy_lib $libname $libpath
-		fi
-		install_name_tool \
-			-change $libpath/$libname \
-			@executable_path/../Frameworks/$libname \
-			"$1"
-	done
-}
-
-deploy_lib () {
-	libname=$1
-	libpath=$2
-	if [ ! -f "$PRODUCTDIR/Contents/Frameworks/$libname" ]; then
-		cp -f "$libpath/$libname" "$PRODUCTDIR/Contents/Frameworks/$libname"
-		install_name_tool \
-			-id @executable_path/../Frameworks/$libname \
-			"$PRODUCTDIR/Contents/Frameworks/$libname"
-		follow_dependencies "$PRODUCTDIR/Contents/Frameworks/$libname"
-	fi
-}
-
-follow_dependencies "$PRODUCTDIR/Contents/MacOS/setBfree-bin"
-
-cat > $PRODUCTDIR/Contents/MacOS/setBfree << EOF
-#!/bin/sh
-
-if test ! -x /usr/local/bin/jackd -a ! -x /usr/bin/jackd ; then
-  /usr/bin/osascript -e '
-    tell application "Finder"
-    display dialog "You do not have JACK installed. setBfree will not run without it. See http://jackaudio.org/ for info." buttons["OK"]
-    end tell'
-  exit 1
-fi
-
-progname="\$0"
-curdir=\`dirname "\$progname"\`
-cd "\${curdir}"
-./setBfree-bin -p ../Resources/default.pgm &
-RV=\$?
-PID=\$!
-
-if test \$PID -lt 1 -o \$RV != 0; then
-  /usr/bin/osascript -e '
-    tell application "Finder"
-    display dialog "Failed to start setBfree. Check the \"console\" for error messages." buttons["OK"]
-    end tell'
-	exit 1
-fi
-
-JACK_LSP=
-if test -x /usr/local/bin/jack_lsp; then
-	JACK_LSP=/usr/local/bin/jack_lsp
-elif test -x /usr/bin/jack_lsp; then
-	JACK_LSP=/usr/local/bin/jack_lsp
-fi
-if test -z "\$JACK_LSP"; then
-  sleep 3 # give setBfree time to start and create jack-ports
-else
-	TIMEOUT=15
-	while test -z "\`\$JACK_LSP 2>/dev/null | grep setBfree\`" -a \$TIMEOUT -gt 0 ; do sleep 1; TIMEOUT=\$[ \$TIMEOUT - 1 ]; done
-fi
-
-./vb3kb
-
-kill -HUP \$PID
-EOF
-chmod +x $PRODUCTDIR/Contents/MacOS/setBfree
-
-
-cat > $PRODUCTDIR/Contents/PkgInfo << EOF
-APPL~~~~
-EOF
-
-cat > $PRODUCTDIR/Contents/Info.plist << EOF
+cat > ${TARGET_CONTENTS}/Info.plist << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
 	<key>CFBundleExecutable</key>
-	<string>setBfree</string>
+	<string>setBfreeUI</string>
 	<key>CFBundleName</key>
 	<string>setBfree</string>
 	<key>CFBundlePackageType</key>
@@ -166,41 +93,56 @@ cat > $PRODUCTDIR/Contents/Info.plist << EOF
 </plist>
 EOF
 
+
 ##############################################################################
 #roll a DMG
 
-TMPFILE=/tmp/bxtmp.dmg
-DMGFILE=/tmp/setBfree-${VERSION}.dmg
-MNTPATH=/tmp/mnt/
-VOLNAME=setBfree
-APPNAME="setBfree.app"
+UC_DMG="/tmp/${PRODUCT_NAME}-${VERSION}.dmg"
 
-BGPIC=$TARGET/dmgbg.png
+DMGBACKGROUND=${RSRC_DIR}dmgbg.png
+VOLNAME=$PRODUCT_NAME-${VERSION}
+EXTRA_SPACE_MB=5
 
-mkdir -p $MNTPATH
-if [ -e $TMPFILE -o -e $DMGFILE -o ! -d $MNTPATH ]; then
-  echo
-  echo "could not make DMG. tmp-file or destination file exists."
-  exit;
-fi
 
-hdiutil create -megabytes 100 $TMPFILE
-DiskDevice=$(hdid -nomount "${TMPFILE}" | grep Apple_HFS | cut -f 1 -d ' ')
+DMGMEGABYTES=$[ `du -sk "${TARGET_BUILD_DIR}" | cut -f 1` * 1024 / 1048576 + $EXTRA_SPACE_MB ]
+echo "DMG MB = " $DMGMEGABYTES
+
+MNTPATH=`mktemp -d -t mntpath`
+TMPDMG=`mktemp -t tmpdmg`
+ICNSTMP=`mktemp -t appicon`
+
+trap "rm -rf $MNTPATH $TMPDMG ${TMPDMG}.dmg $ICNSTMP $BUNDLEDIR" EXIT
+
+rm -f $UC_DMG "$TMPDMG" "${TMPDMG}.dmg" "$ICNSTMP ${ICNSTMP}.icns ${ICNSTMP}.rsrc"
+rm -rf "$MNTPATH"
+mkdir -p "$MNTPATH"
+
+TMPDMG="${TMPDMG}.dmg"
+
+hdiutil create -megabytes $DMGMEGABYTES "$TMPDMG"
+DiskDevice=$(hdid -nomount "$TMPDMG" | grep Apple_HFS | cut -f 1 -d ' ')
 newfs_hfs -v "${VOLNAME}" "${DiskDevice}"
 mount -t hfs "${DiskDevice}" "${MNTPATH}"
 
-cp -r ${TARGET}/${APPNAME} ${MNTPATH}/
+cp -a ${TARGET_BUILD_DIR} "${MNTPATH}/${APPNAME}"
+mkdir "${MNTPATH}/.background"
+cp -vi ${DMGBACKGROUND} "${MNTPATH}/.background/dmgbg.png"
 
-# TODO: remove .svn files..
+echo "setting DMG background ..."
 
-mkdir ${MNTPATH}/.background
-BGFILE=$(basename $BGPIC)
-cp -vi ${BGPIC} ${MNTPATH}/.background/${BGFILE}
+if test $(sw_vers -productVersion | cut -d '.' -f 2) -lt 9; then
+	# OSX ..10.8.X
+	DISKNAME=${VOLNAME}
+else
+	# OSX 10.9.X and later
+	DISKNAME=`basename "${MNTPATH}"`
+fi
 
 echo '
    tell application "Finder"
-     tell disk "'${VOLNAME}'"
+     tell disk "'${DISKNAME}'"
 	   open
+	   delay 1
 	   set current view of container window to icon view
 	   set toolbar visible of container window to false
 	   set statusbar visible of container window to false
@@ -208,7 +150,7 @@ echo '
 	   set theViewOptions to the icon view options of container window
 	   set arrangement of theViewOptions to not arranged
 	   set icon size of theViewOptions to 64
-	   set background picture of theViewOptions to file ".background:'${BGFILE}'"
+	   set background picture of theViewOptions to file ".background:dmgbg.png"
 	   make new alias file at container window to POSIX file "/Applications" with properties {name:"Applications"}
 	   set position of item "'${APPNAME}'" of container window to {100, 100}
 	   set position of item "Applications" of container window to {310, 100}
@@ -219,21 +161,43 @@ echo '
 	   eject
      end tell
    end tell
-' | osascript
+' | osascript || {
+	echo "Failed to set background/arrange icons"
+	umount "${DiskDevice}" || true
+	hdiutil eject "${DiskDevice}"
+	exit 1
+}
 
+
+set +e
+chmod -Rf go-w "${MNTPATH}"
+set -e
 sync
 
-# umount the image
-umount "${DiskDevice}"
-hdiutil eject "${DiskDevice}"
+echo "unmounting the disk image ..."
+# Umount the image ('eject' above may already have done that)
+umount "${DiskDevice}" || true
+hdiutil eject "${DiskDevice}" || true
 
 # Create a read-only version, use zlib compression
-hdiutil convert -format UDZO "${TMPFILE}" -imagekey zlib-level=9 -o "${DMGFILE}"
-
+echo "compressing Image ..."
+hdiutil convert -format UDZO "${TMPDMG}" -imagekey zlib-level=9 -o "${UC_DMG}"
 # Delete the temporary files
-rm $TMPFILE
-rmdir $MNTPATH
+rm "$TMPDMG"
+rm -rf "$MNTPATH"
+
+echo "setting file icon ..."
+
+cp ${RSRC_DIR}/${PRODUCT_NAME}.icns ${ICNSTMP}.icns
+sips -i ${ICNSTMP}.icns
+DeRez -only icns ${ICNSTMP}.icns > ${ICNSTMP}.rsrc
+Rez -append ${ICNSTMP}.rsrc -o "$UC_DMG"
+SetFile -a C "$UC_DMG"
+
+rm ${ICNSTMP}.icns ${ICNSTMP}.rsrc
+rm -rf $BUNDLEDIR
 
 echo
-echo "packaging succeeded."
-ls -l $DMGFILE
+echo "packaging suceeded:"
+ls -l "$UC_DMG"
+echo "Done."
