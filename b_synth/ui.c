@@ -2509,11 +2509,11 @@ onMotion(PuglView* view, int x, int y)
   ui->mouseover = 0;
 
   /* mouse - button hover */
+  fx = (2.0 * x / ui->width ) - 1.0;
+  fy = (2.0 * y / ui->height ) - 1.0;
+  fy *= (ui->height / (float) ui->width) / (320. / 960.);
 
   if (ui->displaymode == 7) { // menu
-    fx = (2.0 * x / ui->width ) - 1.0;
-    fy = (2.0 * y / ui->height ) - 1.0;
-    fy *= (ui->height / (float) ui->width) / (320. / 960.);
     if (MOUSEIN(MENU_SAVEP, fx, fy)) ui->mouseover |= HOVER_MSAVEP;
     if (MOUSEIN(MENU_SAVEC, fx, fy)) ui->mouseover |= HOVER_MSAVEC;
     if (MOUSEIN(MENU_LOAD, fx, fy)) ui->mouseover |= HOVER_MLOAD;
@@ -2525,9 +2525,6 @@ onMotion(PuglView* view, int x, int y)
     }
   }
   else if (ui->textentry_active || ui->popupmsg || ui->displaymode) {
-    fx = (2.0 * x / ui->width ) - 1.0;
-    fy = (2.0 * y / ui->height ) - 1.0;
-    fy *= (ui->height / (float) ui->width) / (320. / 960.);
     if (MOUSEIN(BTNLOC_OK, fx, fy)) ui->mouseover |= HOVER_OK;
     if (MOUSEIN(BTNLOC_NO, fx, fy)) ui->mouseover |= HOVER_NO;
     if (MOUSEIN(BTNLOC_YES, fx, fy)) ui->mouseover |= HOVER_YES;
