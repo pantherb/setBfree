@@ -310,6 +310,12 @@ static int show_message(PuglView* view, const char *msg) {
 /******************************************************************************
  * file-name helper function
  */
+#ifdef _WIN32
+#define DIRSEP "\\"
+#else
+#define DIRSEP "/"
+#endif
+
 static void free_dirlist(B3ui* ui) {
   int i;
   if (!ui->dirlist) return;
@@ -326,13 +332,23 @@ static char * absfilepath(const char *dir, const char *file) {
   if (!dir || !file) return NULL;
   char *fn = (char*) malloc((strlen(dir) + strlen(file) + 2)*sizeof(char));
   strcpy(fn, dir);
-  strcat(fn, "/");
+  strcat(fn, DIRSEP);
   strcat(fn, file);
+#ifdef _WIN32
+  char buf[PATH_MAX];
+  char * rfn = _fullpath(buf, fn, PATH_MAX);
+  if (rfn) {
+    free(fn);
+    return strdup(buf);
+  }
+#else
   char * rfn = realpath(fn, NULL);
   if (rfn) {
     free(fn);
     return rfn;
-  } else {
+  }
+#endif
+  else {
     return fn;
   }
 }
@@ -403,7 +419,7 @@ static int dirlist(PuglView* view, const char *dir) {
     ui->dirlist[ui->dirlistlen] = (char*) malloc(1024*sizeof(char));
     strncpy(ui->dirlist[ui->dirlistlen], dd->d_name, 1022);
     ui->dirlist[ui->dirlistlen][1022] = '\0';
-    strcat(ui->dirlist[ui->dirlistlen], "/");
+    strcat(ui->dirlist[ui->dirlistlen], DIRSEP);
     ui->dirlistlen++;
   }
 
@@ -3060,11 +3076,15 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
     ui->active_keys[i] = 0;
   }
 
+#ifdef _WIN32
+  ui->curdir = strdup("C:\\");
+#else
   if (getenv("HOME")) {
     ui->curdir = strdup(getenv("HOME"));
   } else {
     ui->curdir = strdup("/");
   }
+#endif
 
   ui->scale  = 0.9;
   ui->rot[0] = -15;

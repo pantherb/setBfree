@@ -24,6 +24,10 @@
 #include <string.h>
 #include <ctype.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 #include "pgmParser.h"
 #include "program.h"
 
@@ -45,7 +49,7 @@
 #define SYMBOLSIZE     STRINGBUFFERSZ
 #define VALUESIZE      STRINGBUFFERSZ
 
-typedef int TokenType;
+typedef int B3TokenType;
 typedef int ParseReturnCode;
 
 typedef struct _parserstate {
@@ -53,7 +57,7 @@ typedef struct _parserstate {
   const char * fileName;
   FILE * fp;
   int    lineNumber;
-  TokenType nextToken;
+  B3TokenType nextToken;
   char stringBuffer [STRINGBUFFERSZ];
 } ParserState;
 
@@ -175,7 +179,7 @@ static int getToken (FILE * fp, int * linePtr, char * tokbuf, size_t tblen)
  * Retrieves the next token from the input file and puts it in the parser
  * state.
  */
-static TokenType getNextToken (ParserState * ps) {
+static B3TokenType getNextToken (ParserState * ps) {
   return ps->nextToken = getToken (ps->fp,
 				   &(ps->lineNumber),
 				   ps->stringBuffer,
@@ -185,7 +189,7 @@ static TokenType getNextToken (ParserState * ps) {
 /*
  * Idempotent predicate: does the next token match the parameter?
  */
-static int nextTokenMatches (ParserState * ps, TokenType t) {
+static int nextTokenMatches (ParserState * ps, B3TokenType t) {
   return ps->nextToken == t;
 }
 
@@ -352,18 +356,34 @@ int loadProgrammeFile (void *p, char * fileName) {
 int loadProgrammeString (void *p, char * pdef) {
   ParserState ps;
   ps.p = p;
-  if ((ps.fp = fmemopen (pdef, strlen(pdef), "r")) != NULL) {
-    int rtn;
+  int rv = (int) P_ERROR;
+#ifdef _WIN32
+  char temppath[MAX_PATH - 13];
+  char filename[MAX_PATH + 1];
+  if (0 == GetTempPath(sizeof(temppath), temppath))
+    return rv;
+  if (0 == GetTempFileName(temppath, "sbfpgm", 0, filename))
+    return rv;
+  FILE *f = fopen(filename, "wb");
+  if (NULL == f)
+    return rv;
+  fwrite(pdef, strlen(pdef), 1, f);
+  fclose(f);
+  if ((ps.fp = fopen(filename, "rb")) != NULL)
+#else
+  if ((ps.fp = fmemopen (pdef, strlen(pdef), "r")) != NULL)
+#endif
+  {
     ps.fileName = "<string-pipe>";
     ps.lineNumber = 0;
     getNextToken (&ps);
-    rtn = (int) parseProgramDefinitionList (&ps);
+    rv = (int) parseProgramDefinitionList (&ps);
     fclose (ps.fp);
-    return rtn;
   }
-  else {
-    return (int) P_ERROR;
-  }
+#ifdef _WIN32
+  unlink(filename);
+#endif
+  return rv;
 }
 #endif
 /* vi:set ts=8 sts=2 sw=2: */

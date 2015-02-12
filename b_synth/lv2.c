@@ -30,6 +30,10 @@
 #include <sys/time.h>
 #include <unistd.h>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 /* LV2 */
 #include "lv2/lv2plug.in/ns/lv2core/lv2.h"
 #include "lv2/lv2plug.in/ns/ext/atom/util.h"
@@ -317,7 +321,19 @@ save(LV2_Handle                instance,
   int i;
   size_t rs = 0;
   char *out = NULL;
+
+#ifdef _WIN32
+  char temppath[MAX_PATH - 13];
+  char filename[MAX_PATH + 1];
+  if (0 == GetTempPath(sizeof(temppath), temppath))
+    return LV2_STATE_ERR_UNKNOWN;
+  if (0 == GetTempFileName(temppath, "sbfstate", 0, filename))
+    return LV2_STATE_ERR_UNKNOWN;
+  FILE *x = fopen(filename, "w+b");
+#else // POSIX
   FILE *x = open_memstream(&out, &rs);
+#endif
+
   for (i=0 ; i < 128; ++i) {
     int pgmNr = i + b3s->inst->progs->MIDIControllerPgmOffset;
     if (!(b3s->inst->progs->programmes[pgmNr].flags[0] & FL_INUSE)) {
@@ -328,6 +344,17 @@ save(LV2_Handle                instance,
   }
   fclose(x);
 
+#ifdef _WIN32
+  x = fopen(filename, "rb");
+  fseek (x , 0 , SEEK_END);
+  long int rsize = ftell (x);
+  rewind(x);
+  out = (char*) malloc(rsize);
+  fread(out, sizeof(char), rsize, x);
+  fclose(x);
+  unlink(filename);
+#endif
+
   cfg = (char*) realloc(cfg, strlen(cfg) + strlen(out) +1);
   strcat(cfg, out);
 
@@ -336,6 +363,7 @@ save(LV2_Handle                instance,
       b3s->uris.atom_String,
       LV2_STATE_IS_POD | LV2_STATE_IS_PORTABLE);
   free(cfg);
+  free(out);
   return LV2_STATE_SUCCESS;
 }
 
