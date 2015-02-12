@@ -20,7 +20,7 @@ ifeq ($(LV2AVAIL), yes)
   endif
 endif
 
-ifeq ($(IS_OSX), yes)
+ifeq ($(IS_WIN)$(IS_OSX), yes)
   CC=$(CXX)
 endif
 

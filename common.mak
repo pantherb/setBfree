@@ -10,7 +10,9 @@ sharedir = $(PREFIX)/share/setBfree
 lv2dir = $(PREFIX)/lib/lv2
 
 CFLAGS ?= $(OPTIMIZATIONS) -Wall
+ifeq ($(XWIN),)
 override CFLAGS += -fPIC
+endif
 override CFLAGS += -DVERSION="\"$(VERSION)\""
 
 CXXFLAGS = $(OPTIMIZATIONS) -Wall
@@ -32,16 +34,29 @@ ifeq ($(shell pkg-config --atleast-version=1.8.1 lv2 && echo yes), yes)
 endif
 
 IS_OSX=
+IS_WIN=
 UNAME=$(shell uname)
 ifeq ($(UNAME),Darwin)
   IS_OSX=yes
   LV2LDFLAGS=-dynamiclib
   LIB_EXT=.dylib
 else
-  override CFLAGS+= -DHAVE_MEMSTREAM
-  LV2LDFLAGS=-Wl,-Bstatic -Wl,-Bdynamic
-  LIB_EXT=.so
+  ifneq ($(XWIN),)
+    IS_WIN=yes
+    CC=$(XWIN)-gcc
+    CXX=$(XWIN)-g++
+    LV2LDFLAGS=-Wl,-Bstatic -Wl,-Bdynamic -Wl,--as-needed -lpthread
+    LIB_EXT=.dll
+    EXE_EXT=.exe
+    override CFLAGS+= -DHAVE_MEMSTREAM
+    override LDFLAGS += -static-libgcc -static-libstdc++ -DPTW32_STATIC_LIB
+  else
+    override CFLAGS+= -DHAVE_MEMSTREAM
+    LV2LDFLAGS=-Wl,-Bstatic -Wl,-Bdynamic
+    LIB_EXT=.so
+  endif
 endif
+
 
 ifeq ($(ENABLE_CONVOLUTION), yes)
   CC=$(CXX)
@@ -55,7 +70,7 @@ else
   FONT_FOUND=yes
 endif
 
-ifeq ($(IS_OSX), yes)
+ifeq ($(IS_WIN)$(IS_OSX), yes)
   HAVE_UI=$(shell pkg-config --exists ftgl && echo yes)
 else
   HAVE_UI=$(shell pkg-config --exists glu ftgl && echo $(FONT_FOUND))
@@ -81,11 +96,21 @@ ifeq ($(LV2AVAIL)$(HAVE_UI), yesyes)
     UICFLAGS+=-DBUILTINFONT
     override FONTFILE=verabd.h
   else
-    UIDEPS+=../pugl/pugl_x11.c
-    override CFLAGS+=`pkg-config --cflags glu` -std=c99
-    UILIBS=../pugl/pugl_x11.c -lX11 `pkg-config --libs glu ftgl`
-    UI_TYPE=X11UI
-    UICFLAGS+=-DFONTFILE=\"$(FONTFILE)\"
+    ifeq ($(IS_WIN), yes)
+      UIDEPS+=../pugl/pugl_win.cpp
+      UILIBS=../pugl/pugl_win.cpp
+      UILIBS+=`pkg-config --variable=libdir ftgl`/libftgl.a `pkg-config --variable=libdir ftgl`/libfreetype.a
+      UILIBS+=-lws2_32 -lwinmm -lopengl32 -lglu32 -lgdi32 -lcomdlg32 -lpthread
+      UI_TYPE=WindowsUI
+      UICFLAGS+=-DBUILTINFONT
+      override FONTFILE=verabd.h
+    else
+      UIDEPS+=../pugl/pugl_x11.c
+      override CFLAGS+=`pkg-config --cflags glu`
+      UILIBS=../pugl/pugl_x11.c -lX11 `pkg-config --libs glu ftgl`
+      UI_TYPE=X11UI
+      UICFLAGS+=-DFONTFILE=\"$(FONTFILE)\"
+    endif
   endif
   UICFLAGS+=`pkg-config --cflags freetype2` `pkg-config --cflags ftgl` -DHAVE_FTGL -DUINQHACK=Sbf
 endif

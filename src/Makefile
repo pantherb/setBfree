@@ -71,9 +71,9 @@ else
   $(info "compiling w/o ZITA Convolution Reverb -- needs libzita-convolver3 and libsndfile")
 endif
 
-all: setBfree
+all: setBfree$(EXE_EXT)
 
-setBfree: $(HEADERS) $(OBJS)
+setBfree$(EXE_EXT): $(HEADERS) $(OBJS)
 	$(BXCC) $(CPPFLAGS) $(CFLAGS) \
 		-o $(@) $(OBJS) \
 		$(LDFLAGS) $(LOADLIBES)
@@ -117,7 +117,7 @@ program.o: defaultpgm.h
 	+$(MAKE) -C ../b_conv convolution.o
 
 clean:
-	rm -f *.o core *.log *~ setBfree configd programd
+	rm -f *.o core *.log *~ setBfree$(EXE_EXT) configd programd
 
 install: setBfree
 	install -d $(DESTDIR)$(bindir)

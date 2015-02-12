@@ -1,5 +1,6 @@
 include ../common.mak
 TX=../b_synth/textures/
+WINDRES=$(XWIN)-windres
 
 override CFLAGS+= -I../src -I../b_overdrive -I../b_reverb -I../b_whirl -I../b_synth/
 override CFLAGS+=`pkg-config --cflags lv2` -DLV2SYNTH
@@ -8,22 +9,28 @@ ifeq ($(IS_OSX), yes)
   JACKWRAP=jackwrap.c jackwrap.mm $(WEAKJACK)
   CC=$(CXX)
 else
-  JACKWRAP=jackwrap.c
-  UILIBS+=-ljack
+  ifeq ($(IS_WIN), yes)
+    CC=$(CXX)
+    UIDEPS+=win_icon.rc.o
+    JACKWRAP=jackwrap.c $(WEAKJACK) win_icon.rc.o
+    override CFLAGS+=-mwindows
+  else
+    JACKWRAP=jackwrap.c
+    UILIBS+=-ljack
+  endif
 endif
 
 targets=
 
 ifeq ($(LV2AVAIL)$(HAVE_UI), yesyes)
-  targets+=setBfreeUI
+  targets+=setBfreeUI$(EXE_EXT)
 else
   $(warning standalone JACK/GL-GUI will not be built)
-  $(warning $(LV2AVAIL)--$(HAVE_UI))
 endif
 
 all: $(targets)
 
-setBfreeUI: jackwrap.c $(LV2OBJ) \
+setBfreeUI$(EXE_EXT): jackwrap.c $(LV2OBJ) \
 	../b_synth/lv2.c ../b_synth/uris.h \
 	../b_synth/ui.c $(UIDEPS) \
 	../src/cfgParser.h ../src/midi.h
@@ -32,22 +39,28 @@ setBfreeUI: jackwrap.c $(LV2OBJ) \
 		-pthread \
 		-DXTERNAL_UI -DHAVE_IDLE_IFACE -DJACK_AUTOCONNECT=15 \
 		-DJACK_DESCRIPT=\"desc.h\" \
-		-o setBfreeUI \
+		-o setBfreeUI$(EXE_EXT) \
 		$(JACKWRAP) \
 		$(LV2OBJ) ../b_synth/lv2.c ../b_synth/ui.c \
 		$(LDFLAGS) $(UILIBS) $(LOADLIBES) \
 		-lm
 
+# windows icon
+.SUFFFIXES: .rc
+win_icon.rc.o: win_icon.rc ../doc/setbfree.ico
+	$(WINDRES) -o $@ $<
+
 install: $(targets)
 ifneq ($(targets),)
 	install -d $(DESTDIR)$(bindir)
-	install -m755 setBfreeUI $(DESTDIR)$(bindir)
+	install -m755 setBfreeUI$(EXE_EXT) $(DESTDIR)$(bindir)
 endif
 
 uninstall:
-	rm -f $(DESTDIR)$(bindir)/setBfreeUI
+	rm -f $(DESTDIR)$(bindir)/setBfreeUI$(EXE_EXT)
 
 clean:
-	rm -f setBfreeUI
+	rm -f setBfreeUI$(EXE_EXT)
+	rm -f win_icon.rc.o
 
 .PHONY: clean all install uninstall
