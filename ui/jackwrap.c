@@ -84,6 +84,7 @@ extern void rtk_osx_api_err(const char *msg);
 #include <jack/ringbuffer.h>
 #include <jack/midiport.h>
 #endif
+#undef pthread_t
 
 #include "lv2/lv2plug.in/ns/lv2core/lv2.h"
 #include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
@@ -929,11 +930,14 @@ static void main_loop(void) {
 #ifdef _WIN32
 		//Sleep(1000/UI_UPDATE_FPS);
 #if (defined(__MINGW64__) || defined(__MINGW32__)) && __MSVCRT_VERSION__ >= 0x0601
-		_ftime64(&timeout);
+		struct __timeb64 timebuffer;
+		_ftime64(&timebuffer);
 #else
-		_ftime(&timeout);
+		struct __timeb32 timebuffer;
+		_ftime(&timebuffer);
 #endif
-
+		timeout.tv_nsec = timebuffer.millitm * 1000000;
+		timeout.tv_sec = timebuffer.time;
 #else // POSIX
 		clock_gettime(CLOCK_REALTIME, &timeout);
 #endif
