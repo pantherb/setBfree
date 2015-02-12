@@ -3269,13 +3269,16 @@ instantiate(const LV2UI_Descriptor*   descriptor,
             const LV2_Feature* const* features)
 {
   int i;
-  B3ui* ui = (B3ui*)malloc(sizeof(B3ui));
+  B3ui* ui = (B3ui*)calloc(1, sizeof(B3ui));
 
   ui->map        = NULL;
   ui->write      = write_function;
   ui->controller = controller;
 #ifdef XTERNAL_UI
   ui->extui = NULL;
+#endif
+#ifdef OLD_SUIL
+  ui->exit       = true; // thread not active
 #endif
 
   for (i = 0; features[i]; ++i) {
@@ -3332,8 +3335,10 @@ cleanup(LV2UI_Handle handle)
 {
   B3ui* ui = (B3ui*)handle;
 #ifdef OLD_SUIL
-  ui->exit = true;
-  pthread_join(ui->thread, NULL);
+  if (!ui->exit) {
+    ui->exit = true;
+    pthread_join(ui->thread, NULL);
+  }
 #endif
   free_dirlist(ui);
   ftglDestroyFont(ui->font_big);
