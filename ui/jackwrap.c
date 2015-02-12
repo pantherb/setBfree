@@ -21,6 +21,10 @@
 #define UPDATE_FREQ_RATIO 60 // MAX # of audio-cycles per GUI-refresh
 #endif
 
+#ifndef JACK_AUTOCONNECT
+#define JACK_AUTOCONNECT 0
+#endif
+
 #ifndef UI_UPDATE_FPS
 #define UI_UPDATE_FPS 25
 #endif
@@ -659,6 +663,44 @@ static int jack_portsetup(void) {
 	return (0);
 }
 
+static void jack_portconnect(int which) {
+
+	if (which & 1) { // connect audio input(s)
+		const char **ports = jack_get_ports(j_client, NULL, JACK_DEFAULT_AUDIO_TYPE, JackPortIsOutput|JackPortIsPhysical);
+		for (uint32_t i = 0; i < inst->nports_audio_in && ports && ports[i]; i++) {
+			if (jack_connect (j_client, jack_port_name (input_port[i]), ports[i]))
+				break;
+		}
+		if (ports) { jack_free(ports); }
+	}
+
+	if (which & 2) { // connect audio outputs(s)
+		const char **ports = jack_get_ports(j_client, NULL, JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput|JackPortIsPhysical);
+		for (uint32_t i = 0; i < inst->nports_audio_out && ports && ports[i]; i++) {
+			if (jack_connect (j_client, jack_port_name (output_port[i]), ports[i]))
+				break;
+		}
+		if (ports) { jack_free(ports); }
+	}
+
+	if ((which & 4) && midi_in) { // midi in
+		const char **ports = jack_get_ports(j_client, NULL, JACK_DEFAULT_MIDI_TYPE, JackPortIsOutput|JackPortIsPhysical);
+		if (ports && ports[0]) {
+			jack_connect (j_client, jack_port_name (midi_in), ports[0]);
+		}
+		if (ports) { jack_free(ports); }
+	}
+
+	if ((which & 8) && midi_out) { // midi out
+		const char **ports = jack_get_ports(j_client, NULL, JACK_DEFAULT_MIDI_TYPE, JackPortIsInput|JackPortIsPhysical);
+		if (ports && ports[0]) {
+			jack_connect (j_client, jack_port_name (midi_out), ports[0]);
+		}
+		if (ports) { jack_free(ports); }
+	}
+
+}
+
 /******************************************************************************
  * LV2
  */
@@ -921,6 +963,9 @@ int main (int argc, char **argv) {
 	uint32_t c_aout = 0;
 	uint32_t c_ctrl = 0;
 
+	// TODO parse options (autoconnect)
+	// --help, --version
+
 #ifdef X42_MULTIPLUGIN
 	if (argc > 1 && atoi(argv[1]) < 0) {
 		unsigned int i;
@@ -1180,6 +1225,8 @@ int main (int argc, char **argv) {
 		rv |= 20;
 		goto out;
 	}
+
+	jack_portconnect(JACK_AUTOCONNECT);
 
 #ifndef _WIN32
 	signal (SIGHUP, catchsig);

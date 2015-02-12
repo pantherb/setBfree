@@ -30,7 +30,7 @@ setBfreeUI: jackwrap.c $(LV2OBJ) \
 	$(MAKE) -C ../b_synth $(FONTFILE)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(UICFLAGS) $(JACKCFLAGS) \
 		-pthread \
-		-DXTERNAL_UI -DHAVE_IDLE_IFACE \
+		-DXTERNAL_UI -DHAVE_IDLE_IFACE -DJACK_AUTOCONNECT=15 \
 		-DJACK_DESCRIPT=\"desc.h\" \
 		-o setBfreeUI \
 		$(JACKWRAP) \
