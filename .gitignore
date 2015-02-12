@@ -8,6 +8,7 @@ cscope.out
 *.blend2
 
 /b_*/*.so
+b_*/*.dll
 *.dylib
 *.plist
 DWARF
@@ -15,9 +16,11 @@ DWARF
 
 # binaries
 /src/setBfree
+/src/setBfree.exe
 /src/configd
 /src/programd
 /ui/setBfreeUI
+/ui/setBfreeUI.exe
 /b_overdrive/jboverdrive
 /b_overdrive/overmaker
 
