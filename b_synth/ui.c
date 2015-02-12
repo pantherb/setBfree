@@ -3119,16 +3119,6 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
     ui->active_keys[i] = 0;
   }
 
-#ifdef _WIN32
-  ui->curdir = strdup("C:\\");
-#else
-  if (getenv("HOME")) {
-    ui->curdir = strdup(getenv("HOME"));
-  } else {
-    ui->curdir = strdup("/");
-  }
-#endif
-
   ui->scale  = 0.9;
   ui->rot[0] = -15;
   ui->rot[1] = -20;
@@ -3175,6 +3165,10 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
       ui->width, ui->height,
       true, true, 0);
 
+  if (!ui->view) {
+    return -1;
+  }
+
   puglSetHandle(ui->view, ui);
   puglSetDisplayFunc(ui->view, onDisplay);
   puglSetReshapeFunc(ui->view, onReshape);
@@ -3182,6 +3176,16 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   puglSetMotionFunc(ui->view, onMotion);
   puglSetMouseFunc(ui->view, onMouse);
   puglSetScrollFunc(ui->view, onScroll);
+
+#ifdef _WIN32
+  ui->curdir = strdup("C:\\");
+#else
+  if (getenv("HOME")) {
+    ui->curdir = strdup(getenv("HOME"));
+  } else {
+    ui->curdir = strdup("/");
+  }
+#endif
 
 #ifdef XTERNAL_UI
   ui->ui_closed = NULL;
@@ -3337,6 +3341,7 @@ cleanup(LV2UI_Handle handle)
   puglDestroy(ui->view);
   free(ui->vbo);
   free(ui->vinx);
+  free(ui->curdir);
   free(ui);
 }
 
