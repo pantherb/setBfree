@@ -389,7 +389,14 @@ handleMessage(PuglView* view, UINT message, WPARAM wParam, LPARAM lParam)
 				view->specialFunc(view, message == WM_KEYDOWN, key);
 			}
 		} else if (view->keyboardFunc) {
-			view->keyboardFunc(view, message == WM_KEYDOWN, wParam);
+			static BYTE kbs[256];
+			if (GetKeyboardState(kbs) != FALSE) {
+				char lb[2];
+				UINT scanCode = (lParam >> 8) & 0xFFFFFF00;
+				if ( 1 == ToAscii(wParam, scanCode, kbs, (LPWORD)lb, 0)) {
+					view->keyboardFunc(view, message == WM_KEYDOWN, (char)lb[0]);
+				}
+			}
 		}
 		break;
 	case WM_QUIT:
