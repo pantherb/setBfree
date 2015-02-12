@@ -180,10 +180,10 @@ wafbuild --no-plugins
 ################################################################################
 cd ${BUILDD}
 #rm -rf setBfree
-git clone -b master git://github.com/pantherb/setBfree.git || true
+git clone -b master --single-branch git://github.com/pantherb/setBfree.git || true
 cd setBfree
 
 export SBFARCH
 export SBFSTACK="$PREFIX"
 export OSXCOMPAT
-./build-osx.sh
+./x-osx-bundle.sh
