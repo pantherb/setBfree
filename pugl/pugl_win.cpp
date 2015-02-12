@@ -166,6 +166,9 @@ puglCreate(PuglNativeWindow parent,
 void
 puglDestroy(PuglView* view)
 {
+	if (!view) {
+		return;
+	}
 	wglMakeCurrent(NULL, NULL);
 	wglDeleteContext(view->impl->hglrc);
 	ReleaseDC(view->impl->hwnd, view->impl->hdc);

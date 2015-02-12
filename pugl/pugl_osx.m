@@ -428,6 +428,9 @@ puglCreate(PuglNativeWindow parent,
 void
 puglDestroy(PuglView* view)
 {
+	if (!view) {
+		return;
+	}
 	view->impl->glview->puglview = NULL;
 	[view->impl->glview removeFromSuperview];
 	if (view->impl->window) {
