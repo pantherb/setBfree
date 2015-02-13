@@ -97,8 +97,6 @@ ifeq ($(LV2AVAIL)$(HAVE_UI), yesyes)
     UILIBS+=`pkg-config --variable=libdir ftgl`/libftgl.a `pkg-config --variable=libdir ftgl`/libfreetype.a
     UILIBS+=-lm -mmacosx-version-min=10.5
     UI_TYPE=CocoaUI
-    UICFLAGS+=-DBUILTINFONT
-    override FONTFILE=verabd.h
   else
     ifeq ($(IS_WIN), yes)
       UIDEPS+=../pugl/pugl_win.cpp
@@ -106,8 +104,6 @@ ifeq ($(LV2AVAIL)$(HAVE_UI), yesyes)
       UILIBS+=`pkg-config --variable=libdir ftgl`/libftgl.a `pkg-config --variable=libdir ftgl`/libfreetype.a
       UILIBS+=-lws2_32 -lwinmm -lopengl32 -lglu32 -lgdi32 -lcomdlg32 -lpthread
       UI_TYPE=WindowsUI
-      UICFLAGS+=-DBUILTINFONT
-      override FONTFILE=verabd.h
     else
       UIDEPS+=../pugl/pugl_x11.c
       override CFLAGS+=`pkg-config --cflags glu`

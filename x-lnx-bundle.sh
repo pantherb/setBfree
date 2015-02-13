@@ -30,7 +30,6 @@ export PKG_CONFIG_PATH=${PREFIX}/lib/pkgconfig
 
 make clean
 
-# TODO BUILTINFONT
 make \
 	CFLAGS="-I${PREFIX}/include -fvisibility=hidden -DNDEBUG -msse -msse2 -mfpmath=sse -fomit-frame-pointer -O3 -mstackrealign -fno-finite-math-only -I${PREFIX}/src -DUSE_WEAK_JACK -DBUILTINFONT" \
 	LDFLAGS="-L${PREFIX}/lib -fvisibility=hidden" \
