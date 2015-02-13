@@ -4,6 +4,6 @@ Name=setBfree
 GenericName=DSP tonewheel organ
 Comment=MIDI-controlled, software synthesizer using JACK
 Icon=setBfree
-Exec=setBfree-start
+Exec=setBfreeUI
 Terminal=false
 Categories=AudioVideo;Audio;
