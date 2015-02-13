@@ -15,8 +15,12 @@ else
     JACKWRAP=jackwrap.c $(WEAKJACK) win_icon.rc.o
     override CFLAGS+=-mwindows
   else
-    JACKWRAP=jackwrap.c
-    UILIBS+=-ljack
+    JACKWRAP=jackwrap.c $(WEAKJACK)
+    ifeq ($(WEAKJACK),)
+      UILIBS+=`pkg-config --libs jack`
+    else
+      UILIBS+=-ldl
+    endif
   endif
 endif
 

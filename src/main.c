@@ -36,8 +36,14 @@
 #include <pthread.h>
 #include <limits.h>
 #include <getopt.h>
+
+#ifdef USE_WEAK_JACK
+#include "weakjack/weak_libjack.h"
+#else
 #include <jack/jack.h>
 #include <jack/midiport.h>
+#endif
+
 #ifndef _WIN32
 #include <sys/ioctl.h>
 #include <sys/mman.h>

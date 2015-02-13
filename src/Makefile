@@ -57,7 +57,11 @@ endif
 
 
 override CFLAGS+=`pkg-config --cflags jack`
-LOADLIBES+=`pkg-config --libs jack`
+ifeq ($(WEAKJACK),)
+  LOADLIBES+=`pkg-config --libs jack`
+else
+  LOADLIBES+=-ldl
+endif
 
 ifeq ($(shell pkg-config --exists sndfile \
 	&& test -f /usr/include/zita-convolver.h -o -f /usr/local/include/zita-convolver.h \
@@ -75,7 +79,7 @@ all: setBfree$(EXE_EXT)
 
 setBfree$(EXE_EXT): $(HEADERS) $(OBJS)
 	$(BXCC) $(CPPFLAGS) $(CFLAGS) \
-		-o $(@) $(OBJS) \
+		-o $(@) $(OBJS) $(WEAKJACK) \
 		$(LDFLAGS) $(LOADLIBES)
 
 programd: program.c pgmParser.c program.h pgmParser.h main.h
