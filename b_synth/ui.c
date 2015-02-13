@@ -2708,6 +2708,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
   if (ui->popupmsg) {
     fx = (2.0 * x / ui->width ) - 1.0;
     fy = (2.0 * y / ui->height ) - 1.0;
+    fy *= (ui->height / (float) ui->width) / (320. / 960.);
 
     if (ui->pendingmode) {
       if (MOUSEIN(BTNLOC_NO, fx, fy)) { ; } // NO
