@@ -64,14 +64,18 @@ endif
 
 #LV2 / GL-GUI
 
-ifeq ($(shell test -f $(FONTFILE) || echo no ), no)
-  FONT_FOUND=no
-else
+ifeq ($(FONTFILE),verabd.h)
   FONT_FOUND=yes
+else
+  ifeq ($(shell test -f $(FONTFILE) || echo no ), no)
+    FONT_FOUND=no
+  else
+    FONT_FOUND=yes
+  endif
 endif
 
 ifeq ($(IS_WIN)$(IS_OSX), yes)
-  HAVE_UI=$(shell pkg-config --exists ftgl && echo yes)
+  HAVE_UI=$(shell pkg-config --exists ftgl && echo $(FONT_FOUND))
 else
   HAVE_UI=$(shell pkg-config --exists glu ftgl && echo $(FONT_FOUND))
 endif
@@ -107,7 +111,13 @@ ifeq ($(LV2AVAIL)$(HAVE_UI), yesyes)
     else
       UIDEPS+=../pugl/pugl_x11.c
       override CFLAGS+=`pkg-config --cflags glu`
-      UILIBS=../pugl/pugl_x11.c -lX11 `pkg-config --libs glu ftgl`
+      UILIBS=../pugl/pugl_x11.c -lX11
+      ifeq ($(STATICBUILD), yes)
+        UILIBS+=`pkg-config --libs glu`
+        UILIBS+=`pkg-config --variable=libdir ftgl`/libftgl.a `pkg-config --variable=libdir ftgl`/libfreetype.a
+      else
+        UILIBS+=`pkg-config --libs glu ftgl`
+      endif
       UI_TYPE=X11UI
       UICFLAGS+=-DFONTFILE=\"$(FONTFILE)\"
     endif
