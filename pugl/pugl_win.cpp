@@ -73,7 +73,7 @@ puglCreate(PuglNativeWindow parent,
 	view->width  = width;
 	view->height = height;
 	view->ontop  = ontop;
-	view->user_resizable = resizable;
+	view->user_resizable = resizable && !parent;
 
 	// FIXME: This is nasty, and pugl should not have static anything.
 	// Should class be a parameter?  Does this make sense on other platforms?
@@ -112,7 +112,7 @@ puglCreate(PuglNativeWindow parent,
 
 	impl->hwnd = CreateWindowEx(
 		WS_EX_TOPMOST,
-		classNameBuf, title, (resizable ? WS_SIZEBOX : 0) |
+		classNameBuf, title, (view->user_resizable ? WS_SIZEBOX : 0) |
 		(parent ? (WS_CHILD | WS_VISIBLE) : (WS_POPUPWINDOW | WS_CAPTION)),
 		0, 0, wr.right-wr.left, wr.bottom-wr.top,
 		(HWND)parent, NULL, NULL, NULL);
