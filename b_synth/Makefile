@@ -22,6 +22,10 @@ endif
 
 ifeq ($(IS_WIN)$(IS_OSX), yes)
   CC=$(CXX)
+else
+  ifneq ($(ENABLE_CONVOLUTION), yes)
+    override CFLAGS+=-std=c99
+  endif
 endif
 
 all: $(targets)
