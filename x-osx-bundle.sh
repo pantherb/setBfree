@@ -2,11 +2,13 @@
 
 : ${SBFARCH=-arch x86_64 -arch i386}
 : ${SBFSTACK=$HOME/src/sbf_stack}
+: ${OUTDIR=/tmp/}
 : ${OSXCOMPAT=-mmacosx-version-min=10.5 -DMAC_OS_X_VERSION_MAX_ALLOWED=1090}
 
-VERSION=`git describe --tags`
+VERSION=`git describe --tags | sed 's/-g[a-f0-9]*$//'`
 if test -z "$VERSION"; then
-eval `grep "VERSION=" Makefile`
+	echo "*** Cannot query version information."
+	exit 1
 fi
 
 set -e
@@ -98,7 +100,7 @@ EOF
 ##############################################################################
 #roll a DMG
 
-UC_DMG="/tmp/${PRODUCT_NAME}-${VERSION}.dmg"
+UC_DMG="${OUTDIR}${PRODUCT_NAME}-${VERSION}.dmg"
 
 DMGBACKGROUND=${RSRC_DIR}dmgbg.png
 VOLNAME=$PRODUCT_NAME-${VERSION}

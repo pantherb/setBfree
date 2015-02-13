@@ -4,6 +4,11 @@
 : ${SRC=/usr/src}
 : ${OUTDIR=/var/tmp/}
 
+VERSION=`git describe --tags | sed 's/-g[a-f0-9]*$//'`
+if test -z "$VERSION"; then
+	echo "*** Cannot query version information."
+	exit 1
+fi
 
 ###############################################################################
 set -e
@@ -38,7 +43,6 @@ make \
 
 ##############################################################################
 
-VERSION=`git describe --tags`
 PRODUCT_NAME=setbfree
 
 if test -z "$OUTDIR"; then
