@@ -42,7 +42,7 @@ make \
 
 ##############################################################################
 
-PRODUCT_NAME=setbfree
+PRODUCT_NAME=setBfree
 
 if test -z "$OUTDIR"; then
 	OUTDIR=/tmp/
