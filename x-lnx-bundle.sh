@@ -62,8 +62,8 @@ cp -v src/setBfree "${BUNDLEDIR}/${PRODUCT_NAME}/bin"
 # makeself installer?!
 
 cd ${BUNDLEDIR}
-rm -f ${OUTDIR}${PRODUCT_NAME}-${WARCH}-${VERSION}.tar.gz
-tar czf ${OUTDIR}${PRODUCT_NAME}-${WARCH}-${VERSION}.tar.gz ${PRODUCT_NAME}
-ls -l ${OUTDIR}${PRODUCT_NAME}-${WARCH}-${VERSION}.tar.gz
+rm -f ${OUTDIR}${PRODUCT_NAME}-${VERSION}ar.gz
+tar czf ${OUTDIR}${PRODUCT_NAME}-${VERSION}-${WARCH}.tar.gz ${PRODUCT_NAME}
+ls -l ${OUTDIR}${PRODUCT_NAME}-${VERSION}-${WARCH}.tar.gz
 
 rm -rf ${BUNDLEDIR}
