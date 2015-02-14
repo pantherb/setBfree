@@ -113,6 +113,10 @@ cd "$PREFIX"
 tar xzf ${SRCDIR}/jack_headers.tar.gz
 "$PREFIX"/update_pc_prefix.sh
 
+if test ! -d ${SRCDIR}/weakjack.git.reference; then
+	git clone --mirror git://github.com/x42/weakjack.git ${SRCDIR}/weakjack.git.reference
+fi
+
 cd "$PREFIX"
 mkdir src/ && cd src
 git clone git://github.com/x42/weakjack.git
@@ -240,8 +244,17 @@ CC=${XPREFIX}-gcc \
 ./waf install
 
 ################################################################################
+
+if test ! -d ${SRCDIR}/setBfree.git.reference; then
+	git clone --mirror git://github.com/pantherb/setBfree.git ${SRCDIR}/setBfree.git.reference
+fi
+
 cd ${BUILDD}
-git clone -b master --single-branch git://github.com/pantherb/setBfree.git
+git clone -b master --single-branch --reference ${SRCDIR}/setBfree.git.reference git://github.com/pantherb/setBfree.git || true
 cd setBfree
+
+if git diff-files --quiet --ignore-submodules -- && git diff-index --cached --quiet HEAD --ignore-submodules --; then
+	git pull || true
+fi
 
 ./x-win-bundle.sh
