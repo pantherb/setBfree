@@ -2736,7 +2736,13 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     return;
   }
 
-  if (puglGetModifiers(view) & PUGL_MOD_CTRL && button == 2) {
+  if (puglGetModifiers(view) & PUGL_MOD_CTRL && 
+#ifdef __APPLE__ // cater for users w/o 3 button mouse
+      (button == 2 || button == 3)
+#else
+      button == 2
+#endif
+     ) {
     for (i = 0; i < TOTAL_OBJ; ++i) {
       if (!MOUSEOVER(ui->ctrls[i], fx, fy)) {
 	continue;
