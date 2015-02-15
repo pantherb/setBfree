@@ -21,6 +21,8 @@
 #define _GNU_SOURCE
 #endif
 
+#define ANIMSTEPS (35)
+
 #define GL_GLEXT_PROTOTYPES
 
 #include <stdio.h>
@@ -270,6 +272,10 @@ typedef struct {
   GLuint texID[23]; // textures
   GLdouble matrix[16]; // used for mouse mapping
   double rot[3], off[3], scale; // global projection
+#ifdef ANIMSTEPS
+  int openanim;
+  int animdirection;;
+#endif
 
   /* displaymode
    * 0: main/organ
@@ -1081,11 +1087,38 @@ onReshape(PuglView* view, int width, int height)
     return;
   }
 
-  glRotatef(ui->rot[0], 0, 1, 0);
-  glRotatef(ui->rot[1], 1, 0, 0);
-  glRotatef(ui->rot[2], 0, 0, 1);
-  glScalef(ui->scale, ui->scale, ui->scale);
-  glTranslatef(ui->off[0], ui->off[1], ui->off[2]);
+#ifdef ANIMSTEPS
+  if (ui->openanim > 0) {
+    float rot[3];
+    float off[3];
+    const float scale = ui->openanim * (1.65 - ui->scale) / (float)ANIMSTEPS;
+
+    rot[0] = ui->openanim * (  0.0 - ui->rot[0]) / (float)ANIMSTEPS;
+    rot[1] = ui->openanim * (-90.0 - ui->rot[1]) / (float)ANIMSTEPS;
+    if (ui->rot[2] > 0)
+      rot[2] = ui->openanim * (180.0 - ui->rot[2]) / (float)ANIMSTEPS;
+    else
+      rot[2] = ui->openanim * (-180.0 - ui->rot[2]) / (float)ANIMSTEPS;
+
+    off[0] = ui->openanim * (  0.0  - ui->off[0]) / (float)ANIMSTEPS;
+    off[1] = ui->openanim * (  0.0  - ui->off[1]) / (float)ANIMSTEPS;
+    off[2] = ui->openanim * ( -0.18 - ui->off[2]) / (float)ANIMSTEPS;
+
+    glRotatef(ui->rot[0] + rot[0], 0, 1, 0);
+    glRotatef(ui->rot[1] + rot[1], 1, 0, 0);
+    glRotatef(ui->rot[2] + rot[2], 0, 0, 1);
+    glScalef(ui->scale + scale, ui->scale + scale, ui->scale + scale);
+    glTranslatef(ui->off[0] + off[0], ui->off[1] + off[1], ui->off[2] + off[2]);
+
+  } else
+#endif
+  {
+    glRotatef(ui->rot[0], 0, 1, 0);
+    glRotatef(ui->rot[1], 1, 0, 0);
+    glRotatef(ui->rot[2], 0, 0, 1);
+    glScalef(ui->scale, ui->scale, ui->scale);
+    glTranslatef(ui->off[0], ui->off[1], ui->off[2]);
+  }
 
   GLdouble matrix[16];
   glGetDoublev(GL_PROJECTION_MATRIX, matrix);
@@ -2320,10 +2353,32 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       puglPostRedisplay(view);
       break;
     case ' ':
-      if (ui->displaymode == 0) {
+      if (ui->displaymode == 0
+#ifdef ANIMSTEPS
+	  && ui->openanim == 0
+#endif
+	  )
+      {
+#ifdef ANIMSTEPS
+	ui->animdirection = 1;
+	ui->openanim = 1;
+#else
 	ui->displaymode = 7;
+#endif
       }
-      else if (ui->displaymode == 7) ui->displaymode = 0;
+      else if (ui->displaymode == 7
+#ifdef ANIMSTEPS
+	  && ui->openanim == ANIMSTEPS
+#endif
+	  )
+      {
+#ifdef ANIMSTEPS
+	ui->animdirection = 0;
+	ui->openanim = ANIMSTEPS - 1;
+#else
+	ui->displaymode = 0;
+#endif
+      }
       queue_reshape = 1;
       reset_state(view);
       break;
@@ -2627,7 +2682,12 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 	ui->displaymode = 3;
       }
       if (MOUSEIN(MENU_CANC, fx, fy)) {
+#ifdef ANIMSTEPS
+	ui->animdirection = 0;
+	ui->openanim = ANIMSTEPS - 1;
+#else
 	ui->displaymode = 0;
+#endif
 	onReshape(view, ui->width, ui->height);
       }
       puglPostRedisplay(view);
@@ -2730,7 +2790,12 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
   if (button == 1 && ui->displaymode == 0 && fx >= 0.92 && fx <= 1.04 && fy >= -.25 && fy <= -.16) {
     /* menu button */
     reset_state_ccbind(view);
+#ifdef ANIMSTEPS
+    ui->animdirection = 1;
+    ui->openanim = 1;
+#else
     ui->displaymode = 7;
+#endif
     onReshape(view, ui->width, ui->height);
     puglPostRedisplay(view);
     return;
@@ -2873,6 +2938,25 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 /******************************************************************************
  * misc - used for LV2 init/operation
  */
+static void check_anim(B3ui* ui)
+{
+#ifdef ANIMSTEPS
+  if (ui->openanim > 0 && ui->openanim < ANIMSTEPS) {
+    if (ui->animdirection) {
+      ++ui->openanim;
+    } else {
+      --ui->openanim;
+    }
+    if (ui->openanim == ANIMSTEPS) {
+      ui->displaymode = 7;
+    } else {
+      ui->displaymode = 0;
+    }
+    onReshape(ui->view, ui->width, ui->height);
+    puglPostRedisplay(ui->view);
+  }
+#endif
+}
 
 #ifdef OLD_SUIL
 static void* ui_thread(void* ptr)
@@ -2881,6 +2965,7 @@ static void* ui_thread(void* ptr)
   while (!ui->exit) {
     usleep(1000000 / 25);  // 25 FPS
     puglProcessEvents(ui->view);
+    check_anim(ui);
   }
   return NULL;
 }
@@ -2888,6 +2973,7 @@ static void* ui_thread(void* ptr)
 static int idle(LV2UI_Handle handle) {
   B3ui* ui = (B3ui*)handle;
   puglProcessEvents(ui->view);
+  check_anim(ui);
   return 0;
 }
 #endif
@@ -2906,6 +2992,8 @@ static void x_run (struct lv2_external_ui * handle) {
     ui->close_ui = false;
     puglHideWindow(ui->view);
     ui->ui_closed(ui->controller);
+  } else {
+    check_anim(ui);
   }
 }
 
@@ -2953,6 +3041,10 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   ui->upper_key = -1;
   ui->lower_key = -1;
   ui->pedal_key = -1;
+#ifdef ANIMSTEPS
+  ui->openanim = 0;
+  ui->animdirection = 0;
+#endif
 
   for (int i = 0; i < 5; ++i) {
     ui->active_keys[i] = 0;
