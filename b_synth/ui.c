@@ -23,6 +23,12 @@
 
 #define ANIMSTEPS (35)
 
+#ifdef ANIMSTEPS
+#define ANDNOANIM && ui->openanim == 0
+#else
+#define ANDNOANIM
+#endif
+
 #define GL_GLEXT_PROTOTYPES
 
 #include <stdio.h>
@@ -2300,19 +2306,19 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       queue_reshape = 1;
       break;
     case 'p':
-      if (ui->displaymode == 0) ui->displaymode = 2;
+      if (ui->displaymode == 0 ANDNOANIM) ui->displaymode = 2;
       else if (ui->displaymode == 2) ui->displaymode = 0;
       queue_reshape = 1;
       reset_state(view);
       break;
     case '?':
-      if (ui->displaymode == 0) ui->displaymode = 1;
+      if (ui->displaymode == 0 ANDNOANIM) ui->displaymode = 1;
       else if (ui->displaymode == 1) ui->displaymode = 0;
       queue_reshape = 1;
       reset_state(view);
       break;
     case 'P':
-      if (ui->displaymode == 0) ui->displaymode = 3;
+      if (ui->displaymode == 0 ANDNOANIM) ui->displaymode = 3;
       else if (ui->displaymode == 3) ui->displaymode = 0;
       queue_reshape = 1;
       reset_state(view);
@@ -2333,6 +2339,14 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
 	free(ui->popupmsg); ui->popupmsg = NULL;
 	free(ui->pendingdata); ui->pendingdata = NULL;
 	ui->pendingmode = 0;
+      } else if (ui->displaymode == 7) {
+#ifdef ANIMSTEPS
+	ui->animdirection = 0;
+	ui->openanim = ANIMSTEPS - 1;
+#else
+	ui->displaymode = 0;
+#endif
+	reset_state(view);
       } else if (ui->displaymode) {
 	ui->displaymode = 0;
 	reset_state(view);
@@ -2353,12 +2367,7 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       puglPostRedisplay(view);
       break;
     case ' ':
-      if (ui->displaymode == 0
-#ifdef ANIMSTEPS
-	  && ui->openanim == 0
-#endif
-	  )
-      {
+      if (ui->displaymode == 0 ANDNOANIM) {
 #ifdef ANIMSTEPS
 	ui->animdirection = 1;
 	ui->openanim = 1;
@@ -2383,7 +2392,7 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       reset_state(view);
       break;
     case 'L':
-      if (ui->displaymode == 0) {
+      if (ui->displaymode == 0 ANDNOANIM) {
 	dirlist(view, ui->curdir);
 	ui->displaymode = 4;
       }
@@ -2392,7 +2401,7 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       reset_state(view);
       break;
     case 'C':
-      if (ui->displaymode == 0) {
+      if (ui->displaymode == 0 ANDNOANIM) {
 	dirlist(view, ui->curdir);
 	ui->displaymode = 5;
       }
@@ -2401,7 +2410,7 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       reset_state(view);
       break;
     case 'V':
-      if (ui->displaymode == 0) {
+      if (ui->displaymode == 0 ANDNOANIM) {
 	dirlist(view, ui->curdir);
 	ui->displaymode = 6;
       }
@@ -2778,7 +2787,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 
   project_mouse(view, x, y, -.5, &fx, &fy);
 
-  if (button == 1 && ui->displaymode == 0 && fx >= 1.04 && fx <= 1.100 && fy >= -.24 && fy <= -.18) {
+  if (button == 1 && ui->displaymode == 0 && fx >= 1.04 && fx <= 1.100 && fy >= -.24 && fy <= -.18 ANDNOANIM) {
     /* help button */
     reset_state_ccbind(view);
     ui->displaymode = 1;
@@ -2787,7 +2796,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     return;
   }
 
-  if (button == 1 && ui->displaymode == 0 && fx >= 0.92 && fx <= 1.04 && fy >= -.25 && fy <= -.16) {
+  if (button == 1 && ui->displaymode == 0 && fx >= 0.92 && fx <= 1.04 && fy >= -.25 && fy <= -.16 ANDNOANIM) {
     /* menu button */
     reset_state_ccbind(view);
 #ifdef ANIMSTEPS
