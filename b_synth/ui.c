@@ -1611,7 +1611,7 @@ static void piano_manual(PuglView* view, float y0, float z0, int active_key, uns
 static void piano_pedals(PuglView* view, int active_key, unsigned int active_keys) {
 
   const float y0 = -7;
-  const float z0 = 19.25;
+  const float z0 = 27.25;
   const GLfloat mat_key_white[] = { 0.6, 0.55, 0.45, 1.0 };
   const GLfloat mat_key_black[] = { 0.3, 0.25, 0.15, 1.0 };
   const GLfloat no_mat[] = { 0.0, 0.0, 0.0, 1.0 };
@@ -2831,7 +2831,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
   }
 
   // pedals
-  project_mouse(view, x, y, 19.5, &kx, &ky);
+  project_mouse(view, x, y, 27.5, &kx, &ky);
   if (kx >= -.554 && kx <= .600 && ky >= -.360 && ky <= .3) {
     int key = -1;
     int wk = floor((kx + .554) * 29. / (.600 + .554));
