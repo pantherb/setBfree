@@ -1079,7 +1079,7 @@ onReshape(PuglView* view, int width, int height)
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  glOrtho(-1.0, 1.0, invaspect, -invaspect, 3.0, -3.0);
+  glOrtho(-1.0, 1.0, invaspect, -invaspect, 5.0, -5.0);
 
   if (ui->displaymode || ui->textentry_active || ui->popupmsg) {
     glViewport(0, 0, width, height);
