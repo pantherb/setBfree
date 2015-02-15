@@ -3094,7 +3094,7 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
       "setBfree",
       ui->width, ui->height,
       ui->width, ui->height,
-      true, true, 0);
+      true, false, 0);
 
   if (!ui->view) {
     return -1;
