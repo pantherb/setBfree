@@ -1527,7 +1527,7 @@ static void txtentry_render(PuglView* view) {
 
 }
 
-static void piano_manual(float y0, float z0, int active_key, unsigned int *active_keys) {
+static void piano_manual(PuglView* view, float y0, float z0, int active_key, unsigned int *active_keys) {
 
   const GLfloat no_mat[] = { 0.0, 0.0, 0.0, 1.0 };
   const GLfloat mat_key_white[] = { 0.7, 0.8, 0.8, 1.0 };
@@ -1560,108 +1560,36 @@ static void piano_manual(float y0, float z0, int active_key, unsigned int *activ
 	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_key_white);
       }
 
-      float k0 = 0.05f;
-      float k1 = 0.95f;
-      switch(key) {
+      if (i == 60) {
+	drawMesh(view, OBJ_WHITE_KEY0, 1);
+      } else switch(key) {
 	case 0:
 	case 5:
-	  k0=.45;
+	  drawMesh(view, OBJ_WHITE_KEYCF, 1);
 	  break;
 	case 4:
 	case 11:
-	  k1=.55;
+	  drawMesh(view, OBJ_WHITE_KEYEB, 1);
 	  break;
 	case 2:
-	  k0=.25;
-	  k1=.75;
+	  drawMesh(view, OBJ_WHITE_KEYD, 1);
 	  break;
 	case 7:
-	  k0=.35;
-	  k1=.75;
+	  drawMesh(view, OBJ_WHITE_KEYG, 1);
 	  break;
 	case 9:
-	  k0=.25;
-	  k1=.65;
+	  drawMesh(view, OBJ_WHITE_KEYA, 1);
 	  break;
 	default:
 	  break;
       }
-
-      if (i == 60) {
-	k0 = 0.05f;
-	k1 = 0.95f;
-      }
-
-      glBegin(GL_QUADS);
-      // TOP
-      glVertex3f(k0, 3.f, 0.f);
-      glVertex3f(k0, 0.f, 0.f);
-      glVertex3f(k1, 0.f, 0.f);
-      glVertex3f(k1, 3.f, 0.f);
-      // front
-      glVertex3f(k0, 3.f,  0.f);
-      glVertex3f(k1, 3.f,  0.f);
-      glVertex3f(k1, 3.f, -.5f);
-      glVertex3f(k0, 3.f, -.5f);
-      // back
-      glVertex3f(k0, 0.f,  0.f);
-      glVertex3f(k1, 0.f,  0.f);
-      glVertex3f(k1, 0.f, -.5f);
-      glVertex3f(k0, 0.f, -.5f);
-      // left
-      glVertex3f(k0, 0.f, -.5f);
-      glVertex3f(k0, 3.f, -.5f);
-      glVertex3f(k0, 3.f,  0.f);
-      glVertex3f(k0, 0.f,  0.f);
-      // right
-      glVertex3f(k1, 3.f, -.5f);
-      glVertex3f(k1, 0.f, -.5f);
-      glVertex3f(k1, 0.f,  0.f);
-      glVertex3f(k1, 3.f,  0.f);
-      // bottom
-      glVertex3f(k0, 3.f, -.5f);
-      glVertex3f(k0, 0.f, -.5f);
-      glVertex3f(k1, 0.f, -.5f);
-      glVertex3f(k1, 3.f, -.5f);
-
-      // TOP
-      glVertex3f(.05f, 5.f, 0.f);
-      glVertex3f(.05f, 3.f, 0.f);
-      glVertex3f(.95f, 3.f, 0.f);
-      glVertex3f(.95f, 5.f, 0.f);
-      // front
-      glVertex3f(.05f, 5.f,  0.f);
-      glVertex3f(.95f, 5.f,  0.f);
-      glVertex3f(.95f, 5.f, -.5f);
-      glVertex3f(.05f, 5.f, -.5f);
-      // back
-      glVertex3f(.05f, 3.f,  0.f);
-      glVertex3f(.95f, 3.f,  0.f);
-      glVertex3f(.95f, 3.f, -.5f);
-      glVertex3f(.05f, 3.f, -.5f);
-      // left
-      glVertex3f(.05f, 3.f, -.5f);
-      glVertex3f(.05f, 5.f, -.5f);
-      glVertex3f(.05f, 5.f,  0.f);
-      glVertex3f(.05f, 3.f,  0.f);
-      // right
-      glVertex3f(.95f, 5.f, -.5f);
-      glVertex3f(.95f, 3.f, -.5f);
-      glVertex3f(.95f, 3.f,  0.f);
-      glVertex3f(.95f, 5.f,  0.f);
-      // bottom
-      glVertex3f(.05f, 5.f, -.5f);
-      glVertex3f(.05f, 3.f, -.5f);
-      glVertex3f(.95f, 3.f, -.5f);
-      glVertex3f(.95f, 5.f, -.5f);
-      glEnd();
 
     } else {
       float x0 = (octave * 7.0 + bwk / 2.0) * 1.00 - .1;
       if (key == 1 || key == 6) x0 -= .2;
       if (key == 8) x0 -= .1;
 
-      glTranslatef(-16.f + x0, y0, z0 - .3f);
+      glTranslatef(-16.f + x0, y0, z0);
       glRotatef(180, 0, 1, 0);
 
       glMaterialfv(GL_FRONT, GL_AMBIENT, mat_key_black);
@@ -1669,53 +1597,21 @@ static void piano_manual(float y0, float z0, int active_key, unsigned int *activ
 
       if (/* i == active_key || */ active_keys[i/32] & (1<<(i%32))) {
 	glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
-	glTranslatef(0.f, .0f, -.1f);
-	glRotatef(-5, 1, 0, 0);
+	glTranslatef(0.f, .0f, -.15f);
+	glRotatef(-2, 1, 0, 0);
       } else {
 	glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
       }
-
-      glBegin(GL_QUADS);
-      // top
-      glVertex3f(0.f, 2.9, 0.f);
-      glVertex3f(0.f, 0.f, 0.f);
-      glVertex3f(.6f, 0.f, 0.f);
-      glVertex3f(.6f, 2.9, 0.f);
-      // front
-      glVertex3f(0.f, 2.9,  0.f);
-      glVertex3f(.6f, 2.9,  0.f);
-      glVertex3f(.6f, 2.9, -.5f);
-      glVertex3f(0.f, 2.9, -.5f);
-      // back
-      glVertex3f(0.f, 0.f,  0.f);
-      glVertex3f(.6f, 0.f,  0.f);
-      glVertex3f(.6f, 0.f, -.5f);
-      glVertex3f(0.f, 0.f, -.5f);
-      // left
-      glVertex3f(0.f, 0.f, -.5f);
-      glVertex3f(0.f, 2.9, -.5f);
-      glVertex3f(0.f, 2.9,  0.f);
-      glVertex3f(0.f, 0.f,  0.f);
-      // right
-      glVertex3f(.6f, 2.9, -.5f);
-      glVertex3f(.6f, 0.f, -.5f);
-      glVertex3f(.6f, 0.f,  0.f);
-      glVertex3f(.6f, 2.9,  0.f);
-      // bottom
-      glVertex3f(0.f, 2.9, -.5f);
-      glVertex3f(0.f, 0.f, -.5f);
-      glVertex3f(.6f, 0.f, -.5f);
-      glVertex3f(.6f, 2.9, -.5f);
-      glEnd();
+      drawMesh(view, OBJ_BLACK_KEY, 1);
     }
     glPopMatrix();
   }
 }
 
-static void piano_pedals(int active_key, unsigned int active_keys) {
+static void piano_pedals(PuglView* view, int active_key, unsigned int active_keys) {
 
   const float y0 = -7;
-  const float z0 = 18;
+  const float z0 = 19.25;
   const GLfloat mat_key_white[] = { 0.6, 0.55, 0.45, 1.0 };
   const GLfloat mat_key_black[] = { 0.3, 0.25, 0.15, 1.0 };
   const GLfloat no_mat[] = { 0.0, 0.0, 0.0, 1.0 };
@@ -1733,58 +1629,26 @@ static void piano_pedals(int active_key, unsigned int active_keys) {
 
     if (bwk % 2 == 0) {
       float x0 = (octave * 7.0 + bwk / 2.0) * 2.00;
-      glTranslatef(-13.f + x0, y0, z0);
+      glTranslatef(-13 + x0, 12.2 + y0, z0);
       glRotatef(180, 0, 1, 0);
 
       glMaterialfv(GL_FRONT, GL_AMBIENT, mat_key_white);
+      glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_key_white);
 
       if (/*i == active_key || */ active_keys & (1<<i)) {
+	glRotatef( 2, 1, 0, 0);
 	glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, glow_red);
-	glRotatef(-7, 1, 0, 0);
       } else {
-	glRotatef(-2, 1, 0, 0);
+	glRotatef( 0, 1, 0, 0);
 	glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_key_white);
       }
 
-      glBegin(GL_QUADS);
-      // TOP
-      glVertex3f(.05f, 14.f, 0.f);
-      glVertex3f(.05f, 0.f, 0.f);
-      glVertex3f(.95f, 0.f, 0.f);
-      glVertex3f(.95f, 14.f, 0.f);
-      // front
-      glVertex3f(.05f, 14.f,  0.f);
-      glVertex3f(.95f, 14.f,  0.f);
-      glVertex3f(.95f, 14.f, -.5f);
-      glVertex3f(.05f, 14.f, -.5f);
-      // back
-      glVertex3f(.05f, 0.f,  0.f);
-      glVertex3f(.95f, 0.f,  0.f);
-      glVertex3f(.95f, 0.f, -.5f);
-      glVertex3f(.05f, 0.f, -.5f);
-      // left
-      glVertex3f(.05f, 0.f, -.5f);
-      glVertex3f(.05f, 14.f, -.5f);
-      glVertex3f(.05f, 14.f,  0.f);
-      glVertex3f(.05f, 0.f,  0.f);
-      // right
-      glVertex3f(.95f, 14.f, -.5f);
-      glVertex3f(.95f, 0.f, -.5f);
-      glVertex3f(.95f, 0.f,  0.f);
-      glVertex3f(.95f, 14.f,  0.f);
-      // bottom
-      glVertex3f(.05f, 14.f, -.5f);
-      glVertex3f(.05f, 0.f, -.5f);
-      glVertex3f(.95f, 0.f, -.5f);
-      glVertex3f(.95f, 14.f, -.5f);
-      glEnd();
+      drawMesh(view, OBJ_PEDAL_WHITE, 1);
 
     } else {
       float x0 = (octave * 7.0 + bwk / 2.0) * 2.00 - .2;
 
-      glTranslatef(-13.f + x0, y0, z0 - .3f);
+      glTranslatef(-13.f + x0, y0, z0);
       glRotatef(180, 0, 1, 0);
 
       glMaterialfv(GL_FRONT, GL_AMBIENT, mat_key_black);
@@ -1792,45 +1656,13 @@ static void piano_pedals(int active_key, unsigned int active_keys) {
 
       if (/*i == active_key || */ active_keys & (1<<i)) {
 	glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
-	glTranslatef(0.f, .0f, -.1f);
-	glRotatef(-7, 1, 0, 0);
+	glRotatef(-5, 1, 0, 0);
       } else {
-	glRotatef(-2, 1, 0, 0);
+	glRotatef( 0, 1, 0, 0);
 	glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
       }
 
-      glBegin(GL_QUADS);
-      // top
-      glVertex3f(0.f, 4.9, 0.f);
-      glVertex3f(0.f, 0.f, 0.f);
-      glVertex3f(.6f, 0.f, 0.f);
-      glVertex3f(.6f, 4.9, 0.f);
-      // front
-      glVertex3f(0.f, 4.9,  0.f);
-      glVertex3f(.6f, 4.9,  0.f);
-      glVertex3f(.6f, 4.9, -.5f);
-      glVertex3f(0.f, 4.9, -.5f);
-      // back
-      glVertex3f(0.f, 0.f,  0.f);
-      glVertex3f(.6f, 0.f,  0.f);
-      glVertex3f(.6f, 0.f, -.5f);
-      glVertex3f(0.f, 0.f, -.5f);
-      // left
-      glVertex3f(0.f, 0.f, -.5f);
-      glVertex3f(0.f, 4.9, -.5f);
-      glVertex3f(0.f, 4.9,  0.f);
-      glVertex3f(0.f, 0.f,  0.f);
-      // right
-      glVertex3f(.6f, 4.9, -.5f);
-      glVertex3f(.6f, 0.f, -.5f);
-      glVertex3f(.6f, 0.f,  0.f);
-      glVertex3f(.6f, 4.9,  0.f);
-      // bottom
-      glVertex3f(0.f, 4.9, -.5f);
-      glVertex3f(0.f, 0.f, -.5f);
-      glVertex3f(.6f, 0.f, -.5f);
-      glVertex3f(.6f, 4.9, -.5f);
-      glEnd();
+      drawMesh(view, OBJ_PEDAL_BLACK, 1);
     }
     glPopMatrix();
   }
@@ -2340,9 +2172,9 @@ onDisplay(PuglView* view)
 
   /** step 3 - keyboard & pedals **/
 
-  piano_manual(7.0, 1.5, ui->upper_key, &ui->active_keys[0]);
-  piano_manual(12.5, 3.5, ui->lower_key, &ui->active_keys[2]);
-  piano_pedals(ui->pedal_key, ui->active_keys[4]);
+  piano_manual(view, 7.0, 1.8, ui->upper_key, &ui->active_keys[0]);
+  piano_manual(view, 12.5, 3.9, ui->lower_key, &ui->active_keys[2]);
+  piano_pedals(view, ui->pedal_key, ui->active_keys[4]);
 }
 
 static void reset_state_ccbind(PuglView* view) {
@@ -2953,7 +2785,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
   }
 
   // upper manual
-  project_mouse(view, x, y, 1.5, &kx, &ky);
+  project_mouse(view, x, y, 1.8, &kx, &ky);
   if (kx >= -.677 && kx <= .760 && ky >= .3 && ky <= .5) {
     int key;
     if (ky >= .41) {
@@ -2976,7 +2808,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
   }
 
   // lower manual
-  project_mouse(view, x, y, 3.5, &kx, &ky);
+  project_mouse(view, x, y, 3.9, &kx, &ky);
   if (kx >= -.677 && kx <= .760 && ky >= .5 && ky <= .7) {
     int key;
     if (ky >= .62) {
@@ -2999,11 +2831,11 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
   }
 
   // pedals
-  project_mouse(view, x, y, 18.5, &kx, &ky);
+  project_mouse(view, x, y, 19.5, &kx, &ky);
   if (kx >= -.554 && kx <= .600 && ky >= -.360 && ky <= .3) {
     int key = -1;
     int wk = floor((kx + .554) * 29. / (.600 + .554));
-    if (ky >= -.08) {
+    if (ky >= -.075) {
       // white keys only
       if (wk % 2 == 0) {
 	key = wk;
