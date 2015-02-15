@@ -1726,12 +1726,12 @@ onDisplay(PuglView* view)
   const GLfloat mat_organ[] = { 0.5, 0.25, 0.1, 1.0 };
   const GLfloat mat_dial[] = { 0.1, 0.1, 0.1, 1.0 };
   const GLfloat mat_lever[] = { 0.3, 0.3, 0.3, 1.0 };
-  const GLfloat mat_switch[] = { 0.9, 0.9, 0.84, 1.0 };
+  const GLfloat mat_switch[] = { 0.8, 0.8, 0.74, 1.0 };
   const GLfloat glow_red[] = { 1.0, 0.0, 0.00, 1.0 };
-  const GLfloat mat_drawbar_white[] = { 1.0, 1.0, 1.0, 1.0 };
+  const GLfloat mat_drawbar_white[] = { 0.91, 0.91, 0.91, 1.0 };
   const GLfloat mat_drawbar_brown[] = { 0.39, 0.25, 0.1, 1.0 };
-  const GLfloat mat_drawbar_black[] = { 0.0, 0.0, 0.0, 1.0 };
-  const GLfloat mat_w[] = {3.5, 3.5, 3.5, 1.0};
+  const GLfloat mat_drawbar_black[] = { 0.09, 0.09, 0.09, 1.0 };
+  const GLfloat mat_w[] = {1.0, 1.0, 1.0, 1.0};
 
   if (!ui->initialized) {
 
