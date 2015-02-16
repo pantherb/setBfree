@@ -459,6 +459,19 @@ int process (jack_nframes_t nframes, void *arg) {
 	/* run the plugin */
 	plugin_dsp->run(plugin_instance, nframes);
 
+	/* handle worker emit response  - may amend Atom seq... */
+	if (worker_responses) {
+		uint32_t read_space = jack_ringbuffer_read_space(worker_responses);
+		while (read_space) {
+			uint32_t size = 0;
+			char worker_response[4096];
+			jack_ringbuffer_read(worker_responses, (char*)&size, sizeof(size));
+			jack_ringbuffer_read(worker_responses, worker_response, size);
+			worker_iface->work_response(plugin_instance, size, worker_response);
+			read_space -= sizeof(size) + size;
+		}
+	}
+
 	/* create port-events for change values */
 	// TODO only if UI..?
 	for (uint32_t p = 0; p < inst->nports_ctrl; p++) {
@@ -505,18 +518,6 @@ int process (jack_nframes_t nframes, void *arg) {
 		}
 	}
 
-	/* handle worker emit response */
-	if (worker_responses) {
-		uint32_t read_space = jack_ringbuffer_read_space(worker_responses);
-		while (read_space) {
-			uint32_t size = 0;
-			char worker_response[4096];
-			jack_ringbuffer_read(worker_responses, (char*)&size, sizeof(size));
-			jack_ringbuffer_read(worker_responses, worker_response, size);
-			worker_iface->work_response(plugin_instance, size, worker_response);
-			read_space -= sizeof(size) + size;
-		}
-	}
 	/* signal worker end of process run */
 	if (worker_iface && worker_iface->end_run) {
 		worker_iface->end_run(plugin_instance);
