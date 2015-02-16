@@ -562,6 +562,7 @@ static void forge_message_kv(B3ui* ui, LV2_URID uri, int key, const char *val) {
   ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
 }
 
+// TODO consolidate with uris.h
 static void forge_message_str(B3ui* ui, LV2_URID uri, const char *key) {
   uint8_t obj_buf[1024];
   lv2_atom_forge_set_buffer(&ui->forge, obj_buf, 1024);
@@ -598,6 +599,7 @@ static void forge_note(B3ui* ui, const int manual, const int note, const bool on
   buffer[1] = note & 0x7f;
   buffer[2] = (onoff ? 0x7f : 0x00);
 
+  // mmh -> use uris.h  forge_midimessage() ??
   LV2_Atom midiatom;
   midiatom.type = ui->uris.midi_MidiEvent;
   midiatom.size = 3;
@@ -1191,11 +1193,10 @@ render_title(PuglView* view, const char *text, float x, float y, float z, const 
 }
 
 static void
-render_text(PuglView* view, const char *text, float x, float y, float z, int align)
+render_small_text(PuglView* view, const char *text, float x, float y, float z,  const GLfloat color[4], int align)
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   const GLfloat mat_b[] = {0.0, 0.0, 0.0, 1.0};
-  const GLfloat mat_r[] = {0.1, 0.95, 0.15, 1.0};
   float bb[6];
 
   glPushMatrix();
@@ -1203,7 +1204,7 @@ render_text(PuglView* view, const char *text, float x, float y, float z, int ali
 
   glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_b);
   glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_b);
-  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_r);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, color);
 
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
   glScalef(0.001,0.001,1.00);
@@ -1239,6 +1240,13 @@ render_text(PuglView* view, const char *text, float x, float y, float z, int ali
   glTranslatef(x * (1000.0*SCALE) , -y * (1000.0*SCALE), z * SCALE);
   ftglRenderFont(ui->font_small, text, FTGL_RENDER_ALL);
   glPopMatrix();
+}
+
+static void
+render_text(PuglView* view, const char *text, float x, float y, float z, int align)
+{
+  const GLfloat mat[] = {0.1, 0.95, 0.15, 1.0};
+  render_small_text(view, text, x, y, z, mat, align);
 }
 
 static void
@@ -1565,6 +1573,10 @@ static void txtentry_render(PuglView* view) {
   render_text(view, "<enter> to confirm, <ESC> to abort", 0, 6.0, 0, 1);
 
 }
+
+/******************************************************************************
+ * keyboard manuals & pedals
+ */
 
 static void piano_manual(PuglView* view, float y0, float z0, int active_key, unsigned int *active_keys) {
 
@@ -2825,7 +2837,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
     return;
   }
 
-  if (puglGetModifiers(view) & PUGL_MOD_CTRL && 
+  if (puglGetModifiers(view) & PUGL_MOD_CTRL &&
 #ifdef __APPLE__ // cater for users w/o 3 button mouse
       (button == 2 || button == 3)
 #else
