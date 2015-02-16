@@ -233,6 +233,8 @@ static void rc_cb(int fnid, const char *key, const char *kv, unsigned char val, 
 #endif
   if (fnid >=0) {
     forge_kvcontrolmessage(&b3s->forge, &b3s->uris, key, (int32_t) val);
+  } else {
+    forge_kvconfigmessage(&b3s->forge, &b3s->uris, b3s->uris.sb3_cfgkv, key, kv);
   }
 }
 

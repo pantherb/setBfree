@@ -3363,6 +3363,17 @@ port_event(LV2UI_Handle handle,
     return;
   }
 
+  if (obj->body.otype == ui->uris.sb3_cfgkv) {
+    const LV2_Atom* key = NULL;
+    const LV2_Atom* val = NULL;
+    if (2 == lv2_atom_object_get(obj, ui->uris.sb3_cckey, &key, ui->uris.sb3_ccval, &val, 0) && key && val) {
+	char *kk = (char*) LV2_ATOM_BODY(key);
+	char *vv = (char*) LV2_ATOM_BODY(val);
+	//cfg_parse_config(ui, key, val);
+    }
+    return;
+  }
+
   if (!get_cc_key_value(&ui->uris, obj, &k, &v)) {
     if (!strcmp(k, "special.midimap")) {
       ui->uiccbind = -1;

@@ -52,6 +52,7 @@
 #define SB3__kactive SB3_URI "#activekeys"
 #define SB3__karray  SB3_URI "#keyarray"
 #define SB3__cfgstr  SB3_URI "#cfgstr"
+#define SB3__cfgkv   SB3_URI "#cfgkv"
 
 typedef struct {
 	LV2_URID atom_Blank;
@@ -81,6 +82,7 @@ typedef struct {
 	LV2_URID sb3_activekeys;
 	LV2_URID sb3_keyarrary;
 	LV2_URID sb3_cfgstr;
+	LV2_URID sb3_cfgkv;
 
 	LV2_URID midi_MidiEvent;
 	LV2_URID atom_Sequence;
@@ -117,6 +119,7 @@ map_setbfree_uris(LV2_URID_Map* map, setBfreeURIs* uris)
 	uris->sb3_activekeys     = map->map(map->handle, SB3__kactive);
 	uris->sb3_keyarrary      = map->map(map->handle, SB3__karray);
 	uris->sb3_cfgstr         = map->map(map->handle, SB3__cfgstr);
+	uris->sb3_cfgkv          = map->map(map->handle, SB3__cfgkv);
 }
 
 static inline void
@@ -154,6 +157,25 @@ forge_kvcontrolmessage(LV2_Atom_Forge* forge,
 	lv2_atom_forge_pop(forge, &frame);
 	return msg;
 }
+
+static inline LV2_Atom *
+forge_kvconfigmessage(LV2_Atom_Forge* forge,
+		const setBfreeURIs* uris,
+		LV2_URID uri,
+		const char* key, const char* value)
+{
+	LV2_Atom_Forge_Frame frame;
+	lv2_atom_forge_frame_time(forge, 0);
+	LV2_Atom* msg = (LV2_Atom*)x_forge_object(forge, &frame, 1, uri);
+
+	lv2_atom_forge_property_head(forge, uris->sb3_cckey, 0);
+	lv2_atom_forge_string(forge, key, strlen(key));
+	lv2_atom_forge_property_head(forge, uris->sb3_ccval, 0);
+	lv2_atom_forge_string(forge, value, strlen(value));
+	lv2_atom_forge_pop(forge, &frame);
+	return msg;
+}
+
 
 static inline int
 get_cc_key_value(
