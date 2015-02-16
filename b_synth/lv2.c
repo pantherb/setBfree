@@ -590,7 +590,6 @@ work_response(LV2_Handle  instance,
 
   switch(w->cmd) {
     case CMD_SETCFG:
-      printf("SWAP %d\n", w->status);
       if (w->status){
 	// this should not happen
 	sprintf(tmp, "error modyfing CFG. Organ is busy.");
@@ -853,17 +852,6 @@ run(LV2_Handle instance, uint32_t n_samples)
     }
   }
 
-  if (b3s->update_gui_now) {
-    b3s->update_gui_now = 0;
-    b3s->update_pgm_now = 1;
-    b3s->suspend_ui_msg = 1;
-    rc_loop_state(b3s->inst->state, rc_cb, b3s);
-    b3s->suspend_ui_msg = 0;
-  } else if (b3s->update_pgm_now) {
-    b3s->update_pgm_now = 0;
-    loopProgammes(b3s->inst->progs, 1, pgm_cb, b3s);
-  }
-
   /* synthesize [remaining] sound */
   synthSound(b3s, written, n_samples, audio);
 
@@ -886,6 +874,17 @@ run(LV2_Handle instance, uint32_t n_samples)
 
   /* check for new instances */
   postrun(b3s);
+
+  if (b3s->update_gui_now) {
+    b3s->update_gui_now = 0;
+    b3s->update_pgm_now = 1;
+    b3s->suspend_ui_msg = 1;
+    rc_loop_state(b3s->inst->state, rc_cb, b3s);
+    b3s->suspend_ui_msg = 0;
+  } else if (b3s->update_pgm_now) {
+    b3s->update_pgm_now = 0;
+    loopProgammes(b3s->inst->progs, 1, pgm_cb, b3s);
+  }
 }
 
 static void
