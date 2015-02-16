@@ -627,8 +627,8 @@ static void processCCevent(B3ui* ui, const char *k, int v) {
     int bf = (v / 15) % 3; // drum 0:off, 1:chorale  2:tremolo
     if (hr != 2) hr = (hr == 1) ? 0 : 1;
     if (bf != 2) bf = (bf == 1) ? 0 : 1;
-    ui->ctrls[31].cur = hr; // horn 0:chorale, 1:off, 2:tremolo
-    ui->ctrls[32].cur = bf; // drum 0:chorale, 1:off, 2:tremolo
+    ui->ctrls[32].cur = hr; // horn 0:chorale, 1:off, 2:tremolo
+    ui->ctrls[31].cur = bf; // drum 0:chorale, 1:off, 2:tremolo
     puglPostRedisplay(ui->view);
     return;
   }
