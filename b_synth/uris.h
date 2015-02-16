@@ -51,6 +51,7 @@
 #define SB3__uimsg   SB3_URI "#uimessage"
 #define SB3__kactive SB3_URI "#activekeys"
 #define SB3__karray  SB3_URI "#keyarray"
+#define SB3__cfgstr  SB3_URI "#cfgstr"
 
 typedef struct {
 	LV2_URID atom_Blank;
@@ -79,6 +80,7 @@ typedef struct {
 	LV2_URID sb3_uimsg;
 	LV2_URID sb3_activekeys;
 	LV2_URID sb3_keyarrary;
+	LV2_URID sb3_cfgstr;
 
 	LV2_URID midi_MidiEvent;
 	LV2_URID atom_Sequence;
@@ -114,6 +116,7 @@ map_setbfree_uris(LV2_URID_Map* map, setBfreeURIs* uris)
 	uris->sb3_uimsg          = map->map(map->handle, SB3__uimsg);
 	uris->sb3_activekeys     = map->map(map->handle, SB3__kactive);
 	uris->sb3_keyarrary      = map->map(map->handle, SB3__karray);
+	uris->sb3_cfgstr         = map->map(map->handle, SB3__cfgstr);
 }
 
 static inline void

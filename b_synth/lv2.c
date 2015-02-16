@@ -97,6 +97,7 @@ enum {
   CMD_LOADCFG = 2,
   CMD_SAVEPGM = 3,
   CMD_SAVECFG = 4,
+  CMD_SETCFG  = 5,
 };
 
 struct worknfo {
@@ -453,6 +454,18 @@ static void rcsave_cb(int fnid, const char *key, const char *kv, unsigned char v
   }
 }
 
+static void clone_cb_cfg(int fnid, const char *key, const char *kv, unsigned char val, void *arg) {
+  if (fnid < 0) {
+    evaluateConfigKeyValue((struct b_instance *) arg, key, kv);
+  }
+}
+
+static void clone_cb_mcc(int fnid, const char *key, const char *kv, unsigned char val, void *arg) {
+  if (fnid >= 0) {
+    callMIDIControlFunction(((struct b_instance *) arg)->midicfg, key, val);
+  }
+}
+
 /* LV2 -- worker */
 static LV2_Worker_Status
 work(LV2_Handle                  instance,
@@ -470,6 +483,27 @@ work(LV2_Handle                  instance,
   struct worknfo *w = (struct worknfo*) data;
 
   switch(w->cmd) {
+    case CMD_SETCFG:
+      if (b3s->inst_offline) {
+	// this should not happen
+	fprintf(stderr, "B3LV2: setcfg ignored. re-init in progress\n");
+	w->status = -1;
+      } else {
+	// fprintf(stderr, "B3LV2: adding cfg line: %s\n", w->msg);
+	b3s->inst_offline = (b_instance*) calloc(1, sizeof(struct b_instance));
+	allocSynth(b3s->inst_offline);
+	// clone current state...
+	rc_loop_state(b3s->inst->state, clone_cb_cfg, b3s->inst_offline);
+	// copy program info
+	memcpy(b3s->inst_offline->progs,  b3s->inst->progs, sizeof(struct b_programme));
+	// add user-config
+	parseConfigurationLine (b3s->inst_offline, "LV2", 0, w->msg);
+	initSynth(b3s->inst_offline, SampleRateD);
+	// replay CCs after synth init
+	rc_loop_state(b3s->inst->state, clone_cb_mcc, b3s->inst_offline);
+	w->status = 0;
+      }
+      break;
     case CMD_LOADPGM:
       fprintf(stderr, "B3LV2: loading pgm file: %s\n", w->msg);
       if (!(w->status=loadProgrammeFile(b3s->inst->progs, w->msg))) {
@@ -553,6 +587,16 @@ work_response(LV2_Handle  instance,
   struct worknfo *w = (struct worknfo*) data;
 
   switch(w->cmd) {
+    case CMD_SETCFG:
+      printf("SWAP %d\n", w->status);
+      if (w->status){
+	// this should not happen
+	sprintf(tmp, "error modyfing CFG. Organ is busy.");
+	forge_message_str(b3s, b3s->uris.sb3_uimsg, tmp);
+      } else {
+	b3s->swap_instances = 1;
+      }
+      break;
     case CMD_LOADCFG:
       b3s->swap_instances = 1;
       if (w->status)
@@ -607,6 +651,7 @@ postrun (B3S* b3s)
 
     /* hide midi-maps, stop possibly pending midi-bind process */
     forge_kvcontrolmessage(&b3s->forge, &b3s->uris, "special.midimap", (int32_t) 0);
+    forge_kvcontrolmessage(&b3s->forge, &b3s->uris, "special.reinit", (int32_t) 1);
 
     b3s->schedule->schedule_work(b3s->schedule->handle, sizeof(struct worknfo), &w);
     b3s->update_gui_now = 1;
@@ -620,7 +665,20 @@ static void iowork(B3S* b3s, const LV2_Atom_Object* obj, int cmd) {
   if (name) {
     struct worknfo w;
     w.cmd = cmd;
+    w.status = -1;;
     strncpy(w.msg, (char *)LV2_ATOM_BODY(name), 1024);
+    b3s->schedule->schedule_work(b3s->schedule->handle, sizeof(struct worknfo), &w);
+  }
+}
+
+static void advanced_config_set(B3S* b3s, const LV2_Atom_Object* obj) {
+  const LV2_Atom* cfgline = NULL;
+  lv2_atom_object_get(obj, b3s->uris.sb3_cckey, &cfgline, 0);
+  if (cfgline) {
+    struct worknfo w;
+    w.cmd = CMD_SETCFG;
+    w.status = -1;;
+    strncpy(w.msg, (char *)LV2_ATOM_BODY(cfgline), 1024);
     b3s->schedule->schedule_work(b3s->schedule->handle, sizeof(struct worknfo), &w);
   }
 }
@@ -772,6 +830,10 @@ run(LV2_Handle instance, uint32_t n_samples)
 	  iowork(b3s, obj, CMD_SAVEPGM);
 	} else if (obj->body.otype == b3s->uris.sb3_savecfg) {
 	  iowork(b3s, obj, CMD_SAVECFG);
+	} else if (obj->body.otype == b3s->uris.sb3_cfgstr) {
+	  if (!b3s->inst_offline) {
+	    advanced_config_set(b3s, obj);
+	  }
 	} else if (obj->body.otype == b3s->uris.sb3_control) {
 	  b3s->suspend_ui_msg = 1;
 	  const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;

@@ -297,6 +297,7 @@ typedef struct {
   int pgm_sel;
   int show_mm;
   int uiccbind;
+  int reinit;
 
   int textentry_active;
   char textentry_text[1024];
@@ -3058,6 +3059,7 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   ui->pgm_sel     = -1;
   ui->show_mm     = 0;
   ui->uiccbind    = -1;
+  ui->reinit      = 0;
   ui->width       = 960;
   ui->height      = 320;
   ui->dndid       = -1;
@@ -3365,6 +3367,9 @@ port_event(LV2UI_Handle handle,
     if (!strcmp(k, "special.midimap")) {
       ui->uiccbind = -1;
       ui->show_mm = 0;
+      puglPostRedisplay(ui->view);
+    } else if (!strcmp(k, "special.reinit")) {
+      ui->reinit = 0;
       puglPostRedisplay(ui->view);
     } else {
       processCCevent(ui, k, v);
