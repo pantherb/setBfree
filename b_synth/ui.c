@@ -2675,20 +2675,35 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
       if (MOUSEIN(MENU_SAVEP, fx, fy)) {
 	dirlist(view, ui->curdir);
 	ui->displaymode = 6;
+#ifdef ANIMSTEPS
+	ui->openanim = 0;
+#endif
       }
       if (MOUSEIN(MENU_SAVEC, fx, fy)) {
 	dirlist(view, ui->curdir);
 	ui->displaymode = 5;
+#ifdef ANIMSTEPS
+	ui->openanim = 0;
+#endif
       }
       if (MOUSEIN(MENU_LOAD, fx, fy)) {
 	dirlist(view, ui->curdir);
 	ui->displaymode = 4;
+#ifdef ANIMSTEPS
+	ui->openanim = 0;
+#endif
       }
       if (MOUSEIN(MENU_PGML, fx, fy)) {
 	ui->displaymode = 2;
+#ifdef ANIMSTEPS
+	ui->openanim = 0;
+#endif
       }
       if (MOUSEIN(MENU_PGMS, fx, fy)) {
 	ui->displaymode = 3;
+#ifdef ANIMSTEPS
+	ui->openanim = 0;
+#endif
       }
       if (MOUSEIN(MENU_CANC, fx, fy)) {
 #ifdef ANIMSTEPS
