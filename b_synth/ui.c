@@ -520,9 +520,17 @@ static unsigned char vmap_val_to_midi(PuglView* view, int elem) {
 
 /* call lv2 plugin if value has changed */
 #define OBJ_BUF_SIZE 256
+
+static void b3_forge_message(B3ui* ui, const char *key, int32_t val) {
+  uint8_t obj_buf[OBJ_BUF_SIZE];
+  lv2_atom_forge_set_buffer(&ui->forge, obj_buf, OBJ_BUF_SIZE);
+  LV2_Atom* msg = forge_kvcontrolmessage(&ui->forge, &ui->uris, key, val);
+  if (msg)
+    ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
+}
+
 static void notifyPlugin(PuglView* view, int elem) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
-  uint8_t obj_buf[OBJ_BUF_SIZE];
   int32_t val;
 
   /* special cases */
@@ -541,10 +549,7 @@ static void notifyPlugin(PuglView* view, int elem) {
     val = vmap_val_to_midi(view, elem);
   }
 
-  lv2_atom_forge_set_buffer(&ui->forge, obj_buf, OBJ_BUF_SIZE);
-  LV2_Atom* msg = forge_kvcontrolmessage(&ui->forge, &ui->uris, obj_control[elem], val);
-  if (msg)
-    ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
+  b3_forge_message(ui, obj_control[elem], val);
 }
 
 static void forge_message_kv(B3ui* ui, LV2_URID uri, int key, const char *val) {
@@ -552,7 +557,6 @@ static void forge_message_kv(B3ui* ui, LV2_URID uri, int key, const char *val) {
   if (!val || strlen(val) > 32) { return; }
 
   lv2_atom_forge_set_buffer(&ui->forge, obj_buf, 256);
-
   LV2_Atom_Forge_Frame set_frame;
   LV2_Atom* msg = (LV2_Atom*)x_forge_object(&ui->forge, &set_frame, 1, uri);
   lv2_atom_forge_property_head(&ui->forge, ui->uris.sb3_cckey, 0);
@@ -560,7 +564,8 @@ static void forge_message_kv(B3ui* ui, LV2_URID uri, int key, const char *val) {
   lv2_atom_forge_property_head(&ui->forge, ui->uris.sb3_ccval, 0);
   lv2_atom_forge_string(&ui->forge, val, strlen(val));
   lv2_atom_forge_pop(&ui->forge, &set_frame);
-  ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
+  if (msg)
+    ui->write(ui->controller, 0, lv2_atom_total_size(msg), ui->uris.atom_eventTransfer, msg);
 }
 
 // TODO consolidate with uris.h
