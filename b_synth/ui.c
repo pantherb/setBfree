@@ -2265,6 +2265,32 @@ advanced_config_screen(PuglView* view)
 }
 
 /**
+ */
+
+static void reset_state_ccbind(PuglView* view) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  if (ui->uiccbind >= 0) {
+    ui->uiccbind = -1;
+    forge_message_str(ui, ui->uris.sb3_uimccset, "off");
+  }
+  puglPostRedisplay(view);
+}
+
+static void reset_state(PuglView* view) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  ui->dndid = -1;
+  ui->pgm_sel = -1;
+  ui->dir_sel = -1;
+  ui->dir_scrollgrab = NOSCROLL;
+  ui->dir_scroll = 0;
+  ui->dir_hidedotfiles = 0;
+  ui->mouseover = 0;
+  ui->cfgtriover = 0;
+  reset_state_ccbind(view);
+}
+
+
+/**
  * main display fn
  */
 
@@ -2340,6 +2366,7 @@ onDisplay(PuglView* view)
 
   if (ui->popupmsg) {
     if (ui->queuepopup) {
+      reset_state(view);
       onReshape(view, ui->width, ui->height);
       ui->queuepopup = 0;
     }
@@ -2806,26 +2833,6 @@ onDisplay(PuglView* view)
   }
 }
 
-static void reset_state_ccbind(PuglView* view) {
-  B3ui* ui = (B3ui*)puglGetHandle(view);
-  if (ui->uiccbind >= 0) {
-    ui->uiccbind = -1;
-    forge_message_str(ui, ui->uris.sb3_uimccset, "off");
-  }
-  puglPostRedisplay(view);
-}
-
-static void reset_state(PuglView* view) {
-  B3ui* ui = (B3ui*)puglGetHandle(view);
-  ui->dndid = -1;
-  ui->pgm_sel = -1;
-  ui->dir_sel = -1;
-  ui->dir_scrollgrab = NOSCROLL;
-  ui->dir_scroll = 0;
-  ui->dir_hidedotfiles = 0;
-  reset_state_ccbind(view);
-}
-
 #define SKD(mode) if (ui->displaymode != mode) break;
 
 static void
@@ -3060,6 +3067,7 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
 #else
 	ui->displaymode = 7;
 #endif
+	reset_state(view);
       }
       else if (ui->displaymode == 7
 #ifdef ANIMSTEPS
@@ -3073,6 +3081,7 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
 #else
 	ui->displaymode = 0;
 #endif
+	reset_state(view);
       }
       queue_reshape = 1;
       reset_state(view);
@@ -3082,7 +3091,9 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
 	dirlist(view, ui->curdir);
 	ui->displaymode = 4;
       }
-      else if (ui->displaymode == 4) ui->displaymode = 0;
+      else if (ui->displaymode == 4) {
+	ui->displaymode = 0;
+      }
       queue_reshape = 1;
       reset_state(view);
       break;
@@ -3091,7 +3102,9 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
 	dirlist(view, ui->curdir);
 	ui->displaymode = 5;
       }
-      else if (ui->displaymode == 5) ui->displaymode = 0;
+      else if (ui->displaymode == 5) {
+	ui->displaymode = 0;
+      }
       queue_reshape = 1;
       reset_state(view);
       break;
@@ -3100,7 +3113,9 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
 	dirlist(view, ui->curdir);
 	ui->displaymode = 6;
       }
-      else if (ui->displaymode == 6) ui->displaymode = 0;
+      else if (ui->displaymode == 6) {
+	ui->displaymode = 0;
+      }
       queue_reshape = 1;
       reset_state(view);
       break;
@@ -3360,10 +3375,12 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 	forge_message_int(ui, ui->uris.sb3_midipgm, ui->pgm_sel);
 	onReshape(view, ui->width, ui->height);
 	puglPostRedisplay(view);
+	reset_state(view);
       } else if (MOUSEIN(BTNLOC_CANC2, fx, fy)) {
 	ui->displaymode = 0;
 	onReshape(view, ui->width, ui->height);
 	puglPostRedisplay(view);
+	reset_state(view);
       }
       return;
 
@@ -3378,6 +3395,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 	ui->displaymode = 0;
 	onReshape(view, ui->width, ui->height);
 	puglPostRedisplay(view);
+	reset_state(view);
       }
       return;
 
@@ -3385,6 +3403,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
       ui->displaymode = 0;
       onReshape(view, ui->width, ui->height);
       puglPostRedisplay(view);
+      reset_state(view);
       return;
 
     case 8:
@@ -3395,6 +3414,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 	ui->displaymode = 0;
 	onReshape(view, ui->width, ui->height);
 	puglPostRedisplay(view);
+	reset_state(view);
       } else if (fy < -.8) { // TAB bar
 	int tab = cfg_tabbar(fx);
 	if (tab >= 0 && tab < 4) {
@@ -3422,28 +3442,34 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
       if (MOUSEIN(MENU_SAVEP, fx, fy)) {
 	dirlist(view, ui->curdir);
 	ui->displaymode = 6;
+	reset_state(view);
 	RESETANIM
       }
       if (MOUSEIN(MENU_SAVEC, fx, fy)) {
 	dirlist(view, ui->curdir);
 	ui->displaymode = 5;
+	reset_state(view);
 	RESETANIM
       }
       if (MOUSEIN(MENU_LOAD, fx, fy)) {
 	dirlist(view, ui->curdir);
 	ui->displaymode = 4;
+	reset_state(view);
 	RESETANIM
       }
       if (MOUSEIN(MENU_PGML, fx, fy)) {
 	ui->displaymode = 2;
+	reset_state(view);
 	RESETANIM
       }
       if (MOUSEIN(MENU_PGMS, fx, fy)) {
 	ui->displaymode = 3;
+	reset_state(view);
 	RESETANIM
       }
       if (MOUSEIN(MENU_ACFG, fx, fy)) {
 	ui->displaymode = 8;
+	reset_state(view);
 	RESETANIM
       }
       if (MOUSEIN(MENU_CANC, fx, fy)) {
@@ -3453,6 +3479,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 #else
 	ui->displaymode = 0;
 #endif
+	reset_state(view);
 	onReshape(view, ui->width, ui->height);
       }
       puglPostRedisplay(view);
@@ -3529,10 +3556,10 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
       } else if ((ui->displaymode == 5 || ui->displaymode == 6) && !MOUSEIN(BTNLOC_CANC, fx, fy)) {
 	return;
       }
-      ui->dir_sel = -1;
       ui->displaymode = 0;
       onReshape(view, ui->width, ui->height);
       puglPostRedisplay(view);
+      reset_state(view);
       return;
 
     default:
