@@ -2214,6 +2214,8 @@ advanced_config_screen(PuglView* view)
     unity_box(view, tabx, tabx + .4f, -.96f, -.8f, mat_hv);
   }
 
+  render_title(view, "Advanced Config", 19.0, 7.72, 0.1, mat_w, 4);
+
   render_title(view, "Tuning",   -.75/SCALE, -7.4, 0.5, mat_w, 1);
   render_title(view, "Vibrato & Perc.",  -.25/SCALE, -7.4, 0.5, mat_w, 1);
   render_title(view, "Analog Model", .25/SCALE, -7.4, 0.5, mat_w, 1);
@@ -2244,9 +2246,7 @@ advanced_config_screen(PuglView* view)
 
   if (ui->reinit) {
     mouseover = 0;
-    render_title(view, "Advanced Config [Applying]", 19.0, 7.72, 0.1, mat_w, 4);
-  } else {
-    render_title(view, "Advanced Config", 19.0, 7.72, 0.1, mat_w, 4);
+    render_title(view, "[busy, please wait]", 0.0, 7.72, 0.1, mat_w, 5);
   }
 
   int xh, yh;
