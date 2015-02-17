@@ -1074,7 +1074,7 @@ static void setupOpenGL() {
   glEnable(GL_MULTISAMPLE);
   glEnable(GL_RESCALE_NORMAL);
 
-  glEnable(GL_BLEND);
+  glDisable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA_SATURATE);
 
   glEnable(GL_POLYGON_SMOOTH);
@@ -1267,6 +1267,7 @@ render_small_text(PuglView* view, const char *text, float x, float y, float z,  
   glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_b);
   glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, color);
 
+  glEnable(GL_BLEND);
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
   glScalef(0.001,0.001,1.00);
   glRotatef(180, 1, 0, 0);
@@ -1307,6 +1308,7 @@ render_small_text(PuglView* view, const char *text, float x, float y, float z,  
   glTranslatef(x * (1000.0*SCALE) , -y * (1000.0*SCALE), z * SCALE);
   ftglRenderFont(ui->font_small, text, FTGL_RENDER_ALL);
   glPopMatrix();
+  glDisable(GL_BLEND);
 }
 
 static void
@@ -1372,9 +1374,8 @@ unity_button(PuglView* view,
   glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, btncol);
   glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, btncol);
   glEnable(GL_TEXTURE_2D);
-#if 0 // FIXME -- leaves main view in overlit state on intel-card, even if reset.
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
-#endif
+  glEnable(GL_BLEND);
+  glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA);
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
   glBindTexture(GL_TEXTURE_2D, ui->texID[15]);
   glBegin(GL_QUADS);
@@ -1394,6 +1395,7 @@ unity_button(PuglView* view,
   glTexCoord2f (1.0,  0.0); glVertex3f(x1, y0 * invaspect, 0);
   glEnd();
   glDisable(GL_TEXTURE_2D);
+  glDisable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA_SATURATE);
   glPopMatrix();
 }
@@ -1616,6 +1618,7 @@ static void txtentry_render(PuglView* view) {
   unity_box(view, -1.0, 1.0, -.12, .12, mat_x);
 
   glPushMatrix();
+  glEnable(GL_BLEND);
   glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_b);
   glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_b);
   glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_g);
@@ -1642,6 +1645,7 @@ static void txtentry_render(PuglView* view) {
   glTranslatef(0, 4.5 * (1000.0*SCALE), 0.1);
   ftglRenderFont(ui->font_big, ui->textentry_title, FTGL_RENDER_ALL);
 
+  glDisable(GL_BLEND);
   glPopMatrix();
   render_text(view, "<enter> to confirm, <ESC> to abort", 0, 6.0, 0, 1);
 
