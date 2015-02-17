@@ -1846,6 +1846,18 @@ static void cfg_initialize_param(B3ui * ui, const char *cfgkey, int p) {
       assert(ui->cfgvar[p].d->dflt);
       ui->cfgvar[p].dflt = atof(ui->cfgvar[p].d->dflt);
       break;
+    case CFG_TEXT:
+      if (ui->cfgvar[p].lut) {
+	int ii = 0;
+	while (ui->cfgvar[p].lut[ii].label) {
+	  // strstr due to quotes in doc
+	  if (strstr(ui->cfgvar[p].d->dflt, ui->cfgvar[p].lut[ii].label)) {
+	    ui->cfgvar[p].dflt = ui->cfgvar[p].lut[ii].val;
+	    break;
+	  }
+	  ++ii;
+	}
+      }
     default:
       break;
   }
