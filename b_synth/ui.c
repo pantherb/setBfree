@@ -1372,7 +1372,9 @@ unity_button(PuglView* view,
   glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, btncol);
   glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, btncol);
   glEnable(GL_TEXTURE_2D);
+#if 0 // FIXME -- leaves main view in overlit state on intel-card, even if reset.
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
+#endif
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
   glBindTexture(GL_TEXTURE_2D, ui->texID[15]);
   glBegin(GL_QUADS);
@@ -1391,8 +1393,8 @@ unity_button(PuglView* view,
   glTexCoord2f (1.0,  1.0); glVertex3f(x1, y1 * invaspect, 0);
   glTexCoord2f (1.0,  0.0); glVertex3f(x1, y0 * invaspect, 0);
   glEnd();
-  glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA_SATURATE);
   glDisable(GL_TEXTURE_2D);
+  glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA_SATURATE);
   glPopMatrix();
 }
 
@@ -2174,10 +2176,8 @@ static void
 advanced_config_screen(PuglView* view)
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
-  const float invaspect = 320. / 960.;
   const GLfloat mat_w[] = {1.0, 1.0, 1.0, 1.0};
   const GLfloat mat_g[] = {0.6, 0.6, 0.6, 1.0};
-  const GLfloat mat_b[] = {0.0, 0.0, 0.0, 1.0};
   const GLfloat mat_tb[] = { 0.2, 0.2, 0.2, 1.0 };
   const GLfloat mat_bg[] = { 0.1, 0.1, 0.1, 1.0 };
   const GLfloat mat_hv[] = { 0.3, 0.3, 0.3, 1.0 };
@@ -2191,8 +2191,8 @@ advanced_config_screen(PuglView* view)
     unity_box(view, tabx, tabx + .4f, -.96f, -.8f, mat_bg);
   }
 
-  if (mouseover >= 24 && mouseover < 32 && ui->cfgtab + 24 != mouseover) {
-    float tabx = (-.75 + (mouseover - 24) * .5) - .2;
+  if (mouseover > 24 && mouseover < 32 && ui->cfgtab + 25 != mouseover) {
+    float tabx = (-.75 + (mouseover - 25) * .5) - .2;
     unity_box(view, tabx, tabx + .4f, -.96f, -.8f, mat_hv);
   }
 
@@ -3147,7 +3147,7 @@ onMotion(PuglView* view, int x, int y)
     } else if (fy < -.8) { // TAB bar
       int tab = cfg_tabbar(fx);
       if (tab >= 0 && tab < 4) {
-	ui->mouseover = 24 + tab;
+	ui->mouseover = 25 + tab;
       }
     } else {
       ui->mouseover = cfg_mousepos(fx, fy, &ui->cfgtriover);
