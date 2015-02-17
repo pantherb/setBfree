@@ -194,6 +194,15 @@ enum {
    && (mousey) <= (ctrl).y * SCALE + CTRLHEIGHT2(ctrl) )
 
 
+enum B3TextAlign {
+  TA_LEFT_TOP = 0,
+  TA_CENTER_MIDDLE = 1,
+  TA_RIGHT_TOP = 2,
+  TA_LEFT_BOTTOM = 3,
+  TA_RIGHT_BOTTOM = 4,
+  TA_CENTER_BOTTOM = 5,
+};
+
 static inline int MOUSEIN(
     const float X0, const float X1,
     const float Y0, const float Y1,
@@ -1195,7 +1204,7 @@ onReshape(PuglView* view, int width, int height)
 }
 
 static void
-render_title(PuglView* view, const char *text, float x, float y, float z, const GLfloat color[4], int align)
+render_title(PuglView* view, const char *text, float x, float y, float z, const GLfloat color[4], B3TextAlign align)
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   float bb[6];
@@ -1216,27 +1225,27 @@ render_title(PuglView* view, const char *text, float x, float y, float z, const 
       bb[0], bb[1], bb[2], bb[3], bb[4], bb[5]);
 #endif
   switch(align) {
-    case 1: // center + middle
+    case TA_CENTER_MIDDLE:
       glTranslatef(
 	  (bb[3] - bb[0])/-2.0,
 	  (bb[4] - bb[1])/-2.0,
 	  0);
       break;
-    case 2: // right top
+    case TA_RIGHT_TOP:
       glTranslatef(
 	  (bb[3] - bb[0])/-1.0,
 	  (bb[4] - bb[1])/-1.0,
 	  0);
       break;
-    case 3: // left bottom
+    case TA_LEFT_BOTTOM:
       break;
-    case 4: // right bottom
+    case TA_RIGHT_BOTTOM:
       glTranslatef(
 	  (bb[3] - bb[0])/-1.0,
 	  0,
 	  0);
       break;
-    case 5: // center + bottom
+    case TA_CENTER_BOTTOM:
       glTranslatef(
 	  (bb[3] - bb[0])/-2.0,
 	  0,
@@ -1255,7 +1264,7 @@ render_title(PuglView* view, const char *text, float x, float y, float z, const 
 }
 
 static void
-render_small_text(PuglView* view, const char *text, float x, float y, float z,  const GLfloat color[4], int align)
+render_small_text(PuglView* view, const char *text, float x, float y, float z,  const GLfloat color[4], B3TextAlign align)
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   const GLfloat mat_b[] = {0.0, 0.0, 0.0, 1.0};
@@ -1278,21 +1287,27 @@ render_small_text(PuglView* view, const char *text, float x, float y, float z,  
       bb[0], bb[1], bb[2], bb[3], bb[4], bb[5]);
 #endif
   switch(align) {
-    case 1: // center + middle
+    case TA_CENTER_MIDDLE:
       glTranslatef(
 	  (bb[3] - bb[0])/-2.0,
 	  (bb[4] - bb[1])/-2.0,
 	  0);
       break;
-    case 2: // right
+    case TA_RIGHT_TOP:
       glTranslatef(
 	  (bb[3] - bb[0])/-1.0,
 	  (bb[4] - bb[1])/-1.0,
 	  0);
       break;
-    case 3: // left bottom
+    case TA_LEFT_BOTTOM:
       break;
-    case 5: // center + bottom
+    case TA_RIGHT_BOTTOM:
+      glTranslatef(
+	  (bb[3] - bb[0])/-1.0,
+	  0,
+	  0);
+      break;
+    case TA_CENTER_BOTTOM:
       glTranslatef(
 	  (bb[3] - bb[0])/-2.0,
 	  0,
@@ -1313,7 +1328,7 @@ render_small_text(PuglView* view, const char *text, float x, float y, float z,  
 }
 
 static void
-render_text(PuglView* view, const char *text, float x, float y, float z, int align)
+render_text(PuglView* view, const char *text, float x, float y, float z, B3TextAlign align)
 {
   const GLfloat mat[] = {0.1, 0.95, 0.15, 1.0};
   render_small_text(view, text, x, y, z, mat, align);
@@ -1412,7 +1427,7 @@ gui_button(PuglView* view,
   const GLfloat mat_white[] = { 1.0, 1.0, 1.0, 1.0 };
   const float invaspect = 320. / 960.;
   unity_button(view, x0, x1, y0, y1, ui->mouseover & hovermask);
-  render_title(view, label, (x1 + x0) / 2.0 / SCALE, invaspect * (y1 + y0) / 2.0 / SCALE, 0.5, mat_white, 1);
+  render_title(view, label, (x1 + x0) / 2.0 / SCALE, invaspect * (y1 + y0) / 2.0 / SCALE, 0.5, mat_white, TA_CENTER_MIDDLE);
 }
 
 static void
@@ -1456,12 +1471,12 @@ menu_button(PuglView* view,
     glDisable(GL_BLEND);
     if (ui->mouseover & hovermask) {
       const GLfloat mat_w[] = { 1.0, 1.0, 1.0, 1.0 };
-      render_title(view, label, (x1 + x0) / 2.0 / SCALE, invaspect * (y1 + y0) / 2.0 / SCALE, 0.5, mat_w, 1);
+      render_title(view, label, (x1 + x0) / 2.0 / SCALE, invaspect * (y1 + y0) / 2.0 / SCALE, 0.5, mat_w, TA_CENTER_MIDDLE);
     }
   } else {
     const GLfloat mat_w[] = { 1.0, 1.0, 1.0, 1.0 };
     unity_button(view, x0, x1, y0, y1, ui->mouseover & hovermask);
-    render_title(view, label, (x1 + x0) / 2.0 / SCALE, invaspect * (y1 + y0) / 2.0 / SCALE, 0.5, mat_w, 1);
+    render_title(view, label, (x1 + x0) / 2.0 / SCALE, invaspect * (y1 + y0) / 2.0 / SCALE, 0.5, mat_w, TA_CENTER_MIDDLE);
   }
 
 }
@@ -1650,7 +1665,7 @@ static void txtentry_render(PuglView* view) {
 
   glDisable(GL_BLEND);
   glPopMatrix();
-  render_text(view, "<enter> to confirm, <ESC> to abort", 0, 6.0, 0, 1);
+  render_text(view, "<enter> to confirm, <ESC> to abort", 0, 6.0, 0, TA_CENTER_MIDDLE);
 
 }
 
@@ -2152,7 +2167,7 @@ render_cfg_button(PuglView* view,
 
   render_small_text(view, txt,
       (x1 + x0) / 2.0 / SCALE, invaspect * (y1 + y0) / 2.0 / SCALE,
-      0.5, mat_w, 1);
+      0.5, mat_w, TA_CENTER_MIDDLE);
 }
 
 static int cfg_tabbar(const float fx) {
@@ -2215,39 +2230,39 @@ advanced_config_screen(PuglView* view)
     unity_box(view, tabx, tabx + .4f, -.96f, -.8f, mat_hv);
   }
 
-  render_title(view, "Advanced Config", 19.0, 7.72, 0.1, mat_w, 4);
+  render_title(view, "Advanced Config", 19.0, 7.72, 0.1, mat_w, TA_RIGHT_BOTTOM);
 
-  render_title(view, "Tuning",   -.75/SCALE, -7.4, 0.5, mat_w, 1);
-  render_title(view, "Vibrato & Perc.",  -.25/SCALE, -7.4, 0.5, mat_w, 1);
-  render_title(view, "Analog Model", .25/SCALE, -7.4, 0.5, mat_w, 1);
-  render_title(view, "Leslie",    .75/SCALE, -7.4, 0.5, mat_w, 1);
+  render_title(view, "Tuning",   -.75/SCALE, -7.4, 0.5, mat_w, TA_CENTER_MIDDLE);
+  render_title(view, "Vibrato & Perc.",  -.25/SCALE, -7.4, 0.5, mat_w, TA_CENTER_MIDDLE);
+  render_title(view, "Analog Model", .25/SCALE, -7.4, 0.5, mat_w, TA_CENTER_MIDDLE);
+  render_title(view, "Leslie",    .75/SCALE, -7.4, 0.5, mat_w, TA_CENTER_MIDDLE);
 
   if (mouseover > 0 && mouseover < 24) {
     const int ccc = ui->cfgtab * 24 + mouseover - 1;
     if (ccc < MAXCFG && ui->cfgvar[ccc].d && ui->cfgvar[ccc].d->desc) {
-      render_small_text(view, "Description (see the manual for complete info):", -23.75, 7.5, 0.5, mat_g, 3);
-      render_small_text(view, ui->cfgvar[ccc].d->desc, -23.75, 8.22, 0.5, mat_w, 3);
+      render_small_text(view, "Description (see the manual for complete info):", -23.75, 7.5, 0.5, mat_g, TA_LEFT_BOTTOM);
+      render_small_text(view, ui->cfgvar[ccc].d->desc, -23.75, 8.22, 0.5, mat_w, TA_LEFT_BOTTOM);
     }
   }
 
   if (ui->cfgtab == 0) {
     render_small_text(view,
 	"setBfree is a 'Tonewheel Organ Construction Kit' with over 1000 configurable parameters.",
-	0, 0, 0.5, mat_w, 5);
+	0, 0, 0.5, mat_w, TA_CENTER_BOTTOM);
     render_small_text(view,
 	"This dialog only exposes some more common 'advanced' settings.",
-	0, 0.75, 0.5, mat_w, 5);
+	0, 0.75, 0.5, mat_w, TA_CENTER_BOTTOM);
     render_small_text(view,
 	"NOTE: changing any of these parameters re-initializes the synth in the background.",
-	0, 1.5, 0.5, mat_w, 5);
+	0, 1.5, 0.5, mat_w, TA_CENTER_BOTTOM);
     render_small_text(view,
 	"Shift + Click on an element to restore settings to the default value.",
-	0, 2.25, 0.5, mat_w, 5);
+	0, 2.25, 0.5, mat_w, TA_CENTER_BOTTOM);
   }
 
   if (ui->reinit) {
     mouseover = 0;
-    render_title(view, "[busy, please wait]", 0.0, 7.72, 0.1, mat_w, 5);
+    render_title(view, "[busy, please wait]", 0.0, 7.72, 0.1, mat_w, TA_CENTER_BOTTOM);
   }
 
   int xh, yh;
@@ -2371,13 +2386,13 @@ onDisplay(PuglView* view)
       ui->queuepopup = 0;
     }
     unity_box(view, -1.0, 1.0, -.12, .12, mat_dial);
-    render_title(view, ui->popupmsg, 0, 0, 0.1, mat_drawbar_white, 1);
+    render_title(view, ui->popupmsg, 0, 0, 0.1, mat_drawbar_white, TA_CENTER_MIDDLE);
     if (ui->pendingmode) {
-      render_text(view, "Press <enter> to confirm, <ESC> to abort, or press button.", 0, 7.0, 0, 1);
+      render_text(view, "Press <enter> to confirm, <ESC> to abort, or press button.", 0, 7.0, 0, TA_CENTER_MIDDLE);
       gui_button(view, BTNLOC_NO, HOVER_NO, "No");
       gui_button(view, BTNLOC_YES, HOVER_YES, "Yes");
     } else {
-      render_text(view, "Press <enter> or <ESC> to continue.", 0, 7.0, 0, 1);
+      render_text(view, "Press <enter> or <ESC> to continue.", 0, 7.0, 0, TA_CENTER_MIDDLE);
       gui_button(view, BTNLOC_OK, HOVER_OK, "Ok");
     }
     return;
@@ -2413,7 +2428,7 @@ onDisplay(PuglView* view)
     const float w = 1.0/2.8 * 22.0 * SCALE;
     const float h = 2.0/24.0 * 22.0 * SCALE;
 
-    render_title(view, (ui->displaymode == 2) ? "recall" : "store", 16.5, -.75, 0.1, mat_drawbar_white, 3);
+    render_title(view, (ui->displaymode == 2) ? "recall" : "store", 16.5, -.75, 0.1, mat_drawbar_white, TA_LEFT_BOTTOM);
     gui_button(view, BTNLOC_CANC2, HOVER_CANC2, "Cancel");
 
     for (i=0; i < 128; i++) {
@@ -2439,14 +2454,14 @@ onDisplay(PuglView* view)
       }
       unity_box(view, bx, bx+w, by, by+h, mat_x);
       y *= invaspect;
-      render_text(view, txt, x, y, .1f, 0);
+      render_text(view, txt, x, y, .1f, TA_LEFT_TOP);
     }
     if (ui->pgm_sel >= 0) {
       char *t0, *t1; int ln = 0;
       t0 = ui->mididsc[ui->pgm_sel];
       while (*t0 && (t1 = strchr(t0, '\n'))) {
 	*t1='\0';
-	render_text(view, t0, 16.5, ++ln*0.5 - .1 , .1f, 3);
+	render_text(view, t0, 16.5, ++ln*0.5 - .1 , .1f, TA_LEFT_BOTTOM);
 	*t1='\n';
 	t0=t1+1;
       }
@@ -2460,28 +2475,28 @@ onDisplay(PuglView* view)
 
     switch(ui->displaymode) {
       case 4:
-	render_title(view, "open .pgm or .cfg", 16.25, 6.5, 0.1, mat_drawbar_white, 2);
-	render_text(view, "Note: loading a .cfg will re-initialize the organ.", -20.0, 7.75, 0.0, 3);
+	render_title(view, "open .pgm or .cfg", 16.25, 6.5, 0.1, mat_drawbar_white, TA_RIGHT_TOP);
+	render_text(view, "Note: loading a .cfg will re-initialize the organ.", -20.0, 7.75, 0.0, TA_LEFT_BOTTOM);
 	gui_button(view, BTNLOC_CANC3, HOVER_CANC3, "Cancel");
 	break;
       case 5:
-	render_title(view, "save .cfg", 0, invaspect * btn_y(BTNLOC_SAVE), 0.1, mat_drawbar_white, 1);
+	render_title(view, "save .cfg", 0, invaspect * btn_y(BTNLOC_SAVE), 0.1, mat_drawbar_white, TA_CENTER_MIDDLE);
 	gui_button(view, BTNLOC_SAVE, HOVER_SAVE, "Save");
 	gui_button(view, BTNLOC_CANC, HOVER_CANC, "Cancel");
-	render_text(view, "select a file or press OK or <enter> to create new.", -20.0, 7.75, 0.0, 3);
+	render_text(view, "select a file or press OK or <enter> to create new.", -20.0, 7.75, 0.0, TA_LEFT_BOTTOM);
 	break;
       case 6:
-	render_title(view, "save .pgm", 0, invaspect * btn_y(BTNLOC_SAVE), 0.1, mat_drawbar_white, 1);
+	render_title(view, "save .pgm", 0, invaspect * btn_y(BTNLOC_SAVE), 0.1, mat_drawbar_white, TA_CENTER_MIDDLE);
 	gui_button(view, BTNLOC_SAVE, HOVER_SAVE, "Save");
 	gui_button(view, BTNLOC_CANC, HOVER_CANC, "Cancel");
-	render_text(view, "select a file or press OK or <enter> to create new.", -20.0, 7.75, 0.0, 3);
+	render_text(view, "select a file or press OK or <enter> to create new.", -20.0, 7.75, 0.0, TA_LEFT_BOTTOM);
 	break;
       default:
 	break;
     }
 
-    render_text(view, "Path:", -20.0, 7.0, 0.0, 3);
-    render_text(view, ui->curdir, -18.25, 7.0, 0.0, 3);
+    render_text(view, "Path:", -20.0, 7.0, 0.0, TA_LEFT_BOTTOM);
+    render_text(view, ui->curdir, -18.25, 7.0, 0.0, TA_LEFT_BOTTOM);
 
     float xscolloff = 0;
     if (ui->dirlistlen > 120) {
@@ -2534,7 +2549,7 @@ onDisplay(PuglView* view)
       unity_box(view, bx, bx+w, by-h, by, mat_x);
 
       y *= invaspect;
-      render_text(view, txt, x, y, .1f, 3);
+      render_text(view, txt, x, y, .1f, TA_LEFT_BOTTOM);
     }
     return;
   } else if (ui->displaymode == 7) {
@@ -2608,7 +2623,7 @@ onDisplay(PuglView* view)
   drawMesh(view, OBJ_PUSHBUTTON, 1);
   glPopMatrix();
 
-  render_title(view, "?", 1.07/SCALE, -.21/SCALE, 0.012, mat_drawbar_white, 1);
+  render_title(view, "?", 1.07/SCALE, -.21/SCALE, 0.012, mat_drawbar_white, TA_CENTER_MIDDLE);
 
   /** step 1 - draw background -- fixed objects **/
 
@@ -2790,10 +2805,10 @@ onDisplay(PuglView* view)
     if (i < 20)  y -= 0.4;
 
     if (ui->show_mm) {
-      render_text(view, ui->ctrls[i].midinfo, x, y, 1.5f, 1);
+      render_text(view, ui->ctrls[i].midinfo, x, y, 1.5f, TA_CENTER_MIDDLE);
     }
     if (ui->uiccbind == i) {
-      render_text(view, "move slider", x, y-.8, 1.6f, 1);
+      render_text(view, "move slider", x, y-.8, 1.6f, TA_CENTER_MIDDLE);
     }
   }
 
