@@ -121,6 +121,14 @@ using namespace FTGL;
 #include "global_inst.h" // documentation/default values
 #include "cfgParser.h" // ConfigDoc
 
+#ifndef JACK_DESCRIPT
+double SampleRateD = 48000.0; // unused needed to link
+const ConfigDoc *mainDoc () { return NULL;}
+int mainConfig (ConfigContext * cfg) {
+  return 0;
+}
+#endif
+
 #include "uris.h"
 #include "ui_model.h"
 

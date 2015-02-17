@@ -50,9 +50,9 @@ $(LV2NAME)$(LIB_EXT): lv2.c $(LV2OBJ) uris.h ../src/cfgParser.h ../src/midi.h
 		lv2.c $(LV2OBJ) \
 	  -shared $(LV2LDFLAGS) $(LDFLAGS) $(LOADLIBES)
 
-$(LV2GUI)$(LIB_EXT): ui.c uris.h $(UIDEPS) $(FONTFILE)
+$(LV2GUI)$(LIB_EXT): ui.c uris.h $(UIDEPS) $(FONTFILE) $(LV2OBJ)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(UICFLAGS) \
-		-o $(LV2GUI)$(LIB_EXT) ui.c \
+		-o $(LV2GUI)$(LIB_EXT) ui.c $(LV2OBJ) \
 		-shared $(LV2LDFLAGS) $(LDFLAGS) $(UILIBS)
 
 verabd.h: VeraBd.ttf
