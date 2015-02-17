@@ -2699,7 +2699,10 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
 	break;
 	/* hardcoded US layout */
 #define KEYADJ(ELEM, DELTA) { ui->dndval = ui->ctrls[(ELEM)].cur + (DELTA); processMotion(view, (ELEM), 0, 0); }
-#define KEYADJ2(UPPER, LOWER, DELTA) { ui->dndval = ui->ctrls[(ui->keyboard_control&2)?(LOWER):(UPPER)].cur + (DELTA); processMotion(view, ((ui->keyboard_control&2)?(LOWER):(UPPER)), 0, 0); }
+#define KEYADJ2(UPPER, LOWER, DELTA) \
+	if (ui->keyboard_control == 3) KEYADJ(LOWER, DELTA) \
+	if (ui->keyboard_control == 1) KEYADJ(UPPER, DELTA)
+
       case 'q':
 	if (ui->keyboard_control == 5) KEYADJ(18, 1);
 	if (ui->keyboard_control == 3) KEYADJ( 9, 1);
@@ -3656,7 +3659,7 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
       "setBfree",
       ui->width, ui->height,
       ui->width, ui->height,
-      true, true, 0); //XXX
+      true, false, 0);
 
   if (!ui->view) {
     return -1;
