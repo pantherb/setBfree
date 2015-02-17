@@ -2775,7 +2775,7 @@ onDisplay(PuglView* view)
   piano_manual(view, 12.5, 3.9, ui->lower_key, &ui->active_keys[2]);
   piano_pedals(view, ui->pedal_key, ui->active_keys[4]);
 
-  if (ui->keyboard_control) {
+  if (ui->keyboard_control & 1) {
     glPushMatrix();
     glLoadIdentity();
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_w);
