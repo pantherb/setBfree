@@ -1439,6 +1439,7 @@ menu_button(PuglView* view,
     glMaterialfv(GL_FRONT, GL_EMISSION, mat_x);
     glLoadIdentity();
     glEnable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
     glBindTexture(GL_TEXTURE_2D, ui->texID[texid]);
@@ -1451,6 +1452,7 @@ menu_button(PuglView* view,
     glEnd();
     glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA_SATURATE);
     glDisable(GL_TEXTURE_2D);
+    glDisable(GL_BLEND);
     if (ui->mouseover & hovermask) {
       const GLfloat mat_w[] = { 1.0, 1.0, 1.0, 1.0 };
       render_title(view, label, (x1 + x0) / 2.0 / SCALE, invaspect * (y1 + y0) / 2.0 / SCALE, 0.5, mat_w, 1);
