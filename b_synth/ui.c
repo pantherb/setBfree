@@ -1965,6 +1965,8 @@ static void cfg_initialize(B3ui * ui) {
   CFGP("scanner.modulation.v3",       "Vibrato 3 Mod.",       "Hz", 0, NULL, 0.50, 0.0, 12.0);
 
   p+=4;
+  p+=4;
+
   CFGP("osc.perc.fast",               "Perc. fast decay",     "s",  0, NULL, 0.10, 0, 10.0);
   CFGP("osc.perc.slow",               "Perc. slow decay",     "s",  0, NULL, 0.10, 0, 10.0);
   CFGP("osc.perc.normal",             "Perc. Amp norm",       "dB", 1, NULL, 2.0, 0, 1.0);
@@ -2057,6 +2059,27 @@ static void cfg_parse_config(B3ui * ui, const char *key, const char *value) {
 
   if (ui->displaymode == 8 && relevant) {
     puglPostRedisplay(ui->view);
+  }
+}
+
+static void cfg_special_button(PuglView *view, int ccc) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  assert(ui->cfgtab == 0);
+
+  if (ui->reinit) {
+    puglPostRedisplay(view);
+    return;
+  }
+
+  if (ccc == 21) {
+    forge_message_str(ui, ui->uris.sb3_cfgstr, "special.reset=1");
+    ui->reinit = 1;
+    return;
+  }
+  if (ccc == 22) {
+    forge_message_str(ui, ui->uris.sb3_cfgstr, "special.reconfigure=1");
+    ui->reinit = 1;
+    return;
   }
 }
 
@@ -2249,18 +2272,21 @@ advanced_config_screen(PuglView* view)
   }
 
   if (ui->cfgtab == 0) {
+    // first tab 'special'
+    float yto = -.05 / SCALE;
     render_small_text(view,
 	"setBfree is a 'Tonewheel Organ Construction Kit' with over 1000 configurable parameters.",
-	0, 0, 0.5, mat_w, TA_CENTER_BOTTOM);
+	0, yto, 0.5, mat_w, TA_CENTER_BOTTOM); yto+=.75;
     render_small_text(view,
-	"This dialog only exposes some more common 'advanced' settings.",
-	0, 0.75, 0.5, mat_w, TA_CENTER_BOTTOM);
+	"This dialog only exposes some more common 'advanced' settings. Use a config file for complete control.",
+	0, yto, 0.5, mat_w, TA_CENTER_BOTTOM); yto+=.75;
     render_small_text(view,
-	"NOTE: changing any of these parameters re-initializes the synth in the background.",
-	0, 1.5, 0.5, mat_w, TA_CENTER_BOTTOM);
+	"NOTE: changing any of these parameters re-initializes the synth.",
+	0, yto, 0.5, mat_w, TA_CENTER_BOTTOM); yto+=.75; yto+=.75;
     render_small_text(view,
-	"Shift + Click on an element to restore settings to the default value.",
-	0, 2.25, 0.5, mat_w, TA_CENTER_BOTTOM);
+	"Shift + Click on an element to restore its setting to the default value.",
+	0, yto, 0.5, mat_w, TA_CENTER_BOTTOM);
+
   }
 
   if (ui->reinit) {
@@ -2279,6 +2305,28 @@ advanced_config_screen(PuglView* view)
       render_cfg_button(view, ccc, ccx, ccx+.4, ccy, ccy+ .15,
 	  mouseover == ccm + 1, ui->cfgtriover);
     }
+  }
+
+  // special reset buttons @ 21, 22
+  if (ui->cfgtab == 0) {
+    assert(!ui->cfgvar[21].d);
+    assert(!ui->cfgvar[22].d);
+    const float invaspect = 320. / 960.;
+    float x0, y0;
+
+    x0 = -.95 + .5 * 1;
+    y0 = -.70 + .25 * 5;
+    unity_button(view, x0, x0+.4, y0, y0+ .15, mouseover == 22);
+    render_small_text(view, "Factory Reset",
+	(x0 +.2) / SCALE, invaspect * (y0 + .075) / SCALE,
+	0.5, mat_w, TA_CENTER_MIDDLE);
+
+    x0 = -.95 + .5 * 2;
+    y0 = -.70 + .25 * 5;
+    unity_button(view, x0, x0+.4, y0, y0+ .15, mouseover == 23);
+    render_small_text(view, "Reset, keep MIDI & Program",
+	(x0 +.2) / SCALE, invaspect * (y0 + .075) / SCALE,
+	0.5, mat_w, TA_CENTER_MIDDLE);
   }
 }
 
@@ -3568,7 +3616,11 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
       } else {
 	int tri = 0;
 	int cfg = cfg_mousepos(fx, fy, &tri);
-	if (cfg > 0 && (puglGetModifiers(view) & PUGL_MOD_SHIFT)) {
+
+	if (cfg > 21 && cfg < 24  && ui->cfgtab == 0) {
+	  // special push buttons
+	  cfg_special_button(view, cfg -1);
+	} else if (cfg > 0 && (puglGetModifiers(view) & PUGL_MOD_SHIFT)) {
 	  cfg_update_value(view, cfg - 1, 0);
 	} else if (cfg > 0 && tri != 0) {
 	  cfg_update_value(view, cfg - 1, tri);
