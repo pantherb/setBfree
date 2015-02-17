@@ -461,7 +461,7 @@ puglProcessEvents(PuglView* view)
 			if (!repeated) {
 				KeySym sym = XLookupKeysym(&event.xkey, 0);
 				PuglKey special = keySymToSpecial(sym);
-#if 1 // close on 'Esc'
+#ifdef PUGL_CLOSE_ON_ESC
 				if (sym == XK_Escape && view->closeFunc) {
 					view->closeFunc(view);
 					view->redisplay = false;
