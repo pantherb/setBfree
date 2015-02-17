@@ -330,6 +330,7 @@ typedef struct {
   int reinit;
 
   int textentry_active;
+  int keyboard_control;
   char textentry_text[1024];
   char textentry_title[128];
 
@@ -2611,6 +2612,36 @@ onDisplay(PuglView* view)
   piano_manual(view, 7.0, 1.8, ui->upper_key, &ui->active_keys[0]);
   piano_manual(view, 12.5, 3.9, ui->lower_key, &ui->active_keys[2]);
   piano_pedals(view, ui->pedal_key, ui->active_keys[4]);
+
+  if (ui->keyboard_control) {
+    glPushMatrix();
+    glLoadIdentity();
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_w);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_w);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_w);
+    glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA_SATURATE);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    glScalef(.001, .001, .001);
+    glRotatef(240, 1, 0, 0);
+    glTranslatef(0, 180, -110);
+    char const * txt;
+    switch(ui->keyboard_control >> 1) {
+      case 1:
+	txt = "KEYBOARD CONTROL LOWER MANUAL";
+	break;
+      case 2:
+	txt = "KEYBOARD CONTROL PEDALS";
+	break;
+      default:
+	txt = "KEYBOARD CONTROL UPPER MANUAL";
+	break;
+    }
+    float bb[6];
+    ftglGetFontBBox(ui->font_big, txt, -1, bb);
+    glTranslatef((bb[3] - bb[0])/-2.0, 0, 0);
+    ftglRenderFont(ui->font_big, txt, FTGL_RENDER_ALL);
+    glPopMatrix();
+  }
 }
 
 static void reset_state_ccbind(PuglView* view) {
@@ -2647,7 +2678,65 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
     txtentry_handle(view, key);
     return;
   }
-  switch (key) {
+
+  if (ui->displaymode == 0 && (ui->keyboard_control & 1) ANDNOANIM) {
+    switch (key) {
+      case 9: // tab
+	ui->keyboard_control &= ~1;
+	queue_reshape = 1;
+	break;
+      case '1':
+	ui->keyboard_control = 1;
+	queue_reshape = 1;
+	break;
+      case '2':
+	ui->keyboard_control = 3;
+	queue_reshape = 1;
+	break;
+      case '3':
+	ui->keyboard_control = 5;
+	queue_reshape = 1;
+	break;
+	/* hardcoded US layout */
+#define KEYADJ(ELEM, DELTA) { ui->dndval = ui->ctrls[(ELEM)].cur + (DELTA); processMotion(view, (ELEM), 0, 0); }
+#define KEYADJ2(UPPER, LOWER, DELTA) { ui->dndval = ui->ctrls[(ui->keyboard_control&2)?(LOWER):(UPPER)].cur + (DELTA); processMotion(view, ((ui->keyboard_control&2)?(LOWER):(UPPER)), 0, 0); }
+      case 'q':
+	if (ui->keyboard_control == 5) KEYADJ(18, 1);
+	if (ui->keyboard_control == 3) KEYADJ( 9, 1);
+	if (ui->keyboard_control == 1) KEYADJ( 0, 1);
+	break;
+      case 'a':
+	if (ui->keyboard_control == 5) KEYADJ(18, -1);
+	if (ui->keyboard_control == 3) KEYADJ( 9, -1);
+	if (ui->keyboard_control == 1) KEYADJ( 0, -1);
+	break;
+      case 'w':
+	if (ui->keyboard_control == 5) KEYADJ(19, 1);
+	if (ui->keyboard_control == 3) KEYADJ(10, 1);
+	if (ui->keyboard_control == 1) KEYADJ( 1, 1);
+	break;
+      case 's':
+	if (ui->keyboard_control == 5) KEYADJ(19, -1);
+	if (ui->keyboard_control == 3) KEYADJ(10, -1);
+	if (ui->keyboard_control == 1) KEYADJ( 1, -1);
+	break;
+      case 'e': KEYADJ2( 2, 11,  1) break;
+      case 'd': KEYADJ2( 2, 11, -1) break;
+      case 'r': KEYADJ2( 3, 12,  1) break;
+      case 'f': KEYADJ2( 3, 12, -1) break;
+      case 't': KEYADJ2( 4, 13,  1) break;
+      case 'g': KEYADJ2( 4, 13, -1) break;
+      case 'y': KEYADJ2( 5, 14,  1) break;
+      case 'h': KEYADJ2( 5, 14, -1) break;
+      case 'u': KEYADJ2( 6, 15,  1) break;
+      case 'j': KEYADJ2( 6, 15, -1) break;
+      case 'i': KEYADJ2( 7, 16,  1) break;
+      case 'k': KEYADJ2( 7, 16, -1) break;
+      case 'o': KEYADJ2( 8, 17,  1) break;
+      case 'l': KEYADJ2( 8, 17, -1) break;
+    }
+  }
+  else switch (key) {
     case 'a': SKD(0)
       if (ui->rot[0] > -55) { ui->rot[0] -= 5; queue_reshape = 1; }
       break;
@@ -2736,6 +2825,12 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
 	txtentry_start(view, "Enter File Name:", "" );
       }
       queue_reshape = 1;
+      break;
+    case 9: // tab
+      if (ui->displaymode == 0 ANDNOANIM) {
+	ui->keyboard_control |= 1;
+	queue_reshape = 1;
+      }
       break;
     case 27: // ESC
       if (ui->popupmsg) {
