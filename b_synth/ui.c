@@ -708,8 +708,9 @@ static void processMotion(PuglView* view, int elem, float dx, float dy) {
     case OBJ_DIAL:
       ui->ctrls[elem].cur = ui->dndval + dist * (ui->ctrls[elem].max - ui->ctrls[elem].min);
       if (ui->ctrls[elem].max == 0) {
+	assert(ui->ctrls[elem].min < 0);
 	if (ui->ctrls[elem].cur > ui->ctrls[elem].max || ui->ctrls[elem].cur < ui->ctrls[elem].min) {
-	  const float r = (ui->ctrls[elem].max - ui->ctrls[elem].min);
+	  const float r = 1 - ui->ctrls[elem].min;
 	  ui->ctrls[elem].cur -= ceil(ui->ctrls[elem].cur / r) * r;
 	}
       } else {
@@ -2864,6 +2865,8 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
 	if (ui->keyboard_control == 3) KEYADJ(LOWER, DELTA) \
 	if (ui->keyboard_control == 1) KEYADJ(UPPER, DELTA)
 
+#define KEYSWITCH(ELEM) { assert(ui->ctrls[(ELEM)].type == OBJ_SWITCH); if (ui->ctrls[(ELEM)].cur == ui->ctrls[(ELEM)].max) ui->ctrls[(ELEM)].cur = ui->ctrls[(ELEM)].min; else ui->ctrls[(ELEM)].cur = ui->ctrls[(ELEM)].max; puglPostRedisplay(view); notifyPlugin(view, (ELEM)); }
+
       case 'q':
 	if (ui->keyboard_control == 5) KEYADJ(18, 1);
 	if (ui->keyboard_control == 3) KEYADJ( 9, 1);
@@ -2898,6 +2901,27 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       case 'k': KEYADJ2( 7, 16, -1) break;
       case 'o': KEYADJ2( 8, 17,  1) break;
       case 'l': KEYADJ2( 8, 17, -1) break;
+
+      // percussion
+      case 'v': KEYSWITCH(20); break;
+      case 'b': KEYSWITCH(21); break;
+      case 'n': KEYSWITCH(22); break;
+      case 'm': KEYSWITCH(23); break;
+
+      // vibrato on/off
+      case 'x': KEYSWITCH(24); break;
+      case 'c': KEYSWITCH(25); break;
+
+      // overdrive on/off
+      case 'z': KEYSWITCH(26); break;
+
+      // overdrive character
+      case '<': KEYADJ(27, -5); break;
+      case '>': KEYADJ(27, 5); break;
+
+      // vibrato/chorus mode dial
+      case ',': KEYADJ(28, -1); break;
+      case '.': KEYADJ(28, 1); break;
     }
   }
   else switch (key) {
