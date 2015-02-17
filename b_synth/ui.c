@@ -2854,19 +2854,20 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
 	ui->keyboard_control &= ~1;
 	queue_reshape = 1;
 	break;
-      case '1':
+
+      case '\\':
 	ui->keyboard_control = 1;
 	queue_reshape = 1;
 	break;
-      case '2':
+      case ']':
 	ui->keyboard_control = 3;
 	queue_reshape = 1;
 	break;
-      case '3':
+      case '[':
 	ui->keyboard_control = 5;
 	queue_reshape = 1;
 	break;
-	/* hardcoded US layout */
+
 #define KEYADJ(ELEM, DELTA) { ui->dndval = ui->ctrls[(ELEM)].cur + (DELTA); processMotion(view, (ELEM), 0, 0); }
 #define KEYADJ2(UPPER, LOWER, DELTA) \
 	if (ui->keyboard_control == 3) KEYADJ(LOWER, DELTA) \
@@ -2923,12 +2924,65 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       case 'z': KEYSWITCH(26); break;
 
       // overdrive character
-      case '<': KEYADJ(27, -5); break;
-      case '>': KEYADJ(27, 5); break;
+      case '<': KEYADJ(27, -2); break;
+      case '>': KEYADJ(27, 2); break;
 
       // vibrato/chorus mode dial
       case ',': KEYADJ(28, -1); break;
       case '.': KEYADJ(28, 1); break;
+
+      // reverb character
+      case ';':  KEYADJ(30, -2); break;
+      case '\'': KEYADJ(30, 2); break;
+
+      // reverb character
+      case '-':  KEYADJ(29, -2); break;
+      case '=': KEYADJ(29, 2); break;
+
+      case ' ':
+	{
+	  int32_t val;
+
+	  int hr = rint(ui->ctrls[32].cur); // UI: horn 0:chorale, 1:off, 2:tremolo
+	  int bf = rint(ui->ctrls[31].cur); // UI: drum 0:chorale, 1:off, 2:tremolo
+
+	  if (hr != 2) hr = (hr == 1) ? 0 : 1;
+	  if (bf != 2) bf = (bf == 1) ? 0 : 1;
+
+	  if (puglGetModifiers(view) & PUGL_MOD_SHIFT) {
+	    val = bf * 15 + hr * 45;
+	    val = (val + 15) % 120;
+	  } else {
+	    val = hr * 60;
+	    val = (val + 60) % 180;
+	  }
+
+	  b3_forge_message(ui, obj_control[31], val);
+
+	  hr = (val / 45) % 3; // horn 0:off, 1:chorale  2:tremolo
+	  bf = (val / 15) % 3; // drum 0:off, 1:chorale  2:tremolo
+
+	  if (hr != 2) hr = (hr == 1) ? 0 : 1;
+	  if (bf != 2) bf = (bf == 1) ? 0 : 1;
+
+	  ui->ctrls[32].cur = hr; // UI: horn 0:chorale, 1:off, 2:tremolo
+	  ui->ctrls[31].cur = bf; // UI: drum 0:chorale, 1:off, 2:tremolo
+	  puglPostRedisplay(ui->view);
+	}
+	break;
+
+      case '1':
+      case '2':
+      case '3':
+      case '4':
+      case '5':
+      case '6':
+      case '7':
+      case '8':
+      case '9':
+	forge_message_int(ui, ui->uris.sb3_midipgm, key - 49);
+	puglPostRedisplay(view);
+	break;
     }
   }
   else switch (key) {
@@ -3353,7 +3407,6 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 	return; // clicked elsewhere
       }
     }
-
     free(ui->popupmsg); ui->popupmsg = NULL;
     free(ui->pendingdata); ui->pendingdata = NULL;
     ui->pendingmode = 0;
