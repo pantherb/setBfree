@@ -25,8 +25,10 @@
 
 #ifdef ANIMSTEPS
 #define ANDNOANIM && ui->openanim == 0
+#define RESETANIM ui->openanim = 0;
 #else
 #define ANDNOANIM
+#define RESETANIM
 #endif
 
 #define GL_GLEXT_PROTOTYPES
@@ -40,6 +42,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <assert.h>
 
 #include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
 #include "pugl/pugl.h"
@@ -115,6 +118,9 @@ using namespace FTGL;
 #  endif
 #endif
 
+#include "global_inst.h" // documentation/default values
+#include "cfgParser.h" // ConfigDoc
+
 #include "uris.h"
 #include "ui_model.h"
 
@@ -154,6 +160,8 @@ enum {
 #define MENU_PGML APX(694.0), APX(694.0 + 140.0), -1.0 , APY(197.0)
 #define MENU_PGMS 1.0-GPX(122.0), 1.0, -1.0 , APY(195.0)
 
+#define MENU_ACFG APX(164.0), APX(163.0 + 138.0), APY(120.0), APY(120.0 + 177.0)
+
 #define MENU_CANC  .8, .98, .82, .95
 
 enum {
@@ -162,7 +170,8 @@ enum {
   HOVER_MSAVEP = 4,
   HOVER_MPGMS = 8,
   HOVER_MPGML = 16,
-  HOVER_MCANC = 32,
+  HOVER_MACFG = 32,
+  HOVER_MCANC = 64,
 };
 
 #define NOSCROLL -1000
@@ -254,6 +263,26 @@ typedef struct {
 } b3widget;
 
 typedef struct {
+  float val;
+  const char *label;
+} b3scalepoint;
+
+typedef struct {
+  float cur; // current value
+  float min, max, dflt; // parsed float from ConfigDoc (text) if applicable
+  ConfigDoc const * d;
+  // the following two should really be in ConfigDoc
+  const char *title;  // human readable short text "Tuning"
+  const char *unit;   // e.g. 'Hz'
+  int type;
+  float step;
+  const b3scalepoint *lut;
+} b3config;
+
+
+#define MAXCFG 24
+
+typedef struct {
   LV2_Atom_Forge forge;
 
   LV2_URID_Map* map;
@@ -275,7 +304,7 @@ typedef struct {
   /* OpenGL */
   GLuint * vbo;
   GLuint * vinx;
-  GLuint texID[23]; // textures
+  GLuint texID[24]; // textures
   GLdouble matrix[16]; // used for mouse mapping
   double rot[3], off[3], scale; // global projection
 #ifdef ANIMSTEPS
@@ -292,6 +321,7 @@ typedef struct {
    * 5: File-index save cfg
    * 6: File-index save pgm
    * 7: /menu/
+   * 8: /configedit/
    */
   int displaymode;
   int pgm_sel;
@@ -331,6 +361,9 @@ typedef struct {
   int dir_hidedotfiles;
 
   int mouseover;
+  int cfgtriover;
+
+  b3config cfgvar[MAXCFG];
 
   int upper_key;
   int lower_key;
@@ -944,6 +977,7 @@ static void drawMesh(PuglView* view, unsigned int index, int apply_transformatio
 #include "textures/uim_caps.c"
 #include "textures/uim_tube1.c"
 #include "textures/uim_tube2.c"
+#include "textures/uim_transformer.c"
 
 #define CIMAGE(ID, VARNAME) \
   glGenTextures(1, &ui->texID[ID]); \
@@ -1013,6 +1047,7 @@ static void initTextures(PuglView* view) {
   CIMAGE(20, uim_caps_image);
   CIMAGE(21, uim_tube1_image);
   CIMAGE(22, uim_tube2_image);
+  CIMAGE(23, uim_transformer_image);
 }
 
 
@@ -1725,6 +1760,345 @@ static void piano_pedals(PuglView* view, int active_key, unsigned int active_key
   }
 }
 
+/******************************************************************************
+ * 'advanced config
+ */
+
+static float coeff_to_db(const float c, float min120) {
+  return c >= 1e-6 ? 20.0 * log10f(c) : min120;
+}
+
+static float db_to_coeff(const float c) {
+  if (c >= 0.f) return 1.0;
+  if (c < -120.f) return 0.0;
+  return powf(10, .05f * c);
+}
+
+static const ConfigDoc * searchDoc (const ConfigDoc *d, const char *key) {
+  while (d && d->name) {
+    if (!strcmp(d->name, key)) {
+      return d;
+      break;
+    }
+    ++d;
+  }
+  return NULL;
+}
+
+static const ConfigDoc * searchDocs (const char *key) {
+  ConfigDoc const * rv = NULL;
+  if (!rv) rv = searchDoc(midiDoc(), key);
+  if (!rv) rv = searchDoc(pgmDoc(), key);
+  if (!rv) rv = searchDoc(oscDoc(), key);
+  if (!rv) rv = searchDoc(scannerDoc(), key);
+  if (!rv) rv = searchDoc(ampDoc(), key);
+  if (!rv) rv = searchDoc(whirlDoc(), key);
+  if (!rv) rv = searchDoc(reverbDoc(), key);
+  return rv;
+}
+
+// one-time call. populate b3config struct.
+static void cfg_initialize_param(B3ui * ui, const char *cfgkey, int p) {
+  ui->cfgvar[p].d = searchDocs (cfgkey);
+  assert(ui->cfgvar[p].d);
+
+  switch(ui->cfgvar[p].d->type) {
+    case CFG_DOUBLE:
+    case CFG_FLOAT:
+      assert(ui->cfgvar[p].d->dflt);
+      ui->cfgvar[p].dflt = atof(ui->cfgvar[p].d->dflt);
+      break;
+    default:
+      break;
+  }
+}
+
+#define CFGP(ID, TITLE, UNIT, TYPE, LUT, U_STEP, V_MIN, V_MAX) \
+  ui->cfgvar[p].title = TITLE;            \
+  ui->cfgvar[p].unit  = UNIT;             \
+  ui->cfgvar[p].min   = V_MIN;            \
+  ui->cfgvar[p].max   = V_MAX;            \
+  ui->cfgvar[p].type  = TYPE;             \
+  ui->cfgvar[p].step  = U_STEP;           \
+  ui->cfgvar[p].lut   = LUT;              \
+  cfg_initialize_param(ui, ID, p);        \
+  ++p;
+
+static const b3scalepoint x_temperament[] = {
+  {0, "gear60"},
+  {1, "gear50"},
+  {2, "equal"},
+  {0, NULL}
+};
+
+static const b3scalepoint x_contactmodel[] = {
+  {0, "click"},
+  {1, "shelf"},
+  {2, "cosine"},
+  {3, "linear"},
+  {0, NULL}
+};
+
+static const b3scalepoint x_zerooff[] = { {0, "off"}, {0, NULL} };
+static const b3scalepoint x_zeronone[] = { {0, "none"}, {0, NULL} };
+static const b3scalepoint x_zerodisabled[] = { {0, "disabled"}, {0, NULL} };
+
+static void cfg_initialize(B3ui * ui) {
+  memset(ui->cfgvar, 0, sizeof(ui->cfgvar)); // XXX
+  int p = 0;
+  CFGP("osc.tuning",                  "Tuning",           "Hz", 0, NULL, 0.50, 220.0, 880.0);
+  CFGP("osc.temperament",             "Temerament.",      "",   3, x_temperament, 1.00, 0, 2.0); // 'gear60'
+
+  CFGP("osc.compartment-crosstalk",   "Comp. X-Talk",     "dB", 1, NULL, 2.00, .0, .5);
+  //CFGP("osc.transformer-crosstalk", "trans. X-Talk",    "dB", 1, NULL, 5.00..0, .5);  // broken in tonegen.c
+  CFGP("osc.terminalstrip-crosstalk", "Term. X-Talk",     "dB", 1, NULL, 2.00, .0, .5);
+  CFGP("osc.wiring-crosstalk",        "Wire X-Talk",      "dB", 1, NULL, 2.00, .0, .5);
+  CFGP("osc.contribution-floor",      "X-Talk Floor",     "dB", 1, x_zerooff, 2.00, .0, .001);
+  CFGP("osc.contribution-min",        "X-Talk Min",       "dB", 1, x_zeronone, 2.00, .0, .001);
+
+  CFGP("osc.attack.model",            "Attack Model",     "",   3, x_contactmodel, 1.00, 0, 3.0);
+  CFGP("osc.release.model",           "Release Model",    "",   3, x_contactmodel, 1.00, 0, 3.0);
+  CFGP("osc.attack.click.level",      "Key Click Level",  "dB", 1, NULL, 2.00, .0, 1.0);
+  CFGP("osc.attack.click.minlength",  "Click Len Min",    "%",  2, NULL, 0.025, .0, 1.);
+  CFGP("osc.attack.click.maxlength",  "Click Len Max",    "%",  2, NULL, 0.025, .0, 1.);
+  CFGP("osc.release.click.level",     "Keyrelease Att.",  "dB", 1, NULL, 2.00, .0, 1.0);
+
+  CFGP("scanner.hz",                  "Vibrato",          "Hz", 0, NULL, 0.50, 4.0, 22.0);
+  CFGP("scanner.modulation.v1",       "Vibrato 1 Mod.",   "Hz", 0, NULL, 0.50, 0.0, 12.0);
+  CFGP("scanner.modulation.v2",       "Vibrato 2 Mod.",   "Hz", 0, NULL, 0.50, 0.0, 12.0);
+  CFGP("scanner.modulation.v3",       "Vibrato 3 Mod.",   "Hz", 0, NULL, 0.50, 0.0, 12.0);
+
+  //CFGP("", "", "", .0, .5);
+}
+
+static void cfg_set_defaults(B3ui * ui) {
+  int i;
+  for (i=0; i < MAXCFG; ++i) {
+    ui->cfgvar[i].cur = ui->cfgvar[i].dflt;
+  }
+}
+
+static const char *lut_lookup_value(b3scalepoint const * const lut, const float val) {
+  int ii = 0;
+  if (!lut) return NULL;
+  while (lut[ii].label) {
+    if (val == lut[ii].val) {
+      return lut[ii].label;
+    }
+    ++ii;
+  }
+  return NULL;
+}
+
+/* message from backend (on re-init) */
+static void cfg_parse_config(B3ui * ui, const char *key, const char *value) {
+  int relevant = 0;
+  int i;
+  for (i = 0 ; i < MAXCFG ; ++i) {
+    if (!ui->cfgvar[i].d) continue;
+    if (!strcmp(ui->cfgvar[i].d->name, key)) {
+
+      switch(ui->cfgvar[i].type) {
+	case 3:
+	  {
+	    int ii = 0;
+	    while (ui->cfgvar[i].lut[ii].label) {
+	      if (!strcmp(value, ui->cfgvar[i].lut[ii].label)) {
+		ui->cfgvar[i].cur = ui->cfgvar[i].lut[ii].val;
+		break;
+	      }
+	      ++ii;
+	    }
+	  }
+	  break;
+	default:
+	  ui->cfgvar[i].cur = atof(value);
+	  break;
+      }
+      relevant = 1;
+      break;
+    }
+  }
+
+  if (ui->displaymode == 8 && relevant) {
+    puglPostRedisplay(ui->view);
+  }
+}
+
+/* handle user click or wheel */
+static void cfg_update_value(PuglView *view, int ccc, int dir) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+
+  assert(dir >= -1 && dir <= 1);
+
+  if (ui->reinit) {
+    puglPostRedisplay(view);
+    return;
+  }
+
+  // TODO 'pager' offset
+
+  if (!ui->cfgvar[ccc].d) return;
+
+  float oldval = ui->cfgvar[ccc].cur;
+
+  if (dir == 0) {
+    ui->cfgvar[ccc].cur = ui->cfgvar[ccc].dflt;
+  } else {
+    switch (ui->cfgvar[ccc].type) {
+      case 1: //dB
+	ui->cfgvar[ccc].cur =
+	  db_to_coeff(coeff_to_db(ui->cfgvar[ccc].cur, -120) + dir * ui->cfgvar[ccc].step);
+	break;
+      default:
+	ui->cfgvar[ccc].cur += dir * ui->cfgvar[ccc].step;
+	break;
+    }
+  }
+
+  if (ui->cfgvar[ccc].cur < ui->cfgvar[ccc].min)
+    ui->cfgvar[ccc].cur = ui->cfgvar[ccc].min;
+
+  if (ui->cfgvar[ccc].cur > ui->cfgvar[ccc].max)
+    ui->cfgvar[ccc].cur = ui->cfgvar[ccc].max;
+
+  if (oldval == ui->cfgvar[ccc].cur) {
+    return;
+  }
+
+  char cfgstr[128];
+  switch(ui->cfgvar[ccc].type) {
+    case 3:
+      snprintf(cfgstr, sizeof(cfgstr), "%s=%s",
+	  ui->cfgvar[ccc].d->name,
+	  ui->cfgvar[ccc].lut[(int)rint(ui->cfgvar[ccc].cur)].label);
+      break;
+    default:
+      snprintf(cfgstr, sizeof(cfgstr), "%s=%.10f",
+	  ui->cfgvar[ccc].d->name, ui->cfgvar[ccc].cur);
+      break;
+  }
+
+  forge_message_str(ui, ui->uris.sb3_cfgstr, cfgstr);
+  ui->reinit = 1;
+}
+
+static void
+render_cfg_button(PuglView* view,
+    int ccc,
+    float x0, float x1, float y0, float y1,
+    int hover_btn, int hover_tri)
+{
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  const GLfloat mat_tri[] = {0.1, 0.1, 0.1, 1.0};
+  const GLfloat mat_act[] = {0.9, 0.9, 0.9, 1.0};
+  const GLfloat mat_w[] = {1.0, 1.0, 1.0, 1.0};
+  const float invaspect = 320. / 960.;
+
+  unity_button(view, x0, x1, y0, y1, hover_btn);
+  if (!hover_btn) hover_tri = 0;
+  unity_tri(view, x0 + .004, y0 + .020, y1 - .020, hover_tri < 0 ? mat_act : mat_tri);
+  unity_tri(view, x1 - .004, y1 - .020, y0 + .020, hover_tri > 0 ? mat_act : mat_tri);
+
+  char txt[64]; char const * lbl;
+
+  switch(ui->cfgvar[ccc].type) {
+    case 3: // LUT-array, scalepoints
+      snprintf(txt, sizeof(txt), "%s: %s", ui->cfgvar[ccc].title,
+	  ui->cfgvar[ccc].lut[(int)rint(ui->cfgvar[ccc].cur)].label);
+      break;
+    case 2: // percent [0..1]
+      snprintf(txt, sizeof(txt), "%s: %.1f%s",
+	  ui->cfgvar[ccc].title, 100.f * ui->cfgvar[ccc].cur, ui->cfgvar[ccc].unit);
+      break;
+    case 1: // decibel
+      if ((lbl = lut_lookup_value(ui->cfgvar[ccc].lut, ui->cfgvar[ccc].cur))) {
+	snprintf(txt, sizeof(txt), "%s: %s",
+	    ui->cfgvar[ccc].title, lbl);
+      } else {
+	snprintf(txt, sizeof(txt), "%s: %.0f%s",
+	    ui->cfgvar[ccc].title, coeff_to_db(ui->cfgvar[ccc].cur, -INFINITY), ui->cfgvar[ccc].unit);
+      }
+      break;
+    default:
+      if ((lbl = lut_lookup_value(ui->cfgvar[ccc].lut, ui->cfgvar[ccc].cur))) {
+	snprintf(txt, sizeof(txt), "%s: %s",
+	    ui->cfgvar[ccc].title, lbl);
+      } else {
+	snprintf(txt, sizeof(txt), "%s: %.2f%s",
+	    ui->cfgvar[ccc].title, ui->cfgvar[ccc].cur, ui->cfgvar[ccc].unit);
+      }
+      break;
+  }
+
+  render_small_text(view, txt,
+      (x1 + x0) / 2.0 / SCALE, invaspect * (y1 + y0) / 2.0 / SCALE,
+      0.5, mat_w, 1);
+}
+
+static int cfg_mousepos(const float fx, const float fy, int *tri) {
+  int xh = -1;
+  int yh = -1;
+  int rv = 0; // ui->mouseover
+
+  if      (fx > -.95 && fx < -.55) xh = 0;
+  else if (fx > -.45 && fx < -.05) xh = 1;
+  else if (fx >  .05 && fx <  .45) xh = 2;
+  else if (fx >  .55 && fx <  .95) xh = 3;
+
+  if      (fy > -.85 && fy < -.70) yh = 0;
+  else if (fy > -.55 && fy < -.40) yh = 1;
+  else if (fy > -.25 && fy < -.10) yh = 2;
+  else if (fy >  .05 && fy <  .20) yh = 3;
+  else if (fy >  .35 && fy <  .50) yh = 4;
+  else if (fy >  .65 && fy <  .80) yh = 5;
+
+  if (xh != -1 && yh != -1) {
+    rv = 1 + yh * 4 + xh;
+    const float ccx = -.95 + .5 * xh;
+    if (fx > ccx && fx < ccx + .05) *tri = -1;
+    else if (fx > ccx + .35 && fx < ccx + .4) *tri = 1;
+  }
+  // NB. no paging here -- 0 <= rc <= 24
+  return rv;
+}
+
+static void
+advanced_config_screen(PuglView* view)
+{
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+  const float invaspect = 320. / 960.;
+  const GLfloat mat_w[] = {1.0, 1.0, 1.0, 1.0};
+  int mouseover = ui->mouseover;
+
+  // TODO top-row 'tabs', page ccc value, into screen
+
+  if (mouseover > 0 && mouseover < 32 && ui->cfgvar[mouseover - 1].d) {
+    if (ui->cfgvar[mouseover - 1].d->desc) {
+      render_small_text(view, ui->cfgvar[mouseover - 1].d->desc,
+	  -24, 8, 0.5, mat_w, 3);
+    }
+  }
+
+  if (ui->reinit) {
+    mouseover = 0;
+    render_title(view, "Advanced Config [Applying]", 16.25, 6.5, 0.1, mat_w, 2);
+  } else {
+    render_title(view, "Advanced Config", 16.25, 6.5, 0.1, mat_w, 2);
+  }
+
+  int xh, yh;
+  for (xh = 0; xh < 4; ++xh) {
+    for (yh = 0; yh < 5; ++yh) {
+      const int ccc = yh * 4 + xh;
+      if (!ui->cfgvar[ccc].d) continue;
+      const float ccx = -.95 + .5 * xh;
+      const float ccy = -.85 + .3 * yh;
+      render_cfg_button(view, ccc, ccx, ccx+.4, ccy, ccy+ .15,
+	  mouseover == ccc + 1, ui->cfgtriover);
+    }
+  }
+}
 
 /**
  * main display fn
@@ -1997,6 +2371,11 @@ onDisplay(PuglView* view)
     menu_button(view, MENU_LOAD,  20, HOVER_MLOAD, "Load pgm or cfg File");
     menu_button(view, MENU_SAVEP, 21, HOVER_MSAVEP, "Export Program File");
     menu_button(view, MENU_SAVEC, 22, HOVER_MSAVEC, "Export Config File");
+    menu_button(view, MENU_ACFG,  23, HOVER_MACFG, "Advanced Config");
+    menu_button(view, MENU_CANC, -1,  HOVER_MCANC, "Close");
+    return;
+  } else if (ui->displaymode == 8) {
+    advanced_config_screen(view);
     menu_button(view, MENU_CANC, -1,  HOVER_MCANC, "Close");
     return;
   }
@@ -2323,6 +2702,12 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       ui->off[2] =  0.0f;
       queue_reshape = 1;
       break;
+    case '~':
+      if (ui->displaymode == 0 ANDNOANIM) ui->displaymode = 8;
+      else if (ui->displaymode == 8) ui->displaymode = 0;
+      queue_reshape = 1;
+      reset_state(view);
+      break;
     case 'p':
       if (ui->displaymode == 0 ANDNOANIM) ui->displaymode = 2;
       else if (ui->displaymode == 2) ui->displaymode = 0;
@@ -2458,9 +2843,23 @@ onScroll(PuglView* view, int x, int y, float dx, float dy)
   B3ui* ui = (B3ui*)puglGetHandle(view);
   float fx, fy;
   if (ui->popupmsg) return;
-  if (ui->displaymode) return;
   if (ui->textentry_active) return;
   if (fabs(dy) < .1) return;
+
+  if (ui->displaymode == 8) {
+    fx = (2.0 * x / ui->width ) - 1.0;
+    fy = (2.0 * y / ui->height ) - 1.0;
+    fy *= (ui->height / (float) ui->width) / (320. / 960.);
+
+    int tri = 0;
+    int cfg = cfg_mousepos(fx, fy, &tri);
+    if (cfg > 0) {
+      cfg_update_value(view, cfg - 1, SIGNUM(dy));
+    }
+  }
+
+  if (ui->displaymode) return;
+
   project_mouse(view, x, y, -.5, &fx, &fy);
   int i;
   for (i = 0; i < TOTAL_OBJ ; ++i) {
@@ -2492,10 +2891,22 @@ onMotion(PuglView* view, int x, int y)
     if (MOUSEIN(MENU_LOAD, fx, fy)) ui->mouseover |= HOVER_MLOAD;
     if (MOUSEIN(MENU_PGMS, fx, fy)) ui->mouseover |= HOVER_MPGMS;
     if (MOUSEIN(MENU_PGML, fx, fy)) ui->mouseover |= HOVER_MPGML;
+    if (MOUSEIN(MENU_ACFG, fx, fy)) ui->mouseover |= HOVER_MACFG;
     if (MOUSEIN(MENU_CANC, fx, fy)) ui->mouseover |= HOVER_MCANC;
     if (phov != ui->mouseover) {
       puglPostRedisplay(view);
     }
+    return;
+  }
+  else if (ui->displaymode == 8) { // cfg
+    const int trih = ui->cfgtriover;
+    ui->cfgtriover = 0;
+    ui->mouseover = cfg_mousepos(fx, fy, &ui->cfgtriover);
+    if (MOUSEIN(MENU_CANC, fx, fy)) ui->mouseover = HOVER_MCANC;
+    if (phov != ui->mouseover || trih != ui->cfgtriover) {
+      puglPostRedisplay(view);
+    }
+    return;
   }
   else if (ui->textentry_active || ui->popupmsg || ui->displaymode) {
     if (MOUSEIN(BTNLOC_OK, fx, fy)) ui->mouseover |= HOVER_OK;
@@ -2685,6 +3096,25 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
       puglPostRedisplay(view);
       return;
 
+    case 8:
+      fx = (2.0 * x / ui->width ) - 1.0;
+      fy = (2.0 * y / ui->height ) - 1.0;
+      fy *= (ui->height / (float) ui->width) / (320. / 960.);
+      if (MOUSEIN(MENU_CANC, fx, fy)) {
+	ui->displaymode = 0;
+	onReshape(view, ui->width, ui->height);
+	puglPostRedisplay(view);
+      } else {
+	int tri = 0;
+	int cfg = cfg_mousepos(fx, fy, &tri);
+	if (cfg > 0 && (puglGetModifiers(view) & PUGL_MOD_SHIFT)) {
+	  cfg_update_value(view, cfg - 1, 0);
+	} else if (cfg > 0 && tri != 0) {
+	  cfg_update_value(view, cfg - 1, tri);
+	}
+      }
+      return;
+
     case 7:
       fx = (2.0 * x / ui->width ) - 1.0;
       fy = (2.0 * y / ui->height ) - 1.0;
@@ -2693,35 +3123,29 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
       if (MOUSEIN(MENU_SAVEP, fx, fy)) {
 	dirlist(view, ui->curdir);
 	ui->displaymode = 6;
-#ifdef ANIMSTEPS
-	ui->openanim = 0;
-#endif
+	RESETANIM
       }
       if (MOUSEIN(MENU_SAVEC, fx, fy)) {
 	dirlist(view, ui->curdir);
 	ui->displaymode = 5;
-#ifdef ANIMSTEPS
-	ui->openanim = 0;
-#endif
+	RESETANIM
       }
       if (MOUSEIN(MENU_LOAD, fx, fy)) {
 	dirlist(view, ui->curdir);
 	ui->displaymode = 4;
-#ifdef ANIMSTEPS
-	ui->openanim = 0;
-#endif
+	RESETANIM
       }
       if (MOUSEIN(MENU_PGML, fx, fy)) {
 	ui->displaymode = 2;
-#ifdef ANIMSTEPS
-	ui->openanim = 0;
-#endif
+	RESETANIM
       }
       if (MOUSEIN(MENU_PGMS, fx, fy)) {
 	ui->displaymode = 3;
-#ifdef ANIMSTEPS
-	ui->openanim = 0;
-#endif
+	RESETANIM
+      }
+      if (MOUSEIN(MENU_ACFG, fx, fy)) {
+	ui->displaymode = 8;
+	RESETANIM
       }
       if (MOUSEIN(MENU_CANC, fx, fy)) {
 #ifdef ANIMSTEPS
@@ -3137,7 +3561,7 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
       "setBfree",
       ui->width, ui->height,
       ui->width, ui->height,
-      true, false, 0);
+      true, true, 0); //XXX
 
   if (!ui->view) {
     return -1;
@@ -3219,6 +3643,8 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   CTRLELEM(31, OBJ_LEVER, 0, 2, 2, -25.675, 8, 4, 3, -1);
   CTRLELEM(32, OBJ_LEVER, 0, 2, 0, -20.075, 8, 4, 3, -1);
 
+  cfg_initialize(ui);
+  cfg_set_defaults(ui);
 
 #ifdef OLD_SUIL
   ui->exit = false;
@@ -3374,7 +3800,7 @@ port_event(LV2UI_Handle handle,
     if (2 == lv2_atom_object_get(obj, ui->uris.sb3_cckey, &key, ui->uris.sb3_ccval, &val, 0) && key && val) {
 	char *kk = (char*) LV2_ATOM_BODY(key);
 	char *vv = (char*) LV2_ATOM_BODY(val);
-	//cfg_parse_config(ui, key, val);
+	cfg_parse_config(ui, kk, vv);
     }
     return;
   }
@@ -3385,6 +3811,7 @@ port_event(LV2UI_Handle handle,
       ui->show_mm = 0;
       puglPostRedisplay(ui->view);
     } else if (!strcmp(k, "special.reinit")) {
+      cfg_set_defaults(ui);
       ui->reinit = 0;
       puglPostRedisplay(ui->view);
     } else {
