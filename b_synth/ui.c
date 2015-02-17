@@ -280,7 +280,7 @@ typedef struct {
 } b3config;
 
 
-#define MAXCFG 24
+#define MAXCFG 96
 
 typedef struct {
   LV2_Atom_Forge forge;
@@ -363,6 +363,7 @@ typedef struct {
 
   int mouseover;
   int cfgtriover;
+  int cfgtab;
 
   b3config cfgvar[MAXCFG];
 
@@ -1196,7 +1197,6 @@ render_title(PuglView* view, const char *text, float x, float y, float z, const 
   glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, color);
   glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, color);
   glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, color);
-  glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA_SATURATE);
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
   glScalef(0.001,0.001,1.00);
   glRotatef(180, 1, 0, 0);
@@ -1221,6 +1221,18 @@ render_title(PuglView* view, const char *text, float x, float y, float z, const 
       break;
     case 3: // left bottom
       break;
+    case 4: // right bottom
+      glTranslatef(
+	  (bb[3] - bb[0])/-1.0,
+	  0,
+	  0);
+      break;
+    case 5: // center + bottom
+      glTranslatef(
+	  (bb[3] - bb[0])/-2.0,
+	  0,
+	  0);
+      break;
     default: // left top
       glTranslatef(
 	  0,
@@ -1230,7 +1242,6 @@ render_title(PuglView* view, const char *text, float x, float y, float z, const 
   }
   glTranslatef(x * (1000.0*SCALE) , -y * (1000.0*SCALE), z);
   ftglRenderFont(ui->font_big, text, FTGL_RENDER_ALL);
-
   glPopMatrix();
 }
 
@@ -1271,6 +1282,12 @@ render_small_text(PuglView* view, const char *text, float x, float y, float z,  
       break;
     case 3: // left bottom
       break;
+    case 5: // center + bottom
+      glTranslatef(
+	  (bb[3] - bb[0])/-2.0,
+	  0,
+	  0);
+      break;
     default: // left top
       glTranslatef(
 	  0,
@@ -1304,10 +1321,10 @@ unity_box(PuglView* view,
   glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, color);
   glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, color);
   glBegin(GL_QUADS);
-  glVertex3f(x0, y0 * invaspect, 0);
-  glVertex3f(x0, y1 * invaspect, 0);
-  glVertex3f(x1, y1 * invaspect, 0);
-  glVertex3f(x1, y0 * invaspect, 0);
+  glVertex3f(x0, y0 * invaspect, .1);
+  glVertex3f(x0, y1 * invaspect, .1);
+  glVertex3f(x1, y1 * invaspect, .1);
+  glVertex3f(x1, y0 * invaspect, .1);
   glEnd();
   glPopMatrix();
 }
@@ -1347,6 +1364,7 @@ unity_button(PuglView* view,
   glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, btncol);
   glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, btncol);
   glEnable(GL_TEXTURE_2D);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_COLOR);
   glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
   glBindTexture(GL_TEXTURE_2D, ui->texID[15]);
   glBegin(GL_QUADS);
@@ -1365,6 +1383,7 @@ unity_button(PuglView* view,
   glTexCoord2f (1.0,  1.0); glVertex3f(x1, y1 * invaspect, 0);
   glTexCoord2f (1.0,  0.0); glVertex3f(x1, y0 * invaspect, 0);
   glEnd();
+  glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA_SATURATE);
   glDisable(GL_TEXTURE_2D);
   glPopMatrix();
 }
@@ -1418,6 +1437,7 @@ menu_button(PuglView* view,
     glTexCoord2f (1.0, 1.0); glVertex3f(x1, invaspect * y1, 0);
     glTexCoord2f (1.0, 0.0); glVertex3f(x1, invaspect * y0, 0);
     glEnd();
+    glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA_SATURATE);
     glDisable(GL_TEXTURE_2D);
     if (ui->mouseover & hovermask) {
       const GLfloat mat_w[] = { 1.0, 1.0, 1.0, 1.0 };
@@ -1450,6 +1470,7 @@ unity_tri(PuglView* view,
   glEnd();
   glPopMatrix();
 }
+
 
 /******************************************************************************
  */
@@ -1770,7 +1791,6 @@ static float coeff_to_db(const float c, float min120) {
 }
 
 static float db_to_coeff(const float c) {
-  if (c >= 0.f) return 1.0;
   if (c < -120.f) return 0.0;
   return powf(10, .05f * c);
 }
@@ -1806,6 +1826,7 @@ static void cfg_initialize_param(B3ui * ui, const char *cfgkey, int p) {
   switch(ui->cfgvar[p].d->type) {
     case CFG_DOUBLE:
     case CFG_FLOAT:
+    case CFG_INT:
       assert(ui->cfgvar[p].d->dflt);
       ui->cfgvar[p].dflt = atof(ui->cfgvar[p].d->dflt);
       break;
@@ -1840,6 +1861,19 @@ static const b3scalepoint x_contactmodel[] = {
   {0, NULL}
 };
 
+static const b3scalepoint x_filtertype[] = {
+  {0, "Low Pass"},
+  {1, "High Pass"},
+  {2, "Band Pass (const skirt)"},
+  {3, "Band Pass (0db peak)"},
+  {4, "Notch"},
+  {5, "All Pass"},
+  {6, "Peaking"},
+  {7, "Low Shelf"},
+  {8, "High Shelf"},
+  {0, NULL}
+};
+
 static const b3scalepoint x_zerooff[] = { {0, "off"}, {0, NULL} };
 static const b3scalepoint x_zeronone[] = { {0, "none"}, {0, NULL} };
 static const b3scalepoint x_zerodisabled[] = { {0, "disabled"}, {0, NULL} };
@@ -1847,28 +1881,81 @@ static const b3scalepoint x_zerodisabled[] = { {0, "disabled"}, {0, NULL} };
 static void cfg_initialize(B3ui * ui) {
   memset(ui->cfgvar, 0, sizeof(ui->cfgvar)); // XXX
   int p = 0;
-  CFGP("osc.tuning",                  "Tuning",           "Hz", 0, NULL, 0.50, 220.0, 880.0);
-  CFGP("osc.temperament",             "Temerament.",      "",   3, x_temperament, 1.00, 0, 2.0); // 'gear60'
 
-  CFGP("osc.compartment-crosstalk",   "Comp. X-Talk",     "dB", 1, NULL, 2.00, .0, .5);
-  //CFGP("osc.transformer-crosstalk", "trans. X-Talk",    "dB", 1, NULL, 5.00..0, .5);  // broken in tonegen.c
-  CFGP("osc.terminalstrip-crosstalk", "Term. X-Talk",     "dB", 1, NULL, 2.00, .0, .5);
-  CFGP("osc.wiring-crosstalk",        "Wire X-Talk",      "dB", 1, NULL, 2.00, .0, .5);
-  CFGP("osc.contribution-floor",      "X-Talk Floor",     "dB", 1, x_zerooff, 2.00, .0, .001);
-  CFGP("osc.contribution-min",        "X-Talk Min",       "dB", 1, x_zeronone, 2.00, .0, .001);
+  CFGP("osc.tuning",                  "Tuning",               "Hz", 0, NULL, 0.50, 220.0, 880.0);
+  CFGP("osc.temperament",             "Temerament.",          "",   3, x_temperament, 1.00, 0, 2.0); // 'gear60'
 
-  CFGP("osc.attack.model",            "Attack Model",     "",   3, x_contactmodel, 1.00, 0, 3.0);
-  CFGP("osc.release.model",           "Release Model",    "",   3, x_contactmodel, 1.00, 0, 3.0);
-  CFGP("osc.attack.click.level",      "Key Click Level",  "dB", 1, NULL, 2.00, .0, 1.0);
-  CFGP("osc.attack.click.minlength",  "Click Len Min",    "%",  2, NULL, 0.025, .0, 1.);
-  CFGP("osc.attack.click.maxlength",  "Click Len Max",    "%",  2, NULL, 0.025, .0, 1.);
-  CFGP("osc.release.click.level",     "Keyrelease Att.",  "dB", 1, NULL, 2.00, .0, 1.0);
+  p=48; // tab 2;
 
-  CFGP("scanner.hz",                  "Vibrato",          "Hz", 0, NULL, 0.50, 4.0, 22.0);
-  CFGP("scanner.modulation.v1",       "Vibrato 1 Mod.",   "Hz", 0, NULL, 0.50, 0.0, 12.0);
-  CFGP("scanner.modulation.v2",       "Vibrato 2 Mod.",   "Hz", 0, NULL, 0.50, 0.0, 12.0);
-  CFGP("scanner.modulation.v3",       "Vibrato 3 Mod.",   "Hz", 0, NULL, 0.50, 0.0, 12.0);
+  CFGP("osc.compartment-crosstalk",   "Comp. X-Talk",         "dB", 1, NULL, 2.00, .0, .5);
+  //CFGP("osc.transformer-crosstalk", "trans. X-Talk",        "dB", 1, NULL, 5.00..0, .5);  // broken in tonegen.c
+  CFGP("osc.terminalstrip-crosstalk", "Term. X-Talk",         "dB", 1, NULL, 2.00, .0, .5);
+  CFGP("osc.wiring-crosstalk",        "Wire X-Talk",          "dB", 1, NULL, 2.00, .0, .5);
+  p+=1;
 
+  p+=3;
+  CFGP("osc.contribution-floor",      "X-Talk Floor",         "dB", 1, x_zerooff, 2.00, .0, .001);
+  p+=3;
+  CFGP("osc.contribution-min",        "X-Talk Min",           "dB", 1, x_zeronone, 2.00, .0, .001);
+
+  p+=4;
+
+  CFGP("osc.attack.model",            "Attack Model",         "",   3, x_contactmodel, 1.00, 0, 3.0);
+  CFGP("osc.attack.click.level",      "Key Click Level",      "dB", 1, NULL, 2.00, .0, 1.0);
+  p+=1;
+  CFGP("osc.attack.click.minlength",  "Click Len Min",        "%",  2, NULL, 0.025, .0, 1.);
+
+  CFGP("osc.release.model",           "Release Model",        "",   3, x_contactmodel, 1.00, 0, 3.0);
+  CFGP("osc.release.click.level",     "Keyrelease Att.",      "dB", 1, NULL, 2.00, .0, 1.0);
+  p+=1;
+  CFGP("osc.attack.click.maxlength",  "Click Len Max",        "%",  2, NULL, 0.025, .0, 1.);
+
+
+  p=24; // tab 1;
+  CFGP("scanner.hz",                  "Vibrato Freq",         "Hz", 0, NULL, 0.50, 4.0, 22.0);
+  CFGP("scanner.modulation.v1",       "Vibrato 1 Mod.",       "Hz", 0, NULL, 0.50, 0.0, 12.0);
+  CFGP("scanner.modulation.v2",       "Vibrato 2 Mod.",       "Hz", 0, NULL, 0.50, 0.0, 12.0);
+  CFGP("scanner.modulation.v3",       "Vibrato 3 Mod.",       "Hz", 0, NULL, 0.50, 0.0, 12.0);
+
+  p+=4;
+  CFGP("osc.perc.fast",               "Perc. fast decay",     "s",  0, NULL, 0.10, 0, 10.0);
+  CFGP("osc.perc.slow",               "Perc. slow decay",     "s",  0, NULL, 0.10, 0, 10.0);
+  CFGP("osc.perc.normal",             "Perc. Amp norm",       "dB", 1, NULL, 2.0, 0, 1.0);
+  CFGP("osc.perc.soft",               "Perc. Amp soft",       "dB", 1, NULL, 2.0, 0, 1.0);
+
+  CFGP("osc.perc.gain",               "Perc. Gain Scale",     "",   0, NULL, 0.5, 0, 22.0);
+
+  p=72; // tab 3;
+  CFGP("whirl.horn.slowrpm",          "Horn RPM [slow]",      "RPM", 0, NULL, 0.50,  10.0, 500.0);
+  CFGP("whirl.horn.fastrpm",          "Horn RPM [fast]",      "RPM", 0, NULL, 2.50, 100.0, 900.0);
+  CFGP("whirl.drum.slowrpm",          "Drum RPM [slow]",      "RPM", 0, NULL, 0.50,  10.0, 500.0);
+  CFGP("whirl.drum.fastrpm",          "Drum RPM [fast]",      "RPM", 0, NULL, 2.50, 100.0, 900.0);
+
+  CFGP("whirl.horn.acceleration",     "Horn Acceleraton",     "1/s", 0, NULL, 0.05, 0.05, 2.0);
+  CFGP("whirl.horn.deceleration",     "Horn Deceleration",    "1/s", 0, NULL, 0.05, 0.05, 2.0);
+  CFGP("whirl.drum.acceleration",     "Drum Acceleraton",     "1/s", 0, NULL, 0.10, 0.5, 10.0);
+  CFGP("whirl.drum.deceleration",     "Drum Deceleration",    "1/s", 0, NULL, 0.10, 0.5, 10.0);
+
+  CFGP("whirl.horn.level",             "Horn Level",          "dB", 1, NULL, 2.0, .0, 1.0);
+  CFGP("whirl.horn.leak",              "Horn leakage",        "dB", 1, NULL, 2.0, .0, 1.0);
+
+  CFGP("whirl.horn.radius",            "Horn Radius",         "cm", 0, NULL, 0.5, 9.0, 50.0);
+  CFGP("whirl.drum.radius",            "Drum Radius",         "cm", 0, NULL, 0.5, 9.0, 50.0);
+
+  CFGP("whirl.drum.filter.hz",          "Drum Filter Freq",   "Hz", 0, NULL, 5.0, 20.0, 8000.0);
+  CFGP("whirl.drum.filter.gain",        "Drum Filter Gain",   "dB", 0, NULL, 1.0, -48.0, 48.0);
+  CFGP("whirl.drum.filter.q",           "Drum Filter Q",      "",   0, NULL, 0.1, 0.2, 3.0);
+  CFGP("whirl.drum.filter.type",        "Type",               "",   0, x_filtertype, 1.0, 0.0, 8.0);
+
+  CFGP("whirl.horn.filter.a.hz",        "Horn Filter 1 Freq", "Hz", 0, NULL, 5.0, 20.0, 8000.0);
+  CFGP("whirl.horn.filter.a.gain",      "Horn Filter 1 Gain", "dB", 0, NULL, 1.0, -48.0, 48.0);
+  CFGP("whirl.horn.filter.a.q",         "Horn Filter 1 Q",    "",   0, NULL, 0.1, 0.2, 3.0);
+  CFGP("whirl.horn.filter.a.type",      "Type",               "",   0, x_filtertype, 1.0, 0.0, 8.0);
+
+  CFGP("whirl.horn.filter.b.hz",        "Horn Filter 2 Freq", "Hz", 0, NULL, 5.0, 20.0, 8000.0);
+  CFGP("whirl.horn.filter.b.gain",      "Horn Filter 2 Gain", "dB", 0, NULL, 1.0, -48.0, 48.0);
+  CFGP("whirl.horn.filter.b.q",         "Horn Filter 2 Q",    "",   0, NULL, 0.1, 0.2, 3.0);
+  CFGP("whirl.horn.filter.b.type",      "Type",               "",   0, x_filtertype, 1.0, 0.0, 8.0);
   //CFGP("", "", "", .0, .5);
 }
 
@@ -1932,14 +2019,16 @@ static void cfg_update_value(PuglView *view, int ccc, int dir) {
 
   assert(dir >= -1 && dir <= 1);
 
+  if (ccc >= 24) return;
+
   if (ui->reinit) {
     puglPostRedisplay(view);
     return;
   }
 
-  // TODO 'pager' offset
+  ccc += 24 * ui->cfgtab;
 
-  if (!ui->cfgvar[ccc].d) return;
+  if (ccc >= MAXCFG || !ui->cfgvar[ccc].d) return;
 
   float oldval = ui->cfgvar[ccc].cur;
 
@@ -2017,7 +2106,7 @@ render_cfg_button(PuglView* view,
 	snprintf(txt, sizeof(txt), "%s: %s",
 	    ui->cfgvar[ccc].title, lbl);
       } else {
-	snprintf(txt, sizeof(txt), "%s: %.0f%s",
+	snprintf(txt, sizeof(txt), "%s: %+.0f%s",
 	    ui->cfgvar[ccc].title, coeff_to_db(ui->cfgvar[ccc].cur, -INFINITY), ui->cfgvar[ccc].unit);
       }
       break;
@@ -2037,22 +2126,31 @@ render_cfg_button(PuglView* view,
       0.5, mat_w, 1);
 }
 
+static int cfg_tabbar(const float fx) {
+  if      (fx > -.95 && fx < -.55) return 0;
+  else if (fx > -.45 && fx < -.05) return 1;
+  else if (fx >  .05 && fx <  .45) return 2;
+  else if (fx >  .55 && fx <  .95) return 3;
+  return -1;
+}
+
 static int cfg_mousepos(const float fx, const float fy, int *tri) {
   int xh = -1;
   int yh = -1;
   int rv = 0; // ui->mouseover
+
 
   if      (fx > -.95 && fx < -.55) xh = 0;
   else if (fx > -.45 && fx < -.05) xh = 1;
   else if (fx >  .05 && fx <  .45) xh = 2;
   else if (fx >  .55 && fx <  .95) xh = 3;
 
-  if      (fy > -.85 && fy < -.70) yh = 0;
-  else if (fy > -.55 && fy < -.40) yh = 1;
-  else if (fy > -.25 && fy < -.10) yh = 2;
+  if      (fy > -.70 && fy < -.55) yh = 0;
+  else if (fy > -.45 && fy < -.30) yh = 1;
+  else if (fy > -.20 && fy < -.05) yh = 2;
   else if (fy >  .05 && fy <  .20) yh = 3;
-  else if (fy >  .35 && fy <  .50) yh = 4;
-  else if (fy >  .65 && fy <  .80) yh = 5;
+  else if (fy >  .30 && fy <  .45) yh = 4;
+  else if (fy >  .55 && fy <  .70) yh = 5;
 
   if (xh != -1 && yh != -1) {
     rv = 1 + yh * 4 + xh;
@@ -2070,33 +2168,71 @@ advanced_config_screen(PuglView* view)
   B3ui* ui = (B3ui*)puglGetHandle(view);
   const float invaspect = 320. / 960.;
   const GLfloat mat_w[] = {1.0, 1.0, 1.0, 1.0};
+  const GLfloat mat_g[] = {0.6, 0.6, 0.6, 1.0};
+  const GLfloat mat_b[] = {0.0, 0.0, 0.0, 1.0};
+  const GLfloat mat_tb[] = { 0.2, 0.2, 0.2, 1.0 };
+  const GLfloat mat_bg[] = { 0.1, 0.1, 0.1, 1.0 };
+  const GLfloat mat_hv[] = { 0.3, 0.3, 0.3, 1.0 };
   int mouseover = ui->mouseover;
 
-  // TODO top-row 'tabs', page ccc value, into screen
+  unity_box(view, -1.f, 1.f, -1.f, -.8f, mat_tb);
+  unity_box(view, -1.f, 1.f, -.8, .8f, mat_bg);
 
-  if (mouseover > 0 && mouseover < 32 && ui->cfgvar[mouseover - 1].d) {
-    if (ui->cfgvar[mouseover - 1].d->desc) {
-      render_small_text(view, ui->cfgvar[mouseover - 1].d->desc,
-	  -24, 8, 0.5, mat_w, 3);
+  { // active tab
+    float tabx = (-.75 + ui->cfgtab * .5) - .2;
+    unity_box(view, tabx, tabx + .4f, -.96f, -.8f, mat_bg);
+  }
+
+  if (mouseover >= 24 && mouseover < 32 && ui->cfgtab + 24 != mouseover) {
+    float tabx = (-.75 + (mouseover - 24) * .5) - .2;
+    unity_box(view, tabx, tabx + .4f, -.96f, -.8f, mat_hv);
+  }
+
+  render_title(view, "Tuning",   -.75/SCALE, -7.4, 0.5, mat_w, 1);
+  render_title(view, "Vibrato & Perc.",  -.25/SCALE, -7.4, 0.5, mat_w, 1);
+  render_title(view, "Analog Model", .25/SCALE, -7.4, 0.5, mat_w, 1);
+  render_title(view, "Leslie",    .75/SCALE, -7.4, 0.5, mat_w, 1);
+
+  if (mouseover > 0 && mouseover < 24) {
+    const int ccc = ui->cfgtab * 24 + mouseover - 1;
+    if (ccc < MAXCFG && ui->cfgvar[ccc].d && ui->cfgvar[ccc].d->desc) {
+      render_small_text(view, "Description (see the manual for complete info):", -23.75, 7.5, 0.5, mat_g, 3);
+      render_small_text(view, ui->cfgvar[ccc].d->desc, -23.75, 8.22, 0.5, mat_w, 3);
     }
+  }
+
+  if (ui->cfgtab == 0) {
+    render_small_text(view,
+	"setBfree is a 'Tonewheel Organ Construction Kit' with over 1000 configurable parameters.",
+	0, 0, 0.5, mat_w, 5);
+    render_small_text(view,
+	"This dialog only exposes some more common 'advanced' settings.",
+	0, 0.75, 0.5, mat_w, 5);
+    render_small_text(view,
+	"NOTE: changing any of these parameters re-initializes the synth in the background.",
+	0, 1.5, 0.5, mat_w, 5);
+    render_small_text(view,
+	"Shift + Click on an element to restore settings to the default value.",
+	0, 2.25, 0.5, mat_w, 5);
   }
 
   if (ui->reinit) {
     mouseover = 0;
-    render_title(view, "Advanced Config [Applying]", 16.25, 6.5, 0.1, mat_w, 2);
+    render_title(view, "Advanced Config [Applying]", 19.0, 7.72, 0.1, mat_w, 4);
   } else {
-    render_title(view, "Advanced Config", 16.25, 6.5, 0.1, mat_w, 2);
+    render_title(view, "Advanced Config", 19.0, 7.72, 0.1, mat_w, 4);
   }
 
   int xh, yh;
   for (xh = 0; xh < 4; ++xh) {
-    for (yh = 0; yh < 5; ++yh) {
-      const int ccc = yh * 4 + xh;
+    for (yh = 0; yh < 6; ++yh) {
+      const int ccm = yh * 4 + xh;
+      const int ccc = yh * 4 + xh + ui->cfgtab * 24;
       if (!ui->cfgvar[ccc].d) continue;
       const float ccx = -.95 + .5 * xh;
-      const float ccy = -.85 + .3 * yh;
+      const float ccy = -.70 + .25 * yh;
       render_cfg_button(view, ccc, ccx, ccx+.4, ccy, ccy+ .15,
-	  mouseover == ccc + 1, ui->cfgtriover);
+	  mouseover == ccm + 1, ui->cfgtriover);
     }
   }
 }
@@ -2619,7 +2755,6 @@ onDisplay(PuglView* view)
     glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_w);
     glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_w);
     glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_w);
-    glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA_SATURATE);
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
     glScalef(.001, .001, .001);
     glRotatef(240, 1, 0, 0);
@@ -2999,8 +3134,16 @@ onMotion(PuglView* view, int x, int y)
   else if (ui->displaymode == 8) { // cfg
     const int trih = ui->cfgtriover;
     ui->cfgtriover = 0;
-    ui->mouseover = cfg_mousepos(fx, fy, &ui->cfgtriover);
-    if (MOUSEIN(MENU_CANC, fx, fy)) ui->mouseover = HOVER_MCANC;
+    if (MOUSEIN(MENU_CANC, fx, fy)) {
+      ui->mouseover = HOVER_MCANC;
+    } else if (fy < -.8) { // TAB bar
+      int tab = cfg_tabbar(fx);
+      if (tab >= 0 && tab < 4) {
+	ui->mouseover = 24 + tab;
+      }
+    } else {
+      ui->mouseover = cfg_mousepos(fx, fy, &ui->cfgtriover);
+    }
     if (phov != ui->mouseover || trih != ui->cfgtriover) {
       puglPostRedisplay(view);
     }
@@ -3202,6 +3345,14 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 	ui->displaymode = 0;
 	onReshape(view, ui->width, ui->height);
 	puglPostRedisplay(view);
+      } else if (fy < -.8) { // TAB bar
+	int tab = cfg_tabbar(fx);
+	if (tab >= 0 && tab < 4) {
+	  if (tab != ui->cfgtab) {
+	    ui->cfgtab = tab;
+	    puglPostRedisplay(view);
+	  }
+	}
       } else {
 	int tri = 0;
 	int cfg = cfg_mousepos(fx, fy, &tri);
@@ -3606,6 +3757,9 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   ui->upper_key = -1;
   ui->lower_key = -1;
   ui->pedal_key = -1;
+  ui->keyboard_control = 0;
+  ui->cfgtriover = 0;
+  ui->cfgtab = 0;
 #ifdef ANIMSTEPS
   ui->openanim = 0;
   ui->animdirection = 0;
