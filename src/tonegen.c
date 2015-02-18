@@ -1390,10 +1390,14 @@ static size_t fitWave (double Hz,
   int    i;
   int minWaves;
   int maxWaves;
+
+  assert(minSamples < maxSamples);
+
   minWaves = ceil  ((Hz * (double) minSamples) / SampleRateD);
   maxWaves = floor ((Hz * (double) maxSamples) / SampleRateD);
 
   assert (minWaves <= maxWaves);
+  assert (minWaves > 0);
 
   for (i = minWaves; i <= maxWaves; i++) {
     double nws = (SampleRateD * i) / Hz; /* Compute ideal nof samples */
@@ -1407,6 +1411,7 @@ static size_t fitWave (double Hz,
   }
 
   assert (0.0 < minSpn);
+  assert (minSpn <= maxSamples);
 
   return (size_t) minSpn;
 }
@@ -1633,7 +1638,7 @@ static void initOscillators (struct b_tonegen *t, int variant, double precision)
     wszs = fitWave (osp->frequency,
 		    precision,
 		    3 * BUFFER_SIZE_SAMPLES, /* Was x1 */
-		    ceil(SampleRateD / 48000.0) * 2048);
+		    ceil(SampleRateD / 48000.0) * 4096);
 
     /* Compute the number of bytes needed for exactly one wave buffer. */
 
