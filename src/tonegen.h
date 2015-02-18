@@ -46,7 +46,7 @@
 
 #define NOF_BUSES 27		/* Nof of drawbars/buses */
 
-#define BUFFER_SIZE_SAMPLES (128)
+#define BUFFER_SIZE_SAMPLES 128
 
 
 /**

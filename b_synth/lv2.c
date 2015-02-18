@@ -52,8 +52,6 @@
 #include "pgmParser.h"
 #include "program.h"
 
-#define BUFFER_SIZE_SAMPLES  (128)
-
 typedef enum {
   B3S_MIDIIN = 0,
   B3S_MIDIOUT,
