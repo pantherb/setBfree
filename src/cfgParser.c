@@ -159,7 +159,7 @@ int evaluateConfigKeyValue(void *inst, const char *key, const char *value) {
 
 #ifndef CFG_MAIN
 /* text representation of enum conftype */
-const char *conftypenames[CFG_LAST] = { "S", "D", "F", "I" };
+const char *conftypenames[CFG_LAST] = { "S", "D", "D", "F", "I" };
 
 /*
  *

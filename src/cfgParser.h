@@ -39,18 +39,22 @@ typedef struct _configContext {
 } ConfigContext;
 
 enum conftype {
-	CFG_TEXT = 0,
-	CFG_DOUBLE,
-	CFG_FLOAT,
-	CFG_INT,
-	CFG_LAST
+  CFG_TEXT = 0,
+  CFG_DOUBLE,
+  CFG_DECIBEL, // equivalent to double; only relevant for GUI-formatting and ui_step
+  CFG_FLOAT,
+  CFG_INT,
+  CFG_LAST
 };
 
 typedef struct _configDoc {
   const char * name; /**< parameter name */
-	enum conftype type;
+  enum conftype type;
   char const * dflt; /**< default value as text */
   char const * desc; /**< descition */
+  char const * unit; /**< unit */
+  const float min, max; /**< min/max range where applicable or 0,0 for unbound */
+  const float ui_step;  /**< suggested step size for GUI */
 } ConfigDoc;
 
 void parseConfigurationLine (

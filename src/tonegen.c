@@ -3605,48 +3605,49 @@ struct b_tonegen *allocTonegen() {
 # include "tonegen.h"
 #endif // CONFIGDOCONLY
 
-#define STRINGIFY(x) #x
+#define STRINGEXPAND(x) #x
+#define STRINGIFY(x) STRINGEXPAND(x)
 
 static const ConfigDoc doc[] = {
-  {"osc.tuning", CFG_DOUBLE, "440.0", "range: [220..880]"},
-  {"osc.temperament", CFG_TEXT, "\"gear60\"", "one of: \"equal\", \"gear60\", \"gear50\""},
-  {"osc.x-precision", CFG_DOUBLE, "0.001", "set wave precision. Maximum allowed error when calulating wave buffer-length for a given frequency (ideal #of samples - discrete #of samples)"},
-  {"osc.perc.fast", CFG_DOUBLE, "1.0", "Fast Decay (seconds)"},
-  {"osc.perc.slow", CFG_DOUBLE, "4.0", "Slow Decay (seconds)"},
-  {"osc.perc.normal", CFG_DOUBLE, "1.0", "Sets the percussion starting gain of the envelope for normal volume; range [0..1]"},
-  {"osc.perc.soft", CFG_DOUBLE, "0.5012", "Sets the percussion starting gain of the envelope for soft volume. range [0..1[ (less than 1.0)"},
+  {"osc.tuning",                       CFG_DOUBLE,  "440.0", "Base Tuning of the Organ.", "Hz", 220.0, 880.0, .5},
+  {"osc.temperament",                  CFG_TEXT,    "\"gear60\"", "Tuning temperament, gear-ratios/motor-speed. One of: \"equal\", \"gear60\", \"gear50\"", "", 0, 2, 1},
+  {"osc.x-precision",                  CFG_DOUBLE,  "0.001", "Wave precision. Maximum allowed error when calulating wave buffer-length for a given frequency (ideal #of samples - discrete #of samples)"},
+  {"osc.perc.fast",                    CFG_DOUBLE,  "1.0", "Fast percussion decay time", "s", 0, 10.0, 0.1},
+  {"osc.perc.slow",                    CFG_DOUBLE,  "4.0", "Slow percussion decay time", "s", 0, 10.0, 0.1},
+  {"osc.perc.normal",                  CFG_DECIBEL, "1.0", "Sets the percussion starting gain of the envelope for normal volume.", "dB", 0, 1, 2.0},
+  {"osc.perc.soft",                    CFG_DECIBEL, "0.5012", "Sets the percussion starting gain of the envelope for soft volume.", "dB", 0, .89125, 2.0}, // range [0..1[ (less than 1.0)
 #ifdef HIPASS_PERCUSSION
-  {"osc.perc.gain", CFG_DOUBLE, "11.0", "Sets the percussion gain scaling factor"},
+  {"osc.perc.gain",                    CFG_DOUBLE,  "11.0", "Basic volume of the percussion signal, applies to both normal and soft", "", 0, 22.0, .5},
 #else
-  {"osc.perc.gain", CFG_DOUBLE, "3.0", "Sets the percussion gain scaling factor"},
+  {"osc.perc.gain",                    CFG_DOUBLE,  "3.0", "Basic volume of the percussion signal, applies to both normal and soft", "", 0, 22.0, .5},
 #endif
-  {"osc.perc.bus.a", CFG_INT, "3", "range [0..8]"},
-  {"osc.perc.bus.b", CFG_INT, "4", "range [0..8]"},
-  {"osc.perc.bus.trig", CFG_INT, "8", "range [-1..8]"},
-  {"osc.eq.macro", CFG_TEXT, "\"chspline\"", "one of \"chspline\", \"peak24\", \"peak46\""},
-  {"osc.eq.p1y", CFG_DOUBLE, "1.0", "EQ spline parameter"},
-  {"osc.eq.r1y", CFG_DOUBLE, "0.0", "EQ spline parameter"},
-  {"osc.eq.p4y", CFG_DOUBLE, "1.0", "EQ spline parameter"},
-  {"osc.eq.r4y", CFG_DOUBLE, "0.0", "EQ spline parameter"},
-  {"osc.eqv.ceiling", CFG_DOUBLE, "1.0", "Normalize EQ parameters."},
-  {"osc.eqv.<oscnum>", CFG_DOUBLE, "-", "oscnum=[0..127], value: [0..osc.eqv.ceiling]; default values are calculated depending on selected osc.eq.macro and tone-generator-model."},
-  {"osc.harmonic.<h>", CFG_DOUBLE, "-", "speficy level of given harmonic number."},
-  {"osc.harmonic.w<w>.f<h>", CFG_DOUBLE, "-", "w: number of wheel [0..91], h: harmonic number"},
-  {"osc.terminal.t<t>.w<w>", CFG_DOUBLE, "-", "t,w: wheel-number [0..91]"},
-  {"osc.taper.k<key>.b<bus>.t<wheel>", CFG_DOUBLE, "-", "customize tapering model. Specify level of [key, drawbar, tonewheel]."},
-  {"osc.crosstalk.k<key>", CFG_TEXT, "-", "value colon-separated: \"<int:bus>:<int:wheel>:<double:level>\""},
-  {"osc.compartment-crosstalk", CFG_DOUBLE, "0.01", "crosstalk between tonewheels in the same compartment. The value refers to the amount of rogue signal picked up; range: [0..1]"},
-  {"osc.transformer-crosstalk", CFG_DOUBLE, "0", "crosstalk between transformers on the top of the tg; range: [0..1]"},
-  {"osc.terminalstrip-crosstalk", CFG_DOUBLE, "0.01", "crosstalk between connection on the terminal strip; range: [0..1]"},
-  {"osc.wiring-crosstalk", CFG_DOUBLE, "0.01", " throttle on the crosstalk distribution model for wiring; range: [0..1]"},
-  {"osc.contribution-floor", CFG_DOUBLE, "0.0000158", "Signals weaker than this are not put on the contribution list; range: [0..1]"},
-  {"osc.contribution-min", CFG_DOUBLE, "0", "If non-zero, signals that are placed on the contribution have at least this level; range: [0..1]"},
-  {"osc.attack.click.level", CFG_DOUBLE, "0.5", "range: [0..1]"},
-  {"osc.attack.click.maxlength", CFG_DOUBLE, "0.6250", "range: [0..1]. 1.0 corresponds to " STRINGIFY(BUFFER_SIZE_SAMPLES) " audio-samples"},
-  {"osc.attack.click.minlength", CFG_DOUBLE, "0.1250", "range: [0..1]. 1.0 corresponds to " STRINGIFY(BUFFER_SIZE_SAMPLES) " audio-samples"},
-  {"osc.release.click.level", CFG_DOUBLE, "0.25", "range: [0..1]"},
-  {"osc.release.model", CFG_TEXT, "\"linear\"", "one of \"click\", \"cosine\", \"linear\", \"shelf\" "},
-  {"osc.attack.model", CFG_TEXT, "\"click\"", "one of \"click\", \"cosine\", \"linear\", \"shelf\" "},
+  {"osc.perc.bus.a",                   CFG_INT,     "3", "range [0..8]"},
+  {"osc.perc.bus.b",                   CFG_INT,     "4", "range [0..8]"},
+  {"osc.perc.bus.trig",                CFG_INT,     "8", "range [-1..8]"},
+  {"osc.eq.macro",                     CFG_TEXT,    "\"chspline\"", "one of \"chspline\", \"peak24\", \"peak46\""},
+  {"osc.eq.p1y",                       CFG_DOUBLE,  "1.0", "EQ spline parameter"},
+  {"osc.eq.r1y",                       CFG_DOUBLE,  "0.0", "EQ spline parameter"},
+  {"osc.eq.p4y",                       CFG_DOUBLE,  "1.0", "EQ spline parameter"},
+  {"osc.eq.r4y",                       CFG_DOUBLE,  "0.0", "EQ spline parameter"},
+  {"osc.eqv.ceiling",                  CFG_DOUBLE,  "1.0", "Normalize EQ parameters."},
+  {"osc.eqv.<oscnum>",                 CFG_DOUBLE,  "-", "oscnum=[0..127], value: [0..osc.eqv.ceiling]; default values are calculated depending on selected osc.eq.macro and tone-generator-model."},
+  {"osc.harmonic.<h>",                 CFG_DOUBLE,  "-", "speficy level of given harmonic number."},
+  {"osc.harmonic.w<w>.f<h>",           CFG_DOUBLE,  "-", "w: number of wheel [0..91], h: harmonic number"},
+  {"osc.terminal.t<t>.w<w>",           CFG_DOUBLE,  "-", "t,w: wheel-number [0..91]"},
+  {"osc.taper.k<key>.b<bus>.t<wheel>", CFG_DOUBLE,  "-", "customize tapering model. Specify level of [key, drawbar, tonewheel]."},
+  {"osc.crosstalk.k<key>",             CFG_TEXT,    "-", "value colon-separated: \"<int:bus>:<int:wheel>:<double:level>\""},
+  {"osc.compartment-crosstalk",        CFG_DECIBEL, "0.01", "Crosstalk between tonewheels in the same compartment. The value refers to the amount of rogue signal picked up.", "dB", 0, 0.5, 2.0}, // actual range 0..1
+  {"osc.transformer-crosstalk",        CFG_DECIBEL, "0", "Crosstalk between transformers on the top of the tg.", "dB", 0, 0.5, 2.0}, // actual range 0..1
+  {"osc.terminalstrip-crosstalk",      CFG_DECIBEL, "0.01", "crosstalk between connection on the terminal strip.", "dB", 0, 0.5, 2.0}, // actual range 0..1
+  {"osc.wiring-crosstalk",             CFG_DECIBEL, "0.01", " throttle on the crosstalk distribution model for wiring", "dB", 0, 0.5, 2.0}, // actual range 0..1
+  {"osc.contribution-floor",           CFG_DECIBEL, "0.0000158", "Signals weaker than this are not put on the contribution list", "dB", 0, .001, 2.00}, // actual range 0..1
+  {"osc.contribution-min",             CFG_DECIBEL, "0", "If non-zero, signals that are placed on the contribution have at least this level", "dB", 0, .001, 2.0}, // actual range 0..1
+  {"osc.attack.click.level",           CFG_DOUBLE,  "0.5", "amount of random attenuation applied to a closing bus-oscillator connection.", "%", 0, 1, .02},
+  {"osc.attack.click.maxlength",       CFG_DOUBLE,  "0.6250", "The maximum length of a key-click noise burst, 100% corresponds to " STRINGIFY(BUFFER_SIZE_SAMPLES) " audio-samples", "%", 0, 1, 0.025},
+  {"osc.attack.click.minlength",       CFG_DOUBLE,  "0.1250", "The minimum length of a key-click noise burst, 100% corresponds to " STRINGIFY(BUFFER_SIZE_SAMPLES) " audio-samples", "%", 0, 1, 0.025},
+  {"osc.release.click.level",          CFG_DOUBLE,  "0.25",   "The amount of random attenuation applied to an opening bus-oscillator", "%", 0, 1, 0.02},
+  {"osc.release.model",                CFG_TEXT,    "\"linear\"", "Model applied during key-release, one of \"click\", \"cosine\", \"linear\", \"shelf\" ", "", 0, 3, 1},
+  {"osc.attack.model",                 CFG_TEXT,    "\"click\"",  "Model applied during key-attack; one of \"click\", \"cosine\", \"linear\", \"shelf\" ",  "", 0, 3, 1},
   {NULL}
 };
 

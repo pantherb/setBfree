@@ -278,20 +278,24 @@ typedef struct {
   char midinfo[1024];
 } b3widget;
 
+typedef enum {
+  CF_NUMBER,
+  CF_DECIBEL,
+  CF_PERCENT,
+  CF_LISTLUT
+} B3ConfigFormat;
+
 typedef struct {
   float val;
   const char *label;
 } b3scalepoint;
 
 typedef struct {
-  float cur; // current value
-  float min, max, dflt; // parsed float from ConfigDoc (text) if applicable
+  float cur;  // current value
+  float dflt; // default value, parsed float from textual ConfigDoc, if applicable
   ConfigDoc const * d;
-  // the following two should really be in ConfigDoc
-  const char *title;  // human readable short text "Tuning"
-  const char *unit;   // e.g. 'Hz'
-  int type;
-  float step;
+  const char *title;  // human readable short text
+  B3ConfigFormat format;
   const b3scalepoint *lut;
 } b3config;
 
@@ -1856,16 +1860,20 @@ static const ConfigDoc * searchDocs (const char *key) {
 static void cfg_initialize_param(B3ui * ui, const char *cfgkey, int p) {
   ui->cfgvar[p].d = searchDocs (cfgkey);
   assert(ui->cfgvar[p].d);
+  assert(ui->cfgvar[p].d->type != CFG_DECIBEL || ui->cfgvar[p].format == CF_DECIBEL);
 
   switch(ui->cfgvar[p].d->type) {
     case CFG_DOUBLE:
+    case CFG_DECIBEL:
     case CFG_FLOAT:
     case CFG_INT:
+      assert(ui->cfgvar[p].format == CF_DECIBEL || ui->cfgvar[p].format == CF_NUMBER || ui->cfgvar[p].format == CF_PERCENT);
       assert(ui->cfgvar[p].d->dflt);
       ui->cfgvar[p].dflt = atof(ui->cfgvar[p].d->dflt);
       break;
     case CFG_TEXT:
       if (ui->cfgvar[p].lut) {
+	assert(ui->cfgvar[p].format == CF_LISTLUT);
 	int ii = 0;
 	while (ui->cfgvar[p].lut[ii].label) {
 	  // strstr due to quotes in doc
@@ -1875,21 +1883,20 @@ static void cfg_initialize_param(B3ui * ui, const char *cfgkey, int p) {
 	  }
 	  ++ii;
 	}
+      } else {
+	assert(ui->cfgvar[p].format == CF_NUMBER);
+	assert(0);
       }
     default:
       break;
   }
 }
 
-#define CFGP(ID, TITLE, UNIT, TYPE, LUT, U_STEP, V_MIN, V_MAX) \
-  ui->cfgvar[p].title = TITLE;            \
-  ui->cfgvar[p].unit  = UNIT;             \
-  ui->cfgvar[p].min   = V_MIN;            \
-  ui->cfgvar[p].max   = V_MAX;            \
-  ui->cfgvar[p].type  = TYPE;             \
-  ui->cfgvar[p].step  = U_STEP;           \
-  ui->cfgvar[p].lut   = LUT;              \
-  cfg_initialize_param(ui, ID, p);        \
+#define CFGP(ID, TITLE, FORMAT, LUT)  \
+  ui->cfgvar[p].title   = TITLE;      \
+  ui->cfgvar[p].format  = FORMAT;     \
+  ui->cfgvar[p].lut     = LUT;        \
+  cfg_initialize_param(ui, ID, p);    \
   ++p;
 
 static const b3scalepoint x_temperament[] = {
@@ -1924,86 +1931,87 @@ static const b3scalepoint x_zerooff[] = { {0, "off"}, {0, NULL} };
 static const b3scalepoint x_zeronone[] = { {0, "none"}, {0, NULL} };
 static const b3scalepoint x_zerodisabled[] = { {0, "disabled"}, {0, NULL} };
 
+
 static void cfg_initialize(B3ui * ui) {
   memset(ui->cfgvar, 0, sizeof(ui->cfgvar)); // XXX
   int p = 0;
 
-  CFGP("osc.tuning",                  "Tuning",               "Hz", 0, NULL, 0.50, 220.0, 880.0);
-  CFGP("osc.temperament",             "Temerament.",          "",   3, x_temperament, 1.00, 0, 2.0); // 'gear60'
+  CFGP("osc.tuning",                  "Tuning",               CF_NUMBER, NULL);
+  CFGP("osc.temperament",             "Temerament.",          CF_LISTLUT, x_temperament); // 'gear60'
 
   p=48; // tab 2;
 
-  CFGP("osc.compartment-crosstalk",   "Comp. X-Talk",         "dB", 1, NULL, 2.00, .0, .5);
-  //CFGP("osc.transformer-crosstalk", "trans. X-Talk",        "dB", 1, NULL, 5.00..0, .5);  // broken in tonegen.c
-  CFGP("osc.terminalstrip-crosstalk", "Term. X-Talk",         "dB", 1, NULL, 2.00, .0, .5);
-  CFGP("osc.wiring-crosstalk",        "Wire X-Talk",          "dB", 1, NULL, 2.00, .0, .5);
+  CFGP("osc.compartment-crosstalk",   "Comp. X-Talk",         CF_DECIBEL, NULL);
+  //CFGP("osc.transformer-crosstalk", "trans. X-Talk",        CF_DECIBEL, NULL);
+  CFGP("osc.terminalstrip-crosstalk", "Term. X-Talk",         CF_DECIBEL, NULL);
+  CFGP("osc.wiring-crosstalk",        "Wire X-Talk",          CF_DECIBEL, NULL);
   p+=1;
 
   p+=3;
-  CFGP("osc.contribution-floor",      "X-Talk Floor",         "dB", 1, x_zerooff, 2.00, .0, .001);
+  CFGP("osc.contribution-floor",      "X-Talk Floor",         CF_DECIBEL, x_zerooff);
   p+=3;
-  CFGP("osc.contribution-min",        "X-Talk Min",           "dB", 1, x_zeronone, 2.00, .0, .001);
+  CFGP("osc.contribution-min",        "X-Talk Min",           CF_DECIBEL, x_zeronone);
 
   p+=4;
 
-  CFGP("osc.attack.model",            "Attack Model",         "",   3, x_contactmodel, 1.00, 0, 3.0);
-  CFGP("osc.attack.click.level",      "Key Click Level",      "dB", 1, NULL, 2.00, .0, 1.0);
+  CFGP("osc.attack.model",            "Attack Model",         CF_LISTLUT, x_contactmodel);
+  CFGP("osc.attack.click.level",      "Key Click Level",      CF_PERCENT, NULL);
   p+=1;
-  CFGP("osc.attack.click.minlength",  "Click Len Min",        "%",  2, NULL, 0.025, .0, 1.);
+  CFGP("osc.attack.click.minlength",  "Click Len Min",        CF_PERCENT, NULL);
 
-  CFGP("osc.release.model",           "Release Model",        "",   3, x_contactmodel, 1.00, 0, 3.0);
-  CFGP("osc.release.click.level",     "Keyrelease Att.",      "dB", 1, NULL, 2.00, .0, 1.0);
+  CFGP("osc.release.model",           "Release Model",        CF_LISTLUT, x_contactmodel);
+  CFGP("osc.release.click.level",     "Keyrelease Att.",      CF_PERCENT, NULL);
   p+=1;
-  CFGP("osc.attack.click.maxlength",  "Click Len Max",        "%",  2, NULL, 0.025, .0, 1.);
+  CFGP("osc.attack.click.maxlength",  "Click Len Max",        CF_PERCENT, NULL);
 
 
   p=24; // tab 1;
-  CFGP("scanner.hz",                  "Vibrato Freq",         "Hz", 0, NULL, 0.50, 4.0, 22.0);
-  CFGP("scanner.modulation.v1",       "Vibrato 1 Mod.",       "Hz", 0, NULL, 0.50, 0.0, 12.0);
-  CFGP("scanner.modulation.v2",       "Vibrato 2 Mod.",       "Hz", 0, NULL, 0.50, 0.0, 12.0);
-  CFGP("scanner.modulation.v3",       "Vibrato 3 Mod.",       "Hz", 0, NULL, 0.50, 0.0, 12.0);
+  CFGP("scanner.hz",                  "Vibrato Freq",         CF_NUMBER, NULL);
+  CFGP("scanner.modulation.v1",       "Vibrato 1 Mod.",       CF_NUMBER, NULL);
+  CFGP("scanner.modulation.v2",       "Vibrato 2 Mod.",       CF_NUMBER, NULL);
+  CFGP("scanner.modulation.v3",       "Vibrato 3 Mod.",       CF_NUMBER, NULL);
 
   p+=4;
   p+=4;
 
-  CFGP("osc.perc.fast",               "Perc. fast decay",     "s",  0, NULL, 0.10, 0, 10.0);
-  CFGP("osc.perc.slow",               "Perc. slow decay",     "s",  0, NULL, 0.10, 0, 10.0);
-  CFGP("osc.perc.normal",             "Perc. Amp norm",       "dB", 1, NULL, 2.0, 0, 1.0);
-  CFGP("osc.perc.soft",               "Perc. Amp soft",       "dB", 1, NULL, 2.0, 0, 1.0);
+  CFGP("osc.perc.fast",               "Perc. fast decay",     CF_NUMBER, NULL);
+  CFGP("osc.perc.slow",               "Perc. slow decay",     CF_NUMBER, NULL);
+  CFGP("osc.perc.normal",             "Perc. Amp norm",       CF_DECIBEL, NULL);
+  CFGP("osc.perc.soft",               "Perc. Amp soft",       CF_DECIBEL, NULL);
 
-  CFGP("osc.perc.gain",               "Perc. Gain Scale",     "",   0, NULL, 0.5, 0, 22.0);
+  CFGP("osc.perc.gain",               "Perc. Gain Scale",     CF_NUMBER, NULL);
 
   p=72; // tab 3;
-  CFGP("whirl.horn.slowrpm",          "Horn RPM [slow]",      "RPM", 0, NULL, 0.50,  10.0, 500.0);
-  CFGP("whirl.horn.fastrpm",          "Horn RPM [fast]",      "RPM", 0, NULL, 2.50, 100.0, 900.0);
-  CFGP("whirl.drum.slowrpm",          "Drum RPM [slow]",      "RPM", 0, NULL, 0.50,  10.0, 500.0);
-  CFGP("whirl.drum.fastrpm",          "Drum RPM [fast]",      "RPM", 0, NULL, 2.50, 100.0, 900.0);
+  CFGP("whirl.horn.slowrpm",          "Horn RPM [slow]",      CF_NUMBER, NULL);
+  CFGP("whirl.horn.fastrpm",          "Horn RPM [fast]",      CF_NUMBER, NULL);
+  CFGP("whirl.drum.slowrpm",          "Drum RPM [slow]",      CF_NUMBER, NULL);
+  CFGP("whirl.drum.fastrpm",          "Drum RPM [fast]",      CF_NUMBER, NULL);
 
-  CFGP("whirl.horn.acceleration",     "Horn Acceleraton",     "1/s", 0, NULL, 0.05, 0.05, 2.0);
-  CFGP("whirl.horn.deceleration",     "Horn Deceleration",    "1/s", 0, NULL, 0.05, 0.05, 2.0);
-  CFGP("whirl.drum.acceleration",     "Drum Acceleraton",     "1/s", 0, NULL, 0.10, 0.5, 10.0);
-  CFGP("whirl.drum.deceleration",     "Drum Deceleration",    "1/s", 0, NULL, 0.10, 0.5, 10.0);
+  CFGP("whirl.horn.acceleration",     "Horn Acceleraton",     CF_NUMBER, NULL);
+  CFGP("whirl.horn.deceleration",     "Horn Deceleration",    CF_NUMBER, NULL);
+  CFGP("whirl.drum.acceleration",     "Drum Acceleraton",     CF_NUMBER, NULL);
+  CFGP("whirl.drum.deceleration",     "Drum Deceleration",    CF_NUMBER, NULL);
 
-  CFGP("whirl.horn.level",             "Horn Level",          "dB", 1, NULL, 2.0, .0, 1.0);
-  CFGP("whirl.horn.leak",              "Horn leakage",        "dB", 1, NULL, 2.0, .0, 1.0);
+  CFGP("whirl.horn.level",             "Horn Level",          CF_DECIBEL, NULL);
+  CFGP("whirl.horn.leak",              "Horn leakage",        CF_DECIBEL, NULL);
 
-  CFGP("whirl.horn.radius",            "Horn Radius",         "cm", 0, NULL, 0.5, 9.0, 50.0);
-  CFGP("whirl.drum.radius",            "Drum Radius",         "cm", 0, NULL, 0.5, 9.0, 50.0);
+  CFGP("whirl.horn.radius",            "Horn Radius",         CF_NUMBER, NULL);
+  CFGP("whirl.drum.radius",            "Drum Radius",         CF_NUMBER, NULL);
 
-  CFGP("whirl.drum.filter.hz",          "Drum Filter Freq",   "Hz", 0, NULL, 5.0, 20.0, 8000.0);
-  CFGP("whirl.drum.filter.gain",        "Drum Filter Gain",   "dB", 0, NULL, 1.0, -48.0, 48.0);
-  CFGP("whirl.drum.filter.q",           "Drum Filter Q",      "",   0, NULL, 0.1, 0.2, 3.0);
-  CFGP("whirl.drum.filter.type",        "Type",               "",   0, x_filtertype, 1.0, 0.0, 8.0);
+  CFGP("whirl.drum.filter.hz",          "Drum Filter Freq",   CF_NUMBER, NULL);
+  CFGP("whirl.drum.filter.gain",        "Drum Filter Gain",   CF_NUMBER, NULL);
+  CFGP("whirl.drum.filter.q",           "Drum Filter Q",      CF_NUMBER, NULL);
+  CFGP("whirl.drum.filter.type",        "Type",               CF_NUMBER, x_filtertype);
 
-  CFGP("whirl.horn.filter.a.hz",        "Horn Filter 1 Freq", "Hz", 0, NULL, 5.0, 20.0, 8000.0);
-  CFGP("whirl.horn.filter.a.gain",      "Horn Filter 1 Gain", "dB", 0, NULL, 1.0, -48.0, 48.0);
-  CFGP("whirl.horn.filter.a.q",         "Horn Filter 1 Q",    "",   0, NULL, 0.1, 0.2, 3.0);
-  CFGP("whirl.horn.filter.a.type",      "Type",               "",   0, x_filtertype, 1.0, 0.0, 8.0);
+  CFGP("whirl.horn.filter.a.hz",        "Horn Filter 1 Freq", CF_NUMBER, NULL);
+  CFGP("whirl.horn.filter.a.gain",      "Horn Filter 1 Gain", CF_NUMBER, NULL);
+  CFGP("whirl.horn.filter.a.q",         "Horn Filter 1 Q",    CF_NUMBER, NULL);
+  CFGP("whirl.horn.filter.a.type",      "Type",               CF_NUMBER, x_filtertype);
 
-  CFGP("whirl.horn.filter.b.hz",        "Horn Filter 2 Freq", "Hz", 0, NULL, 5.0, 20.0, 8000.0);
-  CFGP("whirl.horn.filter.b.gain",      "Horn Filter 2 Gain", "dB", 0, NULL, 1.0, -48.0, 48.0);
-  CFGP("whirl.horn.filter.b.q",         "Horn Filter 2 Q",    "",   0, NULL, 0.1, 0.2, 3.0);
-  CFGP("whirl.horn.filter.b.type",      "Type",               "",   0, x_filtertype, 1.0, 0.0, 8.0);
+  CFGP("whirl.horn.filter.b.hz",        "Horn Filter 2 Freq", CF_NUMBER, NULL);
+  CFGP("whirl.horn.filter.b.gain",      "Horn Filter 2 Gain", CF_NUMBER, NULL);
+  CFGP("whirl.horn.filter.b.q",         "Horn Filter 2 Q",    CF_NUMBER, NULL);
+  CFGP("whirl.horn.filter.b.type",      "Type",               CF_NUMBER, x_filtertype);
   //CFGP("", "", "", .0, .5);
 }
 
@@ -2034,8 +2042,8 @@ static void cfg_parse_config(B3ui * ui, const char *key, const char *value) {
     if (!ui->cfgvar[i].d) continue;
     if (!strcmp(ui->cfgvar[i].d->name, key)) {
 
-      switch(ui->cfgvar[i].type) {
-	case 3:
+      switch(ui->cfgvar[i].format) {
+	case CF_LISTLUT:
 	  {
 	    int ii = 0;
 	    while (ui->cfgvar[i].lut[ii].label) {
@@ -2104,30 +2112,30 @@ static void cfg_update_value(PuglView *view, int ccc, int dir) {
   if (dir == 0) {
     ui->cfgvar[ccc].cur = ui->cfgvar[ccc].dflt;
   } else {
-    switch (ui->cfgvar[ccc].type) {
-      case 1: //dB
+    switch (ui->cfgvar[ccc].format) {
+      case CF_DECIBEL:
 	ui->cfgvar[ccc].cur =
-	  db_to_coeff(coeff_to_db(ui->cfgvar[ccc].cur, -120) + dir * ui->cfgvar[ccc].step);
+	  db_to_coeff(coeff_to_db(ui->cfgvar[ccc].cur, -120) + dir * ui->cfgvar[ccc].d->ui_step);
 	break;
       default:
-	ui->cfgvar[ccc].cur += dir * ui->cfgvar[ccc].step;
+	ui->cfgvar[ccc].cur += dir * ui->cfgvar[ccc].d->ui_step;
 	break;
     }
   }
 
-  if (ui->cfgvar[ccc].cur < ui->cfgvar[ccc].min)
-    ui->cfgvar[ccc].cur = ui->cfgvar[ccc].min;
+  if (ui->cfgvar[ccc].cur < ui->cfgvar[ccc].d->min)
+    ui->cfgvar[ccc].cur = ui->cfgvar[ccc].d->min;
 
-  if (ui->cfgvar[ccc].cur > ui->cfgvar[ccc].max)
-    ui->cfgvar[ccc].cur = ui->cfgvar[ccc].max;
+  if (ui->cfgvar[ccc].cur > ui->cfgvar[ccc].d->max)
+    ui->cfgvar[ccc].cur = ui->cfgvar[ccc].d->max;
 
   if (oldval == ui->cfgvar[ccc].cur) {
     return;
   }
 
   char cfgstr[128];
-  switch(ui->cfgvar[ccc].type) {
-    case 3:
+  switch(ui->cfgvar[ccc].format) {
+    case CF_LISTLUT:
       snprintf(cfgstr, sizeof(cfgstr), "%s=%s",
 	  ui->cfgvar[ccc].d->name,
 	  ui->cfgvar[ccc].lut[(int)rint(ui->cfgvar[ccc].cur)].label);
@@ -2161,22 +2169,22 @@ render_cfg_button(PuglView* view,
 
   char txt[64]; char const * lbl;
 
-  switch(ui->cfgvar[ccc].type) {
-    case 3: // LUT-array, scalepoints
+  switch(ui->cfgvar[ccc].format) {
+    case CF_LISTLUT:
       snprintf(txt, sizeof(txt), "%s: %s", ui->cfgvar[ccc].title,
 	  ui->cfgvar[ccc].lut[(int)rint(ui->cfgvar[ccc].cur)].label);
       break;
-    case 2: // percent [0..1]
+    case CF_PERCENT:
       snprintf(txt, sizeof(txt), "%s: %.1f%s",
-	  ui->cfgvar[ccc].title, 100.f * ui->cfgvar[ccc].cur, ui->cfgvar[ccc].unit);
+	  ui->cfgvar[ccc].title, 100.f * ui->cfgvar[ccc].cur, ui->cfgvar[ccc].d->unit);
       break;
-    case 1: // decibel
+    case CF_DECIBEL:
       if ((lbl = lut_lookup_value(ui->cfgvar[ccc].lut, ui->cfgvar[ccc].cur))) {
 	snprintf(txt, sizeof(txt), "%s: %s",
 	    ui->cfgvar[ccc].title, lbl);
       } else {
 	snprintf(txt, sizeof(txt), "%s: %+.0f%s",
-	    ui->cfgvar[ccc].title, coeff_to_db(ui->cfgvar[ccc].cur, -INFINITY), ui->cfgvar[ccc].unit);
+	    ui->cfgvar[ccc].title, coeff_to_db(ui->cfgvar[ccc].cur, -INFINITY), ui->cfgvar[ccc].d->unit);
       }
       break;
     default:
@@ -2185,7 +2193,7 @@ render_cfg_button(PuglView* view,
 	    ui->cfgvar[ccc].title, lbl);
       } else {
 	snprintf(txt, sizeof(txt), "%s: %.2f%s",
-	    ui->cfgvar[ccc].title, ui->cfgvar[ccc].cur, ui->cfgvar[ccc].unit);
+	    ui->cfgvar[ccc].title, ui->cfgvar[ccc].cur, ui->cfgvar[ccc].d->unit);
       }
       break;
   }
