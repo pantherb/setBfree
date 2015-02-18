@@ -1443,12 +1443,12 @@ menu_button(PuglView* view,
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   const float invaspect = 320. / 960.;
-  GLfloat mat_x[] = { 0.6, 0.6, 0.6, 1.0 };
+  GLfloat mat_x[] = { 1.0, 1.0, 1.0, 1.0 };
 
   if (ui->mouseover & hovermask) {
-    mat_x[0] = 1.0;
-    mat_x[1] = 1.0;
-    mat_x[2] = 1.0;
+    mat_x[0] = 0.5;
+    mat_x[1] = 0.5;
+    mat_x[2] = 0.5;
     mat_x[3] = 1.0;
   }
 
@@ -2669,7 +2669,7 @@ onDisplay(PuglView* view)
     return;
   } else if (ui->displaymode == 7) {
 
-    const GLfloat mat_x[] = {0.5, 0.5, 0.5, 1.0};
+    const GLfloat mat_x[] = {0.4, 0.4, 0.4, 1.0};
     const float invaspect = 320. / 960.;
     glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_x);
     glMaterialfv(GL_FRONT, GL_AMBIENT, mat_x);
