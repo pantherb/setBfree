@@ -1721,9 +1721,9 @@ void setVibratoLower (struct b_tonegen *t, int isEnabled) {
 
 int getVibratoRouting (struct b_tonegen *t) {
   int rv = 0;
-  if ((t->oldRouting & RT_LOWRVIB) || (t->newRouting & RT_LOWRVIB))
+  if ((t->newRouting & RT_LOWRVIB))
     rv |=1;
-  if ((t->oldRouting & RT_UPPRVIB) || (t->newRouting & RT_UPPRVIB))
+  if ((t->newRouting & RT_UPPRVIB))
     rv |=2;
   return rv;
 }
