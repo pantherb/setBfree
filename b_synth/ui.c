@@ -194,14 +194,14 @@ enum {
    && (mousey) <= (ctrl).y * SCALE + CTRLHEIGHT2(ctrl) )
 
 
-enum B3TextAlign {
+typedef enum {
   TA_LEFT_TOP = 0,
   TA_CENTER_MIDDLE = 1,
   TA_RIGHT_TOP = 2,
   TA_LEFT_BOTTOM = 3,
   TA_RIGHT_BOTTOM = 4,
   TA_CENTER_BOTTOM = 5,
-};
+} B3TextAlign;
 
 static inline int MOUSEIN(
     const float X0, const float X1,
