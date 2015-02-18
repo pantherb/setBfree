@@ -43,7 +43,7 @@ export SRCDIR
 
 export PATH=${PREFIX}/bin:$HOME/bin:/usr/local/git/bin/:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin
 
-if test ! -d "${PREFIX}include" -o -z "$NOSTACK"; then
+if test ! -d "${PREFIX}/include" -o -z "$NOSTACK"; then
 
 rm -rf ${BUILDD}
 rm -rf ${PREFIX}
