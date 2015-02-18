@@ -291,8 +291,6 @@ void allocSynth(struct b_instance *inst) {
   initControllerTable (inst->midicfg);
 #if 1
   midiPrimeControllerMapping (inst->midicfg);
-#elif 0 // rg test midi-feedback
-  parseConfigurationFile (inst, "/home/rgareus/data/coding/setBfree/cfg/bcf2000.cfg");
 #endif
 
 }
@@ -791,8 +789,62 @@ instantiate(const LV2_Descriptor*     descriptor,
   b3s->inst_offline = NULL;
 
   allocSynth(b3s->inst);
+
+#ifdef JACK_DESCRIPT
+  // CODE DUP src/main.c
+  char * defaultConfigFile = NULL;
+  char * defaultProgrammeFile = NULL;
+
+#ifdef _WIN32
+  // out of luck with CSIDL_LOCAL_APPDATA
+  const char * homedrive = getenv("HOMEDRIVE");
+  const char * homepath = getenv("HOMEPATH");
+  if (homedrive && homepath && (strlen(homedrive) + strlen(homepath) + 38) < 1024) {
+    size_t hl = strlen(homedrive) + strlen(homepath);
+    defaultConfigFile=(char*) malloc(hl+38);
+    defaultProgrammeFile=(char*) malloc(hl+38);
+    sprintf(defaultConfigFile,    "%s%s\\Local Settings\\setBfree\\default.cfg", homedrive, homepath);
+    sprintf(defaultProgrammeFile, "%s%s\\Local Settings\\setBfree\\default.pgm", homedrive, homepath);
+  }
+#else // unices: prefer XDG_CONFIG_HOME
+  if (getenv("XDG_CONFIG_HOME")) {
+    size_t hl = strlen(getenv("XDG_CONFIG_HOME"));
+    defaultConfigFile=(char*) malloc(hl+22);
+    defaultProgrammeFile=(char*) malloc(hl+22);
+    sprintf(defaultConfigFile,    "%s/setBfree/default.cfg", getenv("XDG_CONFIG_HOME"));
+    sprintf(defaultProgrammeFile, "%s/setBfree/default.pgm", getenv("XDG_CONFIG_HOME"));
+  }
+  else if (getenv("HOME")) {
+    size_t hl = strlen(getenv("HOME"));
+# ifdef __APPLE__
+    defaultConfigFile=(char*) malloc(hl+42);
+    defaultProgrammeFile=(char*) malloc(hl+42);
+    sprintf(defaultConfigFile,    "%s/Library/Preferences/setBfree/default.cfg", getenv("HOME"));
+    sprintf(defaultProgrammeFile, "%s/Library/Preferences/setBfree/default.pgm", getenv("HOME"));
+# else // linux, BSD, etc
+    defaultConfigFile=(char*) malloc(hl+30);
+    defaultProgrammeFile=(char*) malloc(hl+30);
+    sprintf(defaultConfigFile,    "%s/.config/setBfree/default.cfg", getenv("HOME"));
+    sprintf(defaultProgrammeFile, "%s/.config/setBfree/default.pgm", getenv("HOME"));
+# endif
+  }
+#endif
+
+  if (access (defaultConfigFile, R_OK) == 0) {
+    parseConfigurationFile (b3s->inst, defaultConfigFile);
+  }
+#endif
+
   setControlFunctionCallback(b3s->inst->midicfg, mctl_cb, b3s);
   initSynth(b3s->inst, rate);
+
+#ifdef JACK_DESCRIPT
+  if (access (defaultProgrammeFile, R_OK) == 0) {
+    loadProgrammeFile (b3s->inst->progs, defaultProgrammeFile);
+  }
+  free(defaultConfigFile);
+  free(defaultProgrammeFile);
+#endif
 
   return (LV2_Handle)b3s;
 }
