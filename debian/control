@@ -12,8 +12,6 @@ Build-Depends: debhelper (>= 8), dpkg-dev (>= 1.16.1~),
  libzita-convolver-dev (>=3.1.0),
  libx11-dev,
  lv2-dev (>=1.0.0~dfsg2-2),
- tcl-dev,
- tk-dev,
  ttf-bitstream-vera
 Homepage: http://setbfree.org
 Standards-Version: 3.9.3
