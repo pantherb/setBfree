@@ -873,8 +873,6 @@ int main (int argc, char * argv []) {
   }
 #endif
 
-  setMIDINoteShift (inst.midicfg, 0);
-
   setDrawBars (&inst, 0, presetSelect);
 #if 0 // initial values are assigned in tonegen.c initToneGenerator()
   setDrawBars (&inst, 1, presetSelect); /* 838 000 000 */

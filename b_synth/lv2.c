@@ -146,7 +146,6 @@ void initSynth(struct b_instance *inst, double rate) {
 
   initMidiTables(inst->midicfg);
 
-  setMIDINoteShift (inst->midicfg, 0);
   setDrawBars (inst, 0, defaultPreset);
 #if 0
   setDrawBars (inst, 1, defaultPreset);
