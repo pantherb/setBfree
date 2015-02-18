@@ -29,6 +29,8 @@
  * 04-apr-2004/FK This must be the oldest piece of code that remains.
  *                Added MIDI controller support and edited some comments.
  */
+#ifndef CONFIGDOCONLY
+
 #define _XOPEN_SOURCE 700
 
 #include <stdio.h>
@@ -295,18 +297,6 @@ int scannerConfig (void *t, ConfigContext * cfg) {
   return ack;
 } /* scannerConfig */
 
-static const ConfigDoc doc[] = {
-  {"scanner.hz", CFG_DOUBLE, "7.25", "range: [4..22]"},
-  {"scanner.modulation.v1", CFG_DOUBLE, "3.0", "range: [0..12]"},
-  {"scanner.modulation.v2", CFG_DOUBLE, "6.0", "range: [0..12]"},
-  {"scanner.modulation.v3", CFG_DOUBLE, "9.0", "range: [0..12]"},
-  {NULL}
-};
-
-const ConfigDoc *scannerDoc () {
-  return doc;
-}
-
 /*
  * Floating-point version of vibrato scanner.
  * Since this is a variable delay, delayed samples take a rest in vibBuffer
@@ -356,6 +346,22 @@ float * vibratoProc (struct b_vibrato* v, float * inbuffer, float * outbuffer, s
   }
 
   return outbuffer;
+}
+
+#else
+# include "cfgParser.h"
+#endif // CONFIGDOCONLY
+
+static const ConfigDoc doc[] = {
+  {"scanner.hz", CFG_DOUBLE, "7.25", "range: [4..22]"},
+  {"scanner.modulation.v1", CFG_DOUBLE, "3.0", "range: [0..12]"},
+  {"scanner.modulation.v2", CFG_DOUBLE, "6.0", "range: [0..12]"},
+  {"scanner.modulation.v3", CFG_DOUBLE, "9.0", "range: [0..12]"},
+  {NULL}
+};
+
+const ConfigDoc *scannerDoc () {
+  return doc;
 }
 
 /* vi:set ts=8 sts=2 sw=2: */

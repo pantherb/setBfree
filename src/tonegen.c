@@ -214,6 +214,8 @@
  * 2001-11-30/FK Oscillator test using a sample buffer for the basic
  *               sinusoid and 9 individually updated read positions.
  */
+#ifndef CONFIGDOCONLY
+
 #define _XOPEN_SOURCE 700
 
 #include <stdio.h>
@@ -235,8 +237,6 @@
 #define isBus(B) ((0 <= (B)) && ((B) < 9))
 /* Is O a valid oscillator number? */
 #define isOsc(O) ((0 <= (O)) && ((O) < 128))
-
-#define STRINGIFY(x) #x
 
 #define LE_HARMONIC_NUMBER_OF(LEP) ((LEP)->u.ssf.sa)
 #define LE_HARMONIC_LEVEL_OF(LEP) ((LEP)->u.ssf.fc)
@@ -2539,54 +2539,6 @@ int oscConfig (struct b_tonegen *t, ConfigContext * cfg) {
   return ack;
 }
 
-static const ConfigDoc doc[] = {
-  {"osc.tuning", CFG_DOUBLE, "440.0", "range: [220..880]"},
-  {"osc.temperament", CFG_TEXT, "\"gear60\"", "one of: \"equal\", \"gear60\", \"gear50\""},
-  {"osc.x-precision", CFG_DOUBLE, "0.001", "set wave precision. Maximum allowed error when calulating wave buffer-length for a given frequency (ideal #of samples - discrete #of samples)"},
-  {"osc.perc.fast", CFG_DOUBLE, "1.0", "Fast Decay (seconds)"},
-  {"osc.perc.slow", CFG_DOUBLE, "4.0", "Slow Decay (seconds)"},
-  {"osc.perc.normal", CFG_DOUBLE, "1.0", "Sets the percussion starting gain of the envelope for normal volume; range [0..1]"},
-  {"osc.perc.soft", CFG_DOUBLE, "0.5012", "Sets the percussion starting gain of the envelope for soft volume. range [0..1[ (less than 1.0)"},
-#ifdef HIPASS_PERCUSSION
-  {"osc.perc.gain", CFG_DOUBLE, "11.0", "Sets the percussion gain scaling factor"},
-#else
-  {"osc.perc.gain", CFG_DOUBLE, "3.0", "Sets the percussion gain scaling factor"},
-#endif
-  {"osc.perc.bus.a", CFG_INT, "3", "range [0..8]"},
-  {"osc.perc.bus.b", CFG_INT, "4", "range [0..8]"},
-  {"osc.perc.bus.trig", CFG_INT, "8", "range [-1..8]"},
-  {"osc.eq.macro", CFG_TEXT, "\"chspline\"", "one of \"chspline\", \"peak24\", \"peak46\""},
-  {"osc.eq.p1y", CFG_DOUBLE, "1.0", "EQ spline parameter"},
-  {"osc.eq.r1y", CFG_DOUBLE, "0.0", "EQ spline parameter"},
-  {"osc.eq.p4y", CFG_DOUBLE, "1.0", "EQ spline parameter"},
-  {"osc.eq.r4y", CFG_DOUBLE, "0.0", "EQ spline parameter"},
-  {"osc.eqv.ceiling", CFG_DOUBLE, "1.0", "Normalize EQ parameters."},
-  {"osc.eqv.<oscnum>", CFG_DOUBLE, "-", "oscnum=[0..127], value: [0..osc.eqv.ceiling]; default values are calculated depending on selected osc.eq.macro and tone-generator-model."},
-  {"osc.harmonic.<h>", CFG_DOUBLE, "-", "speficy level of given harmonic number."},
-  {"osc.harmonic.w<w>.f<h>", CFG_DOUBLE, "-", "w: number of wheel [0..91], h: harmonic number"},
-  {"osc.terminal.t<t>.w<w>", CFG_DOUBLE, "-", "t,w: wheel-number [0..91]"},
-  {"osc.taper.k<key>.b<bus>.t<wheel>", CFG_DOUBLE, "-", "customize tapering model. Specify level of [key, drawbar, tonewheel]."},
-  {"osc.crosstalk.k<key>", CFG_TEXT, "-", "value colon-separated: \"<int:bus>:<int:wheel>:<double:level>\""},
-  {"osc.compartment-crosstalk", CFG_DOUBLE, "0.01", "crosstalk between tonewheels in the same compartment. The value refers to the amount of rogue signal picked up; range: [0..1]"},
-  {"osc.transformer-crosstalk", CFG_DOUBLE, "0", "crosstalk between transformers on the top of the tg; range: [0..1]"},
-  {"osc.terminalstrip-crosstalk", CFG_DOUBLE, "0.01", "crosstalk between connection on the terminal strip; range: [0..1]"},
-  {"osc.wiring-crosstalk", CFG_DOUBLE, "0.01", " throttle on the crosstalk distribution model for wiring; range: [0..1]"},
-  {"osc.contribution-floor", CFG_DOUBLE, "0.0000158", "Signals weaker than this are not put on the contribution list; range: [0..1]"},
-  {"osc.contribution-min", CFG_DOUBLE, "0", "If non-zero, signals that are placed on the contribution have at least this level; range: [0..1]"},
-  {"osc.attack.click.level", CFG_DOUBLE, "0.5", "range: [0..1]"},
-  {"osc.attack.click.maxlength", CFG_DOUBLE, "0.6250", "range: [0..1]. 1.0 corresponds to " STRINGIFY(BUFFER_SIZE_SAMPLES) " audio-samples"},
-  {"osc.attack.click.minlength", CFG_DOUBLE, "0.1250", "range: [0..1]. 1.0 corresponds to " STRINGIFY(BUFFER_SIZE_SAMPLES) " audio-samples"},
-  {"osc.release.click.level", CFG_DOUBLE, "0.25", "range: [0..1]"},
-  {"osc.release.model", CFG_TEXT, "\"linear\"", "one of \"click\", \"cosine\", \"linear\", \"shelf\" "},
-  {"osc.attack.model", CFG_TEXT, "\"click\"", "one of \"click\", \"cosine\", \"linear\", \"shelf\" "},
-  {NULL}
-};
-
-const ConfigDoc *oscDoc () {
-  return doc;
-}
-
-
 /**
  * This routine initialises the envelope shape tables.
  */
@@ -3642,5 +3594,60 @@ struct b_tonegen *allocTonegen() {
   resetVibrato(t);
   return (t);
 }
+
+#else
+# include "cfgParser.h"
+# include "tonegen.h"
+#endif // CONFIGDOCONLY
+
+#define STRINGIFY(x) #x
+
+static const ConfigDoc doc[] = {
+  {"osc.tuning", CFG_DOUBLE, "440.0", "range: [220..880]"},
+  {"osc.temperament", CFG_TEXT, "\"gear60\"", "one of: \"equal\", \"gear60\", \"gear50\""},
+  {"osc.x-precision", CFG_DOUBLE, "0.001", "set wave precision. Maximum allowed error when calulating wave buffer-length for a given frequency (ideal #of samples - discrete #of samples)"},
+  {"osc.perc.fast", CFG_DOUBLE, "1.0", "Fast Decay (seconds)"},
+  {"osc.perc.slow", CFG_DOUBLE, "4.0", "Slow Decay (seconds)"},
+  {"osc.perc.normal", CFG_DOUBLE, "1.0", "Sets the percussion starting gain of the envelope for normal volume; range [0..1]"},
+  {"osc.perc.soft", CFG_DOUBLE, "0.5012", "Sets the percussion starting gain of the envelope for soft volume. range [0..1[ (less than 1.0)"},
+#ifdef HIPASS_PERCUSSION
+  {"osc.perc.gain", CFG_DOUBLE, "11.0", "Sets the percussion gain scaling factor"},
+#else
+  {"osc.perc.gain", CFG_DOUBLE, "3.0", "Sets the percussion gain scaling factor"},
+#endif
+  {"osc.perc.bus.a", CFG_INT, "3", "range [0..8]"},
+  {"osc.perc.bus.b", CFG_INT, "4", "range [0..8]"},
+  {"osc.perc.bus.trig", CFG_INT, "8", "range [-1..8]"},
+  {"osc.eq.macro", CFG_TEXT, "\"chspline\"", "one of \"chspline\", \"peak24\", \"peak46\""},
+  {"osc.eq.p1y", CFG_DOUBLE, "1.0", "EQ spline parameter"},
+  {"osc.eq.r1y", CFG_DOUBLE, "0.0", "EQ spline parameter"},
+  {"osc.eq.p4y", CFG_DOUBLE, "1.0", "EQ spline parameter"},
+  {"osc.eq.r4y", CFG_DOUBLE, "0.0", "EQ spline parameter"},
+  {"osc.eqv.ceiling", CFG_DOUBLE, "1.0", "Normalize EQ parameters."},
+  {"osc.eqv.<oscnum>", CFG_DOUBLE, "-", "oscnum=[0..127], value: [0..osc.eqv.ceiling]; default values are calculated depending on selected osc.eq.macro and tone-generator-model."},
+  {"osc.harmonic.<h>", CFG_DOUBLE, "-", "speficy level of given harmonic number."},
+  {"osc.harmonic.w<w>.f<h>", CFG_DOUBLE, "-", "w: number of wheel [0..91], h: harmonic number"},
+  {"osc.terminal.t<t>.w<w>", CFG_DOUBLE, "-", "t,w: wheel-number [0..91]"},
+  {"osc.taper.k<key>.b<bus>.t<wheel>", CFG_DOUBLE, "-", "customize tapering model. Specify level of [key, drawbar, tonewheel]."},
+  {"osc.crosstalk.k<key>", CFG_TEXT, "-", "value colon-separated: \"<int:bus>:<int:wheel>:<double:level>\""},
+  {"osc.compartment-crosstalk", CFG_DOUBLE, "0.01", "crosstalk between tonewheels in the same compartment. The value refers to the amount of rogue signal picked up; range: [0..1]"},
+  {"osc.transformer-crosstalk", CFG_DOUBLE, "0", "crosstalk between transformers on the top of the tg; range: [0..1]"},
+  {"osc.terminalstrip-crosstalk", CFG_DOUBLE, "0.01", "crosstalk between connection on the terminal strip; range: [0..1]"},
+  {"osc.wiring-crosstalk", CFG_DOUBLE, "0.01", " throttle on the crosstalk distribution model for wiring; range: [0..1]"},
+  {"osc.contribution-floor", CFG_DOUBLE, "0.0000158", "Signals weaker than this are not put on the contribution list; range: [0..1]"},
+  {"osc.contribution-min", CFG_DOUBLE, "0", "If non-zero, signals that are placed on the contribution have at least this level; range: [0..1]"},
+  {"osc.attack.click.level", CFG_DOUBLE, "0.5", "range: [0..1]"},
+  {"osc.attack.click.maxlength", CFG_DOUBLE, "0.6250", "range: [0..1]. 1.0 corresponds to " STRINGIFY(BUFFER_SIZE_SAMPLES) " audio-samples"},
+  {"osc.attack.click.minlength", CFG_DOUBLE, "0.1250", "range: [0..1]. 1.0 corresponds to " STRINGIFY(BUFFER_SIZE_SAMPLES) " audio-samples"},
+  {"osc.release.click.level", CFG_DOUBLE, "0.25", "range: [0..1]"},
+  {"osc.release.model", CFG_TEXT, "\"linear\"", "one of \"click\", \"cosine\", \"linear\", \"shelf\" "},
+  {"osc.attack.model", CFG_TEXT, "\"click\"", "one of \"click\", \"cosine\", \"linear\", \"shelf\" "},
+  {NULL}
+};
+
+const ConfigDoc *oscDoc () {
+  return doc;
+}
+
 
 /* vi:set ts=8 sts=2 sw=2: */

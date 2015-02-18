@@ -18,6 +18,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#ifndef CONFIGDOCONLY
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -1077,28 +1079,6 @@ int midiConfig (void *mcfg, ConfigContext * cfg) {
   return ack;
 }
 
-static const ConfigDoc doc[] = {
-  {"midi.upper.channel", CFG_INT, "1", "The MIDI channel to use for the upper-manual. range: [1..16]"},
-  {"midi.lower.channel", CFG_INT, "2", "The MIDI channel to use for the lower manual. range: [1..16]"},
-  {"midi.pedals.channel", CFG_INT,"3", "The MIDI channel to use for the pedals. range: [1..16]"},
-  {"midi.controller.reset", CFG_INT, "\"-\"", "Clear existing CC mapping for all controllers (if non-zero argument is given). See also -D option."},
-  {"midi.controller.upper.<cc>", CFG_TEXT, "\"-\"", "Speficy a function-name to bind to the given MIDI control-command. <cc> is an integer 0..127. Defaults are in midiPrimeControllerMapping() and can be listed using the '-d' commandline option. See general information."},
-  {"midi.controller.lower.<cc>", CFG_TEXT, "\"-\"", "see midi.controller.upper"},
-  {"midi.controller.pedals.<cc>", CFG_TEXT, "\"-\"", "see midi.controller.upper"},
-  {"midi.transpose", CFG_INT, "0", "global transpose (noteshift) in semitones."},
-  {"midi.upper.transpose", CFG_INT, "0", "shift/transpose MIDI-notes on upper-manual in semitones"},
-  {"midi.lower.transpose", CFG_INT, "0", "shift/transpose MIDI-notes on lower-manual in semitones"},
-  {"midi.pedals.transpose", CFG_INT, "0", "shift/transpose MIDI-notes on pedals in semitones"},
-  {"midi.upper.transpose.split", CFG_INT, "0", "noteshift for upper manual in split mode"},
-  {"midi.lower.transpose.split", CFG_INT, "0", "noteshift for lower manual in split mode"},
-  {"midi.pedals.transpose.split", CFG_INT, "0", "noteshift for lower manual in split mode"},
-  {NULL}
-};
-
-const ConfigDoc *midiDoc () {
-  return doc;
-}
-
 void initMidiTables(void *mcfg) {
   struct b_midicfg * m = (struct b_midicfg *) mcfg;
   loadKeyTableA (m);
@@ -1364,6 +1344,32 @@ void listCCAssignments2(void *mcfg, FILE * fp) {
   fprintf(fp," Chn  CC  | Function [Mod]\n");
   fprintf(fp," ---------+---------------\n");
   midi_loopCCAssignment(mcfg, 7, midi_print_cc_cb, fp);
+}
+
+#else
+# include "cfgParser.h"
+#endif // CONFIGDOCONLY
+
+static const ConfigDoc doc[] = {
+  {"midi.upper.channel", CFG_INT, "1", "The MIDI channel to use for the upper-manual. range: [1..16]"},
+  {"midi.lower.channel", CFG_INT, "2", "The MIDI channel to use for the lower manual. range: [1..16]"},
+  {"midi.pedals.channel", CFG_INT,"3", "The MIDI channel to use for the pedals. range: [1..16]"},
+  {"midi.controller.reset", CFG_INT, "\"-\"", "Clear existing CC mapping for all controllers (if non-zero argument is given). See also -D option."},
+  {"midi.controller.upper.<cc>", CFG_TEXT, "\"-\"", "Speficy a function-name to bind to the given MIDI control-command. <cc> is an integer 0..127. Defaults are in midiPrimeControllerMapping() and can be listed using the '-d' commandline option. See general information."},
+  {"midi.controller.lower.<cc>", CFG_TEXT, "\"-\"", "see midi.controller.upper"},
+  {"midi.controller.pedals.<cc>", CFG_TEXT, "\"-\"", "see midi.controller.upper"},
+  {"midi.transpose", CFG_INT, "0", "global transpose (noteshift) in semitones."},
+  {"midi.upper.transpose", CFG_INT, "0", "shift/transpose MIDI-notes on upper-manual in semitones"},
+  {"midi.lower.transpose", CFG_INT, "0", "shift/transpose MIDI-notes on lower-manual in semitones"},
+  {"midi.pedals.transpose", CFG_INT, "0", "shift/transpose MIDI-notes on pedals in semitones"},
+  {"midi.upper.transpose.split", CFG_INT, "0", "noteshift for upper manual in split mode"},
+  {"midi.lower.transpose.split", CFG_INT, "0", "noteshift for lower manual in split mode"},
+  {"midi.pedals.transpose.split", CFG_INT, "0", "noteshift for lower manual in split mode"},
+  {NULL}
+};
+
+const ConfigDoc *midiDoc () {
+  return doc;
 }
 
 /* vi:set ts=8 sts=2 sw=2: */

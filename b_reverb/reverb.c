@@ -84,6 +84,7 @@
  *
  * Index numbers 4, 5 and 6 refers to the all-pass filters.
  */
+#ifndef CONFIGDOCONLY
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -264,19 +265,6 @@ int reverbConfig (struct b_reverb *r, ConfigContext * cfg) {
   return ack;
 }
 
-static const ConfigDoc doc[] = {
-  {"reverb.wet", CFG_DOUBLE, "0.3", "Wet signal level; range [0..1]"},
-  {"reverb.dry", CFG_DOUBLE, "0.7", "Dry signal level; range [0..1]"},
-  {"reverb.inputgain", CFG_DOUBLE, "0.025", "Input Gain; range [0..1]"},
-  {"reverb.outputgain", CFG_DOUBLE, "1.0", "Note: modifies dry and wet values."},
-  {"reverb.mix", CFG_DOUBLE, "0.3", "Note: modifies dry/wet."},
-  {NULL}
-};
-
-const ConfigDoc *reverbDoc () {
-  return doc;
-}
-
 
 /*
  *
@@ -349,4 +337,23 @@ float * reverb (struct b_reverb *r,
   r->yy1 = yy1 + DENORMAL_HACK;
   return outbuf;
 }
+
+
+#else
+# include "cfgParser.h"
+#endif // CONFIGDOCONLY
+
+static const ConfigDoc doc[] = {
+  {"reverb.wet", CFG_DOUBLE, "0.3", "Wet signal level; range [0..1]"},
+  {"reverb.dry", CFG_DOUBLE, "0.7", "Dry signal level; range [0..1]"},
+  {"reverb.inputgain", CFG_DOUBLE, "0.025", "Input Gain; range [0..1]"},
+  {"reverb.outputgain", CFG_DOUBLE, "1.0", "Note: modifies dry and wet values."},
+  {"reverb.mix", CFG_DOUBLE, "0.3", "Note: modifies dry/wet."},
+  {NULL}
+};
+
+const ConfigDoc *reverbDoc () {
+  return doc;
+}
+
 /* vi:set ts=8 sts=2 sw=2: */

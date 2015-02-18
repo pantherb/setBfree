@@ -52,7 +52,14 @@ $(LV2NAME)$(LIB_EXT): lv2.c $(LV2OBJ) uris.h ../src/cfgParser.h ../src/midi.h
 
 $(LV2GUI)$(LIB_EXT): ui.c uris.h $(UIDEPS) $(FONTFILE) $(LV2OBJ)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(UICFLAGS) \
-		-o $(LV2GUI)$(LIB_EXT) ui.c $(LV2OBJ) \
+		-o $(LV2GUI)$(LIB_EXT) ui.c -DCONFIGDOCONLY \
+		../src/midi.c \
+		../src/program.c \
+		../src/vibrato.c \
+		../src/tonegen.c \
+		../b_whirl/whirl.c \
+		../b_overdrive/overdrive.c \
+		../b_reverb/reverb.c \
 		-shared $(LV2LDFLAGS) $(LDFLAGS) $(UILIBS)
 
 verabd.h: VeraBd.ttf

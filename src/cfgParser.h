@@ -24,6 +24,8 @@
 #ifndef _CFGPARSER_H_
 #define _CFGPARSER_H_
 
+#include <stdio.h>
+
 /* some filters - in particular butterworth shelfing -
  * end up producing denormal-values when fed with zeros */
 #define DENORMAL_HACK (1e-14)

@@ -118,16 +118,15 @@ using namespace FTGL;
 #  endif
 #endif
 
-#include "global_inst.h" // documentation/default values
 #include "cfgParser.h" // ConfigDoc
 
-#ifndef JACK_DESCRIPT
-double SampleRateD = 48000.0; // unused needed to link
-const ConfigDoc *mainDoc () { return NULL;}
-int mainConfig (ConfigContext * cfg) {
-  return 0;
-}
-#endif
+extern const ConfigDoc *ampDoc ();
+extern const ConfigDoc *reverbDoc ();
+extern const ConfigDoc *whirlDoc ();
+extern const ConfigDoc *midiDoc ();
+extern const ConfigDoc *pgmDoc ();
+extern const ConfigDoc *oscDoc ();
+extern const ConfigDoc *scannerDoc ();
 
 #include "uris.h"
 #include "ui_model.h"

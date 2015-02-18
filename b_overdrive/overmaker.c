@@ -1520,6 +1520,14 @@ void legacyConfig () {
   codeln ("return rtn;");
   popIndent ();
   codeln ("}");
+  vspace (1);
+}
+
+void writeDocumentation () {
+  codeln ("#else // no CONFIGDOCONLY");
+  codeln ("# include \"cfgParser.h\"");
+  codeln ("#endif");
+
   vspace (2);
   codeln ("static const ConfigDoc doc[] = {");
   pushIndent ();
@@ -1884,6 +1892,8 @@ void render (FILE * fp, char * funcName) {
 
   setOutputStream (fp);
 
+  codeln ("#ifndef CONFIGDOCONLY");
+
 #ifdef IPOL_FC
   computeIpolFilter (IPOL_FC, IPOL_WDW);
   sprintf (buf, "Interpolation filter at digital frequency %g", IPOL_FC);
@@ -1965,6 +1975,8 @@ void render (FILE * fp, char * funcName) {
 #endif /* INPUT_COMPRESS */
 
   legacyInit ();
+
+  writeDocumentation();
 
 }
 

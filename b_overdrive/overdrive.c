@@ -1,3 +1,4 @@
+#ifndef CONFIGDOCONLY
 /* Interpolation filter at digital frequency 0.25 */
 /* Decimation filter at digital frequency 0.25 */
 #include <stdio.h>
@@ -453,23 +454,6 @@ int ampConfig (void *pa, ConfigContext * cfg) {
 }
 
 
-static const ConfigDoc doc[] = {
-  {"overdrive.inputgain", CFG_FLOAT, "0.3567", "This is how much the input signal is scaled as it enters the overdrive effect. The default value is quite hot, but you can of course try it in anyway you like; range [0..1]"},
-  {"overdrive.outputgain", CFG_FLOAT, "0.07873", "This is how much the signal is scaled as it leaves the overdrive effect. Essentially this value should be as high as possible without clipping (and you *will* notice when it does - Test with a bass-chord on 88 8888 000 with percussion enabled and full swell, but do turn down the amplifier/headphone volume first!); range [0..1]"},
-  {"xov.ctl_biased", CFG_FLOAT, "0.5347", "bias base; range [0..1]"},
-  {"xov.ctl_biased_gfb", CFG_FLOAT, "0.6214", "Global [negative] feedback control; range [0..1]"},
-  {"overdrive.character", CFG_FLOAT, "-", "Abstraction to set xov.ctl_biased_fb and xov.ctl_biased_fb2"},
-  {"xov.ctl_biased_fb", CFG_FLOAT, "0.5821", "This parameter behaves somewhat like an analogue tone control for bass mounted before the overdrive stage. Unity is somewhere around the value 0.6, lesser values takes away bass and lowers the volume while higher values gives more bass and more signal into the overdrive. Must be less than 1.0."},
-  {"xov.ctl_biased_fb2", CFG_FLOAT, "0.999", "The fb2 parameter has the same function as fb1 but controls the signal after the overdrive stage. Together the two parameters are useful in that they can reduce the amount of bass going into the overdrive and then recover it on the other side. Must be less than 1.0."},
-  {"xov.ctl_sagtobias", CFG_FLOAT, "0.1880", "This parameter is part of an attempt to recreate an artefact called 'power sag'. When a power amplifier is under heavy load the voltage drops and alters the operating parameters of the unit, usually towards more and other kinds of distortion. The sagfb parameter controls the rate of recovery from the sag effect when the load is lifted. Must be less than 1.0."},
-  {NULL}
-};
-
-
-const ConfigDoc *ampDoc () {
-  return doc;
-}
-
 
 
 /* Computes the constants for transfer curve */
@@ -613,4 +597,25 @@ void initPreamp (void *pa, void *m) {
   useMIDIControlFunction (m, "overdrive.enable", setCleanCC, pa);
   useMIDIControlFunction (m, "overdrive.inputgain", setInputGain, pa);
   useMIDIControlFunction (m, "overdrive.outputgain", setOutputGain, pa);
+}
+#else // no CONFIGDOCONLY
+# include "cfgParser.h"
+#endif
+
+
+static const ConfigDoc doc[] = {
+  {"overdrive.inputgain", CFG_FLOAT, "0.3567", "This is how much the input signal is scaled as it enters the overdrive effect. The default value is quite hot, but you can of course try it in anyway you like; range [0..1]"},
+  {"overdrive.outputgain", CFG_FLOAT, "0.07873", "This is how much the signal is scaled as it leaves the overdrive effect. Essentially this value should be as high as possible without clipping (and you *will* notice when it does - Test with a bass-chord on 88 8888 000 with percussion enabled and full swell, but do turn down the amplifier/headphone volume first!); range [0..1]"},
+  {"xov.ctl_biased", CFG_FLOAT, "0.5347", "bias base; range [0..1]"},
+  {"xov.ctl_biased_gfb", CFG_FLOAT, "0.6214", "Global [negative] feedback control; range [0..1]"},
+  {"overdrive.character", CFG_FLOAT, "-", "Abstraction to set xov.ctl_biased_fb and xov.ctl_biased_fb2"},
+  {"xov.ctl_biased_fb", CFG_FLOAT, "0.5821", "This parameter behaves somewhat like an analogue tone control for bass mounted before the overdrive stage. Unity is somewhere around the value 0.6, lesser values takes away bass and lowers the volume while higher values gives more bass and more signal into the overdrive. Must be less than 1.0."},
+  {"xov.ctl_biased_fb2", CFG_FLOAT, "0.999", "The fb2 parameter has the same function as fb1 but controls the signal after the overdrive stage. Together the two parameters are useful in that they can reduce the amount of bass going into the overdrive and then recover it on the other side. Must be less than 1.0."},
+  {"xov.ctl_sagtobias", CFG_FLOAT, "0.1880", "This parameter is part of an attempt to recreate an artefact called 'power sag'. When a power amplifier is under heavy load the voltage drops and alters the operating parameters of the unit, usually towards more and other kinds of distortion. The sagfb parameter controls the rate of recovery from the sag effect when the load is lifted. Must be less than 1.0."},
+  {NULL}
+};
+
+
+const ConfigDoc *ampDoc () {
+  return doc;
 }
