@@ -1358,13 +1358,13 @@ static const ConfigDoc doc[] = {
   {"midi.controller.upper.<cc>", CFG_TEXT, "\"-\"", "Speficy a function-name to bind to the given MIDI control-command. <cc> is an integer 0..127. Defaults are in midiPrimeControllerMapping() and can be listed using the '-d' commandline option. See general information."},
   {"midi.controller.lower.<cc>", CFG_TEXT, "\"-\"", "see midi.controller.upper"},
   {"midi.controller.pedals.<cc>", CFG_TEXT, "\"-\"", "see midi.controller.upper"},
-  {"midi.transpose", CFG_INT, "0", "global transpose (noteshift) in semitones."},
-  {"midi.upper.transpose", CFG_INT, "0", "shift/transpose MIDI-notes on upper-manual in semitones"},
-  {"midi.lower.transpose", CFG_INT, "0", "shift/transpose MIDI-notes on lower-manual in semitones"},
-  {"midi.pedals.transpose", CFG_INT, "0", "shift/transpose MIDI-notes on pedals in semitones"},
-  {"midi.upper.transpose.split", CFG_INT, "0", "noteshift for upper manual in split mode"},
-  {"midi.lower.transpose.split", CFG_INT, "0", "noteshift for lower manual in split mode"},
-  {"midi.pedals.transpose.split", CFG_INT, "0", "noteshift for lower manual in split mode"},
+  {"midi.transpose", CFG_INT, "0", "Global transpose (noteshift) in semitones.", "semitones", -127, 127, 1},
+  {"midi.upper.transpose", CFG_INT, "0", "Shift/transpose MIDI-notes on upper-manual", "semitones", -127, 127, 1},
+  {"midi.lower.transpose", CFG_INT, "0", "Shift/transpose MIDI-notes on lower-manual", "semitones", -127, 127, 1},
+  {"midi.pedals.transpose", CFG_INT, "0", "Shift/transpose MIDI-notes on pedals", "semitones", -127, 127, 1},
+  {"midi.upper.transpose.split", CFG_INT, "0", "Noteshift for upper manual in split mode", "semitones", -127, 127, 1},
+  {"midi.lower.transpose.split", CFG_INT, "0", "Noteshift for lower manual in split mode", "semitones", -127, 127, 1},
+  {"midi.pedals.transpose.split", CFG_INT, "0", "Noteshift for lower manual in split mode", "semitones", -127, 127, 1},
   {NULL}
 };
 

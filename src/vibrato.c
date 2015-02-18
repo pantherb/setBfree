@@ -353,10 +353,10 @@ float * vibratoProc (struct b_vibrato* v, float * inbuffer, float * outbuffer, s
 #endif // CONFIGDOCONLY
 
 static const ConfigDoc doc[] = {
-  {"scanner.hz", CFG_DOUBLE, "7.25", "frequency of the vibrato scanner", "Hz", 4, 22, .5},
-  {"scanner.modulation.v1", CFG_DOUBLE, "3.0", "Amount of modulation for vibrato/chorus 1 settings", "Hz", 0, 12, .5},
-  {"scanner.modulation.v2", CFG_DOUBLE, "6.0", "Amount of modulation for vibrato/chorus 2 settings", "Hz", 0, 12, .5},
-  {"scanner.modulation.v3", CFG_DOUBLE, "9.0", "Amount of modulation for vibrato/chorus 3 settings", "Hz", 0, 12, .5},
+  {"scanner.hz",            CFG_DOUBLE, "7.25", "Frequency of the vibrato scanner", "Hz", 4, 22, .5},
+  {"scanner.modulation.v1", CFG_DOUBLE, "3.0",  "Amount of modulation for vibrato/chorus 1 setting", "Hz", 0, 12, .5},
+  {"scanner.modulation.v2", CFG_DOUBLE, "6.0",  "Amount of modulation for vibrato/chorus 2 setting", "Hz", 0, 12, .5},
+  {"scanner.modulation.v3", CFG_DOUBLE, "9.0",  "Amount of modulation for vibrato/chorus 3 setting", "Hz", 0, 12, .5},
   {NULL}
 };
 
