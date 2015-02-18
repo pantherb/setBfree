@@ -307,7 +307,7 @@ struct _oscillator oscillators [NOF_WHEELS + 1];
 unsigned int activeKeys [MAX_KEYS];
 
 /* bitwise compact active keys - used for GUI comm.
- * TODO supersede activeKeys[] above
+ * these are real non-transposed keys (for GUI)
  */
 unsigned int _activeKeys [MAX_KEYS/32];
 
@@ -578,8 +578,8 @@ extern const ConfigDoc *oscDoc ();
 extern void initToneGenerator (struct b_tonegen *t, void *m);
 extern void freeToneGenerator (struct b_tonegen *t);
 
-extern void oscKeyOff (struct b_tonegen *t, unsigned char midiNote);
-extern void oscKeyOn (struct b_tonegen *t, unsigned char midiNote);
+extern void oscKeyOff (struct b_tonegen *t, unsigned char midiNote, unsigned char realKey);
+extern void oscKeyOn (struct b_tonegen *t, unsigned char midiNote, unsigned char realKey);
 extern void setDrawBars (void *inst, unsigned int manual, unsigned int setting []);
 extern void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples);
 

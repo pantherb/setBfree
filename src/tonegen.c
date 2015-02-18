@@ -2984,13 +2984,15 @@ void freeToneGenerator (struct b_tonegen *t) {
  * This function is the entry point for the MIDI parser when it has received
  * a NOTE OFF message on a channel and note number mapped to a playing key.
  */
-void oscKeyOff (struct b_tonegen *t, unsigned char keyNumber) {
+void oscKeyOff (struct b_tonegen *t, unsigned char keyNumber, unsigned char realKey) {
   if (MAX_KEYS <= keyNumber) return;
   /* The key must be marked as on */
   if (t->activeKeys[keyNumber] != 0) {
     /* Flag the key as inactive */
     t->activeKeys[keyNumber] = 0;
-    t->_activeKeys[keyNumber/32] &= ~(1<<(keyNumber%32));
+    if (realKey != 255) {
+      t->_activeKeys[realKey/32] &= ~(1<<(realKey%32));
+    }
     /* Track upper manual keys for percussion trigger */
     if (keyNumber < 64) {
       t->upperKeyCount--;
@@ -3015,15 +3017,17 @@ void oscKeyOff (struct b_tonegen *t, unsigned char keyNumber) {
  * This function is the entry point for the MIDI parser when it has received
  * a NOTE ON message on a channel and note number mapped to a playing key.
  */
-void oscKeyOn (struct b_tonegen *t, unsigned char keyNumber) {
+void oscKeyOn (struct b_tonegen *t, unsigned char keyNumber, unsigned char realKey) {
   if (MAX_KEYS <= keyNumber) return;
   /* If the key is already depressed, release it first. */
   if (t->activeKeys[keyNumber] != 0) {
-    oscKeyOff (t, keyNumber);
+    oscKeyOff (t, keyNumber, realKey);
   }
   /* Mark the key as active */
   t->activeKeys[keyNumber] = 1;
-  t->_activeKeys[keyNumber/32] |= (1<<(keyNumber%32));
+  if (realKey != 255) {
+    t->_activeKeys[realKey/32] |= (1<<(realKey%32));
+  }
   /* Track upper manual for percussion trigger */
   if (keyNumber < 64) {
     t->upperKeyCount++;

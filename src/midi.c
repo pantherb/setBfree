@@ -1104,6 +1104,18 @@ static void remember_dynamic_CC_change(void *instp, int chn, int param, int fnid
   rc_add_cfg(inst->state, &cfg);
 }
 
+static unsigned char map_to_real_key(struct b_midicfg * m, const unsigned char channel, const unsigned char note) {
+  if (channel == m->rcvChA && note >= 36 && note < 97 ) {
+    return note - 36;
+  }
+  if (channel == m->rcvChB && note >= 36 && note < 97 ) {
+    return 64 + note - 36;
+  }
+  if (channel == m->rcvChC && note >= 24 && note < 50 ) {
+    return 128 + note - 24;
+  }
+  return 255;
+}
 
 void process_midi_event(void *instp, const struct bmidi_event_t *ev) {
   struct b_instance * inst = (struct b_instance *) instp;
@@ -1112,15 +1124,21 @@ void process_midi_event(void *instp, const struct bmidi_event_t *ev) {
     case NOTE_ON:
       if(m->keyTable[ev->channel] && m->keyTable[ev->channel][ev->d.tone.note] != 255) {
 	if (ev->d.tone.velocity > 0){
-	  oscKeyOn (inst->synth, m->keyTable[ev->channel][ev->d.tone.note]);
+	  oscKeyOn (inst->synth, m->keyTable[ev->channel][ev->d.tone.note],
+	      map_to_real_key(m, ev->channel, ev->d.tone.note)
+	      );
 	} else {
-	  oscKeyOff (inst->synth, m->keyTable[ev->channel][ev->d.tone.note]);
+	  oscKeyOff (inst->synth, m->keyTable[ev->channel][ev->d.tone.note],
+	      map_to_real_key(m, ev->channel, ev->d.tone.note)
+	      );
 	}
       }
       break;
     case NOTE_OFF:
       if(m->keyTable[ev->channel] && m->keyTable[ev->channel][ev->d.tone.note] != 255)
-	oscKeyOff (inst->synth, m->keyTable[ev->channel][ev->d.tone.note]);
+	oscKeyOff (inst->synth, m->keyTable[ev->channel][ev->d.tone.note],
+	    map_to_real_key(m, ev->channel, ev->d.tone.note)
+	    );
       break;
     case PROGRAM_CHANGE:
       installProgram(inst, ev->d.control.value);
@@ -1165,7 +1183,7 @@ void process_midi_event(void *instp, const struct bmidi_event_t *ev) {
 	/* Midi panic: 120: all sound off, 123: all notes off*/
 	int i;
 	for (i=0; i < MAX_KEYS; ++i) {
-	  oscKeyOff (inst->synth, i);
+	  oscKeyOff (inst->synth, i, i);
 	}
 	break;
       } else
