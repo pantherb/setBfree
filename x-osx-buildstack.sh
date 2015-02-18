@@ -36,22 +36,21 @@ case `sw_vers -productVersion | cut -d'.' -f1,2` in
 ################################################################################
 set -e
 
-# start with a clean slate:
-if test -z "$NOCLEAN"; then
-	rm -rf ${BUILDD}
-	rm -rf ${PREFIX}
-fi
-
-mkdir -p ${SRCDIR}
-mkdir -p ${PREFIX}
-mkdir -p ${BUILDD}
-
 unset PKG_CONFIG_PATH
 export PKG_CONFIG_PATH=${PREFIX}/lib/pkgconfig
 export PREFIX
 export SRCDIR
 
 export PATH=${PREFIX}/bin:$HOME/bin:/usr/local/git/bin/:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin
+
+if test ! -d "${PREFIX}include" -o -z "$NOSTACK"; then
+
+rm -rf ${BUILDD}
+rm -rf ${PREFIX}
+
+mkdir -p ${SRCDIR}
+mkdir -p ${PREFIX}
+mkdir -p ${BUILDD}
 
 function autoconfbuild {
 set -e
@@ -181,6 +180,8 @@ autoconfbuild --enable-static
 src lv2-1.10.0 tar.bz2 http://lv2plug.in/spec/lv2-1.10.0.tar.bz2
 wafbuild --no-plugins
 
+################################################################################
+fi  ## NOSTACK
 ################################################################################
 
 if test ! -d ${SRCDIR}/setBfree.git.reference; then
