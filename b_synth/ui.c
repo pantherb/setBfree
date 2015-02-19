@@ -259,8 +259,8 @@ static const char *obj_control[] = {
   "percussion.volume",
   "percussion.decay",
   "percussion.harmonic",
-  "vibrato.routing",  // 24  SPECIAL -- lower
-  "vibrato.routing",  // 25  SPECIAL -- upper
+  "vibrato.lower",  // 24  SPECIAL -- lower
+  "vibrato.upper",  // 25  SPECIAL -- upper
   "overdrive.enable", // 26
   "overdrive.character",
   "vibrato.knob", // 28
@@ -3001,8 +3001,6 @@ onDisplay(PuglView* view)
     glPopMatrix();
 
     float x = ui->ctrls[i].x;
-    if (i == 24) x += 1.375;
-    if (i == 25) x -= 1.375;
     if (i == 31) x += 2.8;
     if (i == 32) x -= 2.8;
     if (i < 20)  y -= 0.4;
