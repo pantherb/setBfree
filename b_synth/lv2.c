@@ -917,7 +917,7 @@ run(LV2_Handle instance, uint32_t n_samples)
 	  const LV2_Atom* key = NULL;
 	  lv2_atom_object_get(obj, b3s->uris.sb3_cckey, &key, 0);
 	  if (key) {
-	    midi_uiassign_cc(b3s->inst->midicfg, (const char*)LV2_ATOM_BODY(key));
+	    midi_uiassign_cc(b3s->inst->midicfg, (const char*)LV2_ATOM_BODY(key), 0);
 	  }
 	} else if (obj->body.otype == b3s->uris.sb3_midipgm) {
 	  const LV2_Atom* key = NULL;
