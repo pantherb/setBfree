@@ -2454,7 +2454,7 @@ static void helpscreentext(PuglView* view)
   render_gl_text(view, "<Shift>L", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
   render_gl_text(view, "Load .pgm/.cfg:", SCOORD(xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
   render_gl_text(view, "<Shift>C", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
-  render_gl_text(view, "Export .pgm file:", SCOORD(xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "Export .cfg file:", SCOORD(xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
   render_gl_text(view, "<Shift>V", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
   render_gl_text(view, "Export .pgm file:", SCOORD(xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
   yto+=.08;
