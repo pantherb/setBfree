@@ -1288,8 +1288,8 @@ int main (int argc, char **argv) {
 #endif // CONFIGDOCONLY
 
 static const ConfigDoc doc[] = {
-  {"pgm.controller.offset", CFG_INT, "1", "Compensate for MIDI controllers that number the programs from 1 to 128. Internally we use 0-127, as does MIDI. range: [0,1]"},
-  {NULL}
+  {"pgm.controller.offset", CFG_INT, "1", "Compensate for MIDI controllers that number the programs from 1 to 128. Internally we use 0-127, as does MIDI. range: [0,1]", INCOMPLETE_DOC},
+  DOC_SENTINEL
 };
 
 const ConfigDoc *pgmDoc () {

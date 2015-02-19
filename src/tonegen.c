@@ -3615,7 +3615,7 @@ struct b_tonegen *allocTonegen() {
 static const ConfigDoc doc[] = {
   {"osc.tuning",                       CFG_DOUBLE,  "440.0", "Base tuning of the organ.", "Hz", 220.0, 880.0, .5},
   {"osc.temperament",                  CFG_TEXT,    "\"gear60\"", "Tuning temperament, gear-ratios/motor-speed. One of: \"equal\", \"gear60\", \"gear50\"", "", 0, 2, 1},
-  {"osc.x-precision",                  CFG_DOUBLE,  "0.001", "Wave precision. Maximum allowed error when calulating wave buffer-length for a given frequency (ideal #of samples - discrete #of samples)"},
+  {"osc.x-precision",                  CFG_DOUBLE,  "0.001", "Wave precision. Maximum allowed error when calulating wave buffer-length for a given frequency (ideal #of samples - discrete #of samples)", INCOMPLETE_DOC},
   {"osc.perc.fast",                    CFG_DOUBLE,  "1.0", "Fast percussion decay time", "s", 0, 10.0, 0.1},
   {"osc.perc.slow",                    CFG_DOUBLE,  "4.0", "Slow percussion decay time", "s", 0, 10.0, 0.1},
   {"osc.perc.normal",                  CFG_DECIBEL, "1.0", "Percussion starting gain of the envelope for normal volume.", "dB", 0, 1, 2.0},
@@ -3625,21 +3625,21 @@ static const ConfigDoc doc[] = {
 #else
   {"osc.perc.gain",                    CFG_DOUBLE,  "3.0", "Basic volume of the percussion signal, applies to both normal and soft", "", 0, 22.0, .5},
 #endif
-  {"osc.perc.bus.a",                   CFG_INT,     "3", "range [0..8]"},
-  {"osc.perc.bus.b",                   CFG_INT,     "4", "range [0..8]"},
-  {"osc.perc.bus.trig",                CFG_INT,     "8", "range [-1..8]"},
-  {"osc.eq.macro",                     CFG_TEXT,    "\"chspline\"", "one of \"chspline\", \"peak24\", \"peak46\""},
-  {"osc.eq.p1y",                       CFG_DOUBLE,  "1.0", "EQ spline parameter"},
-  {"osc.eq.r1y",                       CFG_DOUBLE,  "0.0", "EQ spline parameter"},
-  {"osc.eq.p4y",                       CFG_DOUBLE,  "1.0", "EQ spline parameter"},
-  {"osc.eq.r4y",                       CFG_DOUBLE,  "0.0", "EQ spline parameter"},
-  {"osc.eqv.ceiling",                  CFG_DOUBLE,  "1.0", "Normalize EQ parameters."},
-  {"osc.eqv.<oscnum>",                 CFG_DOUBLE,  "-", "oscnum=[0..127], value: [0..osc.eqv.ceiling]; default values are calculated depending on selected osc.eq.macro and tone-generator-model."},
-  {"osc.harmonic.<h>",                 CFG_DOUBLE,  "-", "speficy level of given harmonic number."},
-  {"osc.harmonic.w<w>.f<h>",           CFG_DOUBLE,  "-", "w: number of wheel [0..91], h: harmonic number"},
-  {"osc.terminal.t<t>.w<w>",           CFG_DOUBLE,  "-", "t,w: wheel-number [0..91]"},
-  {"osc.taper.k<key>.b<bus>.t<wheel>", CFG_DOUBLE,  "-", "customize tapering model. Specify level of [key, drawbar, tonewheel]."},
-  {"osc.crosstalk.k<key>",             CFG_TEXT,    "-", "value colon-separated: \"<int:bus>:<int:wheel>:<double:level>\""},
+  {"osc.perc.bus.a",                   CFG_INT,     "3", "range [0..8]", INCOMPLETE_DOC},
+  {"osc.perc.bus.b",                   CFG_INT,     "4", "range [0..8]", INCOMPLETE_DOC},
+  {"osc.perc.bus.trig",                CFG_INT,     "8", "range [-1..8]", INCOMPLETE_DOC},
+  {"osc.eq.macro",                     CFG_TEXT,    "\"chspline\"", "one of \"chspline\", \"peak24\", \"peak46\"", INCOMPLETE_DOC},
+  {"osc.eq.p1y",                       CFG_DOUBLE,  "1.0", "EQ spline parameter", INCOMPLETE_DOC},
+  {"osc.eq.r1y",                       CFG_DOUBLE,  "0.0", "EQ spline parameter", INCOMPLETE_DOC},
+  {"osc.eq.p4y",                       CFG_DOUBLE,  "1.0", "EQ spline parameter", INCOMPLETE_DOC},
+  {"osc.eq.r4y",                       CFG_DOUBLE,  "0.0", "EQ spline parameter", INCOMPLETE_DOC},
+  {"osc.eqv.ceiling",                  CFG_DOUBLE,  "1.0", "Normalize EQ parameters.", INCOMPLETE_DOC},
+  {"osc.eqv.<oscnum>",                 CFG_DOUBLE,  "-", "oscnum=[0..127], value: [0..osc.eqv.ceiling]; default values are calculated depending on selected osc.eq.macro and tone-generator-model.", INCOMPLETE_DOC},
+  {"osc.harmonic.<h>",                 CFG_DOUBLE,  "-", "speficy level of given harmonic number.", INCOMPLETE_DOC},
+  {"osc.harmonic.w<w>.f<h>",           CFG_DOUBLE,  "-", "w: number of wheel [0..91], h: harmonic number", INCOMPLETE_DOC},
+  {"osc.terminal.t<t>.w<w>",           CFG_DOUBLE,  "-", "t,w: wheel-number [0..91]", INCOMPLETE_DOC},
+  {"osc.taper.k<key>.b<bus>.t<wheel>", CFG_DOUBLE,  "-", "customize tapering model. Specify level of [key, drawbar, tonewheel].", INCOMPLETE_DOC},
+  {"osc.crosstalk.k<key>",             CFG_TEXT,    "-", "value colon-separated: \"<int:bus>:<int:wheel>:<double:level>\"", INCOMPLETE_DOC},
   {"osc.compartment-crosstalk",        CFG_DECIBEL, "0.01", "Crosstalk between tonewheels in the same compartment. The value refers to the amount of rogue signal picked up.", "dB", 0, 0.5, 2.0}, // actual range 0..1
   {"osc.transformer-crosstalk",        CFG_DECIBEL, "0",    "Crosstalk between transformers on the top of the tg.", "dB", 0, 0.5, 2.0}, // actual range 0..1
   {"osc.terminalstrip-crosstalk",      CFG_DECIBEL, "0.01", "Crosstalk between connection on the terminal strip.", "dB", 0, 0.5, 2.0}, // actual range 0..1
@@ -3652,7 +3652,7 @@ static const ConfigDoc doc[] = {
   {"osc.release.click.level",          CFG_DOUBLE,  "0.25",   "Amount of random attenuation applied to an opening bus-oscillator", "%", 0, 1, 0.02},
   {"osc.release.model",                CFG_TEXT,    "\"linear\"", "Model applied during key-release, one of \"click\", \"cosine\", \"linear\", \"shelf\" ", "", 0, 3, 1},
   {"osc.attack.model",                 CFG_TEXT,    "\"click\"",  "Model applied during key-attack; one of \"click\", \"cosine\", \"linear\", \"shelf\" ",  "", 0, 3, 1},
-  {NULL}
+  DOC_SENTINEL
 };
 
 const ConfigDoc *oscDoc () {

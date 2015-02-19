@@ -47,6 +47,9 @@ enum conftype {
   CFG_LAST
 };
 
+#define INCOMPLETE_DOC "", 0, 0, 0
+#define DOC_SENTINEL {NULL, CFG_TEXT, "", "", "", 0, 0, 0}
+
 typedef struct _configDoc {
   const char * name; /**< parameter name */
   enum conftype type;

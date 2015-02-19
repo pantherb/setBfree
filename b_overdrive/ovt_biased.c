@@ -268,9 +268,9 @@ void configSection (int i, void * pa) {
 }
 
 void configDoc (int i, void * vp) {
-  codeln ("{\"xov.ctl_biased_fb\", CFG_FLOAT, \"0.5821\", \"This parameter behaves somewhat like an analogue tone control for bass mounted before the overdrive stage. Unity is somewhere around the value 0.6, lesser values takes away bass and lowers the volume while higher values gives more bass and more signal into the overdrive. Must be less than 1.0.\"},");
-  codeln ("{\"xov.ctl_biased_fb2\", CFG_FLOAT, \"0.999\", \"The fb2 parameter has the same function as fb1 but controls the signal after the overdrive stage. Together the two parameters are useful in that they can reduce the amount of bass going into the overdrive and then recover it on the other side. Must be less than 1.0.\"},");
-  codeln ("{\"xov.ctl_sagtobias\", CFG_FLOAT, \"0.1880\", \"This parameter is part of an attempt to recreate an artefact called 'power sag'. When a power amplifier is under heavy load the voltage drops and alters the operating parameters of the unit, usually towards more and other kinds of distortion. The sagfb parameter controls the rate of recovery from the sag effect when the load is lifted. Must be less than 1.0.\"},");
+  codeln ("{\"xov.ctl_biased_fb\", CFG_FLOAT, \"0.5821\", \"This parameter behaves somewhat like an analogue tone control for bass mounted before the overdrive stage. Unity is somewhere around the value 0.6, lesser values takes away bass and lowers the volume while higher values gives more bass and more signal into the overdrive. Must be less than 1.0.\", INCOMPLETE_DOC},");
+  codeln ("{\"xov.ctl_biased_fb2\", CFG_FLOAT, \"0.999\", \"The fb2 parameter has the same function as fb1 but controls the signal after the overdrive stage. Together the two parameters are useful in that they can reduce the amount of bass going into the overdrive and then recover it on the other side. Must be less than 1.0.\", INCOMPLETE_DOC},");
+  codeln ("{\"xov.ctl_sagtobias\", CFG_FLOAT, \"0.1880\", \"This parameter is part of an attempt to recreate an artefact called 'power sag'. When a power amplifier is under heavy load the voltage drops and alters the operating parameters of the unit, usually towards more and other kinds of distortion. The sagfb parameter controls the rate of recovery from the sag effect when the load is lifted. Must be less than 1.0.\", INCOMPLETE_DOC},");
 }
 
 void ini_biased () {

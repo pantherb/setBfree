@@ -553,12 +553,12 @@ static void PrintVersion () {
 }
 
 static const ConfigDoc doc[] = {
-  {"midi.driver", CFG_TEXT, "\"jack\"", "The midi driver to use, 'jack' or 'alsa'"},
-  {"midi.port", CFG_TEXT, "\"\"", "The midi port(s) to auto-connect to. With alsa it's a single port-name or number, jack accepts regular expressions."},
-  {"jack.connect", CFG_TEXT, "\"system:playback_\"", "Auto connect both audio-ports to a given regular-expression. This setting is ignored if either of jack.out.{left|right} is specified."},
-  {"jack.out.left", CFG_TEXT, "\"\"", "Connect left-output to this jack-port (exact name)"},
-  {"jack.out.right", CFG_TEXT, "\"\"", "Connect right-output to this jack-port (exact name)"},
-  {NULL}
+  {"midi.driver", CFG_TEXT, "\"jack\"", "The midi driver to use, 'jack' or 'alsa'", INCOMPLETE_DOC},
+  {"midi.port", CFG_TEXT, "\"\"", "The midi port(s) to auto-connect to. With alsa it's a single port-name or number, jack accepts regular expressions.", INCOMPLETE_DOC},
+  {"jack.connect", CFG_TEXT, "\"system:playback_\"", "Auto connect both audio-ports to a given regular-expression. This setting is ignored if either of jack.out.{left|right} is specified.", INCOMPLETE_DOC},
+  {"jack.out.left", CFG_TEXT, "\"\"", "Connect left-output to this jack-port (exact name)", INCOMPLETE_DOC},
+  {"jack.out.right", CFG_TEXT, "\"\"", "Connect right-output to this jack-port (exact name)", INCOMPLETE_DOC},
+  DOC_SENTINEL
 };
 
 int mainConfig (ConfigContext * cfg) {

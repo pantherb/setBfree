@@ -344,12 +344,12 @@ float * reverb (struct b_reverb *r,
 #endif // CONFIGDOCONLY
 
 static const ConfigDoc doc[] = {
-  {"reverb.wet", CFG_DOUBLE, "0.3", "Wet signal level; range [0..1]"},
-  {"reverb.dry", CFG_DOUBLE, "0.7", "Dry signal level; range [0..1]"},
-  {"reverb.inputgain", CFG_DOUBLE, "0.025", "Input Gain; range [0..1]"},
-  {"reverb.outputgain", CFG_DOUBLE, "1.0", "Note: modifies dry and wet values."},
-  {"reverb.mix", CFG_DOUBLE, "0.3", "Note: modifies dry/wet."},
-  {NULL}
+  {"reverb.wet", CFG_DOUBLE, "0.3", "Wet signal level; range [0..1]", INCOMPLETE_DOC},
+  {"reverb.dry", CFG_DOUBLE, "0.7", "Dry signal level; range [0..1]", INCOMPLETE_DOC},
+  {"reverb.inputgain", CFG_DOUBLE, "0.025", "Input Gain; range [0..1]", INCOMPLETE_DOC},
+  {"reverb.outputgain", CFG_DOUBLE, "1.0", "Note: modifies dry and wet values.", INCOMPLETE_DOC},
+  {"reverb.mix", CFG_DOUBLE, "0.3", "Note: modifies dry/wet.", INCOMPLETE_DOC},
+  DOC_SENTINEL
 };
 
 const ConfigDoc *reverbDoc () {

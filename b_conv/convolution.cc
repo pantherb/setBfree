@@ -137,12 +137,12 @@ int convolutionConfig (ConfigContext * cfg) {
 }
 
 static const ConfigDoc doc[] = {
-  {"convolution.mix", CFG_DOUBLE,   "0.0",  "Note: modifies dry/wet. [0..1]"},
-  {"convolution.ir.file", CFG_TEXT, ("\"" DFLT_IR_FILE "\""),     "convolution sample filename"},
-  {"convolution.ir.channel.<int>", CFG_INT, "-",    "<int> 1:Left, 2:Right; value: channel-number in IR file to use, default: 1->1, 2->2"},
-  {"convolution.ir.gain.<int>",    CFG_DOUBLE, "0.5", "gain-factor to apply to IR data on load. <int> 1:left-channel, 2:right-channel."},
-  {"convolution.ir.delay.<int>",   CFG_INT,   "0",    "delay IR in audio-samples."},
-  {NULL}
+  {"convolution.mix", CFG_DOUBLE,   "0.0",  "Note: modifies dry/wet. [0..1]", INCOMPLETE_DOC},
+  {"convolution.ir.file", CFG_TEXT, ("\"" DFLT_IR_FILE "\""),     "convolution sample filename", INCOMPLETE_DOC},
+  {"convolution.ir.channel.<int>", CFG_INT, "-",    "<int> 1:Left, 2:Right; value: channel-number in IR file to use, default: 1->1, 2->2", INCOMPLETE_DOC},
+  {"convolution.ir.gain.<int>",    CFG_DOUBLE, "0.5", "gain-factor to apply to IR data on load. <int> 1:left-channel, 2:right-channel.", INCOMPLETE_DOC},
+  {"convolution.ir.delay.<int>",   CFG_INT,   "0",    "delay IR in audio-samples.", INCOMPLETE_DOC},
+  DOC_SENTINEL
 };
 
 const ConfigDoc *convolutionDoc () {

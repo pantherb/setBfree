@@ -1293,7 +1293,7 @@ void whirlProc (struct b_whirl *w,
 
 static const ConfigDoc doc[] = {
   {"whirl.bypass",             CFG_INT,     "0",        "If set to 1, completely bypass the leslie emulation", "", 0, 1, 1},
-  {"whirl.speed-preset",       CFG_INT,     "0",        "Initial horn and drum speed. 0:stopped, 1:slow, 2:fast"},
+  {"whirl.speed-preset",       CFG_INT,     "0",        "Initial horn and drum speed. 0:stopped, 1:slow, 2:fast", INCOMPLETE_DOC},
   {"whirl.horn.slowrpm",       CFG_DOUBLE,  "40.32",    "Target RPM for slow (aka choral) horn speed", "RPM", 10.0, 500.0, 0.5},
   {"whirl.horn.fastrpm",       CFG_DOUBLE,  "423.36",   "Target RPM for fast (aka tremolo) horn speed", "RPM", 100.0, 900.0, 2.5},
   {"whirl.horn.acceleration",  CFG_DOUBLE,  "0.161",    "Time required to accelerate the horn (exponential time constant)", "s", 0.05, 2.0, 0.05},
@@ -1322,12 +1322,12 @@ static const ConfigDoc doc[] = {
   {"whirl.horn.filter.b.q",    CFG_DOUBLE,  "1.0",      "Filter Quality, bandwidth", "", 0.1, 6.0, .1},
   {"whirl.horn.filter.b.gain", CFG_DOUBLE,  "-30.0",    "Filter gain", "dB", -48.0, 48.0, 1.0},
 #if 0 // comb-filter is disabled
-  {"whirl.horn.comb.a.feedback", CFG_DOUBLE, "-0.55", ""},
-  {"whirl.horn.comb.a.delay", CFG_INT, "38", ""},
-  {"whirl.horn.comb.b.feedback", CFG_DOUBLE, "-0.3508", ""},
-  {"whirl.horn.comb.b.delay", CFG_DOUBLE, "120", ""},
+  {"whirl.horn.comb.a.feedback", CFG_DOUBLE, "-0.55", "", INCOMPLETE_DOC},
+  {"whirl.horn.comb.a.delay", CFG_INT, "38", "", INCOMPLETE_DOC},
+  {"whirl.horn.comb.b.feedback", CFG_DOUBLE, "-0.3508", "", INCOMPLETE_DOC},
+  {"whirl.horn.comb.b.delay", CFG_DOUBLE, "120", "", INCOMPLETE_DOC},
 #endif
-  {NULL}
+  DOC_SENTINEL
 };
 
 const ConfigDoc *whirlDoc () {
