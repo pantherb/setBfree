@@ -1,7 +1,7 @@
 include ../common.mak
 
 LOADLIBES = -lm
-override CFLAGS+=`pkg-config --cflags lv2`
+override CFLAGS+=`pkg-config --cflags lv2` -fvisibility=hidden
 
 targets=whirl.o eqcomp.o
 

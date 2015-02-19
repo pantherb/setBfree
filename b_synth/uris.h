@@ -28,6 +28,18 @@
 
 #define SB3_URI "http://gareus.org/oss/lv2/b_synth"
 
+// fix for -fvisibility=hidden
+#undef LV2_SYMBOL_EXPORT
+#ifdef JACK_DESCRIPT
+#    define LV2_SYMBOL_EXPORT
+#else
+#    ifdef _WIN32
+#        define LV2_SYMBOL_EXPORT __declspec(dllexport)
+#    else
+#        define LV2_SYMBOL_EXPORT  __attribute__ ((visibility ("default")))
+#    endif
+#endif
+
 #ifdef HAVE_LV2_1_8
 #define x_forge_object lv2_atom_forge_object
 #else

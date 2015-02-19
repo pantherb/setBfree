@@ -37,7 +37,7 @@ manifest.ttl:
 	sed "s/@LV2NAME@/$(LV2NAME)/;s/@LIB_EXT@/$(LIB_EXT)/" manifest.ttl.in > manifest.ttl
 
 $(LV2NAME)$(LIB_EXT): lv2.c overdrive.o
-	$(CC) $(CPPFLAGS) $(CFLAGS) \
+	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
 		-o $(LV2NAME)$(LIB_EXT) lv2.c overdrive.o \
 	  -shared $(LV2LDFLAGS) $(LDFLAGS)
 

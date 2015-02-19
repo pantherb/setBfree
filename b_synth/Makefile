@@ -2,7 +2,7 @@ include ../common.mak
 
 LOADLIBES = -lm
 override CFLAGS+= -I../src -I../b_overdrive -I../b_reverb -I../b_whirl
-override CFLAGS+=`pkg-config --cflags lv2` -DLV2SYNTH
+override CFLAGS+=`pkg-config --cflags lv2` -DLV2SYNTH -fvisibility=hidden
 targets=
 
 LV2NAME=b_synth
