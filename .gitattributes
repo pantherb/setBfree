@@ -1,9 +1,15 @@
 .gitignore export-ignore
 .gitattributes export-ignore
 debian export-ignore
-build-deb.sh export-ignore
-build-osx.sh export-ignore
-release.sh export-ignore
-examples export-ignore
 *.xcf export-ignore
 *.blend export-ignore
+
+/examples export-ignore
+/build-deb.sh export-ignore
+/release.sh export-ignore
+/x-lnx-buildstack.sh export-ignore
+/x-lnx-bundle.sh export-ignore
+/x-osx-buildstack.sh export-ignore
+/x-osx-bundle.sh export-ignore
+/x-win-buildstack.sh export-ignore
+/x-win-bundle.sh export-ignore
