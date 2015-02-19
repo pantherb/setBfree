@@ -105,6 +105,8 @@ static const char * ccFuncNames[] = {
 
   "vibrato.knob",		/* off/v1/c1/v2/c2/v3/c3 */
   "vibrato.routing",		/* off/lower/upper/both */
+  "vibrato.upper",		/* off/on */
+  "vibrato.lower",		/* off/on */
 
   "swellpedal1",		/* Volume, for primary ctrlr (mod wheel) */
   "swellpedal2",		/* Volume, for secondary ctrlr (expression) */

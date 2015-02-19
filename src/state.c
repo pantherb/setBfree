@@ -241,6 +241,8 @@ void initRunningConfig(void *t, void *mcfg) {
   notifyControlChangeByName(mcfg, "pedal.drawbar8", 32);
 
   notifyControlChangeByName(mcfg, "vibrato.routing", 0);
+  notifyControlChangeByName(mcfg, "vibrato.upper", 0);
+  notifyControlChangeByName(mcfg, "vibrato.lower", 0);
   notifyControlChangeByName(mcfg, "vibrato.knob", 0);
 
   notifyControlChangeByName(mcfg, "percussion.enable", 0);

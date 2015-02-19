@@ -175,6 +175,16 @@ static void setVibratoRoutingFromMIDI (void *t, unsigned char uc) {
   }
 }
 
+static void setVibratoUpperFromMIDI (void *t, unsigned char uc) {
+  struct b_tonegen * inst_synth = (struct b_tonegen *) t;
+  setVibratoUpper (inst_synth, uc < 64 ? FALSE : TRUE);
+}
+
+static void setVibratoLowerFromMIDI (void *t, unsigned char uc) {
+  struct b_tonegen * inst_synth = (struct b_tonegen *) t;
+  setVibratoLower (inst_synth, uc < 64 ? FALSE : TRUE);
+}
+
 /*
  * Initialises tables.
  */
@@ -267,6 +277,8 @@ void initVibrato (void *t, void *m) {
   setVibrato (t, 0);
   useMIDIControlFunction (m, "vibrato.knob", setVibratoFromMIDI, t);
   useMIDIControlFunction (m, "vibrato.routing", setVibratoRoutingFromMIDI, t);
+  useMIDIControlFunction (m, "vibrato.upper", setVibratoUpperFromMIDI, t);
+  useMIDIControlFunction (m, "vibrato.lower", setVibratoLowerFromMIDI, t);
 }
 
 /*
