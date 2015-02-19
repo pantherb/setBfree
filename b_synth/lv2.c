@@ -914,10 +914,11 @@ run(LV2_Handle instance, uint32_t n_samples)
 	} else if (obj->body.otype == b3s->uris.sb3_uimccquery) {
 	  midi_loopCCAssignment(b3s->inst->midicfg, 7, mcc_cb, b3s);
 	} else if (obj->body.otype == b3s->uris.sb3_uimccset) {
-	  const LV2_Atom* key = NULL;
-	  lv2_atom_object_get(obj, b3s->uris.sb3_cckey, &key, 0);
-	  if (key) {
-	    midi_uiassign_cc(b3s->inst->midicfg, (const char*)LV2_ATOM_BODY(key), 0);
+	  const LV2_Atom* cmd = NULL;
+	  const LV2_Atom* flags = NULL;
+	  lv2_atom_object_get(obj, b3s->uris.sb3_cckey, &flags, b3s->uris.sb3_ccval, &cmd, 0);
+	  if (cmd && flags) {
+	    midi_uiassign_cc(b3s->inst->midicfg, (const char*)LV2_ATOM_BODY(cmd), ((LV2_Atom_Int*)flags)->body);
 	  }
 	} else if (obj->body.otype == b3s->uris.sb3_midipgm) {
 	  const LV2_Atom* key = NULL;

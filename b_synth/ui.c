@@ -119,6 +119,7 @@ using namespace FTGL;
 #endif
 
 #include "cfgParser.h" // ConfigDoc
+#include "midi.h" // midi flags
 
 extern const ConfigDoc *ampDoc ();
 extern const ConfigDoc *reverbDoc ();
@@ -351,6 +352,7 @@ typedef struct {
   int pgm_sel;
   int show_mm;
   int uiccbind;
+  int uiccflag;
   int reinit;
 
   int textentry_active;
@@ -2423,7 +2425,7 @@ static void reset_state_ccbind(PuglView* view) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   if (ui->uiccbind >= 0) {
     ui->uiccbind = -1;
-    forge_message_str(ui, ui->uris.sb3_uimccset, "off");
+    forge_message_kv(ui, ui->uris.sb3_uimccset, 0, "off");
   }
   puglPostRedisplay(view);
 }
@@ -3006,7 +3008,11 @@ onDisplay(PuglView* view)
     if (i < 20)  y -= 0.4;
 
     if (ui->uiccbind == i) {
-      render_text(view, "move slider", x, y-.8, 1.65f, TA_CENTER_MIDDLE);
+      if (ui->uiccflag & MFLAG_INV) {
+	render_text(view, "move slider (inv)", x, y-.8, 1.65f, TA_CENTER_MIDDLE);
+      } else {
+	render_text(view, "move slider", x, y-.8, 1.65f, TA_CENTER_MIDDLE);
+      }
     } else if (ui->show_mm) {
       render_text(view, ui->ctrls[i].midinfo, x, y, 1.6f, TA_CENTER_MIDDLE);
     }
@@ -3885,7 +3891,8 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 	continue;
       }
       ui->uiccbind = i;
-      forge_message_str(ui, ui->uris.sb3_uimccset, obj_control[i]);
+      ui->uiccflag = (puglGetModifiers(view) & PUGL_MOD_SHIFT) ? MFLAG_INV : 0;
+      forge_message_kv(ui, ui->uris.sb3_uimccset, ui->uiccflag , obj_control[i]);
       puglPostRedisplay(view);
       return;
     }
@@ -4094,6 +4101,7 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   ui->pgm_sel     = -1;
   ui->show_mm     = 0;
   ui->uiccbind    = -1;
+  ui->uiccflag    = 0;
   ui->reinit      = 0;
   ui->width       = 960;
   ui->height      = 320;
