@@ -203,6 +203,12 @@ typedef enum {
   TA_CENTER_BOTTOM = 5,
 } B3TextAlign;
 
+typedef enum {
+  FS_LARGE,
+  FS_MEDIUM,
+  FS_SMALL
+} B3FontSize;
+
 static inline int MOUSEIN(
     const float X0, const float X1,
     const float Y0, const float Y1,
@@ -369,6 +375,7 @@ typedef struct {
   float dndx, dndy;
 
   FTGLfont *font_big;
+  FTGLfont *font_medium;
   FTGLfont *font_small;
 
   char *popupmsg;
@@ -1213,84 +1220,45 @@ onReshape(PuglView* view, int width, int height)
 }
 
 static void
-render_title(PuglView* view, const char *text, float x, float y, float z, const GLfloat color[4], B3TextAlign align)
-{
-  B3ui* ui = (B3ui*)puglGetHandle(view);
-  float bb[6];
-
-  glPushMatrix();
-  glLoadIdentity();
-
-  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, color);
-  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, color);
-  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, color);
-  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-  glScalef(0.001,0.001,1.00);
-  glRotatef(180, 1, 0, 0);
-
-  ftglGetFontBBox(ui->font_big, text, -1, bb);
-#if 0
-  printf("%.2f %.2f %.2f  %.2f %.2f %.2f\n",
-      bb[0], bb[1], bb[2], bb[3], bb[4], bb[5]);
-#endif
-  switch(align) {
-    case TA_CENTER_MIDDLE:
-      glTranslatef(
-	  (bb[3] - bb[0])/-2.0,
-	  (bb[4] - bb[1])/-2.0,
-	  0);
-      break;
-    case TA_RIGHT_TOP:
-      glTranslatef(
-	  (bb[3] - bb[0])/-1.0,
-	  (bb[4] - bb[1])/-1.0,
-	  0);
-      break;
-    case TA_LEFT_BOTTOM:
-      break;
-    case TA_RIGHT_BOTTOM:
-      glTranslatef(
-	  (bb[3] - bb[0])/-1.0,
-	  0,
-	  0);
-      break;
-    case TA_CENTER_BOTTOM:
-      glTranslatef(
-	  (bb[3] - bb[0])/-2.0,
-	  0,
-	  0);
-      break;
-    default: // left top
-      glTranslatef(
-	  0,
-	  (bb[4] - bb[1])/-1.0,
-	  0);
-      break;
-  }
-  glTranslatef(x * (1000.0*SCALE) , -y * (1000.0*SCALE), z);
-  ftglRenderFont(ui->font_big, text, FTGL_RENDER_ALL);
-  glPopMatrix();
-}
-
-static void
-render_small_text(PuglView* view, const char *text, float x, float y, float z,  const GLfloat color[4], B3TextAlign align)
+render_gl_text(PuglView* view, const char *text, float x, float y, float z, const GLfloat color[4], B3TextAlign align, B3FontSize fs, int blend)
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   const GLfloat mat_b[] = {0.0, 0.0, 0.0, 1.0};
   float bb[6];
+  FTGLfont * font;
+
+  switch (fs) {
+    case FS_LARGE:
+      font = ui->font_big;
+      break;
+    case FS_MEDIUM:
+      font = ui->font_medium;
+      break;
+    default:
+      font = ui->font_small;
+      break;
+  }
 
   glPushMatrix();
   glLoadIdentity();
 
-  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_b);
-  glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_b);
-  glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, color);
+  if (blend) {
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_b);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_b);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, color);
+    glEnable(GL_BLEND);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
+  } else {
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, color);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, color);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, color);
+  }
 
-  glEnable(GL_BLEND);
-  glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_BLEND);
   glScalef(0.001,0.001,1.00);
   glRotatef(180, 1, 0, 0);
-  ftglGetFontBBox(ui->font_small, text, -1, bb);
+
+  ftglGetFontBBox(font, text, -1, bb);
 #if 0
   printf("%.2f %.2f %.2f  %.2f %.2f %.2f\n",
       bb[0], bb[1], bb[2], bb[3], bb[4], bb[5]);
@@ -1329,11 +1297,24 @@ render_small_text(PuglView* view, const char *text, float x, float y, float z,  
 	  0);
       break;
   }
-
   glTranslatef(x * (1000.0*SCALE) , -y * (1000.0*SCALE), z * SCALE);
-  ftglRenderFont(ui->font_small, text, FTGL_RENDER_ALL);
+  ftglRenderFont(font, text, FTGL_RENDER_ALL);
   glPopMatrix();
-  glDisable(GL_BLEND);
+  if (blend) {
+    glDisable(GL_BLEND);
+  }
+}
+
+static void
+render_title(PuglView* view, const char *text, float x, float y, float z, const GLfloat color[4], B3TextAlign align)
+{
+  render_gl_text(view, text, x, y, z / SCALE, color, align, FS_LARGE, 0);
+}
+
+static void
+render_small_text(PuglView* view, const char *text, float x, float y, float z, const GLfloat color[4], B3TextAlign align)
+{
+  render_gl_text(view, text, x, y, z, color, align, FS_SMALL, 1);
 }
 
 static void
@@ -2504,14 +2485,18 @@ onDisplay(PuglView* view)
     initTextures(ui->view);
 #ifndef BUILTINFONT
     ui->font_big = ftglCreateBufferFont(fontfilepath);
+    ui->font_medium = ftglCreateBufferFont(fontfilepath);
     ui->font_small = ftglCreateBufferFont(fontfilepath);
 #else
     ui->font_big = ftglCreateBufferFontMem(VeraBd_ttf, VeraBd_ttf_len);
+    ui->font_medium = ftglCreateBufferFontMem(VeraBd_ttf, VeraBd_ttf_len);
     ui->font_small = ftglCreateBufferFontMem(VeraBd_ttf, VeraBd_ttf_len);
 #endif
 
     ftglSetFontFaceSize(ui->font_big, 36, 72);
     ftglSetFontCharMap(ui->font_big, ft_encoding_unicode);
+    ftglSetFontFaceSize(ui->font_medium, 30, 72);
+    ftglSetFontCharMap(ui->font_medium, ft_encoding_unicode);
     ftglSetFontFaceSize(ui->font_small, 20, 72);
     ftglSetFontCharMap(ui->font_small, ft_encoding_unicode);
   }
@@ -4357,6 +4342,7 @@ cleanup(LV2UI_Handle handle)
 #endif
   free_dirlist(ui);
   ftglDestroyFont(ui->font_big);
+  ftglDestroyFont(ui->font_medium);
   ftglDestroyFont(ui->font_small);
   puglDestroy(ui->view);
   free(ui->vbo);
