@@ -406,6 +406,8 @@ typedef struct {
 
   unsigned int active_keys [5]; // MAX_KEYS/32;
 
+  char lv2nfo [128];
+
 #ifdef XTERNAL_UI
   struct lv2_external_ui_host *extui;
   struct lv2_external_ui xternal_ui;
@@ -2064,6 +2066,10 @@ static const char *lut_lookup_value(b3scalepoint const * const lut, const float 
 static void cfg_parse_config(B3ui * ui, const char *key, const char *value) {
   int relevant = 0;
   int i;
+  if (!strcmp("lv2.info", key)) {
+    strncpy(ui->lv2nfo, value, 128);
+    return;
+  }
   for (i = 0 ; i < MAXCFG ; ++i) {
     if (!ui->cfgvar[i].d) continue;
     if (!strcmp(ui->cfgvar[i].d->name, key)) {
@@ -4522,6 +4528,10 @@ port_event(LV2UI_Handle handle,
       cfg_set_defaults(ui);
       ui->reinit = 0;
       puglPostRedisplay(ui->view);
+    } else if (!strcmp(k, "special.init")) {
+      if (v != 0) {
+	show_message(ui->view, "Signature verificaion failed.");
+      }
     } else {
       processCCevent(ui, k, v);
     }
