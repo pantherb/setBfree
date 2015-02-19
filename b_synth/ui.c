@@ -280,8 +280,10 @@ typedef struct {
 
 typedef enum {
   CF_NUMBER,
+  CF_INTEGER,
   CF_DECIBEL,
   CF_PERCENT,
+  CF_DEGREE,
   CF_LISTLUT
 } B3ConfigFormat;
 
@@ -300,7 +302,8 @@ typedef struct {
 } b3config;
 
 
-#define MAXCFG 96
+#define MAXTAB 5
+#define MAXCFG 120 // 24 * MAXTAB
 
 typedef struct {
   LV2_Atom_Forge forge;
@@ -1861,13 +1864,14 @@ static void cfg_initialize_param(B3ui * ui, const char *cfgkey, int p) {
   ui->cfgvar[p].d = searchDocs (cfgkey);
   assert(ui->cfgvar[p].d);
   assert(ui->cfgvar[p].d->type != CFG_DECIBEL || ui->cfgvar[p].format == CF_DECIBEL);
+  assert(ui->cfgvar[p].d->type != CFG_INT || ui->cfgvar[p].format == CF_INTEGER);
 
   switch(ui->cfgvar[p].d->type) {
     case CFG_DOUBLE:
     case CFG_DECIBEL:
     case CFG_FLOAT:
     case CFG_INT:
-      assert(ui->cfgvar[p].format == CF_DECIBEL || ui->cfgvar[p].format == CF_NUMBER || ui->cfgvar[p].format == CF_PERCENT);
+      assert(ui->cfgvar[p].format == CF_DECIBEL || ui->cfgvar[p].format == CF_NUMBER || ui->cfgvar[p].format == CF_PERCENT || ui->cfgvar[p].format == CF_DEGREE || ui->cfgvar[p].format == CF_INTEGER);
       assert(ui->cfgvar[p].d->dflt);
       ui->cfgvar[p].dflt = atof(ui->cfgvar[p].d->dflt);
       break;
@@ -1927,17 +1931,42 @@ static const b3scalepoint x_filtertype[] = {
   {0, NULL}
 };
 
+static const b3scalepoint x_brakepos[] = {
+  {0,    "free, no brake."},
+  {0.25, "left (90deg)"},
+  {0.50, "back (180deg)"},
+  {0.75, "right (-90deg)"},
+  {1.0,  "front (center)"},
+  {0, NULL}
+};
+static const b3scalepoint x_bypass[] = {
+  {0, "off (effect is active)"},
+  {1, "on (effect is disabled)"},
+  {0, NULL}
+};
 static const b3scalepoint x_zerooff[] = { {0, "off"}, {0, NULL} };
 static const b3scalepoint x_zeronone[] = { {0, "none"}, {0, NULL} };
-static const b3scalepoint x_zerodisabled[] = { {0, "disabled"}, {0, NULL} };
+//static const b3scalepoint x_zerodisabled[] = { {0, "disabled"}, {0, NULL} };
 
 
 static void cfg_initialize(B3ui * ui) {
   memset(ui->cfgvar, 0, sizeof(ui->cfgvar)); // XXX
   int p = 0;
 
-  CFGP("osc.tuning",                  "Tuning",               CF_NUMBER, NULL);
-  CFGP("osc.temperament",             "Temerament.",          CF_LISTLUT, x_temperament); // 'gear60'
+  CFGP("osc.tuning",                  "Tuning",                      CF_NUMBER, NULL);
+  CFGP("osc.temperament",             "Temerament",                  CF_LISTLUT, x_temperament); // 'gear60'
+
+  p+=2;
+  CFGP("midi.transpose",              "Transpose",                   CF_INTEGER, NULL);
+  CFGP("midi.upper.transpose",        "Transp. Upper",               CF_INTEGER, NULL);
+  CFGP("midi.lower.transpose",        "Transp. Lower",               CF_INTEGER, NULL);
+  CFGP("midi.pedals.transpose",       "Transp. Pedal",               CF_INTEGER, NULL);
+
+#if 0 // need further setup work to initialize key-split
+  CFGP("midi.upper.transpose.split",  "Splitpoint for Upper Manual", CF_INTEGER, NULL);
+  CFGP("midi.lower.transpose.split",  "Splitpoint for Lower Manual", CF_INTEGER, NULL);
+  CFGP("midi.pedals.transpose.split", "Splitpoint for Pedals",       CF_INTEGER, NULL);
+#endif
 
   p=48; // tab 2;
 
@@ -1998,20 +2027,29 @@ static void cfg_initialize(B3ui * ui) {
   CFGP("whirl.horn.radius",            "Horn Radius",         CF_NUMBER, NULL);
   CFGP("whirl.drum.radius",            "Drum Radius",         CF_NUMBER, NULL);
 
+  p+=4;
+  CFGP("whirl.horn.breakpos",           "Horn Break",         CF_DEGREE, x_brakepos);
+  CFGP("whirl.drum.breakpos",           "Drum Break",         CF_DEGREE, x_brakepos);
+  p+=2;
+  CFGP("whirl.mic.distance",            "Mic distance",       CF_NUMBER, NULL);
+  p+=2;
+  CFGP("whirl.bypass",                  "Bypass",             CF_INTEGER, x_bypass);
+
+  p=96;
   CFGP("whirl.drum.filter.hz",          "Drum Filter Freq",   CF_NUMBER, NULL);
   CFGP("whirl.drum.filter.gain",        "Drum Filter Gain",   CF_NUMBER, NULL);
   CFGP("whirl.drum.filter.q",           "Drum Filter Q",      CF_NUMBER, NULL);
-  CFGP("whirl.drum.filter.type",        "Type",               CF_NUMBER, x_filtertype);
+  CFGP("whirl.drum.filter.type",        "Type",               CF_INTEGER, x_filtertype);
 
   CFGP("whirl.horn.filter.a.hz",        "Horn Filter 1 Freq", CF_NUMBER, NULL);
   CFGP("whirl.horn.filter.a.gain",      "Horn Filter 1 Gain", CF_NUMBER, NULL);
   CFGP("whirl.horn.filter.a.q",         "Horn Filter 1 Q",    CF_NUMBER, NULL);
-  CFGP("whirl.horn.filter.a.type",      "Type",               CF_NUMBER, x_filtertype);
+  CFGP("whirl.horn.filter.a.type",      "Type",               CF_INTEGER, x_filtertype);
 
   CFGP("whirl.horn.filter.b.hz",        "Horn Filter 2 Freq", CF_NUMBER, NULL);
   CFGP("whirl.horn.filter.b.gain",      "Horn Filter 2 Gain", CF_NUMBER, NULL);
   CFGP("whirl.horn.filter.b.q",         "Horn Filter 2 Q",    CF_NUMBER, NULL);
-  CFGP("whirl.horn.filter.b.type",      "Type",               CF_NUMBER, x_filtertype);
+  CFGP("whirl.horn.filter.b.type",      "Type",               CF_INTEGER, x_filtertype);
   //CFGP("", "", "", .0, .5);
 }
 
@@ -2026,7 +2064,12 @@ static const char *lut_lookup_value(b3scalepoint const * const lut, const float 
   int ii = 0;
   if (!lut) return NULL;
   while (lut[ii].label) {
-    if (val == lut[ii].val) {
+#if 0 // within 0.01%
+    if (rintf(10000.0 * val) == rintf(10000.0 * lut[ii].val))
+#else // exact
+    if (val == lut[ii].val)
+#endif
+    {
       return lut[ii].label;
     }
     ++ii;
@@ -2140,6 +2183,15 @@ static void cfg_update_value(PuglView *view, int ccc, int dir) {
 	  ui->cfgvar[ccc].d->name,
 	  ui->cfgvar[ccc].lut[(int)rint(ui->cfgvar[ccc].cur)].label);
       break;
+    case CF_INTEGER:
+      snprintf(cfgstr, sizeof(cfgstr), "%s=%.0f",
+	  ui->cfgvar[ccc].d->name, ui->cfgvar[ccc].cur);
+      break;
+    case CF_PERCENT:
+    case CF_DEGREE:
+      snprintf(cfgstr, sizeof(cfgstr), "%s=%.4f",
+	  ui->cfgvar[ccc].d->name, ui->cfgvar[ccc].cur);
+      break;
     default:
       snprintf(cfgstr, sizeof(cfgstr), "%s=%.10f",
 	  ui->cfgvar[ccc].d->name, ui->cfgvar[ccc].cur);
@@ -2174,9 +2226,32 @@ render_cfg_button(PuglView* view,
       snprintf(txt, sizeof(txt), "%s: %s", ui->cfgvar[ccc].title,
 	  ui->cfgvar[ccc].lut[(int)rint(ui->cfgvar[ccc].cur)].label);
       break;
+    case CF_INTEGER:
+      if ((lbl = lut_lookup_value(ui->cfgvar[ccc].lut, ui->cfgvar[ccc].cur))) {
+	snprintf(txt, sizeof(txt), "%s: %s",
+	    ui->cfgvar[ccc].title, lbl);
+      } else {
+	snprintf(txt, sizeof(txt), "%s: %.0f %s",
+	    ui->cfgvar[ccc].title, ui->cfgvar[ccc].cur, ui->cfgvar[ccc].d->unit);
+      }
+      break;
     case CF_PERCENT:
-      snprintf(txt, sizeof(txt), "%s: %.1f%s",
-	  ui->cfgvar[ccc].title, 100.f * ui->cfgvar[ccc].cur, ui->cfgvar[ccc].d->unit);
+      if ((lbl = lut_lookup_value(ui->cfgvar[ccc].lut, ui->cfgvar[ccc].cur))) {
+	snprintf(txt, sizeof(txt), "%s: %s",
+	    ui->cfgvar[ccc].title, lbl);
+      } else {
+	snprintf(txt, sizeof(txt), "%s: %.1f%s",
+	    ui->cfgvar[ccc].title, 100.f * ui->cfgvar[ccc].cur, ui->cfgvar[ccc].d->unit);
+      }
+      break;
+    case CF_DEGREE:
+      if ((lbl = lut_lookup_value(ui->cfgvar[ccc].lut, ui->cfgvar[ccc].cur))) {
+	snprintf(txt, sizeof(txt), "%s: %s",
+	    ui->cfgvar[ccc].title, lbl);
+      } else {
+	snprintf(txt, sizeof(txt), "%s: %.1f%s",
+	    ui->cfgvar[ccc].title, 360.f * ui->cfgvar[ccc].cur, ui->cfgvar[ccc].d->unit);
+      }
       break;
     case CF_DECIBEL:
       if ((lbl = lut_lookup_value(ui->cfgvar[ccc].lut, ui->cfgvar[ccc].cur))) {
@@ -2204,10 +2279,11 @@ render_cfg_button(PuglView* view,
 }
 
 static int cfg_tabbar(const float fx) {
-  if      (fx > -.95 && fx < -.55) return 0;
-  else if (fx > -.45 && fx < -.05) return 1;
-  else if (fx >  .05 && fx <  .45) return 2;
-  else if (fx >  .55 && fx <  .95) return 3;
+  if      (fx > -.975 && fx < -.625) return 0;
+  else if (fx > -.575 && fx < -.225) return 1;
+  else if (fx > -.175 && fx <  .175) return 2;
+  else if (fx >  .226 && fx <  .575) return 3;
+  else if (fx >  .625 && fx <  .975) return 4;
   return -1;
 }
 
@@ -2254,23 +2330,26 @@ advanced_config_screen(PuglView* view)
   unity_box(view, -1.f, 1.f, -.8, .8f, mat_bg);
 
   { // active tab
-    float tabx = (-.75 + ui->cfgtab * .5) - .2;
-    unity_box(view, tabx, tabx + .4f, -.96f, -.8f, mat_bg);
+    float tabx = (-.8 + ui->cfgtab * .4) - .175;
+    unity_box(view, tabx, tabx + .35f, -.96f, -.8f, mat_bg);
   }
 
   if (mouseover > 24 && mouseover < 32 && ui->cfgtab + 25 != mouseover) {
-    float tabx = (-.75 + (mouseover - 25) * .5) - .2;
-    unity_box(view, tabx, tabx + .4f, -.96f, -.8f, mat_hv);
+    // hovered tab
+    float tabx = (-.8 + (mouseover - 25) * .4) - .175;
+    unity_box(view, tabx, tabx + .35f, -.96f, -.8f, mat_hv);
   }
 
   render_title(view, "Advanced Config", 19.0, 7.72, 0.1, mat_w, TA_RIGHT_BOTTOM);
 
-  render_title(view, "Tuning",   -.75/SCALE, -7.4, 0.5, mat_w, TA_CENTER_MIDDLE);
-  render_title(view, "Vibrato & Perc.",  -.25/SCALE, -7.4, 0.5, mat_w, TA_CENTER_MIDDLE);
-  render_title(view, "Analog Model", .25/SCALE, -7.4, 0.5, mat_w, TA_CENTER_MIDDLE);
-  render_title(view, "Leslie",    .75/SCALE, -7.4, 0.5, mat_w, TA_CENTER_MIDDLE);
+#define TABTXTCOLOR(x) ((ui->cfgtab == x) ? mat_w : mat_hv)
+  render_title(view, "Tuning",           -.8/SCALE, -7.4, 0.5, TABTXTCOLOR(0), TA_CENTER_MIDDLE);
+  render_title(view, "Vibrato & Perc.",  -.4/SCALE, -7.4, 0.5, TABTXTCOLOR(1), TA_CENTER_MIDDLE);
+  render_title(view, "Analog Model",       0/SCALE, -7.4, 0.5, TABTXTCOLOR(2), TA_CENTER_MIDDLE);
+  render_title(view, "Leslie Config",     .4/SCALE, -7.4, 0.5, TABTXTCOLOR(3), TA_CENTER_MIDDLE);
+  render_title(view, "Leslie Filters",    .8/SCALE, -7.4, 0.5, TABTXTCOLOR(4), TA_CENTER_MIDDLE);
 
-  if (mouseover > 0 && mouseover < 24) {
+  if (mouseover > 0 && mouseover <= 24) {
     const int ccc = ui->cfgtab * 24 + mouseover - 1;
     if (ccc < MAXCFG && ui->cfgvar[ccc].d && ui->cfgvar[ccc].d->desc) {
       render_small_text(view, "Description (see the manual for complete info):", -23.75, 7.5, 0.5, mat_g, TA_LEFT_BOTTOM);
@@ -3400,7 +3479,7 @@ onMotion(PuglView* view, int x, int y)
       ui->mouseover = HOVER_MCANC;
     } else if (fy < -.8) { // TAB bar
       int tab = cfg_tabbar(fx);
-      if (tab >= 0 && tab < 4) {
+      if (tab >= 0 && tab < MAXTAB) {
 	ui->mouseover = 25 + tab;
       }
     } else {
@@ -3614,7 +3693,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 	reset_state(view);
       } else if (fy < -.8) { // TAB bar
 	int tab = cfg_tabbar(fx);
-	if (tab >= 0 && tab < 4) {
+	if (tab >= 0 && tab < MAXTAB) {
 	  if (tab != ui->cfgtab) {
 	    ui->cfgtab = tab;
 	    puglPostRedisplay(view);
