@@ -199,4 +199,4 @@ fi
 export SBFARCH
 export SBFSTACK="$PREFIX"
 export OSXCOMPAT
-./x-osx-bundle.sh
+./x-osx-bundle.sh $@

@@ -257,4 +257,4 @@ if git diff-files --quiet --ignore-submodules -- && git diff-index --cached --qu
 	git pull || true
 fi
 
-./x-win-bundle.sh
+./x-win-bundle.sh $@

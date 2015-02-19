@@ -26,7 +26,7 @@ make \
 	IRPATH="../Resources/ir" \
 	WEAKJACK="${SBFSTACK}/src/weakjack/weak_libjack.c" \
 	FONTFILE=verabd.h \
-	SUBDIRS="b_synth ui" \
+	SUBDIRS="b_synth ui" $@ \
 	|| exit
 
 # zip-up LV2

@@ -37,7 +37,7 @@ make \
 	WEAKJACK="${PREFIX}/src/weakjack/weak_libjack.c" \
 	FONTFILE=verabd.h \
 	STATICBUILD=yes \
-	SUBDIRS="b_synth ui src"
+	SUBDIRS="b_synth ui src" $@
 
 
 ##############################################################################

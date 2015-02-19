@@ -185,4 +185,4 @@ if git diff-files --quiet --ignore-submodules -- && git diff-index --cached --qu
 	git pull || true
 fi
 
-./x-lnx-bundle.sh
+./x-lnx-bundle.sh $@
