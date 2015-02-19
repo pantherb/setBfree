@@ -12,8 +12,8 @@ static const RtkLv2Description _plugin = {
 	, "setBfree DSP Tonewheel Organ" // const char *plugin_human_id
 	, (const struct LV2Port[4])
 	{
-		{ "control", MIDI_IN, nan},
-		{ "notify", MIDI_OUT, nan},
+		{ "midi_in", MIDI_IN, nan},
+		{ "midi_feedback", MIDI_OUT, nan},
 		{ "outL", AUDIO_OUT, nan},
 		{ "outR", AUDIO_OUT, nan},
 	}
