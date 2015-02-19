@@ -2399,6 +2399,108 @@ advanced_config_screen(PuglView* view)
   }
 }
 
+#define SCOORD(X,Y) (X)/SCALE, (Y) * invaspect / SCALE, 0.5
+
+static void helpscreen(PuglView* view)
+{
+  const GLfloat no_mat[] = { 0.0, 0.0, 0.0, 1.0 };
+  const GLfloat mat_w[] = {1.0, 1.0, 1.0, 1.0};
+  const GLfloat mat_r[] = {1.0, 0.0, 0.0, 1.0};
+  const float invaspect = 320. / 960.;
+  float yto, xm0, xm1, xm2;
+
+  render_title(view, "DSP Tonewheel Organ", SCOORD(-.9, -.82), mat_w, TA_LEFT_BOTTOM);
+
+  yto = -.55; xm0 = -.79;
+  render_gl_text(view, "Interaction with the synth is done", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "with the mouse: either via click+drag", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "or for fine-grained control using the", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "scroll-wheel on an element.", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  yto+=.05;
+  render_gl_text(view, "All actions can be triggered as well", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "by using MIDI-CC messages.", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  yto+=.05;
+  render_gl_text(view, "The communication is bidirectional:", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "GUI updates will be sent as feedback", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "to the MIDI output, incoming MIDI-CC", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "message update the GUI.", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  yto+=.05;
+  render_gl_text(view, "In Key-control mode the PC-keyboard", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "can be used to control the elements,", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "overriding the default key-bindings.", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+
+  render_gl_text(view, "http://setbfree.org/", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_SMALL, 0);
+
+  //
+  render_gl_text(view, "Keyboard Shortcuts", SCOORD(.25, -.82), mat_w, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
+
+  yto = -.55; xm0 = .3;
+  render_gl_text(view, "P", SCOORD(xm0, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "Recall MIDI Program:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "<Shift>+P", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "Store MIDI Program:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  yto+=.13;
+  render_gl_text(view, "M", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "Display CC-map:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "<Ctrl>+Btn2", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "(Re) Assign MIDI-CC:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "(hold <Shift> to invert mapped value)", SCOORD(xm0 - .06, yto), mat_w, TA_CENTER_BOTTOM, FS_SMALL, 0); yto+=.10;
+  yto+=.08;
+
+  render_gl_text(view, "~", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "COnfig Editor:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  yto+=.08;
+
+  render_gl_text(view, "<Shift>+L", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "Load .pgm/.cfg:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "<Shift>+C", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "Export .pgm file:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "<Shift>+V", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "Export .pgm file:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  yto+=.08;
+
+  render_gl_text(view, "<Tab>", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "Toggle Key Control:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "?", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "Toggle Help Text:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "(In \"Key-Control\" mode '?' prints keyboard mapping.)", SCOORD(xm0 - .06, yto), mat_w, TA_CENTER_BOTTOM, FS_SMALL, 0);
+
+  //
+  render_gl_text(view, "3D Navigation", SCOORD(.95, -.82), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0);
+
+  yto = -.66; xm0 = .85; xm1 = .9; xm2 = .95;
+  render_gl_text(view, "J", SCOORD(xm1, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0); yto+=.15;
+  render_gl_text(view, "H", SCOORD(xm0, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "L", SCOORD(xm2, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "Move:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0);
+  yto+=.15;
+  render_gl_text(view, "K", SCOORD(xm1, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
+
+  yto+=.25;
+  render_gl_text(view, "Z", SCOORD(xm0, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "C", SCOORD(xm2, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "Turn (Z Axis):", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0);
+
+  yto+=.25;
+
+  render_gl_text(view, "W", SCOORD(xm1, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0); yto+=.15;
+  render_gl_text(view, "A", SCOORD(xm0, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "D", SCOORD(xm2, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "Tilt (X,Y Axis):", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0);
+  yto+=.15;
+  render_gl_text(view, "X", SCOORD(xm1, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
+
+
+  yto+=.22;
+  render_gl_text(view, "+", SCOORD(xm0, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "-", SCOORD(xm2, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "Zoom:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0);
+
+  yto+=.22;
+  render_gl_text(view, "E", SCOORD(xm0, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "S", SCOORD(xm2, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "3D Presets:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0);
+}
 /**
  */
 
@@ -2544,11 +2646,11 @@ onDisplay(PuglView* view)
     glTexCoord2f (1.0, 0.0); glVertex3f( 1, -invaspect, 0);
     glEnd();
     glDisable(GL_TEXTURE_2D);
+    helpscreen(view);
     return;
   } else if (ui->displaymode == 9) {
     const float invaspect = 320. / 960.;
     glLoadIdentity();
-#define SCOORD(X,Y) (X)/SCALE, (Y) * invaspect / SCALE, 0.5
 
     render_title(view, "-- [Computer] Keyboard Control --", SCOORD(0, -.95), mat_w, TA_CENTER_MIDDLE);
     render_small_text(view, "Toggle keyboard-grab with <Tab>. When enabled, organ-controls can be modified with by keypresses. Currently a US-104 keyboard layout is assumed.", SCOORD(0, -.80), mat_w, TA_CENTER_MIDDLE);
