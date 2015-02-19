@@ -15,7 +15,7 @@ Hammond and Don Leslie.
 Quick-start
 -----------
 
- - start jackd [http://jackaudio.org]
+ - start jackd (see http://jackaudio.org, more below)
  - run `setBfreeUI` for the GUI version
  - run `setBfree` for the headless commandline application
  - or load the LV2 plugin "setBfree DSP Tonewheel Organ" in your favorite DAW
@@ -53,8 +53,9 @@ You'll want reliable, low-latency, real-time audio. Therefore you want
 jack-audio-server, on OSX jack comes with a GUI called JACK-pilot. On Windows use the
 Jack Control GUI.
 
-An excellent tutorial to get started with JACK can be found at 
-http://libremusicproduction.com/articles/demystifying-jack-%E2%80%93-beginners-guide-getting-started-jack
+An excellent tutorial to get started with JACK can be found on the
+[libremusicproduction](http://libremusicproduction.com/articles/demystifying-jack-%E2%80%93-beginners-guide-getting-started-jack)
+website.
 
 
 Internal Signal Flow
@@ -121,12 +122,12 @@ Compile
 
 Install the dependencies and simply call `make` followed by `sudo make install`.
 
-*   libjack-dev - **required** - http://jackaudio.org/ - used for audio I/O
-*   libftgl-dev, libglu1-mesa-dev, ttf-bitstream-vera - optional, **recommended** - GUI
-*   lv2-dev - optional, **recommended** - LV2 plugins and GUI
-*   libzita-convolver-dev - optional - IR leslie cabinet-emulation
-*   libsndfile1-dev - optional - needed to load IR samples for zita-convolver
-*   liblo-dev - optional - http://opensoundcontrol.org/ - used only in standalone preamp/overdrive app.
+*   libjack-dev - **required** - [JACK](http://jackaudio.org/) is used for audio and MIDI I/O
+*   libftgl-dev, libglu1-mesa-dev, ttf-bitstream-vera - optional, **recommended** - openGL GUI
+*   lv2-dev - optional, **recommended** - [LV2](http://lv2plug.in/) plugins and GUI
+*   libzita-convolver-dev - optional - [libzita-convolver](http://kokkinizita.linuxaudio.org/linuxaudio/downloads/index.html) is used for cabinet-emulation
+*   libsndfile1-dev - optional - [libsndfile](http://www.mega-nerd.com/libsndfile/) is needed to load IR samples for zita-convolver
+*   liblo-dev - optional - [OSC](http://opensoundcontrol.org/) used only in standalone preamp/overdrive app.
 *   libasound2-dev - optional - ALSA MIDI
 *   help2man - optional - re-create the man pages
 *   doxygen - optional - create source-code annotations
