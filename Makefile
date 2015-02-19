@@ -1,5 +1,4 @@
-VERSION=0.7.5
-export VERSION
+EXPORTED_VERSION=0.7.5
 
 include common.mak
 

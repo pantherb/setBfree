@@ -42,14 +42,14 @@ setBfreeUI$(EXE_EXT): jackwrap.c $(LV2OBJ) \
 	../b_synth/ui.c $(UIDEPS) \
 	../src/cfgParser.h ../src/midi.h
 	$(MAKE) -C ../b_synth $(FONTFILE)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(UICFLAGS) $(JACKCFLAGS) \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(UICFLAGS) $(LIC_CFLAGS) \
 		-pthread \
 		-DXTERNAL_UI -DHAVE_IDLE_IFACE -DJACK_AUTOCONNECT=15 \
 		-DJACK_DESCRIPT=\"desc.h\" \
 		-o setBfreeUI$(EXE_EXT) \
 		$(JACKWRAP) \
 		$(LV2OBJ) ../b_synth/lv2.c ../b_synth/ui.c \
-		$(LDFLAGS) $(UILIBS) $(LOADLIBES) \
+		$(LDFLAGS) $(UILIBS) $(LOADLIBES) $(LIC_LOADLIBES) \
 		-lm
 
 # windows icon

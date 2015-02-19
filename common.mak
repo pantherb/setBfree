@@ -4,6 +4,10 @@ PREFIX ?= /usr/local
 OPTIMIZATIONS ?= -msse -msse2 -mfpmath=sse -ffast-math -fomit-frame-pointer -O3 -fno-finite-math-only
 ENABLE_CONVOLUTION ?= no
 FONTFILE?=/usr/share/fonts/truetype/ttf-bitstream-vera/VeraBd.ttf
+VERSION?=$(shell git describe --tags HEAD | sed 's/-g.*$$//;s/^v//' || true)
+ifeq ($(VERSION),)
+  VERSION=$(EXPORTED_VERSION)
+endif
 
 bindir = $(PREFIX)/bin
 sharedir = $(PREFIX)/share/setBfree

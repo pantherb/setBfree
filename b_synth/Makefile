@@ -45,10 +45,10 @@ ifeq ($(HAVE_UI), yes)
 endif
 
 $(LV2NAME)$(LIB_EXT): lv2.c $(LV2OBJ) uris.h ../src/cfgParser.h ../src/midi.h
-	$(CC) $(CPPFLAGS) $(CFLAGS) \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LIC_CFLAGS) \
 		-o $(LV2NAME)$(LIB_EXT) \
 		lv2.c $(LV2OBJ) \
-	  -shared $(LV2LDFLAGS) $(LDFLAGS) $(LOADLIBES)
+	  -shared $(LV2LDFLAGS) $(LDFLAGS) $(LOADLIBES) $(LIC_LOADLIBES)
 
 $(LV2GUI)$(LIB_EXT): ui.c uris.h $(UIDEPS) $(FONTFILE) $(LV2OBJ)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(UICFLAGS) \
