@@ -2401,9 +2401,8 @@ advanced_config_screen(PuglView* view)
 
 #define SCOORD(X,Y) (X)/SCALE, (Y) * invaspect / SCALE, 0.5
 
-static void helpscreen(PuglView* view)
+static void helpscreentext(PuglView* view)
 {
-  const GLfloat no_mat[] = { 0.0, 0.0, 0.0, 1.0 };
   const GLfloat mat_w[] = {1.0, 1.0, 1.0, 1.0};
   const GLfloat mat_r[] = {1.0, 0.0, 0.0, 1.0};
   const float invaspect = 320. / 960.;
@@ -2411,7 +2410,7 @@ static void helpscreen(PuglView* view)
 
   render_title(view, "DSP Tonewheel Organ", SCOORD(-.9, -.82), mat_w, TA_LEFT_BOTTOM);
 
-  yto = -.55; xm0 = -.79;
+  yto = -.61; xm0 = -.79;
   render_gl_text(view, "Interaction with the synth is done", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
   render_gl_text(view, "with the mouse: either via click+drag", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
   render_gl_text(view, "or for fine-grained control using the", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
@@ -2429,41 +2428,42 @@ static void helpscreen(PuglView* view)
   render_gl_text(view, "can be used to control the elements,", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
   render_gl_text(view, "overriding the default key-bindings.", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
 
+  yto+=.02;
   render_gl_text(view, "http://setbfree.org/", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_SMALL, 0);
 
   //
-  render_gl_text(view, "Keyboard Shortcuts", SCOORD(.25, -.82), mat_w, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "Keyboard Shortcuts", SCOORD(.22, -.82), mat_w, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
 
-  yto = -.55; xm0 = .3;
-  render_gl_text(view, "P", SCOORD(xm0, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
-  render_gl_text(view, "Recall MIDI Program:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
-  render_gl_text(view, "<Shift>+P", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
-  render_gl_text(view, "Store MIDI Program:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  yto = -.61; xm0 = .27;
+  render_gl_text(view, "P", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "Recall MIDI Program:", SCOORD(xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "<Shift>P", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "Store MIDI Program:", SCOORD(xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
   yto+=.13;
   render_gl_text(view, "M", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
-  render_gl_text(view, "Display CC-map:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
-  render_gl_text(view, "<Ctrl>+Btn2", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
-  render_gl_text(view, "(Re) Assign MIDI-CC:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "Display CC-map:", SCOORD(xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "<Ctrl>Btn2", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "(Re) Assign MIDI-CC:", SCOORD(xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
   render_gl_text(view, "(hold <Shift> to invert mapped value)", SCOORD(xm0 - .06, yto), mat_w, TA_CENTER_BOTTOM, FS_SMALL, 0); yto+=.10;
   yto+=.08;
 
   render_gl_text(view, "~", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
-  render_gl_text(view, "COnfig Editor:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "Config Editor:", SCOORD(xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
   yto+=.08;
 
-  render_gl_text(view, "<Shift>+L", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
-  render_gl_text(view, "Load .pgm/.cfg:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
-  render_gl_text(view, "<Shift>+C", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
-  render_gl_text(view, "Export .pgm file:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
-  render_gl_text(view, "<Shift>+V", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
-  render_gl_text(view, "Export .pgm file:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "<Shift>L", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "Load .pgm/.cfg:", SCOORD(xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "<Shift>C", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "Export .pgm file:", SCOORD(xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "<Shift>V", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
+  render_gl_text(view, "Export .pgm file:", SCOORD(xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
   yto+=.08;
 
   render_gl_text(view, "<Tab>", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
-  render_gl_text(view, "Toggle Key Control:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "Toggle Key Control:", SCOORD(xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
   render_gl_text(view, "?", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
-  render_gl_text(view, "Toggle Help Text:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
-  render_gl_text(view, "(In \"Key-Control\" mode '?' prints keyboard mapping.)", SCOORD(xm0 - .06, yto), mat_w, TA_CENTER_BOTTOM, FS_SMALL, 0);
+  render_gl_text(view, "Toggle Help Text:", SCOORD(xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0); yto+=.10;
+  render_gl_text(view, "(In \"Key-Control\" mode '?' show the keyboard map)", SCOORD(xm0 - .06, yto), mat_w, TA_CENTER_BOTTOM, FS_SMALL, 0);
 
   //
   render_gl_text(view, "3D Navigation", SCOORD(.95, -.82), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0);
@@ -2490,8 +2490,7 @@ static void helpscreen(PuglView* view)
   yto+=.15;
   render_gl_text(view, "X", SCOORD(xm1, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
 
-
-  yto+=.22;
+  yto+=.20;
   render_gl_text(view, "+", SCOORD(xm0, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
   render_gl_text(view, "-", SCOORD(xm2, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
   render_gl_text(view, "Zoom:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0);
@@ -2501,6 +2500,72 @@ static void helpscreen(PuglView* view)
   render_gl_text(view, "S", SCOORD(xm2, yto), mat_r, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
   render_gl_text(view, "3D Presets:", SCOORD(xm0 - .03, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0);
 }
+
+static void keybindinghelp(PuglView* view)
+{
+  const float invaspect = 320. / 960.;
+  const GLfloat mat_w[] = {1.0, 1.0, 1.0, 1.0};
+  const GLfloat mat_g[] = { 0.1, 0.1, 0.1, 1.0 };
+  const GLfloat mat_r[] = {1.0, 0.0, 0.0, 1.0};
+  glLoadIdentity();
+
+  render_title(view, "-- [Computer] Keyboard Control --", SCOORD(0, -.95), mat_w, TA_CENTER_MIDDLE);
+  render_small_text(view, "Toggle keyboard-grab with <Tab>. When enabled, organ-controls can be modified with by keypresses. Currently a US-104 keyboard layout is assumed.", SCOORD(0, -.80), mat_w, TA_CENTER_MIDDLE);
+  render_small_text(view, "[click or press '?' to close this help]", .2/ SCALE, .15 * invaspect / SCALE, 0.5, mat_w, TA_CENTER_BOTTOM);
+
+
+  float yto, xm0, xm1;
+
+  yto = -.45; xm0 = 0; xm1 = .4;
+  unity_box(view, xm0-.05, xm1 + .05, yto -.25, yto+.25, mat_g);
+  render_title(view, "Presets", SCOORD((xm0 + xm1)/2, yto-.15), mat_w, TA_CENTER_MIDDLE);
+  render_title(view, "1 - 9", SCOORD((xm0 + xm1)/2, yto + .05), mat_r, TA_CENTER_BOTTOM);
+  render_small_text(view, "(recall progam 1-9)", SCOORD((xm0 + xm1)/2, yto + .15), mat_w, TA_CENTER_BOTTOM);
+
+  yto = -.45; xm0 = -.9; xm1 = -.15;
+  unity_box(view, xm0-.05, xm1 + .05, yto -.25, yto+.7, mat_g);
+  render_title(view, "Drawbars", SCOORD((xm0 + xm1)/2, yto-.15), mat_w, TA_CENTER_MIDDLE);
+  render_small_text(view, "first select which drawbars are affected:", SCOORD((xm0 + xm1)/2, yto), mat_w, TA_CENTER_BOTTOM); yto+=.1;
+  render_title(view, "[  ]  \\ ", SCOORD(xm1, yto), mat_r, TA_RIGHT_BOTTOM);
+  render_small_text(view, "(select: pedal, lower, upper)", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM);
+  yto+=.15;
+  render_small_text(view, "Drawbars are mapped left to right:", SCOORD((xm0 + xm1)/2, yto), mat_w, TA_CENTER_BOTTOM); yto+=.15;
+  render_title(view, "Q W E R T Y U I O", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM);
+  render_small_text(view, "(push drawbar in)", SCOORD(xm1, yto), mat_w, TA_RIGHT_BOTTOM); yto+=.2;
+  render_title(view, "A S D F G H J K L", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM);
+  render_small_text(view, "(pull drawbar out)", SCOORD(xm1, yto), mat_w, TA_RIGHT_BOTTOM);
+
+  yto = -.45; xm0 = .55; xm1 = .9;
+  unity_box(view, xm0-.05, xm1 + .05, yto -.25, yto+.7, mat_g);
+  render_title(view, "Dials", SCOORD((xm0 + xm1)/2, yto-.15), mat_w, TA_CENTER_MIDDLE);
+  render_title(view, "- =", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM);
+  render_small_text(view, "(Volume)", SCOORD(xm1,  yto), mat_w, TA_RIGHT_BOTTOM); yto+=.2;
+  render_title(view, "; '", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM);
+  render_small_text(view, "(Reverb)", SCOORD(xm1,  yto), mat_w, TA_RIGHT_BOTTOM); yto+=.2;
+  render_title(view, "< >", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM);
+  render_small_text(view, "(Overdrive)", SCOORD(xm1, yto), mat_w, TA_RIGHT_BOTTOM); yto+=.2;
+  render_title(view, ", .", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM);
+  render_small_text(view, "(Vibrator/Chorus)", SCOORD(xm1, yto), mat_w, TA_RIGHT_BOTTOM);
+
+  yto = .625; xm0 = -.9; xm1 = -.15;
+  unity_box(view, xm0-.05, xm1 + .05, yto -.25, yto+.35, mat_g);
+  render_title(view, "Switches", SCOORD((xm0 + xm1)/2, yto-.15), mat_w, TA_CENTER_MIDDLE);
+  render_small_text(view, "Switches are mapped left-to right as seen on the organ", SCOORD((xm0 + xm1)/2, yto), mat_w, TA_CENTER_BOTTOM); yto+=.075;
+  render_small_text(view, "to the lower row of the keyboard Z-M:", SCOORD((xm0 + xm1)/2, yto), mat_w, TA_CENTER_BOTTOM); yto+=.175;
+  render_title(view, "Z X C V B N M", SCOORD(xm0, yto), mat_r, TA_LEFT_BOTTOM);
+  render_small_text(view, "(overdrive, 2 x vibratos, 4 x percussion)", SCOORD(xm1,  yto), mat_w, TA_RIGHT_BOTTOM);
+
+  yto = .775; xm0 = 0; xm1 = .9;
+  unity_box(view, xm0-.05, xm1 + .05, yto -.25, yto+.20, mat_g);
+  render_title(view, "Leslie", SCOORD((xm0 + xm1)/2, yto-.15), mat_w, TA_CENTER_MIDDLE);
+
+  render_title(view, "<Space>", SCOORD(xm0 + (xm1-xm0)/4, yto), mat_r, TA_CENTER_BOTTOM);
+  render_title(view, "<Shift>+<Space>", SCOORD(xm0 + (xm1-xm0)*3/4, yto), mat_r, TA_CENTER_BOTTOM);
+  yto+=.10;
+  render_small_text(view, "(linked horn + baffle; iterate 3 states)", SCOORD(xm0 + (xm1-xm0)/4, yto), mat_w, TA_CENTER_BOTTOM);// yto+=.2;
+  render_small_text(view, "(iterate over all 9 states)", SCOORD(xm0 + (xm1-xm0)*3/4, yto), mat_w, TA_CENTER_BOTTOM);
+}
+
 /**
  */
 
@@ -2646,70 +2711,10 @@ onDisplay(PuglView* view)
     glTexCoord2f (1.0, 0.0); glVertex3f( 1, -invaspect, 0);
     glEnd();
     glDisable(GL_TEXTURE_2D);
-    helpscreen(view);
+    helpscreentext(view);
     return;
   } else if (ui->displaymode == 9) {
-    const float invaspect = 320. / 960.;
-    glLoadIdentity();
-
-    render_title(view, "-- [Computer] Keyboard Control --", SCOORD(0, -.95), mat_w, TA_CENTER_MIDDLE);
-    render_small_text(view, "Toggle keyboard-grab with <Tab>. When enabled, organ-controls can be modified with by keypresses. Currently a US-104 keyboard layout is assumed.", SCOORD(0, -.80), mat_w, TA_CENTER_MIDDLE);
-    render_small_text(view, "[click or press '?' to close this help]", .2/ SCALE, .15 * invaspect / SCALE, 0.5, mat_w, TA_CENTER_BOTTOM);
-
-
-    float yto, xm0, xm1;
-
-    yto = -.45; xm0 = 0; xm1 = .4;
-    unity_box(view, xm0-.05, xm1 + .05, yto -.25, yto+.25, mat_dial);
-    render_title(view, "Presets", SCOORD((xm0 + xm1)/2, yto-.15), mat_w, TA_CENTER_MIDDLE);
-    render_title(view, "1 - 9", SCOORD((xm0 + xm1)/2, yto + .05), glow_red, TA_CENTER_BOTTOM);
-    render_small_text(view, "(recall progam 1-9)", SCOORD((xm0 + xm1)/2, yto + .15), mat_w, TA_CENTER_BOTTOM);
-
-    yto = -.45; xm0 = -.9; xm1 = -.15;
-    unity_box(view, xm0-.05, xm1 + .05, yto -.25, yto+.7, mat_dial);
-    render_title(view, "Drawbars", SCOORD((xm0 + xm1)/2, yto-.15), mat_w, TA_CENTER_MIDDLE);
-    render_small_text(view, "first select which drawbars are affected:", SCOORD((xm0 + xm1)/2, yto), mat_w, TA_CENTER_BOTTOM); yto+=.1;
-    render_title(view, "[  ]  \\ ", SCOORD(xm1, yto), glow_red, TA_RIGHT_BOTTOM);
-    render_small_text(view, "(select: pedal, lower, upper)", SCOORD(xm0, yto), mat_w, TA_LEFT_BOTTOM);
-    yto+=.15;
-    render_small_text(view, "Drawbars are mapped left to right:", SCOORD((xm0 + xm1)/2, yto), mat_w, TA_CENTER_BOTTOM); yto+=.15;
-    render_title(view, "Q W E R T Y U I O", SCOORD(xm0, yto), glow_red, TA_LEFT_BOTTOM);
-    render_small_text(view, "(push drawbar in)", SCOORD(xm1, yto), mat_w, TA_RIGHT_BOTTOM); yto+=.2;
-    render_title(view, "A S D F G H J K L", SCOORD(xm0, yto), glow_red, TA_LEFT_BOTTOM);
-    render_small_text(view, "(pull drawbar out)", SCOORD(xm1, yto), mat_w, TA_RIGHT_BOTTOM);
-
-    yto = -.45; xm0 = .55; xm1 = .9;
-    unity_box(view, xm0-.05, xm1 + .05, yto -.25, yto+.7, mat_dial);
-    render_title(view, "Dials", SCOORD((xm0 + xm1)/2, yto-.15), mat_w, TA_CENTER_MIDDLE);
-    render_title(view, "- =", SCOORD(xm0, yto), glow_red, TA_LEFT_BOTTOM);
-    render_small_text(view, "(Volume)", SCOORD(xm1,  yto), mat_w, TA_RIGHT_BOTTOM); yto+=.2;
-    render_title(view, "; '", SCOORD(xm0, yto), glow_red, TA_LEFT_BOTTOM);
-    render_small_text(view, "(Reverb)", SCOORD(xm1,  yto), mat_w, TA_RIGHT_BOTTOM); yto+=.2;
-    render_title(view, "< >", SCOORD(xm0, yto), glow_red, TA_LEFT_BOTTOM);
-    render_small_text(view, "(Overdrive)", SCOORD(xm1, yto), mat_w, TA_RIGHT_BOTTOM); yto+=.2;
-    render_title(view, ", .", SCOORD(xm0, yto), glow_red, TA_LEFT_BOTTOM);
-    render_small_text(view, "(Vibrator/Chorus)", SCOORD(xm1, yto), mat_w, TA_RIGHT_BOTTOM);
-
-    yto = .625; xm0 = -.9; xm1 = -.15;
-    unity_box(view, xm0-.05, xm1 + .05, yto -.25, yto+.35, mat_dial);
-    render_title(view, "Switches", SCOORD((xm0 + xm1)/2, yto-.15), mat_w, TA_CENTER_MIDDLE);
-    render_small_text(view, "Switches are mapped left-to right as seen on the organ", SCOORD((xm0 + xm1)/2, yto), mat_w, TA_CENTER_BOTTOM); yto+=.075;
-    render_small_text(view, "to the lower row of the keyboard Z-M:", SCOORD((xm0 + xm1)/2, yto), mat_w, TA_CENTER_BOTTOM); yto+=.175;
-    render_title(view, "Z X C V B N M", SCOORD(xm0, yto), glow_red, TA_LEFT_BOTTOM);
-    render_small_text(view, "(overdrive, 2 x vibratos, 4 x percussion)", SCOORD(xm1,  yto), mat_w, TA_RIGHT_BOTTOM);
-
-    yto = .775; xm0 = 0; xm1 = .9;
-    unity_box(view, xm0-.05, xm1 + .05, yto -.25, yto+.20, mat_dial);
-    render_title(view, "Leslie", SCOORD((xm0 + xm1)/2, yto-.15), mat_w, TA_CENTER_MIDDLE);
-
-    render_title(view, "<Space>", SCOORD(xm0 + (xm1-xm0)/4, yto), glow_red, TA_CENTER_BOTTOM);
-    render_title(view, "<Shift>+<Space>", SCOORD(xm0 + (xm1-xm0)*3/4, yto), glow_red, TA_CENTER_BOTTOM);
-    yto+=.10;
-    render_small_text(view, "(linked horn + baffle; iterate 3 states)", SCOORD(xm0 + (xm1-xm0)/4, yto), mat_w, TA_CENTER_BOTTOM);// yto+=.2;
-    render_small_text(view, "(iterate over all 9 states)", SCOORD(xm0 + (xm1-xm0)*3/4, yto), mat_w, TA_CENTER_BOTTOM);
-
-
-
+    keybindinghelp(view);
     return;
   } else if (ui->displaymode == 2 || ui->displaymode == 3) {
     /* midi program list */
