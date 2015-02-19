@@ -15,11 +15,10 @@ Hammond and Don Leslie.
 Quick-start
 -----------
 
- - start jackd [http://jackaudio.org] or configure JACK autostart
- - run `setBfreeUI`
- - connect JACK Audio/MIDI ports (using qjackctl or you favorite JACK
-   connection manager -- note: enable JACK-MIDI or use `a2jmidid` to expose
-	 MIDI-devices to JACK, alternatively run `setBfree midi.driver=alsa`)
+ - start jackd [http://jackaudio.org]
+ - run `setBfreeUI` for the GUI version
+ - run `setBfree` for the headless commandline application
+ - or load the LV2 plugin "setBfree DSP Tonewheel Organ" in your favorite DAW
 
 Usage
 -----
@@ -32,6 +31,8 @@ or ALSA-sequencer) and outputs audio to JACK. The engine does not have any
 graphical user interface (GUI). It is usually started from the commandline.
 
 The GUI `setBfreeUI` is a standalone application that wraps the LV2 plugin.
+It provides both visual feedback about the current synth state as well as allows
+to reconfigure and control numerous aspects of the organ.
 
 The organ itself, as well as broken out parts (leslie, reverv, overdrive) are
 available as LV2 plugins.
@@ -49,21 +50,11 @@ Getting started - standalone app
 
 You'll want reliable, low-latency, real-time audio. Therefore you want
 [JACK](http://jackaudio.org/). On GNU/Linux we recommend `qjackctl` to start the
-jack-audio-server, on OSX jack comes with a GUI called JACK-pilot.
+jack-audio-server, on OSX jack comes with a GUI called JACK-pilot. On Windows use the
+Jack Control GUI.
 
-To be continued..
-
-*   http://qjackctl.sf.net/
-*   http://jackaudio.org/faq
-*   aim for low-latency (256 frames/period or less) - except if you are church
-		organist, whom we believe are awesome latency-compensation organic systems
-*   http://home.gna.org/a2jmidid/
-
-
-Getting started - LV2 plugins
------------------------------
-
-To be continued..
+An excellent tutorial to get started with JACK can be found at 
+http://libremusicproduction.com/articles/demystifying-jack-%E2%80%93-beginners-guide-getting-started-jack
 
 
 Internal Signal Flow
@@ -118,6 +109,9 @@ Summary of Changes since Beatrix
 *   synth engine: variable sample-rate, floating point (beatrix is 22050 Hz, 16bit only)
 *   broken-out effects as LV2 plugins; LV2 wrapper around synth-engine
 *   built-in documentation
+*   Graphical User Interface, with MIDI-feedback and dynamically bound MIDI-CC
+*   state save/restore
+*   numerous bug fixes
 
 see the ChangeLog and git log for details.
 
@@ -128,24 +122,24 @@ Compile
 Install the dependencies and simply call `make` followed by `sudo make install`.
 
 *   libjack-dev - **required** - http://jackaudio.org/ - used for audio I/O
-*   tcl-dev, tk-dev - optional, recommended - http://tcl.sf.net/ - virtual Keyboard GUI
-*   libasound2-dev - optional, recommended - ALSA MIDI
-*   lv2-dev - optional, recommended - build effects as LV2 plugins
-*   libftgl-dev, libglu1-mesa-dev, ttf-bitstream-vera - optional, recommended for the LV2 GUI
+*   libftgl-dev, libglu1-mesa-dev, ttf-bitstream-vera - optional, **recommended** - GUI
+*   lv2-dev - optional, **recommended** - LV2 plugins and GUI
 *   libzita-convolver-dev - optional - IR leslie cabinet-emulation
 *   libsndfile1-dev - optional - needed to load IR samples for zita-convolver
 *   liblo-dev - optional - http://opensoundcontrol.org/ - used only in standalone preamp/overdrive app.
+*   libasound2-dev - optional - ALSA MIDI
 *   help2man - optional - re-create the man pages
 *   doxygen - optional - create source-code annotations
 
 
-If zita-convolver and libsndfile1-dev are available you can use
+If zita-convolver and libsndfile1-dev are available one can use
 
 	make clean
 	make ENABLE_CONVOLUTION=yes
 
-to enable experimental built-in convolution reverb used for leslie cabinet
-simulation (at some point down the road this will be enabled the default).
+to enable additional leslie cabinet simulation.
+This is an additional optional post-processing step and not related to the 
+leslie doppler and built-in angular-dependent leslie speaker emulation.
 
 
 The Makefile understands PREFIX and DESTDIR variables:
@@ -158,13 +152,6 @@ The Makefile understands PREFIX and DESTDIR variables:
 CFLAGS should be specified by overriding the OPTIMIZATIONS variable.
 The packaging also includes a desktop-file to launch setBfree from the
 application-menu which is not included in the release.
-
-**Mac/OSX**: The same instructions apply. Tcl/Tk is included with OSX. The JackOSX
-packages available from jackaudio.org provide neccesary header and development
-files. The setBfree git-repository includes a script to build universal binary
-and create a DMG.  However this script assumes that universal (PPC, i386,
-x86-64) versions of the JACK-libraries as well as zita-convolver and libsndfile
-are available in /usr/local/ on the build-host.
 
 Thanks
 ------
