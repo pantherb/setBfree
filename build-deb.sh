@@ -7,7 +7,7 @@ rm -rf ${TMPDIR}
 
 GITBRANCH=${GITBRANCH:-master}
 
-echo "debian -export-ignore" >> .git/info/attributes
+echo "/debian -export-ignore" >> .git/info/attributes
 
 git-buildpackage \
 	--git-upstream-branch=$GITBRANCH --git-debian-branch=$GITBRANCH \

@@ -1,10 +1,12 @@
 .gitignore export-ignore
 .gitattributes export-ignore
-debian export-ignore
-*.xcf export-ignore
-*.blend export-ignore
 
 /examples export-ignore
+
+# large files used to originally generate textures
+/doc/lv2images export-ignore
+
+# custom build scripts
 /build-deb.sh export-ignore
 /release.sh export-ignore
 /x-lnx-buildstack.sh export-ignore
@@ -13,3 +15,12 @@ debian export-ignore
 /x-osx-bundle.sh export-ignore
 /x-win-buildstack.sh export-ignore
 /x-win-bundle.sh export-ignore
+
+# OSX + win bundle related files
+/doc/dmgbg.png export-ignore
+/doc/setBfree.icns export-ignore
+/doc/osx_readme.txt export-ignore
+/doc/setbfree.ico export-ignore
+
+# custom debian packaging, superseded by debian.org
+/debian export-ignore
