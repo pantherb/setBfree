@@ -1,6 +1,6 @@
 /* x42 jack wrapper / minimal LV2 host
  *
- * Copyright (C) 2012-2014 Robin Gareus
+ * Copyright (C) 2012-2015 Robin Gareus
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
