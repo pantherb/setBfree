@@ -2201,6 +2201,7 @@ render_cfg_button(PuglView* view,
   const GLfloat mat_tri[] = {0.1, 0.1, 0.1, 1.0};
   const GLfloat mat_act[] = {0.9, 0.9, 0.9, 1.0};
   const GLfloat mat_w[] = {1.0, 1.0, 1.0, 1.0};
+  const GLfloat mat_b[] = {0.0, 0.0, 0.0, 1.0};
   const float invaspect = 320. / 960.;
 
   unity_button(view, x0, x1, y0, y1, hover_btn);
@@ -2264,7 +2265,7 @@ render_cfg_button(PuglView* view,
 
   render_small_text(view, txt,
       (x1 + x0) / 2.0 / SCALE, invaspect * (y1 + y0) / 2.0 / SCALE,
-      0.5, mat_w, TA_CENTER_MIDDLE);
+      0.5, hover_btn ? mat_b : mat_w, TA_CENTER_MIDDLE);
 }
 
 static int cfg_tabbar(const float fx) {
@@ -2309,6 +2310,7 @@ advanced_config_screen(PuglView* view)
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   const GLfloat mat_w[] = {1.0, 1.0, 1.0, 1.0};
+  const GLfloat mat_b[] = {0.0, 0.0, 0.0, 1.0};
   const GLfloat mat_g[] = {0.6, 0.6, 0.6, 1.0};
   const GLfloat mat_tb[] = { 0.2, 0.2, 0.2, 1.0 };
   const GLfloat mat_bg[] = { 0.1, 0.1, 0.1, 1.0 };
@@ -2348,7 +2350,7 @@ advanced_config_screen(PuglView* view)
 
   if (ui->cfgtab == 0) {
     // first tab 'special'
-    float yto = -.05 / SCALE;
+    float yto = -.02 / SCALE;
     render_small_text(view,
 	"setBfree is a 'Tonewheel Organ Construction Kit' with over 1000 configurable parameters.",
 	0, yto, 0.5, mat_w, TA_CENTER_BOTTOM); yto+=.75;
@@ -2394,14 +2396,14 @@ advanced_config_screen(PuglView* view)
     unity_button(view, x0, x0+.4, y0, y0+ .15, mouseover == 22);
     render_small_text(view, "Factory Reset",
 	(x0 +.2) / SCALE, invaspect * (y0 + .075) / SCALE,
-	0.5, mat_w, TA_CENTER_MIDDLE);
+	0.5,  mouseover == 22 ? mat_b : mat_w, TA_CENTER_MIDDLE);
 
     x0 = -.95 + .5 * 2;
     y0 = -.70 + .25 * 5;
     unity_button(view, x0, x0+.4, y0, y0+ .15, mouseover == 23);
     render_small_text(view, "Reset, keep MIDI & Program",
 	(x0 +.2) / SCALE, invaspect * (y0 + .075) / SCALE,
-	0.5, mat_w, TA_CENTER_MIDDLE);
+	0.5,  mouseover == 23 ? mat_b : mat_w, TA_CENTER_MIDDLE);
   }
 }
 
