@@ -1,6 +1,5 @@
 EXPORTED_VERSION=0.7.5
-
-include common.mak
+export EXPORTED_VERSION
 
 ifneq ($(FONTFILE),)
 export FONTFILE

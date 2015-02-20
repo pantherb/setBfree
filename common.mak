@@ -8,6 +8,11 @@ VERSION?=$(shell git describe --tags HEAD | sed 's/-g.*$$//;s/^v//' || true)
 ifeq ($(VERSION),)
   VERSION=$(EXPORTED_VERSION)
 endif
+ifeq ($(VERSION),)
+  $(warning "Cannot determine version information.")
+  $(warning "Use the top-level makefile (or full git clone).")
+  $(error "-^-")
+endif
 
 bindir = $(PREFIX)/bin
 sharedir = $(PREFIX)/share/setBfree
