@@ -36,6 +36,7 @@
 
 #include "main.h"
 #include "global_inst.h"
+#include "pgmParser.h"
 
 #ifdef HAVE_ZITACONVOLVE
 #include "convolution.h"
@@ -136,6 +137,9 @@ void parseConfigurationLine (void *inst, const char * fname, int lineNumber, cha
 
     if (strcasecmp (name, "config.read") == 0) {
       parseConfigurationFile (inst, value);
+    }
+    else if (strcasecmp (name, "program.read") == 0) {
+      loadProgrammeFile (((b_instance*)inst)->progs, value);
     }
     else {
       ConfigContext cfg;
