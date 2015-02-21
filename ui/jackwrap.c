@@ -1,6 +1,6 @@
 /* x42 jack wrapper / minimal LV2 host
  *
- * Copyright (C) 2012-2015 Robin Gareus
+ * Copyright (C) 2012-2014 Robin Gareus
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -109,17 +109,17 @@ extern void rtk_osx_api_err(const char *msg);
 
 #define nan NAN
 
-const LV2_Descriptor* plugin_dsp;
-const LV2UI_Descriptor *plugin_gui;
+static const LV2_Descriptor* plugin_dsp;
+static const LV2UI_Descriptor *plugin_gui;
 
-LV2_Handle plugin_instance = NULL;
-LV2UI_Handle gui_instance = NULL;
+static LV2_Handle plugin_instance = NULL;
+static LV2UI_Handle gui_instance = NULL;
 
-float  *plugin_ports_pre  = NULL;
-float  *plugin_ports_post = NULL;
+static float  *plugin_ports_pre  = NULL;
+static float  *plugin_ports_post = NULL;
 
-LV2_Atom_Sequence *atom_in = NULL;
-LV2_Atom_Sequence *atom_out = NULL;
+static LV2_Atom_Sequence *atom_in = NULL;
+static LV2_Atom_Sequence *atom_out = NULL;
 
 static jack_port_t **input_port = NULL;
 static jack_port_t **output_port = NULL;
@@ -144,21 +144,21 @@ static jack_ringbuffer_t *rb_atom_from_ui = NULL;
 static pthread_mutex_t gui_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t  data_ready = PTHREAD_COND_INITIALIZER;
 
-uint32_t uri_midi_MidiEvent = 0;
-uint32_t uri_atom_Sequence = 0;
-uint32_t uri_atom_EventTransfer = 0;
+static uint32_t uri_midi_MidiEvent = 0;
+static uint32_t uri_atom_Sequence = 0;
+static uint32_t uri_atom_EventTransfer = 0;
 
-uint32_t uri_time_Position = 0;
-uint32_t uri_time_frame    = 0;
-uint32_t uri_time_speed    = 0;
-uint32_t uri_time_bar     = 0;
-uint32_t uri_time_barBeat = 0;
-uint32_t uri_time_beatUnit = 0;
-uint32_t uri_time_beatsPerBar = 0;
-uint32_t uri_time_beatsPerMinute = 0;
+static uint32_t uri_time_Position = 0;
+static uint32_t uri_time_frame    = 0;
+static uint32_t uri_time_speed    = 0;
+static uint32_t uri_time_bar     = 0;
+static uint32_t uri_time_barBeat = 0;
+static uint32_t uri_time_beatUnit = 0;
+static uint32_t uri_time_beatsPerBar = 0;
+static uint32_t uri_time_beatsPerMinute = 0;
 
-char **urimap = NULL;
-uint32_t urimap_len = 0;
+static char **urimap = NULL;
+static uint32_t urimap_len = 0;
 
 enum PortType {
 	CONTROL_IN = 0,
@@ -211,7 +211,7 @@ typedef struct _RtkLv2Description {
 	const bool     send_time_info;
 } RtkLv2Description;
 
-RtkLv2Description const *inst;
+static RtkLv2Description const *inst;
 
 /* a simple state machine for this client */
 static volatile enum {
@@ -219,18 +219,18 @@ static volatile enum {
 	Exit
 } client_state = Run;
 
-struct lv2_external_ui_host extui_host;
-struct lv2_external_ui *extui = NULL;
+static struct lv2_external_ui_host extui_host;
+static struct lv2_external_ui *extui = NULL;
 
-LV2UI_Controller controller = NULL;
+static LV2UI_Controller controller = NULL;
 
-LV2_Atom_Forge lv2_forge;
-uint32_t *portmap_a_in;
-uint32_t *portmap_a_out;
-uint32_t *portmap_rctl;
-int      *portmap_ctrl;
-uint32_t  portmap_atom_to_ui = -1;
-uint32_t  portmap_atom_from_ui = -1;
+static LV2_Atom_Forge lv2_forge;
+static uint32_t *portmap_a_in;
+static uint32_t *portmap_a_out;
+static uint32_t *portmap_rctl;
+static int      *portmap_ctrl;
+static uint32_t  portmap_atom_to_ui = -1;
+static uint32_t  portmap_atom_from_ui = -1;
 
 static uint32_t uri_to_id(LV2_URI_Map_Callback_Data callback_data, const char* uri);
 
@@ -242,9 +242,9 @@ static pthread_mutex_t       worker_lock = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t        worker_ready = PTHREAD_COND_INITIALIZER;
 static LV2_Worker_Interface* worker_iface = NULL;
 
-struct DelayBuffer **delayline = NULL;
-uint32_t worst_capture_latency = 0;
-uint32_t plugin_latency = 0;
+static struct DelayBuffer **delayline = NULL;
+static uint32_t worst_capture_latency = 0;
+static uint32_t plugin_latency = 0;
 
 /******************************************************************************
  * Delayline for latency compensation
@@ -326,7 +326,7 @@ delay_port (struct DelayBuffer *dly, uint32_t n_samples, float *in)
  * JACK
  */
 
-int process (jack_nframes_t nframes, void *arg) {
+static int process (jack_nframes_t nframes, void *arg) {
 	while (jack_ringbuffer_read_space(rb_ctrl_from_ui) >= sizeof(uint32_t) + sizeof(float)) {
 		uint32_t idx;
 		jack_ringbuffer_read(rb_ctrl_from_ui, (char*) &idx, sizeof(uint32_t));
@@ -536,13 +536,13 @@ int process (jack_nframes_t nframes, void *arg) {
 }
 
 
-void jack_shutdown (void *arg) {
+static void jack_shutdown (void *arg) {
 	fprintf(stderr,"recv. shutdown request from jackd.\n");
 	client_state=Exit;
 	pthread_cond_signal (&data_ready);
 }
 
-int jack_graph_order_cb (void *arg) {
+static int jack_graph_order_cb (void *arg) {
 	worst_capture_latency = 0;
 	for (uint32_t i = 0; i < inst->nports_audio_in; i++) {
 		jack_port_get_latency_range(input_port[i], JackCaptureLatency, &(delayline[i]->port_latency));
@@ -553,7 +553,7 @@ int jack_graph_order_cb (void *arg) {
 	return 0;
 }
 
-void jack_latency_cb (jack_latency_callback_mode_t mode, void *arg) {
+static void jack_latency_cb (jack_latency_callback_mode_t mode, void *arg) {
 	// assume 1 -> 1 map
 	// TODO add systemic latency of plugin (currently no robtk plugins add latency)
 	jack_graph_order_cb(NULL); // update worst-case latency, delayline alignment
@@ -727,7 +727,7 @@ static void free_uri_map() {
 	free(urimap);
 }
 
-void write_function(
+static void write_function(
 		LV2UI_Controller controller,
 		uint32_t         port_index,
 		uint32_t         buffer_size,
@@ -805,7 +805,7 @@ static void worker_init() {
 	pthread_create(&worker_thread, NULL, worker_func, NULL);
 }
 
-LV2_Worker_Status
+static LV2_Worker_Status
 lv2_worker_schedule(LV2_Worker_Schedule_Handle unused,
                     uint32_t                   size,
                     const void*                data)
