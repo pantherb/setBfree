@@ -38,8 +38,8 @@ cp -v b_synth/*.ttl ${LV2TMPDIR}/b_synth.lv2/
 cp -v b_synth/*.dylib ${LV2TMPDIR}/b_synth.lv2/
 otool -L -arch all ${LV2TMPDIR}/b_synth.lv2/*dylib
 cd ${LV2TMPDIR}
-rm -f  setbfree_lv2_osx-${VERSION}.zip
-zip -r ${OUTDIR}setbfree_lv2_osx-${VERSION}.zip b_synth.lv2/
+rm -f  setbfree-lv2-osx-${VERSION}.zip
+zip -r ${OUTDIR}setbfree-lv2-osx-${VERSION}.zip b_synth.lv2/
 cd -
 
 # local deploy for testing
