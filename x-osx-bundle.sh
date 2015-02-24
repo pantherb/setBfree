@@ -100,6 +100,13 @@ cat > ${TARGET_CONTENTS}Info.plist << EOF
 </plist>
 EOF
 
+if test -n "$LV2INSTALLER"; then
+	$LV2INSTALLER
+	DMGPOS="set position of item \"b_synth.lv2\" of container window to {205, 260}
+	   set position of item "LV2Installer.app" of container window to {100, 260}"
+else
+	DMGPOS="set position of item \"b_synth.lv2\" of container window to {100, 260}"
+fi
 
 ##############################################################################
 #roll a DMG
@@ -164,7 +171,7 @@ echo '
 	   make new alias file at container window to POSIX file "/Applications" with properties {name:"Applications"}
 	   set position of item "'${APPNAME}'" of container window to {100, 100}
 	   set position of item "Applications" of container window to {310, 100}
-	   set position of item "b_synth.lv2" of container window to {100, 260}
+	   ${DMGPOS}
 	   set position of item "README.txt" of container window to {310, 260}
 	   close
 	   open
