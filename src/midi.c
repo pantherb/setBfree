@@ -1006,9 +1006,9 @@ int midiConfig (void *mcfg, ConfigContext * cfg) {
 					 -127, 127)) == 1) {
     m->nshA_U = v;
   }
-  else if (strncasecmp (cfg->name, "midi.controller.reset", 21) == 0) {
+  else if (strncasecmp (cfg->name, "midi.controller.reset", 21) == 0 && cfg->value && strlen(cfg->value) > 0) {
     ack++;
-    if (atoi(cfg->name+21)) {
+    if (atoi(cfg->value)) {
       clearControllerMapping(m);
     }
   }
