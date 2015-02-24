@@ -39,7 +39,7 @@ cp -v b_synth/*.dylib ${LV2TMPDIR}/b_synth.lv2/
 otool -L -arch all ${LV2TMPDIR}/b_synth.lv2/*dylib
 cd ${LV2TMPDIR}
 rm -f  setbfree_lv2_osx-${VERSION}.zip
-zip -r setbfree_lv2_osx-${VERSION}.zip b_synth.lv2/
+zip -r ${OUTDIR}setbfree_lv2_osx-${VERSION}.zip b_synth.lv2/
 cd -
 
 # local deploy for testing
@@ -171,7 +171,7 @@ echo '
 	   make new alias file at container window to POSIX file "/Applications" with properties {name:"Applications"}
 	   set position of item "'${APPNAME}'" of container window to {100, 100}
 	   set position of item "Applications" of container window to {310, 100}
-	   ${DMGPOS}
+	   '${DMGPOS}'
 	   set position of item "README.txt" of container window to {310, 260}
 	   close
 	   open
