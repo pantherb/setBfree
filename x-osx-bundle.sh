@@ -38,19 +38,6 @@ cp -v b_synth/*.ttl ${LV2TMPDIR}/b_synth.lv2/
 cp -v b_synth/*.dylib ${LV2TMPDIR}/b_synth.lv2/
 otool -L -arch all ${LV2TMPDIR}/b_synth.lv2/*dylib
 
-if test -n "$ZIPUP" ; then # build a standalone lv2 zip
-	cd ${LV2TMPDIR}
-	rm -f  ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip
-	zip -r ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip b_synth.lv2/
-	ls -l ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip
-	cd -
-fi
-
-# local deploy for testing
-if test -d ~/.lv2/b_synth.lv2/; then
-rsync -Pa ${LV2TMPDIR}/b_synth.lv2/ ~/.lv2/b_synth.lv2/
-fi
-
 #############################################################################
 # Create LOCAL APP DIR
 export PRODUCT_NAME="setBfree"
@@ -67,6 +54,14 @@ mkdir ${TARGET_BUILD_DIR}
 mkdir ${TARGET_BUILD_DIR}Contents
 mkdir ${TARGET_BUILD_DIR}Contents/MacOS
 mkdir ${TARGET_BUILD_DIR}Contents/Resources
+
+if test -n "$ZIPUP" ; then # build a standalone lv2 zip
+	cd ${LV2TMPDIR}
+	rm -f  ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip
+	zip -r ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip b_synth.lv2/
+	ls -l ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip
+	cd -
+fi
 
 #############################################################################
 # DEPLOY TO LOCAL APP DIR
