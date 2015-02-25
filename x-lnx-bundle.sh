@@ -57,6 +57,17 @@ mkdir -p ${BUNDLEDIR}/${PRODUCT_NAME}/b_synth.lv2
 cp -v b_synth/*.ttl b_synth/*.so "${BUNDLEDIR}/${PRODUCT_NAME}/b_synth.lv2"
 cp -v ui/setBfreeUI "${BUNDLEDIR}/${PRODUCT_NAME}/bin"
 cp -v src/setBfree "${BUNDLEDIR}/${PRODUCT_NAME}/bin"
+
+echo "$VERSION" > ${OUTDIR}/${PRODUCT_NAME}.latest.txt
+
+if test -n "$ZIPUP" ; then # build a standalone lv2 zip
+	cd ${BUNDLEDIR}/${PRODUCT_NAME}
+	rm -f ${OUTDIR}${PRODUCT_NAME}-lv2-linux-${WARCH}-${VERSION}.zip
+	zip -r ${OUTDIR}${PRODUCT_NAME}-lv2-linux-${WARCH}-${VERSION}.zip b_synth.lv2/
+	ls -l ${OUTDIR}${PRODUCT_NAME}-lv2-linux-${WARCH}-${VERSION}.zip
+	cd -
+fi
+
 # TODO add README, man-pages, default cfg,..
 # desktop file
 # makeself installer?!

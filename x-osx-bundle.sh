@@ -37,10 +37,14 @@ mkdir -p ${LV2TMPDIR}/b_synth.lv2/
 cp -v b_synth/*.ttl ${LV2TMPDIR}/b_synth.lv2/
 cp -v b_synth/*.dylib ${LV2TMPDIR}/b_synth.lv2/
 otool -L -arch all ${LV2TMPDIR}/b_synth.lv2/*dylib
-cd ${LV2TMPDIR}
-rm -f  setbfree-lv2-osx-${VERSION}.zip
-zip -r ${OUTDIR}setbfree-lv2-osx-${VERSION}.zip b_synth.lv2/
-cd -
+
+if test -n "$ZIPUP" ; then # build a standalone lv2 zip
+	cd ${LV2TMPDIR}
+	rm -f  ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip
+	zip -r ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip b_synth.lv2/
+	ls -l ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip
+	cd -
+fi
 
 # local deploy for testing
 if test -d ~/.lv2/b_synth.lv2/; then
@@ -222,3 +226,5 @@ echo
 echo "packaging suceeded:"
 ls -l "$UC_DMG"
 echo "Done."
+
+echo "$VERSION" > ${OUTDIR}/${PRODUCT_NAME}.latest.txt

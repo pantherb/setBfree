@@ -66,6 +66,16 @@ mkdir -p $DESTDIR/share
 mkdir -p ${DESTDIR}/b_synth.lv2
 
 cp -v b_synth/*.ttl b_synth/*.dll "$DESTDIR/b_synth.lv2"
+
+# zip-up LV2
+if test -n "$ZIPUP" ; then # build a standalone lv2 zip
+	cd ${DESTDIR}
+	rm -f ${OUTDIR}/${PRODUCT_NAME}-lv2-${WARCH}-${GITVERSION}.zip
+	zip -r ${OUTDIR}/${PRODUCT_NAME}-lv2-${WARCH}-${GITVERSION}.zip b_synth.lv2/
+	ls -l ${OUTDIR}/${PRODUCT_NAME}-lv2-${WARCH}-${GITVERSION}.zip
+	cd -
+fi
+
 cp -v COPYING "$DESTDIR/share/"
 cp -v ui/setBfreeUI.exe "$DESTDIR/"
 cp -v doc/setbfree.ico "$DESTDIR/share/"
