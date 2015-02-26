@@ -1143,13 +1143,22 @@ void writeProgramm(int pgmNr, Programme *p, const char *sep, FILE * fp) {
     format_drawbars(p->drawbars, tmp);
     fprintf(fp, "%s, drawbarsupper=\"%s\"", sep, tmp);
   }
+  else if ((p->flags[0] & FL_DRAWBR) && (p->flags[0] & FL_DRWRND)) {
+    fprintf(fp, "%s, drawbarsupper=random", sep);
+  }
   if ((p->flags[0] & FL_LOWDRW) && !(p->flags[0] & FL_DRWRND)) {
     format_drawbars(p->lowerDrawbars, tmp);
     fprintf(fp, "%s, drawbarslower=\"%s\"", sep, tmp);
   }
+  else if ((p->flags[0] & FL_LOWDRW) && (p->flags[0] & FL_DRWRND)) {
+    fprintf(fp, "%s, drawbarslower=random", sep);
+  }
   if ((p->flags[0] & FL_PDLDRW) && !(p->flags[0] & FL_DRWRND)) {
     format_drawbars(p->pedalDrawbars, tmp);
     fprintf(fp, "%s, drawbarspedals=\"%s\"", sep, tmp);
+  }
+  else if ((p->flags[0] & FL_PDLDRW) && (p->flags[0] & FL_DRWRND)) {
+    fprintf(fp, "%s, drawbarspedals=random", sep);
   }
   if (p->flags[0] & FL_SCANNR) {
     int knob = ((p->scanner & 0xf) << 1) - ((p->scanner & CHO_) ? 1 : 2);
