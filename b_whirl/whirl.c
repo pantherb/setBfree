@@ -121,19 +121,25 @@ void initValues(struct b_whirl *w) {
 
   w->outpos=0;
 
-  memset(w->drfR, 0, 8*sizeof(float));
+  memset(w->drfR, 0, 8*sizeof(iir_t));
   w->lpT = 8;		/* high shelf */
   w->lpF = 811.9695;	/* Frequency */
   w->lpQ =   1.6016;	/* Q, bandwidth */
   w->lpG = -38.9291;	/* Gain */
 
-  memset(w->hafw, 0, 8*sizeof(float));
+  memset(w->drfL, 0, 8*sizeof(iir_t));
+  w->lpT = 8;		/* high shelf */
+  w->lpF = 811.9695;	/* Frequency */
+  w->lpQ =   1.6016;	/* Q, bandwidth */
+  w->lpG = -38.9291;	/* Gain */
+
+  memset(w->hafw, 0, 8*sizeof(iir_t));
   w->haT = 0;		/* low pass */
   w->haF = 4500;	/* 3900.0; 25-nov-04 */
   w->haQ = 2.7456;	/* 1.4; 25-nov-04 */
   w->haG = -30.0; 	/* 0.0; 25-nov-04 */
 
-  memset(w->hbfw, 0, 8*sizeof(float));
+  memset(w->hbfw, 0, 8*sizeof(iir_t));
   w->hbT = 7;		/* low shelf */
   w->hbF = 300.0;
   w->hbQ =   1.0;
@@ -198,7 +204,7 @@ void freeWhirl(struct b_whirl *w) {
 /*
  *
  */
-static void setIIRFilter (float W[],
+static void setIIRFilter (iir_t W[],
 			  int T,
 			  const double F,
 			  const double Q,
@@ -1061,8 +1067,8 @@ void whirlProc2 (struct b_whirl *w,
   const float * const drFwdDispl = w->drFwdDispl;
   const float * const drBwdDispl = w->drBwdDispl;
 
-  float * const hafw = w->hafw;
-  float * const hbfw = w->hbfw;
+  iir_t * const hafw = w->hafw;
+  iir_t * const hbfw = w->hbfw;
   float * const HLbuf = w->HLbuf;
   float * const HRbuf = w->HRbuf;
   float * const DLbuf = w->DLbuf;
@@ -1070,8 +1076,8 @@ void whirlProc2 (struct b_whirl *w,
   float * const adx0 = w->adx0;
   float * const adx1 = w->adx1;
   float * const adx2 = w->adx2;
-  float * const drfL = w->drfL;
-  float * const drfR = w->drfR;
+  iir_t * const drfL = w->drfL;
+  iir_t * const drfR = w->drfR;
   float * const z = w->z;
 
   const struct _bw * const bfw = w->bfw;

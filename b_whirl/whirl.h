@@ -32,6 +32,8 @@
 #define WHIRL_BUF_SIZE_SAMPLES ((unsigned int) (1 << 11))
 #define WHIRL_BUF_MASK_SAMPLES (WHIRL_BUF_SIZE_SAMPLES - 1)
 
+typedef float iir_t;
+
 typedef enum {a0, a1, a2, b0, b1, b2, z0, z1} filterCoeff;
 
 typedef struct _revcontrol {
@@ -142,20 +144,20 @@ struct b_whirl {
   unsigned int outpos;
   float z[4];
 
-  float drfL[8];/* Drum filter */
-  float drfR[8];/* Drum filter */
+  iir_t  drfL[8];/* Drum filter */
+  iir_t  drfR[8];/* Drum filter */
   int    lpT;	/* high shelf */
   double lpF;	/* Frequency */
   double lpQ;	/* Q, bandwidth */
   double lpG;	/* Gain */
 
-  float hafw[8];		/* Horn filter a */
+  iir_t hafw[8]; /* Horn filter a */
   float haT; /* low pass */
   float haF; /* 3900.0; 25-nov-04 */
   float haQ; /*   1.4; 25-nov-04 */
   float haG; /*   0.0; 25-nov-04 */
 
-  float hbfw[8];
+  iir_t hbfw[8];
   float hbT;		/* low shelf */
   float hbF;
   float hbQ; /* 2.0; 25-nov-04 */
