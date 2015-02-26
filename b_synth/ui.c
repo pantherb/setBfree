@@ -500,6 +500,7 @@ static int dirlist(PuglView* view, const char *dir) {
   free_dirlist(ui);
 
   if (!(D = opendir (dir)))  {
+    ui->dir_sel = -1;
     return -1;
   }
 
@@ -557,6 +558,7 @@ static int dirlist(PuglView* view, const char *dir) {
     free(filelist);
     free_dirlist(ui);
     ui->dirlist = NULL;
+    ui->dir_sel = -1;
     return -1;
   }
 
@@ -567,6 +569,9 @@ static int dirlist(PuglView* view, const char *dir) {
   }
   ui->dirlistlen += filelistlen;
   free(filelist);
+  if (ui->dir_sel >= ui->dirlistlen) {
+	  ui->dir_sel = -1;
+  }
   return 0;
 }
 
@@ -3898,7 +3903,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
       fy = (2.0 * y / ui->height ) - 1.0;
       fy *= (ui->height / (float) ui->width) / (320. / 960.);
 
-      if (ui->dir_sel >= 0) {
+      if (ui->dir_sel >= 0 && ui->dir_sel < ui->dirlistlen) {
 	/* click on file */
 	struct stat fs;
 	char * rfn = absfilepath(ui->curdir, ui->dirlist[ui->dir_sel]);
