@@ -195,12 +195,14 @@ enum {
 
 
 typedef enum {
-  TA_LEFT_TOP = 0,
-  TA_CENTER_MIDDLE = 1,
-  TA_RIGHT_TOP = 2,
-  TA_LEFT_BOTTOM = 3,
-  TA_RIGHT_BOTTOM = 4,
-  TA_CENTER_BOTTOM = 5,
+  TA_LEFT_TOP,
+  TA_LEFT_MIDDLE,
+  TA_LEFT_BOTTOM,
+  TA_RIGHT_TOP,
+  TA_RIGHT_BOTTOM,
+  TA_CENTER_TOP,
+  TA_CENTER_MIDDLE,
+  TA_CENTER_BOTTOM,
 } B3TextAlign;
 
 typedef enum {
@@ -1266,6 +1268,12 @@ render_gl_text(PuglView* view, const char *text, float x, float y, float z, cons
       bb[0], bb[1], bb[2], bb[3], bb[4], bb[5]);
 #endif
   switch(align) {
+    case TA_CENTER_TOP:
+      glTranslatef(
+	  (bb[3] - bb[0])/-2.0,
+	  (bb[4] - bb[1])/-1.0,
+	  0);
+      break;
     case TA_CENTER_MIDDLE:
       glTranslatef(
 	  (bb[3] - bb[0])/-2.0,
@@ -1292,7 +1300,13 @@ render_gl_text(PuglView* view, const char *text, float x, float y, float z, cons
 	  0,
 	  0);
       break;
-    default: // left top
+    case TA_LEFT_MIDDLE:
+      glTranslatef(
+	  0,
+	  (bb[4] - bb[1])/-2.0,
+	  0);
+      break;
+    case TA_LEFT_TOP:
       glTranslatef(
 	  0,
 	  (bb[4] - bb[1])/-1.0,
