@@ -138,8 +138,9 @@ extern const ConfigDoc *scannerDoc ();
 #define BTNLOC_OK -.05,  .05, .55, .7
 #define BTNLOC_NO -.75, -.65, .55, .7
 #define BTNLOC_YES .65,  .75, .55, .7
-#define BTNLOC_SAVE .75, .95, .8, .95
-#define BTNLOC_CANC .45, .7, .8, .95
+#define BTNLOC_CANC .75, .95, .8, .95
+#define BTNLOC_SAVE .45, .70, .8, .95
+#define BTNLOC_DFLT .05, .40, .8, .95
 #define BTNLOC_CANC2 .68, .96, .73, .88
 #define BTNLOC_CANC3 .68, .96, .78, .93
 #define SCROLLBAR -.8, .8, .625, 0.7
@@ -152,7 +153,8 @@ enum {
   HOVER_CANC = 16,
   HOVER_CANC2 = 32,
   HOVER_CANC3 = 64,
-  HOVER_SCROLLBAR = 128
+  HOVER_SCROLLBAR = 128,
+  HOVER_DFLT = 256
 };
 
 #define GPX(x) ((x) / 480.0)
@@ -221,18 +223,6 @@ static inline int MOUSEIN(
    && (mousey) >= (Y0)
    && (mousey) <= (Y1)
    );
-}
-
-static inline float btn_x(
-    const float X0, const float X1,
-    const float Y0, const float Y1) {
-  return (X1 + X0)/2.0 / SCALE;
-}
-
-static inline float btn_y(
-    const float X0, const float X1,
-    const float Y0, const float Y1) {
-  return (Y1 + Y0) / 2.0 / SCALE;
 }
 
 /* total number of interactive objects */
@@ -415,6 +405,11 @@ typedef struct {
   struct lv2_external_ui xternal_ui;
   void (* ui_closed)(void* controller);
   bool close_ui; // used by xternalui
+#endif
+
+#ifdef JACK_DESCRIPT
+  char * defaultConfigFile;
+  char * defaultProgrammeFile;
 #endif
 } B3ui;
 
@@ -2797,15 +2792,27 @@ onDisplay(PuglView* view)
 	gui_button(view, BTNLOC_CANC3, HOVER_CANC3, "Cancel");
 	break;
       case 5:
-	render_title(view, "save .cfg", 0, invaspect * btn_y(BTNLOC_SAVE), 0.1, mat_drawbar_white, TA_CENTER_MIDDLE);
+	render_title(view, ".cfg", -.92/SCALE, invaspect * .85/SCALE, 0.1, mat_drawbar_white, TA_CENTER_MIDDLE);
+	render_title(view, "save", -.92/SCALE, invaspect * .75/SCALE, 0.1, mat_drawbar_white, TA_CENTER_MIDDLE);
 	gui_button(view, BTNLOC_SAVE, HOVER_SAVE, "Save");
 	gui_button(view, BTNLOC_CANC, HOVER_CANC, "Cancel");
+#ifdef JACK_DESCRIPT
+	if (ui->defaultConfigFile) {
+	  gui_button(view, BTNLOC_DFLT, HOVER_DFLT, "Save as default");
+	}
+#endif
 	render_text(view, "select a file or press OK or <enter> to create new.", -20.0, 7.75, 0.0, TA_LEFT_BOTTOM);
 	break;
       case 6:
-	render_title(view, "save .pgm", 0, invaspect * btn_y(BTNLOC_SAVE), 0.1, mat_drawbar_white, TA_CENTER_MIDDLE);
+	render_title(view, ".pgm", -.92/SCALE, invaspect * .85/SCALE, 0.1, mat_drawbar_white, TA_CENTER_MIDDLE);
+	render_title(view, "save", -.92/SCALE, invaspect * .75/SCALE, 0.1, mat_drawbar_white, TA_CENTER_MIDDLE);
 	gui_button(view, BTNLOC_SAVE, HOVER_SAVE, "Save");
 	gui_button(view, BTNLOC_CANC, HOVER_CANC, "Cancel");
+#ifdef JACK_DESCRIPT
+	if (ui->defaultConfigFile) {
+	  gui_button(view, BTNLOC_DFLT, HOVER_DFLT, "Save as default");
+	}
+#endif
 	render_text(view, "select a file or press OK or <enter> to create new.", -20.0, 7.75, 0.0, TA_LEFT_BOTTOM);
 	break;
       default:
@@ -3613,6 +3620,7 @@ onMotion(PuglView* view, int x, int y)
     if (MOUSEIN(BTNLOC_NO, fx, fy)) ui->mouseover |= HOVER_NO;
     if (MOUSEIN(BTNLOC_YES, fx, fy)) ui->mouseover |= HOVER_YES;
     if (MOUSEIN(BTNLOC_SAVE, fx, fy)) ui->mouseover |= HOVER_SAVE;
+    if (MOUSEIN(BTNLOC_DFLT, fx, fy)) ui->mouseover |= HOVER_DFLT;
     if (MOUSEIN(BTNLOC_CANC, fx, fy)) ui->mouseover |= HOVER_CANC;
     if (MOUSEIN(BTNLOC_CANC2, fx, fy)) ui->mouseover |= HOVER_CANC2;
     if (MOUSEIN(BTNLOC_CANC3, fx, fy)) ui->mouseover |= HOVER_CANC3;
@@ -3943,6 +3951,16 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 	ui->dir_sel = -1;
 	puglPostRedisplay(view);
 	return;
+#ifdef JACK_DESCRIPT
+      } else if (ui->displaymode == 5 && MOUSEIN(BTNLOC_DFLT, fx, fy) && ui->defaultConfigFile) {
+	save_cfgpgm(view, ui->defaultConfigFile, 5, 0);
+	ui->displaymode = 0;
+	return;
+      } else if (ui->displaymode == 6 && MOUSEIN(BTNLOC_DFLT, fx, fy) && ui->defaultProgrammeFile) {
+	save_cfgpgm(view, ui->defaultProgrammeFile, 6, 0);
+	ui->displaymode = 0;
+	return;
+#endif
       } else if (
 	  (ui->displaymode == 5 || ui->displaymode == 6)
 	  && MOUSEIN(BTNLOC_SAVE, fx, fy)
@@ -4453,6 +4471,48 @@ instantiate(const LV2UI_Descriptor*   descriptor,
     *widget = (void*)puglGetNativeWindow(ui->view);
   }
 
+#ifdef JACK_DESCRIPT
+  // CODE DUP src/main.c, lv2.c
+  ui->defaultConfigFile = NULL;
+  ui->defaultProgrammeFile = NULL;
+
+#ifdef _WIN32
+  // out of luck with CSIDL_LOCAL_APPDATA
+  const char * homedrive = getenv("HOMEDRIVE");
+  const char * homepath = getenv("HOMEPATH");
+  if (homedrive && homepath && (strlen(homedrive) + strlen(homepath) + 38) < 1024) {
+    size_t hl = strlen(homedrive) + strlen(homepath);
+    ui->defaultConfigFile=(char*) malloc(hl+38);
+    ui->defaultProgrammeFile=(char*) malloc(hl+38);
+    sprintf(ui->defaultConfigFile,    "%s%s\\Local Settings\\setBfree\\default.cfg", homedrive, homepath);
+    sprintf(ui->defaultProgrammeFile, "%s%s\\Local Settings\\setBfree\\default.pgm", homedrive, homepath);
+  }
+#else // unices: prefer XDG_CONFIG_HOME
+  if (getenv("XDG_CONFIG_HOME")) {
+    size_t hl = strlen(getenv("XDG_CONFIG_HOME"));
+    ui->defaultConfigFile=(char*) malloc(hl+22);
+    ui->defaultProgrammeFile=(char*) malloc(hl+22);
+    sprintf(ui->defaultConfigFile,    "%s/setBfree/default.cfg", getenv("XDG_CONFIG_HOME"));
+    sprintf(ui->defaultProgrammeFile, "%s/setBfree/default.pgm", getenv("XDG_CONFIG_HOME"));
+  }
+  else if (getenv("HOME")) {
+    size_t hl = strlen(getenv("HOME"));
+# ifdef __APPLE__
+    ui->defaultConfigFile=(char*) malloc(hl+42);
+    ui->defaultProgrammeFile=(char*) malloc(hl+42);
+    sprintf(ui->defaultConfigFile,    "%s/Library/Preferences/setBfree/default.cfg", getenv("HOME"));
+    sprintf(ui->defaultProgrammeFile, "%s/Library/Preferences/setBfree/default.pgm", getenv("HOME"));
+# else // linux, BSD, etc
+    ui->defaultConfigFile=(char*) malloc(hl+30);
+    ui->defaultProgrammeFile=(char*) malloc(hl+30);
+    sprintf(ui->defaultConfigFile,    "%s/.config/setBfree/default.cfg", getenv("HOME"));
+    sprintf(ui->defaultProgrammeFile, "%s/.config/setBfree/default.pgm", getenv("HOME"));
+# endif
+  }
+#endif
+#endif
+
+
   /* ask plugin about current state */
   forge_message_str(ui, ui->uris.sb3_uiinit, NULL);
 
@@ -4468,6 +4528,10 @@ cleanup(LV2UI_Handle handle)
     ui->exit = true;
     pthread_join(ui->thread, NULL);
   }
+#endif
+#ifdef JACK_DESCRIPT
+  free(ui->defaultConfigFile);
+  free(ui->defaultProgrammeFile);
 #endif
   free_dirlist(ui);
   ftglDestroyFont(ui->font_big);
