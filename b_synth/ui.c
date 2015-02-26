@@ -2140,7 +2140,7 @@ static void cfg_special_button(PuglView *view, int ccc) {
 static void cfg_update_value(PuglView *view, int ccc, int dir) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
 
-  assert(dir >= -1 && dir <= 1);
+  assert(dir >= -10 && dir <= 10);
 
   if (ccc >= 24) return;
 
@@ -2376,6 +2376,9 @@ advanced_config_screen(PuglView* view)
 	0, yto, 0.5, mat_w, TA_CENTER_BOTTOM); yto+=.75; yto+=.75;
     render_small_text(view,
 	"Shift + Click on an element to restore its setting to the default value.",
+	0, yto, 0.5, mat_w, TA_CENTER_BOTTOM); yto+=.75;
+    render_small_text(view,
+	"Ctrl + Click on the arrows increases the step-size .",
 	0, yto, 0.5, mat_w, TA_CENTER_BOTTOM);
 
   }
@@ -3840,7 +3843,7 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 	} else if (cfg > 0 && (puglGetModifiers(view) & PUGL_MOD_SHIFT)) {
 	  cfg_update_value(view, cfg - 1, 0);
 	} else if (cfg > 0 && tri != 0) {
-	  cfg_update_value(view, cfg - 1, tri);
+	  cfg_update_value(view, cfg - 1, tri * ((puglGetModifiers(view) & PUGL_MOD_CTRL) ? 5 : 1));
 	}
       }
       return;
