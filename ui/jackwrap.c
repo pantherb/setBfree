@@ -130,6 +130,8 @@ static jack_port_t *midi_out = NULL;
 static jack_client_t *j_client = NULL;
 static uint32_t j_samplerate = 48000;
 
+static int _freewheeling = 0;
+
 struct transport_position {
 	jack_nframes_t position;
 	float          bpm;
@@ -588,6 +590,10 @@ static void jack_latency_cb (jack_latency_callback_mode_t mode, void *arg) {
 	}
 }
 
+static void jack_freewheel_cb (int onoff, void *arg) {
+	_freewheeling = onoff;
+}
+
 static int init_jack(const char *client_name) {
 	jack_status_t status;
 	j_client = jack_client_open (client_name, JackNoStartServer, &status);
@@ -609,6 +615,7 @@ static int init_jack(const char *client_name) {
 	jack_set_process_callback (j_client, process, 0);
 	jack_set_graph_order_callback (j_client, jack_graph_order_cb, 0);
 	jack_set_latency_callback(j_client, jack_latency_cb, 0);
+	jack_set_freewheel_callback(j_client, jack_freewheel_cb, 0);
 
 #ifndef WIN32
 	jack_on_shutdown (j_client, jack_shutdown, NULL);
@@ -810,6 +817,10 @@ lv2_worker_schedule(LV2_Worker_Schedule_Handle unused,
                     uint32_t                   size,
                     const void*                data)
 {
+	if (_freewheeling) {
+		worker_iface->work(plugin_instance, lv2_worker_respond, NULL, size, data);
+		return LV2_WORKER_SUCCESS;
+	}
 	assert(worker_requests);
 	jack_ringbuffer_write(worker_requests, (const char*)&size, sizeof(size));
 	jack_ringbuffer_write(worker_requests, (const char*)data, size);
@@ -1216,7 +1227,9 @@ int main (int argc, char **argv) {
 		}
 	}
 
-	worker_iface = (LV2_Worker_Interface*) plugin_dsp->extension_data (LV2_WORKER__interface);
+	if (plugin_dsp->extension_data) {
+		worker_iface = (LV2_Worker_Interface*) plugin_dsp->extension_data (LV2_WORKER__interface);
+	}
 	if (worker_iface) {
 		worker_init();
 	}
