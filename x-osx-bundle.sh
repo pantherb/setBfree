@@ -107,10 +107,12 @@ EOF
 if test -n "$LV2INSTALLER"; then
 	$LV2INSTALLER
 	DMGPOSA="set position of item \"LV2Installer.app\" of container window to {100, 260}"
-	DMGPOSB="set position of item \"b_synth.lv2\" of container window to {205, 260}"
+	DMGPOSB="set position of item \"b_synth.lv2\" of container window to {205, 300}"
+	DMGPOSC="set position of item \"b_whirl.lv2\" of container window to {205, 210}"
 else
 	DMGPOSA="set position of item \"b_synth.lv2\" of container window to {100, 260}"
-	DMGPOSB=""
+	DMGPOSB="set position of item \"b_whirl.lv2\" of container window to {205, 260}"
+	DMGPOSC=""
 fi
 
 ##############################################################################
@@ -146,7 +148,7 @@ mount -t hfs -o nobrowse "${DiskDevice}" "${MNTPATH}"
 cp -a ${TARGET_BUILD_DIR} "${MNTPATH}/${APPNAME}"
 cp -a ${BUNDLEDIR}/* "${MNTPATH}/"
 cp -a ${LV2TMPDIR}/b_synth.lv2 "${MNTPATH}/b_synth.lv2"
-#cp -a ${LV2TMPDIR}/b_whirl.lv2 "${MNTPATH}/b_whirl.lv2"
+cp -a ${LV2TMPDIR}/b_whirl.lv2 "${MNTPATH}/b_whirl.lv2"
 cp ${RSRC_DIR}/osx_readme.txt "${MNTPATH}/README.txt"
 
 mkdir "${MNTPATH}/.background"
@@ -180,6 +182,7 @@ echo '
 	   set position of item "Applications" of container window to {310, 100}
 	   '${DMGPOSA}'
 	   '${DMGPOSB}'
+	   '${DMGPOSC}'
 	   set position of item "README.txt" of container window to {310, 260}
 	   close
 	   open
