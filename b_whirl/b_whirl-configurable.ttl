@@ -170,13 +170,13 @@
       rdfs:label "No brake" ;
       rdf:value 0.0 ;
     ] , [
-      rdfs:label "Right" ;
+      rdfs:label "Left" ;
       rdf:value .25 ;
     ] , [
       rdfs:label "Back" ;
       rdf:value .5 ;
     ] , [
-      rdfs:label "Left" ;
+      rdfs:label "Right" ;
       rdf:value .75 ;
     ] , [
       rdfs:label "Front" ;

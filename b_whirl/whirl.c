@@ -1,7 +1,7 @@
 /* setBfree - DSP tonewheel organ
  *
  * Copyright (C) 2003-2004 Fredrik Kilander <fk@dsv.su.se>
- * Copyright (C) 2008-2012 Robin Gareus <robin@gareus.org>
+ * Copyright (C) 2008-2014 Robin Gareus <robin@gareus.org>
  * Copyright (C) 2010 Ken Restivo <ken@restivo.org>
  * Copyright (C) 2012 Will Panther <pantherb@setbfree.org>
  *
@@ -1038,14 +1038,18 @@ void whirlProc2 (struct b_whirl *w,
 
 #if 1
   /* break position -- don't stop anywhere..
-     the original Leslie can not do this, sometimes the horn is aimed at the back of
-     the cabinet when it comes to a halt, which results in a less than desirable sound.
-
-     continue to slowly move the horn and drum to the center position after it actually
-     came to a stop.
+   * the original Leslie can not do this, sometimes the horn is aimed at the back of
+   * the cabinet when it comes to a halt, which results in a less than desirable sound.
+   *
+   * continue to slowly move the horn and drum to the center position after it actually
+   * came to a stop.
+   *
+   * internal Pos = 0    towards left mic
+   * internal Pos = 0.5  towards right mic
+   * config: 1 = front, .5 = back
    */
   if (w->hnBrakePos > 0) {
-    const double targetPos = fmod(w->hnBrakePos, 1.0);
+    const double targetPos = fmod(w->hnBrakePos + .75, 1.0);
     if (!w->hornAcDc && w->hornIncr == 0 && w->hornAngleGRD != targetPos) {
       w->hornAngleGRD += 1.0 / 400.0;
       w->hornAngleGRD = fmod(w->hornAngleGRD, 1.0);
@@ -1056,7 +1060,7 @@ void whirlProc2 (struct b_whirl *w,
     }
   }
   if (w->drBrakePos > 0) {
-    const double targetPos= fmod(w->drBrakePos, 1.0);
+    const double targetPos= fmod(w->drBrakePos + .75, 1.0);
     if (!w->drumAcDc && w->drumIncr == 0 && w->drumAngleGRD != targetPos) {
       w->drumAngleGRD += 1.0/400.0;
       w->drumAngleGRD = fmod(w->drumAngleGRD, 1.0);

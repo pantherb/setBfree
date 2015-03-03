@@ -1931,11 +1931,11 @@ static const b3scalepoint x_filtertype[] = {
 };
 
 static const b3scalepoint x_brakepos[] = {
-  {0,    "free, no brake."},
-  {0.25, "left (90deg)"},
-  {0.50, "back (180deg)"},
-  {0.75, "right (-90deg)"},
-  {1.0,  "front (center)"},
+  {0,    "Free, no brake."},
+  {0.25, "Left (90deg)"},
+  {0.50, "Back (180deg)"},
+  {0.75, "Right (-90deg)"},
+  {1.0,  "Front (center)"},
   {0, NULL}
 };
 static const b3scalepoint x_bypass[] = {
