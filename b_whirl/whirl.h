@@ -32,6 +32,9 @@
 #define WHIRL_BUF_SIZE_SAMPLES ((unsigned int) (1 << 11))
 #define WHIRL_BUF_MASK_SAMPLES (WHIRL_BUF_SIZE_SAMPLES - 1)
 
+#define AGBUF 512
+#define AGMASK (AGBUF-1)
+
 typedef float iir_t;
 
 typedef enum {a0, a1, a2, b0, b1, b2, z0, z1} filterCoeff;
@@ -64,9 +67,6 @@ struct b_whirl {
 
   struct _bw bfw[WHIRL_DISPLC_SIZE];
   struct _bw bbw[WHIRL_DISPLC_SIZE];
-
-#define AGBUF 512
-#define AGMASK (AGBUF-1)
 
   float adx0[AGBUF];
   float adx1[AGBUF];

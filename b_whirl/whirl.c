@@ -38,12 +38,6 @@
 # define M_PI 3.14159265358979323846/* pi */
 #endif
 
-#define DISPLC_SIZE ((unsigned int) (1 << 11))
-#define DISPLC_MASK ((DISPLC_SIZE) - 1)
-
-#define BUF_SIZE_SAMPLES ((unsigned int) (1 << 11))
-#define BUF_MASK_SAMPLES (BUF_SIZE_SAMPLES - 1)
-
 void initValues(struct b_whirl *w) {
   unsigned int i;
 
@@ -332,19 +326,19 @@ static void _ipoldraw (struct b_whirl *sw, double degrees, double level, int par
 
   d = *ipx;
   while (d < 0.0) d += 360.0;
-  fromIndex = (int) ((d * (double) DISPLC_SIZE) / 360.0);
+  fromIndex = (int) ((d * (double) WHIRL_DISPLC_SIZE) / 360.0);
 
   *ipx = degrees;
 
   e = *ipx;
   while (e < d) e += 360.0;
-  toIndex = (int) ((e * (double) DISPLC_SIZE) / 360.0);
+  toIndex = (int) ((e * (double) WHIRL_DISPLC_SIZE) / 360.0);
 
   range = (double) (toIndex - fromIndex);
   for (i = fromIndex; i <= toIndex; i++) {
     double x = (double) (i - fromIndex);
     double w = (*ipy) + ((x / range) * (level - (*ipy)));
-    sw->bfw[i & DISPLC_MASK].b[partial] = (float) w;
+    sw->bfw[i & WHIRL_DISPLC_MASK].b[partial] = (float) w;
   }
 
   *ipy = level;
@@ -365,44 +359,44 @@ static void initTables (struct b_whirl *w) {
   const double drumRadiusSamples = (w->drumRadiusCm * w->SampleRateD/100.0) / w->airSpeed;
   const double micDistSamples    = (w->micDistCm    * w->SampleRateD/100.0) / w->airSpeed;
 
-  for (i = 0; i < DISPLC_SIZE; i++) {
+  for (i = 0; i < WHIRL_DISPLC_SIZE; i++) {
     /* Compute angle around the circle */
-    double v = (2.0 * M_PI * (double) i) / (double) DISPLC_SIZE;
+    double v = (2.0 * M_PI * (double) i) / (double) WHIRL_DISPLC_SIZE;
     /* Distance between the mic and the rotor korda */
     double a = micDistSamples - (hornRadiusSamples * cos (v));
     /* Distance between rotor and mic-origin line */
     double b = hornRadiusSamples * sin (v);
 
     w->hnFwdDispl[i] = sqrt ((a * a) + (b * b));
-    w->hnBwdDispl[DISPLC_SIZE - (i + 1)] = w->hnFwdDispl[i];
+    w->hnBwdDispl[WHIRL_DISPLC_SIZE - (i + 1)] = w->hnFwdDispl[i];
 
     a = micDistSamples - (drumRadiusSamples * cos (v));
     b = drumRadiusSamples * sin (v);
     w->drFwdDispl[i] = sqrt ((a * a) + (b * b));
-    w->drBwdDispl[DISPLC_SIZE - (i + 1)] = w->drFwdDispl[i];
+    w->drBwdDispl[WHIRL_DISPLC_SIZE - (i + 1)] = w->drFwdDispl[i];
   }
 
   w->hornPhase[0] = 0;
-  w->hornPhase[1] = DISPLC_SIZE >> 1;
+  w->hornPhase[1] = WHIRL_DISPLC_SIZE >> 1;
 
-  w->hornPhase[2] = ((DISPLC_SIZE * 2) / 6);
-  w->hornPhase[3] = ((DISPLC_SIZE * 5) / 6);
+  w->hornPhase[2] = ((WHIRL_DISPLC_SIZE * 2) / 6);
+  w->hornPhase[3] = ((WHIRL_DISPLC_SIZE * 5) / 6);
 
-  w->hornPhase[4] = ((DISPLC_SIZE * 1) / 6);
-  w->hornPhase[5] = ((DISPLC_SIZE * 4) / 6);
+  w->hornPhase[4] = ((WHIRL_DISPLC_SIZE * 1) / 6);
+  w->hornPhase[5] = ((WHIRL_DISPLC_SIZE * 4) / 6);
 
   for (i = 0; i < 6; i++) {
     w->hornSpacing[i] = w->hornSpacing[i] * w->SampleRateD / 22100.0 + hornRadiusSamples + 1.0;
   }
 
   w->drumPhase[0] = 0;
-  w->drumPhase[1] = DISPLC_SIZE >> 1;
+  w->drumPhase[1] = WHIRL_DISPLC_SIZE >> 1;
 
-  w->drumPhase[2] = ((DISPLC_SIZE * 2) / 6);
-  w->drumPhase[3] = ((DISPLC_SIZE * 5) / 6);
+  w->drumPhase[2] = ((WHIRL_DISPLC_SIZE * 2) / 6);
+  w->drumPhase[3] = ((WHIRL_DISPLC_SIZE * 5) / 6);
 
-  w->drumPhase[4] = ((DISPLC_SIZE * 1) / 6);
-  w->drumPhase[5] = ((DISPLC_SIZE * 4) / 6);
+  w->drumPhase[4] = ((WHIRL_DISPLC_SIZE * 1) / 6);
+  w->drumPhase[5] = ((WHIRL_DISPLC_SIZE * 4) / 6);
 
   for (i = 0; i < 6; i++) {
     w->drumSpacing[i] = w->drumSpacing[i] * w->SampleRateD / 22100.0 + drumRadiusSamples + 1.0;
@@ -589,7 +583,7 @@ static void initTables (struct b_whirl *w) {
 
   sum = 0.0;
   /* Compute the normalisation factor */
-  for (i = 0; i < DISPLC_SIZE; i++) {
+  for (i = 0; i < WHIRL_DISPLC_SIZE; i++) {
     double colsum = 0.0;
     for (j = 0; j < 5; j++) {
       colsum += fabs (w->bfw[i].b[j]);
@@ -599,10 +593,10 @@ static void initTables (struct b_whirl *w) {
     }
   }
   /* Apply normalisation */
-  for (i = 0; i < DISPLC_SIZE; i++) {
+  for (i = 0; i < WHIRL_DISPLC_SIZE; i++) {
     for (j = 0; j < 5; j++) {
       w->bfw[i].b[j] *= 1.0 / sum;
-      w->bbw[DISPLC_SIZE - i - 1].b[j] = w->bfw[i].b[j];
+      w->bbw[WHIRL_DISPLC_SIZE - i - 1].b[j] = w->bfw[i].b[j];
     }
   }
 
@@ -822,10 +816,10 @@ void initWhirl (struct b_whirl *w, void *m, double rate) {
   w->SampleRateD = rate;
   w->midi_cfg_ptr = m; // used for notify -- translate "rotary.speed-*"
 
-  memset(w->HLbuf, 0, BUF_SIZE_SAMPLES);
-  memset(w->HRbuf, 0, BUF_SIZE_SAMPLES);
-  memset(w->DLbuf, 0, BUF_SIZE_SAMPLES);
-  memset(w->DRbuf, 0, BUF_SIZE_SAMPLES);
+  memset(w->HLbuf, 0, WHIRL_BUF_SIZE_SAMPLES);
+  memset(w->HRbuf, 0, WHIRL_BUF_SIZE_SAMPLES);
+  memset(w->DLbuf, 0, WHIRL_BUF_SIZE_SAMPLES);
+  memset(w->DRbuf, 0, WHIRL_BUF_SIZE_SAMPLES);
 
   w->leakage = w->leakLevel * w->hornLevel;
 
@@ -1084,15 +1078,15 @@ void whirlProc2 (struct b_whirl *w,
   const struct _bw * const bbw = w->bfw;
 
 
-  int hornAngle = hornAngleGRD * DISPLC_SIZE;
-  int drumAngle = drumAngleGRD * DISPLC_SIZE;
+  int hornAngle = hornAngleGRD * WHIRL_DISPLC_SIZE;
+  int drumAngle = drumAngleGRD * WHIRL_DISPLC_SIZE;
 
 #ifdef DEBUG_SPEED
   char const * const acdc[3]= {"<","#",">"};
   static int fgh=0;
   if ((fgh++ % (int)(w->SampleRateD/128/5) ) ==0) {
     printf ("H:%.3f D:%.3f | HS:%.3f DS:%.3f [Hz]| HT:%.2f DT:%.2f [Hz]| %s %s\n",
-	(double)hornAngle/DISPLC_SIZE, (double)drumAngle/DISPLC_SIZE,
+	(double)hornAngle/WHIRL_DISPLC_SIZE, (double)drumAngle/WHIRL_DISPLC_SIZE,
 	w->SampleRateD*(double)hornIncrGRD, w->SampleRateD*(double)drumIncrGRD,
 	w->SampleRateD*(double)w->hornTarget, w->SampleRateD*(double)w->drumTarget,
 	acdc[w->hornAcDc+1], acdc[w->drumAcDc+1]
@@ -1118,7 +1112,7 @@ void whirlProc2 (struct b_whirl *w,
     DX[DI] = XS;}
 
 #define HN_MOTION(P,BUF,DSP,BW,DX,DI) {                     \
-    k = ((hornAngle + hornPhase[(P)]) & DISPLC_MASK);       \
+    k = ((hornAngle + hornPhase[(P)]) & WHIRL_DISPLC_MASK); \
     t = hornSpacing[(P)] + DSP[k] + (float) outpos;         \
     r = floorf (t);                                         \
     xa  = BW[k].b[0] * x;                                   \
@@ -1127,19 +1121,19 @@ void whirlProc2 (struct b_whirl *w,
     xa += BW[k].b[3] * DX[((DI)+2) & AGMASK];               \
     xa += BW[k].b[4] * DX[((DI)+3) & AGMASK];               \
     q = xa * (t - r);                                       \
-    n = ((unsigned int) r) & BUF_MASK_SAMPLES;              \
+    n = ((unsigned int) r) & WHIRL_BUF_MASK_SAMPLES;        \
     BUF[n] += xa - q;                                       \
-    n = (n + 1) & BUF_MASK_SAMPLES;                         \
+    n = (n + 1) & WHIRL_BUF_MASK_SAMPLES;                   \
     BUF[n] += q;}
 
 #define DR_MOTION(P,BUF,DSP) {                              \
-    k = ((drumAngle + drumPhase[(P)]) & DISPLC_MASK);       \
+    k = ((drumAngle + drumPhase[(P)]) & WHIRL_DISPLC_MASK); \
     t = drumSpacing[(P)] + DSP[k] + (float) outpos;         \
     r = floorf (t);                                         \
     q = x * (t - r);                                        \
-    n = ((unsigned int) r) & BUF_MASK_SAMPLES;              \
+    n = ((unsigned int) r) & WHIRL_BUF_MASK_SAMPLES;        \
     BUF[n] += x - q;                                        \
-    n = (n + 1) & BUF_MASK_SAMPLES;                         \
+    n = (n + 1) & WHIRL_BUF_MASK_SAMPLES;                   \
     BUF[n] += q;}
 
     /* This is just a bum filter to take some high-end off. */
@@ -1263,15 +1257,15 @@ void whirlProc2 (struct b_whirl *w,
 
     /* rotate speakers */
 
-    outpos = (outpos + 1) & BUF_MASK_SAMPLES;
+    outpos = (outpos + 1) & WHIRL_BUF_MASK_SAMPLES;
 
     hornAngleGRD = (hornAngleGRD + hornIncrGRD);
     hornAngleGRD = hornAngleGRD - floor(hornAngleGRD); // limit to [0..1]
-    hornAngle = hornAngleGRD * DISPLC_SIZE;
+    hornAngle = hornAngleGRD * WHIRL_DISPLC_SIZE;
 
     drumAngleGRD = (drumAngleGRD + drumIncrGRD);
     drumAngleGRD = drumAngleGRD - floor(drumAngleGRD); // limit to [0..1]
-    drumAngle = drumAngleGRD * DISPLC_SIZE;
+    drumAngle = drumAngleGRD * WHIRL_DISPLC_SIZE;
   }
 
   /* copy back variables */
