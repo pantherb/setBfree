@@ -295,7 +295,7 @@ run(LV2_Handle instance, uint32_t n_samples)
   SETPARAM(fsetDrumFilterQ, filtd_qual, )
   SETPARAM(fsetDrumFilterGain, filtd_gain, )
 
-  SETVALUE(hnBreakPos, horn_brake, (double), )
+  SETVALUE(hnBrakePos, horn_brake, (double), )
   SETVALUE(hornAcc, horn_accel, , )
   SETVALUE(hornDec, horn_decel, , )
 
@@ -306,7 +306,7 @@ run(LV2_Handle instance, uint32_t n_samples)
 
   SETPARAM(useRevOption, rev_select, (int) floorf)
 
-  SETVALUE(drBreakPos, drum_brake, (double), )
+  SETVALUE(drBrakePos, drum_brake, (double), )
   SETVALUE(drumAcc, drum_accel, , )
   SETVALUE(drumDec, drum_decel, , )
 
