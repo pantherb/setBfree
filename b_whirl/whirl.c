@@ -42,8 +42,8 @@ void initValues(struct b_whirl *w) {
   unsigned int i;
 
   w->bypass=0;
-  w->hnBreakPos=0;
-  w->drBreakPos=0;
+  w->hnBrakePos=0;
+  w->drBrakePos=0;
 
   for (i=0; i<4; ++i)
     w->z[i] = 0;
@@ -778,14 +778,14 @@ void fsetDrumFilterGain (struct b_whirl *w, float v) {
   UPDATE_D_FILTER;
 }
 
-void setHornBreakPosition (void *d, unsigned char uc) {
+void setHornBrakePosition (void *d, unsigned char uc) {
   struct b_whirl *w = (struct b_whirl *) d;
-  w->hnBreakPos = (double)uc/127.0;
+  w->hnBrakePos = (double)uc/127.0;
 }
 
-void setDrumBreakPosition (void *d, unsigned char uc) {
+void setDrumBrakePosition (void *d, unsigned char uc) {
   struct b_whirl *w = (struct b_whirl *) d;
-  w->drBreakPos = (double)uc/127.0;
+  w->drBrakePos = (double)uc/127.0;
 }
 
 void setHornAcceleration (void *d, unsigned char uc) {
@@ -836,8 +836,8 @@ void initWhirl (struct b_whirl *w, void *m, double rate) {
   useMIDIControlFunction (m, "whirl.horn.filter.b.q",    setHornFilterBQ, (void*)w);
   useMIDIControlFunction (m, "whirl.horn.filter.b.gain", setHornFilterBGain, (void*)w);
 
-  useMIDIControlFunction (m, "whirl.horn.breakpos", setHornBreakPosition, (void*)w);
-  useMIDIControlFunction (m, "whirl.drum.breakpos", setDrumBreakPosition, (void*)w);
+  useMIDIControlFunction (m, "whirl.horn.brakepos", setHornBrakePosition, (void*)w);
+  useMIDIControlFunction (m, "whirl.drum.brakepos", setDrumBrakePosition, (void*)w);
 
   useMIDIControlFunction (m, "whirl.horn.acceleration", setHornAcceleration, (void*)w);
   useMIDIControlFunction (m, "whirl.horn.deceleration", setHornDeceleration, (void*)w);
@@ -951,11 +951,19 @@ int whirlConfig (struct b_whirl *w, ConfigContext * cfg) {
   else if (getConfigParameter_ir ("whirl.bypass", cfg, &k, 0, 1) == 1) {
     w->bypass = k;
   }
+#if 1 // backwards compat typo
   else if (getConfigParameter_dr ("whirl.horn.breakpos", cfg, &d, 0, 1.0) == 1) {
-    w->hnBreakPos = (double) d;
+    w->hnBrakePos = (double) d;
   }
   else if (getConfigParameter_dr ("whirl.drum.breakpos", cfg, &d, 0, 1.0) == 1) {
-    w->drBreakPos = (double) d;
+    w->drBrakePos = (double) d;
+  }
+#endif
+  else if (getConfigParameter_dr ("whirl.horn.brakepos", cfg, &d, 0, 1.0) == 1) {
+    w->hnBrakePos = (double) d;
+  }
+  else if (getConfigParameter_dr ("whirl.drum.brakepos", cfg, &d, 0, 1.0) == 1) {
+    w->drBrakePos = (double) d;
   }
 
   else {
@@ -1024,16 +1032,16 @@ void whirlProc2 (struct b_whirl *w,
      continue to slowly move the horn and drum to the center position after it actually
      came to a stop.
    */
-  if (w->hnBreakPos>0) {
-    const double targetPos= w->hnBreakPos - floor(w->hnBreakPos);
+  if (w->hnBrakePos>0) {
+    const double targetPos= w->hnBrakePos - floor(w->hnBrakePos);
     if (!w->hornAcDc && w->hornIncrGRD==0 && w->hornAngleGRD!=targetPos) {
       w->hornAngleGRD += 1.0/400.0;
       w->hornAngleGRD = w->hornAngleGRD - floor(w->hornAngleGRD);
       if ((w->hornAngleGRD-targetPos) < (1.0/360.0)) w->hornAngleGRD=targetPos;
     }
   }
-  if (w->drBreakPos>0) {
-    const double targetPos= w->drBreakPos - floor(w->drBreakPos);
+  if (w->drBrakePos>0) {
+    const double targetPos= w->drBrakePos - floor(w->drBrakePos);
     if (!w->drumAcDc && w->drumIncrGRD==0 && w->drumAngleGRD!=targetPos) {
       w->drumAngleGRD += 1.0/400.0;
       w->drumAngleGRD = w->drumAngleGRD - floor(w->drumAngleGRD);
@@ -1295,12 +1303,12 @@ static const ConfigDoc doc[] = {
   {"whirl.horn.fastrpm",       CFG_DOUBLE,  "423.36",   "Target RPM for fast (aka tremolo) horn speed", "RPM", 100.0, 900.0, 2.5},
   {"whirl.horn.acceleration",  CFG_DOUBLE,  "0.161",    "Time required to accelerate the horn (exponential time constant)", "s", 0.05, 2.0, 0.05},
   {"whirl.horn.deceleration",  CFG_DOUBLE,  "0.321",    "Time required to decelerate the horn (exponential time constant)", "s", 0.05, 2.0, 0.05},
-  {"whirl.horn.breakpos",      CFG_DOUBLE,  "0",        "Horn stop position. Clockwise position where to stop. (0: free-stop, 1.0:front-center)", "deg", 0.0, 1.0, .025},
+  {"whirl.horn.brakepos",      CFG_DOUBLE,  "0",        "Horn stop position. Clockwise position where to stop. (0: free-stop, 1.0:front-center)", "deg", 0.0, 1.0, .025},
   {"whirl.drum.slowrpm",       CFG_DOUBLE,  "36.0",     "Target RPM for slow (aka choral) drum speed.", "RPM", 10.0, 500.0, 0.50},
   {"whirl.drum.fastrpm",       CFG_DOUBLE,  "357.3",    "Target RPM for fast (aka tremolo) drum speed.", "RPM", 100.0, 900.0, 2.50},
   {"whirl.drum.acceleration",  CFG_DOUBLE,  "4.127",    "Time required to accelerate the drum (exponential time constant)", "s", 0.5, 10.0, .1},
   {"whirl.drum.deceleration",  CFG_DOUBLE,  "1.371",    "Time required to decelerate the drum (exponential time constant)", "s", 0.5, 10.0, .1},
-  {"whirl.drum.breakpos",      CFG_DOUBLE,  "0",        "Drum stop position. Clockwise position where to stop. (0: free-stop, 1.0:front-center)", "deg", 0.0, 1.0, .025},
+  {"whirl.drum.brakepos",      CFG_DOUBLE,  "0",        "Drum stop position. Clockwise position where to stop. (0: free-stop, 1.0:front-center)", "deg", 0.0, 1.0, .025},
   {"whirl.horn.radius",        CFG_DOUBLE,  "19.2",     "Horn radius in centimeter", "cm", 9.0, 50.0, 0.5},
   {"whirl.drum.radius",        CFG_DOUBLE,  "22.0",     "Drum radius in centimeter", "cm", 9.0, 50.0, 0.5},
   {"whirl.mic.distance",       CFG_DOUBLE,  "42.0",     "Distance from mic to origin in centimeters", "cm", 9, 100, 1.},

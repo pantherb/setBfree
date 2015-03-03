@@ -50,8 +50,8 @@ struct b_whirl {
 
   double SampleRateD;
   int bypass;        ///< if set to 1 completely bypass this effect
-  double hnBreakPos; ///< where to stop horn - 0: free, 1.0: front-center, ]0..1] clockwise circle */
-  double drBreakPos; ///< where to stop drum
+  double hnBrakePos; ///< where to stop horn - 0: free, 1.0: front-center, ]0..1] clockwise circle */
+  double drBrakePos; ///< where to stop drum
 
 /*
  * Forward (clockwise) displacement table for writing positions.

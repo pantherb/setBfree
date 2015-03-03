@@ -2027,8 +2027,8 @@ static void cfg_initialize(B3ui * ui) {
   CFGP("whirl.drum.radius",            "Drum Radius",         CF_NUMBER, NULL);
 
   p+=4;
-  CFGP("whirl.horn.breakpos",           "Horn Break",         CF_DEGREE, x_brakepos);
-  CFGP("whirl.drum.breakpos",           "Drum Break",         CF_DEGREE, x_brakepos);
+  CFGP("whirl.horn.brakepos",           "Horn Break",         CF_DEGREE, x_brakepos);
+  CFGP("whirl.drum.brakepos",           "Drum Break",         CF_DEGREE, x_brakepos);
   p+=2;
   CFGP("whirl.mic.distance",            "Mic distance",       CF_NUMBER, NULL);
   p+=2;

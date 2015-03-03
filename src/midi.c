@@ -138,8 +138,8 @@ static const char * ccFuncNames[] = {
   "whirl.drum.filter.q",
   "whirl.drum.filter.gain",
 
-  "whirl.horn.breakpos",
-  "whirl.drum.breakpos",
+  "whirl.horn.brakepos",
+  "whirl.drum.brakepos",
 
   "whirl.horn.acceleration",
   "whirl.horn.deceleration",
@@ -916,16 +916,6 @@ void midiPrimeControllerMapping (void *mcfg) {
   loadCCMap (m, "overdrive.character",   93, m->ctrlUseA, NULL, NULL);
 
   loadCCMap (m, "convolution.mix", 94, m->ctrlUseA, NULL, NULL);
-
-#if 0 // leslie testing
-  loadCCMap (m, "whirl.horn.breakpos", 34, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "whirl.drum.breakpos", 35, m->ctrlUseA, NULL, NULL);
-
-  loadCCMap (m, "whirl.horn.acceleration", 36, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "whirl.horn.deceleration", 37, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "whirl.drum.acceleration", 38, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "whirl.drum.deceleration", 39, m->ctrlUseA, NULL, NULL);
-#endif
 }
 
 /*
