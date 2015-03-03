@@ -1161,9 +1161,6 @@ void whirlProc2 (struct b_whirl *w,
     const unsigned int dl = (unsigned int)floor(d1) & WHIRL_DISPLC_MASK;   \
     const unsigned int dh = (dl + 1) & WHIRL_DISPLC_MASK;                  \
     const float intp = DSP[dl] * (1.f - dd) + dd * DSP[dh];                \
-    const unsigned int k = (unsigned int)                                  \
-        (round(drumAngleGRD * WHIRL_DISPLC_MASK) + drumPhase[(P)])         \
-        & WHIRL_DISPLC_MASK;                                               \
     const float t = drumSpacing[(P)] + intp + (float) outpos;              \
     const float r = floorf (t);                                            \
     const float q = x * (t - r);                                           \
