@@ -26,7 +26,7 @@ make \
 	IRPATH="../Resources/ir" \
 	WEAKJACK="${SBFSTACK}/src/weakjack/weak_libjack.c" \
 	FONTFILE=verabd.h \
-	SUBDIRS="b_synth ui" $@ \
+	SUBDIRS="b_synth b_whirl ui" $@ \
 	|| exit
 
 # zip-up LV2
@@ -36,7 +36,10 @@ trap "rm -rf $LV2TMPDIR" EXIT
 mkdir -p ${LV2TMPDIR}/b_synth.lv2/
 cp -v b_synth/*.ttl ${LV2TMPDIR}/b_synth.lv2/
 cp -v b_synth/*.dylib ${LV2TMPDIR}/b_synth.lv2/
-otool -L -arch all ${LV2TMPDIR}/b_synth.lv2/*dylib
+
+mkdir -p ${LV2TMPDIR}/b_whirl.lv2/
+cp -v b_whirl/*.ttl ${LV2TMPDIR}/b_whirl.lv2/
+cp -v b_whirl/*.dylib ${LV2TMPDIR}/b_whirl.lv2/
 
 #############################################################################
 # Create LOCAL APP DIR
@@ -59,6 +62,7 @@ if test -n "$ZIPUP" ; then # build a standalone lv2 zip
 	cd ${LV2TMPDIR}
 	rm -f  ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip
 	zip -r ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip b_synth.lv2/
+	zip -r ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip b_whirl.lv2/
 	ls -l ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip
 	cd -
 fi
@@ -99,6 +103,7 @@ cat > ${TARGET_CONTENTS}Info.plist << EOF
 </plist>
 EOF
 
+# TODO update installer to handle multiple bundles.
 if test -n "$LV2INSTALLER"; then
 	$LV2INSTALLER
 	DMGPOSA="set position of item \"LV2Installer.app\" of container window to {100, 260}"
@@ -141,6 +146,7 @@ mount -t hfs -o nobrowse "${DiskDevice}" "${MNTPATH}"
 cp -a ${TARGET_BUILD_DIR} "${MNTPATH}/${APPNAME}"
 cp -a ${BUNDLEDIR}/* "${MNTPATH}/"
 cp -a ${LV2TMPDIR}/b_synth.lv2 "${MNTPATH}/b_synth.lv2"
+#cp -a ${LV2TMPDIR}/b_whirl.lv2 "${MNTPATH}/b_whirl.lv2"
 cp ${RSRC_DIR}/osx_readme.txt "${MNTPATH}/README.txt"
 
 mkdir "${MNTPATH}/.background"

@@ -33,7 +33,7 @@ make \
 	ENABLE_CONVOLUTION=no \
 	WEAKJACK="${PREFIX}/src/weakjack/weak_libjack.c" \
 	FONTFILE=verabd.h \
-	SUBDIRS="b_synth ui" \
+	SUBDIRS="b_synth b_whirl ui" \
 	$@
 
 ### package
@@ -64,14 +64,17 @@ echo " === bundle to $DESTDIR"
 
 mkdir -p $DESTDIR/share
 mkdir -p ${DESTDIR}/b_synth.lv2
+mkdir -p ${DESTDIR}/b_whirl.lv2
 
 cp -v b_synth/*.ttl b_synth/*.dll "$DESTDIR/b_synth.lv2"
+cp -v b_whirl/*.ttl b_whirl/*.dll "$DESTDIR/b_whirl.lv2"
 
 # zip-up LV2
 if test -n "$ZIPUP" ; then # build a standalone lv2 zip
 	cd ${DESTDIR}
 	rm -f ${OUTDIR}/${PRODUCT_NAME}-lv2-${WARCH}-${GITVERSION}.zip
 	zip -r ${OUTDIR}/${PRODUCT_NAME}-lv2-${WARCH}-${GITVERSION}.zip b_synth.lv2/
+	zip -r ${OUTDIR}/${PRODUCT_NAME}-lv2-${WARCH}-${GITVERSION}.zip b_whirl.lv2/
 	ls -l ${OUTDIR}/${PRODUCT_NAME}-lv2-${WARCH}-${GITVERSION}.zip
 	cd -
 fi
@@ -130,6 +133,7 @@ Section "LV2 Plugin (required)" SecLV2
   SectionIn RO
   SetOutPath "\$${CMF}\\LV2"
   File /r b_synth.lv2
+  File /r b_whirl.lv2
   SetOutPath "\$INSTDIR"
   File /nonfatal README.txt
   WriteRegStr HKLM SOFTWARE\\RSS\\${XREGKEY}\\$WARCH "Install_Dir" "\$INSTDIR"
@@ -163,6 +167,7 @@ Section "Uninstall"
   DeleteRegKey HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${XREGKEY}"
   DeleteRegKey HKLM SOFTWARE\\RSS\\${XREGKEY}\\$WARCH
   RMDir /r "\$${CMF}\\LV2\\b_synth.lv2"
+  RMDir /r "\$${CMF}\\LV2\\b_whirl.lv2"
   Delete "\$INSTDIR\\setBfreeUI.exe"
   Delete "\$INSTDIR\\README.txt"
   Delete "\$INSTDIR\uninstall.exe"

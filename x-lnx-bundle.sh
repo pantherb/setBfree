@@ -37,7 +37,7 @@ make \
 	WEAKJACK="${PREFIX}/src/weakjack/weak_libjack.c" \
 	FONTFILE=verabd.h \
 	STATICBUILD=yes \
-	SUBDIRS="b_synth ui src" $@
+	SUBDIRS="b_synth b_whirl ui src" $@
 
 
 ##############################################################################
@@ -53,8 +53,10 @@ trap "rm -rf ${BUNDLEDIR}" EXIT
 
 mkdir -p ${BUNDLEDIR}/${PRODUCT_NAME}/bin
 mkdir -p ${BUNDLEDIR}/${PRODUCT_NAME}/b_synth.lv2
+mkdir -p ${BUNDLEDIR}/${PRODUCT_NAME}/b_whirl.lv2
 
 cp -v b_synth/*.ttl b_synth/*.so "${BUNDLEDIR}/${PRODUCT_NAME}/b_synth.lv2"
+cp -v b_whirl/*.ttl b_whirl/*.so "${BUNDLEDIR}/${PRODUCT_NAME}/b_whirl.lv2"
 cp -v ui/setBfreeUI "${BUNDLEDIR}/${PRODUCT_NAME}/bin"
 cp -v src/setBfree "${BUNDLEDIR}/${PRODUCT_NAME}/bin"
 
@@ -63,7 +65,7 @@ echo "$VERSION" > ${OUTDIR}/${PRODUCT_NAME}.latest.txt
 if test -n "$ZIPUP" ; then # build a standalone lv2 zip
 	cd ${BUNDLEDIR}/${PRODUCT_NAME}
 	rm -f ${OUTDIR}${PRODUCT_NAME}-lv2-linux-${WARCH}-${VERSION}.zip
-	zip -r ${OUTDIR}${PRODUCT_NAME}-lv2-linux-${WARCH}-${VERSION}.zip b_synth.lv2/
+	zip -r ${OUTDIR}${PRODUCT_NAME}-lv2-linux-${WARCH}-${VERSION}.zip b_synth.lv2/ b_whirl/
 	ls -l ${OUTDIR}${PRODUCT_NAME}-lv2-linux-${WARCH}-${VERSION}.zip
 	cd -
 fi
