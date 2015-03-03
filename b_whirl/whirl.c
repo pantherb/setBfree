@@ -92,6 +92,8 @@ void initValues(struct b_whirl *w) {
   /*
    * Spacing between reflections in samples. The first can't be zero, since
    * we must allow for the swing of the extent to wander close to the reader.
+   *
+   * TODO adjust for horn position
    */
 
   w->hornSpacing[0] = 12.0; /* Primary */
@@ -106,6 +108,8 @@ void initValues(struct b_whirl *w) {
 
   w->airSpeed = 340.0; /* Meters per second */
   w->micDistCm= 42.0;  /* From mic to origin */
+  w->hornXOffsetCm= 0.0;  /* offset of horn, towards left mic */
+  w->hornZOffsetCm= 0.0;  /* offset of horn, perpendicular to mic to front */
 
   w->drumSpacing[0] = 36.0;
   w->drumSpacing[1] = 39.0;
@@ -359,6 +363,8 @@ static void initTables (struct b_whirl *w) {
   const double hornRadiusSamples = (w->hornRadiusCm * w->SampleRateD/100.0) / w->airSpeed;
   const double drumRadiusSamples = (w->drumRadiusCm * w->SampleRateD/100.0) / w->airSpeed;
   const double micDistSamples    = (w->micDistCm    * w->SampleRateD/100.0) / w->airSpeed;
+  const double micXOffsetSamples = (w->hornXOffsetCm * w->SampleRateD/100.0) / w->airSpeed;
+  const double micZOffsetSamples = (w->hornZOffsetCm * w->SampleRateD/100.0) / w->airSpeed;
 
   double maxhn = 0;
   double maxdr = 0;
@@ -368,14 +374,14 @@ static void initTables (struct b_whirl *w) {
     /* Distance between the mic and the rotor korda */
     double a = micDistSamples - (hornRadiusSamples * cos (v));
     /* Distance between rotor and mic-origin line */
-    double b = hornRadiusSamples * sin (v);
+    double b = micZOffsetSamples + hornRadiusSamples * sin (v);
 
-    // TODO take off-center horn into account
-
-    w->hnFwdDispl[i] = sqrt ((a * a) + (b * b));
-    w->hnBwdDispl[WHIRL_DISPLC_SIZE - (i + 1)] = w->hnFwdDispl[i];
+    const double dist = sqrt ((a * a) + (b * b));
+    w->hnFwdDispl[i] = dist + micXOffsetSamples;
+    w->hnBwdDispl[WHIRL_DISPLC_SIZE - (i + 1)] = dist - micXOffsetSamples;
 
     if (maxhn < w->hnFwdDispl[i]) maxhn = w->hnFwdDispl[i];
+    if (maxhn < w->hnBwdDispl[WHIRL_DISPLC_SIZE - (i + 1)]) maxhn = w->hnBwdDispl[WHIRL_DISPLC_SIZE - (i + 1)];
 
     a = micDistSamples - (drumRadiusSamples * cos (v));
     b = drumRadiusSamples * sin (v);
@@ -385,6 +391,7 @@ static void initTables (struct b_whirl *w) {
     if (maxdr < w->drFwdDispl[i]) maxdr = w->drFwdDispl[i];
   }
 
+  // TODO expose mic placement
   w->hornPhase[0] = 0;
   w->hornPhase[1] = WHIRL_DISPLC_SIZE >> 1;
 
@@ -905,6 +912,12 @@ int whirlConfig (struct b_whirl *w, ConfigContext * cfg) {
   else if (getConfigParameter_d ("whirl.mic.distance", cfg, &d) == 1) {
     w->micDistCm = (float) d;
   }
+  else if (getConfigParameter_d ("whirl.horn.offset.x", cfg, &d) == 1) {
+    w->hornXOffsetCm = (float) d;
+  }
+  else if (getConfigParameter_d ("whirl.horn.offset.z", cfg, &d) == 1) {
+    w->hornZOffsetCm = (float) d;
+  }
   else if (getConfigParameter_ir
 	   ("whirl.drum.filter.type", cfg, &k, 0, 8) == 1) {
     w->lpT = k;
@@ -1335,6 +1348,8 @@ static const ConfigDoc doc[] = {
   {"whirl.horn.radius",        CFG_DOUBLE,  "19.2",     "Horn radius in centimeter", "cm", 9.0, 50.0, 0.5},
   {"whirl.drum.radius",        CFG_DOUBLE,  "22.0",     "Drum radius in centimeter", "cm", 9.0, 50.0, 0.5},
   {"whirl.mic.distance",       CFG_DOUBLE,  "42.0",     "Distance from mic to origin in centimeters", "cm", 9, 100, 1.},
+  {"whirl.horn.offset.z",      CFG_DOUBLE,  "0.0",      "Offset of horn perpendicular to mic to front, in centimeters", "cm", -20, 20, 1.},
+  {"whirl.horn.offset.x",      CFG_DOUBLE,  "0.0",      "Offset of horn towards left mic, in centimeters", "cm", -20, 20, 1.},
   {"whirl.horn.level",         CFG_DECIBEL, "0.7",      "Horn wet-signal volume", "dB", 0, 1.0, 2.0},
   {"whirl.horn.leak",          CFG_DECIBEL, "0.15",     "Horn dry-signal signal leakage", "dB", 0, 1.0, 2.0},
   {"whirl.drum.filter.type",   CFG_INT,     "8",        "This filter separates the signal to be sent to the drum-speaker. It should be a high-shelf filter with negative gain. Filter type: 0-8. see \"Filter types\" below.", "", 0, 8, 1},

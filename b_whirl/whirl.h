@@ -130,6 +130,8 @@ struct b_whirl {
 
   float airSpeed;	/* Meters per second */
   float micDistCm;	/* From mic to origin */
+  float hornXOffsetCm;	/* offset of horn, towards left mic */
+  float hornZOffsetCm;	/* offset of horn, perpendicular to mic to front */
   float drumSpacing[6];
 
 /* Delay buffers */
