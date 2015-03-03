@@ -1156,10 +1156,15 @@ void whirlProc2 (struct b_whirl *w,
     BUF[n] += q;}
 
 #define DR_MOTION(P,BUF,DSP) {                                             \
+    const float d1 = drumAngleGRD * WHIRL_DISPLC_SIZE + drumPhase[(P)];    \
+    const float dd = fmod(d1, 1.0);                                        \
+    const unsigned int dl = (unsigned int)floor(d1) & WHIRL_DISPLC_MASK;   \
+    const unsigned int dh = (dl + 1) & WHIRL_DISPLC_MASK;                  \
+    const float intp = DSP[dl] * (1.f - dd) + dd * DSP[dh];                \
     const unsigned int k = (unsigned int)                                  \
         (round(drumAngleGRD * WHIRL_DISPLC_MASK) + drumPhase[(P)])         \
         & WHIRL_DISPLC_MASK;                                               \
-    const unsigned int t = drumSpacing[(P)] + DSP[k] + (float) outpos;     \
+    const float t = drumSpacing[(P)] + intp + (float) outpos;              \
     const float r = floorf (t);                                            \
     const float q = x * (t - r);                                           \
     n = ((unsigned int) r) & WHIRL_BUF_MASK_SAMPLES;                       \
