@@ -113,8 +113,8 @@ struct b_whirl {
   int hornAcDc;
   int drumAcDc;
 
-  double hornIncrGRD; ///< current angular speed - unit: radians / sample / (2*M_PI)
-  double drumIncrGRD; ///< current angular speed - unit: radians / sample / (2*M_PI)
+  double hornIncr; ///< current angular speed - unit: radians / sample / (2*M_PI)
+  double drumIncr; ///< current angular speed - unit: radians / sample / (2*M_PI)
 
   double hornTarget; ///< target angular speed  - unit: radians / sample / (2*M_PI)
   double drumTarget; ///< target angular speed  - unit: radians / sample / (2*M_PI)
