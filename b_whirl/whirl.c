@@ -1078,15 +1078,12 @@ void whirlProc2 (struct b_whirl *w,
   const struct _bw * const bbw = w->bfw;
 
 
-  int hornAngle = hornAngleGRD * WHIRL_DISPLC_SIZE;
-  int drumAngle = drumAngleGRD * WHIRL_DISPLC_SIZE;
-
 #ifdef DEBUG_SPEED
   char const * const acdc[3]= {"<","#",">"};
   static int fgh=0;
   if ((fgh++ % (int)(w->SampleRateD/128/5) ) ==0) {
     printf ("H:%.3f D:%.3f | HS:%.3f DS:%.3f [Hz]| HT:%.2f DT:%.2f [Hz]| %s %s\n",
-	(double)hornAngle/WHIRL_DISPLC_SIZE, (double)drumAngle/WHIRL_DISPLC_SIZE,
+	hornAngleGRD, drumAngleGRD,
 	w->SampleRateD*(double)hornIncrGRD, w->SampleRateD*(double)drumIncrGRD,
 	w->SampleRateD*(double)w->hornTarget, w->SampleRateD*(double)w->drumTarget,
 	acdc[w->hornAcDc+1], acdc[w->drumAcDc+1]
@@ -1096,13 +1093,8 @@ void whirlProc2 (struct b_whirl *w,
 
   /* process each sample */
   for (i = 0; i < bufferLengthSamples; i++) {
-    unsigned int k;
     unsigned int n;
-    float q;
-    float r;
-    float t;
     float x = (float) (*xp++) + DENORMAL_HACK;
-    float xa;
     float xx = x;
     float leak = 0;
 
@@ -1111,29 +1103,39 @@ void whirlProc2 (struct b_whirl *w,
     DI = (DI + AGMASK) & AGMASK; \
     DX[DI] = XS;}
 
-#define HN_MOTION(P,BUF,DSP,BW,DX,DI) {                     \
-    k = ((hornAngle + hornPhase[(P)]) & WHIRL_DISPLC_MASK); \
-    t = hornSpacing[(P)] + DSP[k] + (float) outpos;         \
-    r = floorf (t);                                         \
-    xa  = BW[k].b[0] * x;                                   \
-    xa += BW[k].b[1] * DX[(DI)];                            \
-    xa += BW[k].b[2] * DX[((DI)+1) & AGMASK];               \
-    xa += BW[k].b[3] * DX[((DI)+2) & AGMASK];               \
-    xa += BW[k].b[4] * DX[((DI)+3) & AGMASK];               \
-    q = xa * (t - r);                                       \
-    n = ((unsigned int) r) & WHIRL_BUF_MASK_SAMPLES;        \
-    BUF[n] += xa - q;                                       \
-    n = (n + 1) & WHIRL_BUF_MASK_SAMPLES;                   \
+#define HN_MOTION(P,BUF,DSP,BW,DX,DI) {                                    \
+    const float h1 = hornAngleGRD * WHIRL_DISPLC_SIZE + hornPhase[(P)];    \
+    const float hd = fmod(h1, 1.0);                                        \
+    const unsigned int hl = (unsigned int)floor(h1) & WHIRL_DISPLC_MASK;   \
+    const unsigned int hh = (hl + 1) & WHIRL_DISPLC_MASK;                  \
+    const float intp = DSP[hl] * (1.f - hd) + hd * DSP[hh];                \
+    const unsigned int k = (unsigned int)                                  \
+        (round(hornAngleGRD * WHIRL_DISPLC_MASK) + hornPhase[(P)])         \
+        & WHIRL_DISPLC_MASK;                                               \
+    const float t = hornSpacing[(P)] + intp + (float) outpos;              \
+    const float r = floorf (t);                                            \
+    float xa;                                                              \
+    xa  = BW[k].b[0] * x;                                                  \
+    xa += BW[k].b[1] * DX[(DI)];                                           \
+    xa += BW[k].b[2] * DX[((DI)+1) & AGMASK];                              \
+    xa += BW[k].b[3] * DX[((DI)+2) & AGMASK];                              \
+    xa += BW[k].b[4] * DX[((DI)+3) & AGMASK];                              \
+    const float q = xa * (t - r);                                          \
+    n = ((unsigned int) r) & WHIRL_BUF_MASK_SAMPLES;                       \
+    BUF[n] += xa - q;                                                      \
+    n = (n + 1) & WHIRL_BUF_MASK_SAMPLES;                                  \
     BUF[n] += q;}
 
-#define DR_MOTION(P,BUF,DSP) {                              \
-    k = ((drumAngle + drumPhase[(P)]) & WHIRL_DISPLC_MASK); \
-    t = drumSpacing[(P)] + DSP[k] + (float) outpos;         \
-    r = floorf (t);                                         \
-    q = x * (t - r);                                        \
-    n = ((unsigned int) r) & WHIRL_BUF_MASK_SAMPLES;        \
-    BUF[n] += x - q;                                        \
-    n = (n + 1) & WHIRL_BUF_MASK_SAMPLES;                   \
+#define DR_MOTION(P,BUF,DSP) {                                             \
+    const unsigned int k = (unsigned int)                                  \
+        (round(drumAngleGRD * WHIRL_DISPLC_MASK) + drumPhase[(P)])         \
+        & WHIRL_DISPLC_MASK;                                               \
+    const unsigned int t = drumSpacing[(P)] + DSP[k] + (float) outpos;     \
+    const float r = floorf (t);                                            \
+    const float q = x * (t - r);                                           \
+    n = ((unsigned int) r) & WHIRL_BUF_MASK_SAMPLES;                       \
+    BUF[n] += x - q;                                                       \
+    n = (n + 1) & WHIRL_BUF_MASK_SAMPLES;                                  \
     BUF[n] += q;}
 
     /* This is just a bum filter to take some high-end off. */
@@ -1259,13 +1261,8 @@ void whirlProc2 (struct b_whirl *w,
 
     outpos = (outpos + 1) & WHIRL_BUF_MASK_SAMPLES;
 
-    hornAngleGRD = (hornAngleGRD + hornIncrGRD);
-    hornAngleGRD = hornAngleGRD - floor(hornAngleGRD); // limit to [0..1]
-    hornAngle = hornAngleGRD * WHIRL_DISPLC_SIZE;
-
-    drumAngleGRD = (drumAngleGRD + drumIncrGRD);
-    drumAngleGRD = drumAngleGRD - floor(drumAngleGRD); // limit to [0..1]
-    drumAngle = drumAngleGRD * WHIRL_DISPLC_SIZE;
+    hornAngleGRD = fmod(hornAngleGRD + hornIncrGRD, 1.0);
+    drumAngleGRD = fmod(drumAngleGRD + drumIncrGRD, 1.0);
   }
 
   /* copy back variables */

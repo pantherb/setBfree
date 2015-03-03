@@ -26,7 +26,7 @@
 #include "../src/cfgParser.h" // ConfigContext
 #include "../src/midi.h" // useMIDIControlFunction
 
-#define WHIRL_DISPLC_SIZE ((unsigned int) (1 << 11))
+#define WHIRL_DISPLC_SIZE ((unsigned int) (1 << 14))
 #define WHIRL_DISPLC_MASK ((WHIRL_DISPLC_SIZE) - 1)
 
 #define WHIRL_BUF_SIZE_SAMPLES ((unsigned int) (1 << 11))
