@@ -30,6 +30,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <assert.h>
 
 #include "eqcomp.h"
 #include "whirl.h"
@@ -359,6 +360,8 @@ static void initTables (struct b_whirl *w) {
   const double drumRadiusSamples = (w->drumRadiusCm * w->SampleRateD/100.0) / w->airSpeed;
   const double micDistSamples    = (w->micDistCm    * w->SampleRateD/100.0) / w->airSpeed;
 
+  double maxhn = 0;
+  double maxdr = 0;
   for (i = 0; i < WHIRL_DISPLC_SIZE; i++) {
     /* Compute angle around the circle */
     double v = (2.0 * M_PI * (double) i) / (double) WHIRL_DISPLC_SIZE;
@@ -370,10 +373,14 @@ static void initTables (struct b_whirl *w) {
     w->hnFwdDispl[i] = sqrt ((a * a) + (b * b));
     w->hnBwdDispl[WHIRL_DISPLC_SIZE - (i + 1)] = w->hnFwdDispl[i];
 
+    if (maxhn < w->hnFwdDispl[i]) maxhn = w->hnFwdDispl[i];
+
     a = micDistSamples - (drumRadiusSamples * cos (v));
     b = drumRadiusSamples * sin (v);
     w->drFwdDispl[i] = sqrt ((a * a) + (b * b));
     w->drBwdDispl[WHIRL_DISPLC_SIZE - (i + 1)] = w->drFwdDispl[i];
+
+    if (maxdr < w->drFwdDispl[i]) maxdr = w->drFwdDispl[i];
   }
 
   w->hornPhase[0] = 0;
@@ -387,6 +394,7 @@ static void initTables (struct b_whirl *w) {
 
   for (i = 0; i < 6; i++) {
     w->hornSpacing[i] = w->hornSpacing[i] * w->SampleRateD / 22100.0 + hornRadiusSamples + 1.0;
+    assert (maxhn + w->hornSpacing[i] < WHIRL_BUF_SIZE_SAMPLES);
   }
 
   w->drumPhase[0] = 0;
@@ -400,6 +408,7 @@ static void initTables (struct b_whirl *w) {
 
   for (i = 0; i < 6; i++) {
     w->drumSpacing[i] = w->drumSpacing[i] * w->SampleRateD / 22100.0 + drumRadiusSamples + 1.0;
+    assert (maxdr + w->drumSpacing[i] < WHIRL_BUF_SIZE_SAMPLES);
   }
 
   setIIRFilter (w->drfL, w->lpT, w->lpF, w->lpQ, w->lpG, w->SampleRateD);
