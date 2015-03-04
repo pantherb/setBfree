@@ -13,7 +13,7 @@
 <http://gareus.org/oss/lv2/b_reverb>
 	a doap:Project, lv2:Plugin, lv2:SpatialPlugin ;
 	doap:maintainer <http://gareus.org/rgareus#me> ;
-	doap:name "B Organ Reverb";
+	doap:name "setBFree Organ Reverb";
 	doap:license <http://usefulinc.com/doap/licenses/gpl> ;
 	lv2:optionalFeature lv2:hardRTCapable ;
 	lv2:port
@@ -50,5 +50,6 @@
 		lv2:default 0.3;
 		lv2:minimum 0.0 ;
 		lv2:maximum 1.0 ;
-	]
+	] ;
+	rdfs:comment "A Schroeder Reverberator"
 	.

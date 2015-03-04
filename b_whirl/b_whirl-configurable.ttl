@@ -16,7 +16,7 @@
 <http://gareus.org/oss/lv2/b_whirl#extended>
 	a  doap:Project, lv2:Plugin, lv2:SimulatorPlugin;
 	doap:maintainer <http://gareus.org/rgareus#me> ;
-	doap:name "B Organ Whirl Speaker Extended Version";
+	doap:name "setBfree Whirl Speaker - Extended Version";
 	doap:license <http://usefulinc.com/doap/licenses/gpl> ;
 	lv2:optionalFeature lv2:hardRTCapable ;
 	lv2:port
@@ -64,6 +64,7 @@
 		lv2:scalePoint [ rdfs:label "horn: fast, drum:slow"; rdf:value 7 ; ] ;
 		lv2:scalePoint [ rdfs:label "horn: fast, drum:fast"; rdf:value 8 ; ] ;
 		pp:displayPriority 1000 ;
+		rdfs:comment "Motor control" ;
 	],
 
 	[
@@ -77,6 +78,7 @@
 		lv2:maximum +20.0 ;
 		 units:unit units:db;
 		pp:displayPriority 800 ;
+		rdfs:comment "Horn wet-signal volume" ;
 	],
 	[
 		a lv2:InputPort ,
@@ -89,6 +91,7 @@
 		lv2:maximum +20.0 ;
 		 units:unit units:db;
 		pp:displayPriority 800 ;
+		rdfs:comment "Drum wet-signal level" ;
 	],
 	[
 		a lv2:InputPort ,
@@ -100,6 +103,7 @@
 		lv2:minimum 0.0;
 		lv2:maximum 2.0 ;
 		pp:displayPriority 700 ;
+		rdfs:comment "Microphone angle/setup for the baffle" ;
     lv2:scalePoint [
       rdfs:label "Mono/Left" ;
       rdf:value 0.0 ;
@@ -122,6 +126,7 @@
 		lv2:minimum 10.0 ;
 		lv2:maximum 200.0 ;
 		pp:displayPriority 300 ;
+		rdfs:comment "Target RPM for slow (aka choral) horn speed" ;
 	],
 	[
 		a lv2:InputPort ,
@@ -133,6 +138,7 @@
 		lv2:minimum 100.0;
 		lv2:maximum 1000.0 ;
 		pp:displayPriority 300 ;
+		rdfs:comment "Target RPM for fask (aka tremolo) horn speed" ;
 	],
 	[
 		a lv2:InputPort ,
@@ -144,6 +150,7 @@
 		lv2:minimum 0.001 ;
 		lv2:maximum 10.0 ;
 		pp:displayPriority 200 ;
+		rdfs:comment "Time required to accelerate the horn (exponential time constant)" ;
 	],
 	[
 		a lv2:InputPort ,
@@ -155,17 +162,19 @@
 		lv2:minimum 0.001 ;
 		lv2:maximum 10.0 ;
 		pp:displayPriority 200 ;
+		rdfs:comment "Time required to decelerate the horn (exponential time constant)" ;
 	],
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
 		lv2:index 11 ;
 		lv2:symbol "hornbrakepos" ;
-		lv2:name "Horn Brake";
+		lv2:name "Horn Brake Position";
 		lv2:default 0.0 ;
 		lv2:minimum 0.0 ;
 		lv2:maximum 1.0 ;
 		pp:displayPriority 200 ;
+		rdfs:comment "Horn stop position. Clockwise position where to stop. (0: free-stop, 1.0:front-center). Note, the original Leslie can not do this, yet sometimes the horn is aimed at the back of the cabinet when it comes to a halt, which results in a less than desirable sound." ;
     lv2:scalePoint [
       rdfs:label "No brake" ;
       rdf:value 0.0 ;
@@ -205,6 +214,7 @@
 		lv2:scalePoint [ rdfs:label "low-shelf"; rdf:value 7 ] ;
 		lv2:scalePoint [ rdfs:label "high-shelf"; rdf:value 8 ] ;
 		pp:displayPriority 100 ;
+		rdfs:comment "This is the first of two filters to shape the signal to be sent to the horn-speaker";
 	],
 	[
 		a lv2:InputPort ,
@@ -216,6 +226,7 @@
 		lv2:minimum 250 ;
 		lv2:maximum 8000.0 ;
 		pp:displayPriority 100 ;
+		rdfs:comment "Filter frequency";
 	],
 	[
 		a lv2:InputPort ,
@@ -227,13 +238,14 @@
 		lv2:minimum 0.01 ;
 		lv2:maximum 6.0 ;
 		pp:displayPriority 100 ;
+		rdfs:comment "Filter bandwidth" ;
 	],
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
 		lv2:index 15 ;
 		lv2:symbol "filtagain" ;
-		lv2:name "Horn Filter-1 Gain (shelf) [dB]";
+		lv2:name "Horn Filter-1 Gain [dB]";
 		lv2:default -38.9291;
 		lv2:minimum -48.0 ;
 		lv2:maximum  48.0 ;
@@ -260,6 +272,7 @@
 		lv2:scalePoint [ rdfs:label "low-shelf"; rdf:value 7 ] ;
 		lv2:scalePoint [ rdfs:label "high-shelf"; rdf:value 8 ] ;
 		pp:displayPriority 100 ;
+		rdfs:comment "This is the second of two filters to shape the signal to be sent to the horn-speaker, by default a low-shelf filter with negative gain to remove frequencies which are sent to the drum";
 	],
 	[
 		a lv2:InputPort ,
@@ -271,6 +284,7 @@
 		lv2:minimum 250 ;
 		lv2:maximum 8000.0 ;
 		pp:displayPriority 100 ;
+		rdfs:comment "Filter frequency";
 	],
 	[
 		a lv2:InputPort ,
@@ -282,13 +296,14 @@
 		lv2:minimum 0.01 ;
 		lv2:maximum 6.0 ;
 		pp:displayPriority 100 ;
+		rdfs:comment "Filter bandwidth";
 	],
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
 		lv2:index 19 ;
 		lv2:symbol "filtbgain" ;
-		lv2:name "Horn Filter-2 Gain (shelf) [dB]";
+		lv2:name "Horn Filter-2 Gain [dB]";
 		lv2:default -30.0 ;
 		lv2:minimum -48.0 ;
 		lv2:maximum  48.0 ;
@@ -306,6 +321,7 @@
 		lv2:minimum 5.0 ;
 		lv2:maximum 100.0 ;
 		pp:displayPriority 300 ;
+		rdfs:comment "Target RPM for slow (aka choral) drum speed" ;
 	],
 	[
 		a lv2:InputPort ,
@@ -317,6 +333,7 @@
 		lv2:minimum 60;
 		lv2:maximum 600.0 ;
 		pp:displayPriority 300 ;
+		rdfs:comment "Target RPM for fast (aka tremolo) drum speed" ;
 	],
 	[
 		a lv2:InputPort ,
@@ -328,6 +345,8 @@
 		lv2:minimum 0.01 ;
 		lv2:maximum 20.0 ;
 		pp:displayPriority 200 ;
+		rdfs:comment "Time required to accelerate the drum (exponential time constant)" ;
+
 	],
 	[
 		a lv2:InputPort ,
@@ -339,6 +358,7 @@
 		lv2:minimum 0.01 ;
 		lv2:maximum 20.0 ;
 		pp:displayPriority 200 ;
+		rdfs:comment "Time required to decelerate the drum (exponential time constant)" ;
 	],
 	[
 		a lv2:InputPort ,
@@ -367,6 +387,7 @@
       rdf:value 1.0 ;
     ];
 		pp:displayPriority 250 ;
+		rdfs:comment "Drum stop position. Clockwise position where to stop. (0: free-stop, 1.0:front-center)";
 	],
 
 	[
@@ -389,6 +410,7 @@
 		lv2:scalePoint [ rdfs:label "low-shelf"; rdf:value 7 ] ;
 		lv2:scalePoint [ rdfs:label "high-shelf"; rdf:value 8 ] ;
 		pp:displayPriority 100 ;
+		rdfs:comment "This filter separates the signal to be sent to the drum-speaker. It should be a high-shelf filter with negative gain"
 	],
 	[
 		a lv2:InputPort ,
@@ -400,6 +422,7 @@
 		lv2:minimum 50 ;
 		lv2:maximum 8000.0 ;
 		pp:displayPriority 100 ;
+		rdfs:comment "Filter frequency";
 	],
 	[
 		a lv2:InputPort ,
@@ -411,6 +434,7 @@
 		lv2:minimum 1.6016 ;
 		lv2:maximum 6.0 ;
 		pp:displayPriority 100 ;
+		rdfs:comment "Filter bandwidth";
 	],
 	[
 		a lv2:InputPort ,
@@ -424,5 +448,5 @@
 		 units:unit units:db;
 		pp:displayPriority 100 ;
 	];
-	rdfs:comment "Leslie speker emulation (extended version)."
+	rdfs:comment "A rotating louspeaker emulator designed to imitate the sound and properties of the sound modification device that brought world-wide fame to the name of Don Leslie" ;
 	.
