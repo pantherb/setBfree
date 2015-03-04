@@ -27,7 +27,7 @@ Plugin Installation
 Simply run the included LV2Installer.app, it will ask to do either
 of the following for you:
 
-Place the contents of the b_synth.lv2 folder to
+Copy the the b_synth.lv2 and b_whirl.lv2 folders to
   $HOME/Library/Audio/Plug-Ins/LV2/
 or install system-wide for all users to
-	/Library/Audio/Plug-Ins/LV2/
+  /Library/Audio/Plug-Ins/LV2/
