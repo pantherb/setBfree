@@ -430,8 +430,8 @@
 		lv2:index 27 ;
 		lv2:symbol "filtdq" ;
 		lv2:name "Drum Filter Quality";
-		lv2:default 1.0 ;
-		lv2:minimum 1.6016 ;
+		lv2:minimum 0.1 ;
+		lv2:default 1.6016 ;
 		lv2:maximum 6.0 ;
 		pp:displayPriority 100 ;
 		rdfs:comment "Filter bandwidth";
