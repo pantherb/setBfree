@@ -75,8 +75,10 @@ cp -v pgm/default.pgm ${TARGET_CONTENTS}Resources/
 cp -v cfg/default.cfg ${TARGET_CONTENTS}Resources/
 cp -v cfg/bcf2000.cfg ${TARGET_CONTENTS}Resources/
 cp -v cfg/oxy61.cfg ${TARGET_CONTENTS}Resources/
+cp -v cfg/K2500.cfg ${TARGET_CONTENTS}Resources/
+cp -v cfg/KB3X42_1.K25 ${TARGET_CONTENTS}Resources/
 cp -v ${RSRC_DIR}/${PRODUCT_NAME}.icns ${TARGET_CONTENTS}Resources/
-cp -av b_conv/ir ${TARGET_CONTENTS}Resources/
+#cp -av b_conv/ir ${TARGET_CONTENTS}Resources/
 
 echo "APPL~~~~" > ${TARGET_CONTENTS}PkgInfo
 
