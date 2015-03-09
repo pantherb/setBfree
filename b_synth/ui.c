@@ -2817,9 +2817,11 @@ onDisplay(PuglView* view)
       case 4:
 	render_title(view, "open .pgm or .cfg",  .2/SCALE, invaspect * .78/SCALE, 0.1, mat_drawbar_white, TA_RIGHT_TOP);
 	render_text(view, "Note: loading a .cfg will re-initialize the organ.", -20.0, 7.75, 0.0, TA_LEFT_BOTTOM);
+#ifdef JACK_DESCRIPT
 	if (ui->bundlePath && strcmp(ui->curdir, ui->bundlePath)) {
 	  gui_button(view, BTNLOC_RSRC, HOVER_RSRC, "Go To /CFG");
 	}
+#endif
 	gui_button(view, BTNLOC_CANC3, HOVER_CANC3, "Cancel");
 	break;
       case 5:
