@@ -57,6 +57,9 @@
 #include <libgen.h>
 #include <string.h>
 #include "OpenGL/glu.h"
+# ifdef JACK_DESCRIPT
+#include <libproc.h>
+# endif
 #else
 #include <GL/glu.h>
 #endif
@@ -135,15 +138,16 @@ extern const ConfigDoc *scannerDoc ();
 /* ui-model scale -- on screen we use [-1..+1] orthogonal projection */
 #define SCALE (0.04f)
 
-#define BTNLOC_OK -.05,  .05, .55, .7
-#define BTNLOC_NO -.75, -.65, .55, .7
-#define BTNLOC_YES .65,  .75, .55, .7
-#define BTNLOC_CANC .75, .95, .8, .95
-#define BTNLOC_SAVE .45, .70, .8, .95
-#define BTNLOC_DFLT .05, .40, .8, .95
+#define BTNLOC_OK   -.05, .05, .55, .70
+#define BTNLOC_NO   -.75,-.65, .55, .70
+#define BTNLOC_YES   .65, .75, .55, .70
+#define BTNLOC_CANC  .75, .95, .80, .95
+#define BTNLOC_SAVE  .45, .70, .80, .95
+#define BTNLOC_DFLT  .05, .40, .80, .95
+#define BTNLOC_RSRC  .30, .60, .78, .93
 #define BTNLOC_CANC2 .68, .96, .73, .88
 #define BTNLOC_CANC3 .68, .96, .78, .93
-#define SCROLLBAR -.8, .8, .625, 0.7
+#define SCROLLBAR    -.8, .8, .625, .70
 
 enum {
   HOVER_OK = 1,
@@ -154,7 +158,8 @@ enum {
   HOVER_CANC2 = 32,
   HOVER_CANC3 = 64,
   HOVER_SCROLLBAR = 128,
-  HOVER_DFLT = 256
+  HOVER_DFLT = 256,
+  HOVER_RSRC = 512
 };
 
 #define GPX(x) ((x) / 480.0)
@@ -410,6 +415,7 @@ typedef struct {
 #ifdef JACK_DESCRIPT
   char * defaultConfigFile;
   char * defaultProgrammeFile;
+  char * bundlePath;
 #endif
 } B3ui;
 
@@ -501,6 +507,13 @@ static int dirlist(PuglView* view, const char *dir) {
 
   if (!(D = opendir (dir)))  {
     ui->dir_sel = -1;
+    free(ui->curdir);
+#ifdef _WIN32
+    ui->curdir = strdup("C:\\");
+#else
+    ui->curdir = strdup("/");
+#endif
+    // XXX re-try?, print error/close...
     return -1;
   }
 
@@ -2802,8 +2815,11 @@ onDisplay(PuglView* view)
 
     switch(ui->displaymode) {
       case 4:
-	render_title(view, "open .pgm or .cfg", 16.25, 6.5, 0.1, mat_drawbar_white, TA_RIGHT_TOP);
+	render_title(view, "open .pgm or .cfg",  .2/SCALE, invaspect * .78/SCALE, 0.1, mat_drawbar_white, TA_RIGHT_TOP);
 	render_text(view, "Note: loading a .cfg will re-initialize the organ.", -20.0, 7.75, 0.0, TA_LEFT_BOTTOM);
+	if (ui->bundlePath && strcmp(ui->curdir, ui->bundlePath)) {
+	  gui_button(view, BTNLOC_RSRC, HOVER_RSRC, "Go To /CFG");
+	}
 	gui_button(view, BTNLOC_CANC3, HOVER_CANC3, "Cancel");
 	break;
       case 5:
@@ -3639,6 +3655,7 @@ onMotion(PuglView* view, int x, int y)
     if (MOUSEIN(BTNLOC_CANC, fx, fy)) ui->mouseover |= HOVER_CANC;
     if (MOUSEIN(BTNLOC_CANC2, fx, fy)) ui->mouseover |= HOVER_CANC2;
     if (MOUSEIN(BTNLOC_CANC3, fx, fy)) ui->mouseover |= HOVER_CANC3;
+    if (MOUSEIN(BTNLOC_RSRC, fx, fy)) ui->mouseover |= HOVER_RSRC;
     if (MOUSEIN(SCROLLBAR, fx, fy)) ui->mouseover |= HOVER_SCROLLBAR;
     if (phov != ui->mouseover) {
       puglPostRedisplay(view);
@@ -3974,6 +3991,12 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
       } else if (ui->displaymode == 6 && MOUSEIN(BTNLOC_DFLT, fx, fy) && ui->defaultProgrammeFile) {
 	save_cfgpgm(view, ui->defaultProgrammeFile, 6, 0);
 	ui->displaymode = 0;
+	return;
+      } else if (ui->displaymode == 4 && MOUSEIN(BTNLOC_RSRC, fx, fy) && ui->bundlePath) {
+	    free(ui->curdir);
+	    ui->curdir = strdup(ui->bundlePath);;
+	    dirlist(view, ui->curdir);
+	    puglPostRedisplay(view);
 	return;
 #endif
       } else if (
@@ -4490,6 +4513,7 @@ instantiate(const LV2UI_Descriptor*   descriptor,
   // CODE DUP src/main.c, lv2.c
   ui->defaultConfigFile = NULL;
   ui->defaultProgrammeFile = NULL;
+  ui->bundlePath = NULL;
 
 #ifdef _WIN32
   // out of luck with CSIDL_LOCAL_APPDATA
@@ -4525,14 +4549,41 @@ instantiate(const LV2UI_Descriptor*   descriptor,
 # endif
   }
 #endif
+
+#ifdef __APPLE__
+  {
+    char pathbuf[1024];
+    if (proc_pidpath (getpid(), pathbuf, sizeof(pathbuf)) >= 0) {
+      char *d = dirname(dirname(pathbuf));
+      ui->bundlePath = (char*) malloc(strlen(d) + 12);
+      strcpy(ui->bundlePath, d);
+      strcat(ui->bundlePath, "/Resources/");
+      printf("%s\n", ui->bundlePath);
+      struct stat fs;
+      if (stat(ui->bundlePath, &fs) == 0) {
+	if (!S_ISDIR(fs.st_mode))
+	{
+	  // not a dir
+	  free(ui->bundlePath);
+	  ui->bundlePath = 0;
+	}
+      } else {
+	// not a path
+	free(ui->bundlePath);
+	ui->bundlePath = 0;
+      }
+    }
+  }
+#endif
+
 #endif
 
 
-  /* ask plugin about current state */
-  forge_message_str(ui, ui->uris.sb3_uiinit, NULL);
+    /* ask plugin about current state */
+    forge_message_str(ui, ui->uris.sb3_uiinit, NULL);
 
-  return ui;
-}
+    return ui;
+  }
 
 static void
 cleanup(LV2UI_Handle handle)
@@ -4547,6 +4598,7 @@ cleanup(LV2UI_Handle handle)
 #ifdef JACK_DESCRIPT
   free(ui->defaultConfigFile);
   free(ui->defaultProgrammeFile);
+  free(ui->bundlePath);
 #endif
   free_dirlist(ui);
   ftglDestroyFont(ui->font_big);
