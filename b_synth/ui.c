@@ -4218,7 +4218,7 @@ static void* ui_thread(void* ptr)
   }
   return NULL;
 }
-#else
+#elif !defined XTERNAL_UI
 static int idle(LV2UI_Handle handle) {
   B3ui* ui = (B3ui*)handle;
   puglProcessEvents(ui->view);
@@ -4713,14 +4713,14 @@ port_event(LV2UI_Handle handle,
  * LV2 setup
  */
 
-#ifndef OLD_SUIL
+#if !defined OLD_SUIL && !defined XTERNAL_UI
 static const LV2UI_Idle_Interface idle_iface = { idle };
 #endif
 
 static const void*
 extension_data(const char* uri)
 {
-#ifndef OLD_SUIL
+#if !defined OLD_SUIL && !defined XTERNAL_UI
   if (!strcmp(uri, LV2_UI__idleInterface)) {
     return &idle_iface;
   }
