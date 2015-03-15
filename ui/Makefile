@@ -16,6 +16,7 @@ else
     override CFLAGS+=-mwindows
   else
     JACKWRAP=jackwrap.c $(WEAKJACK)
+    LOADLIBES=-lrt
     ifeq ($(WEAKJACK),)
       UILIBS+=`pkg-config --libs jack`
     else
@@ -44,7 +45,7 @@ setBfreeUI$(EXE_EXT): jackwrap.c $(LV2OBJ) \
 	$(MAKE) -C ../b_synth $(FONTFILE)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(UICFLAGS) $(LIC_CFLAGS) \
 		-pthread \
-		-DXTERNAL_UI -DHAVE_IDLE_IFACE -DJACK_AUTOCONNECT=15 \
+		-DXTERNAL_UI -DJACK_AUTOCONNECT=15 \
 		-DJACK_DESCRIPT=\"desc.h\" \
 		-o setBfreeUI$(EXE_EXT) \
 		$(JACKWRAP) \
