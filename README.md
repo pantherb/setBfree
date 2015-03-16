@@ -39,7 +39,6 @@ available as LV2 plugins.
 
 Examples:
 
-	setBfree midi.driver="alsa" midi.port="129" jack.connect="jack_rack:in_"
 	setBfree jack.out.left="system:playback_7" jack.out.left="system:playback_8"
 	setBfreeUI
 	jalv.gtk http://gareus.org/oss/lv2/b_synth # LV2 in jalv-host
@@ -106,7 +105,7 @@ generation itself and can not be broken-out to standalone effects.
 Summary of Changes since Beatrix
 --------------------------------
 
-*   native JACK application (JACK Audio, JACK or ALSA MIDI in)
+*   native JACK application (JACK Audio, JACK MIDI)
 *   synth engine: variable sample-rate, floating point (beatrix is 22050 Hz, 16bit only)
 *   broken-out effects as LV2 plugins; LV2 wrapper around synth-engine
 *   built-in documentation
@@ -142,12 +141,14 @@ to enable additional leslie cabinet simulation.
 This is an additional optional post-processing step and not related to the 
 leslie doppler and built-in angular-dependent leslie speaker emulation.
 
+As for version 0.8, alsa-sequencer support is deprecated and no longer enabled by
+default (even if libasound is found), It is still available via `ENABLE_ALSA=yes`.
 
-The Makefile understands PREFIX and DESTDIR variables:
+The Makefile understands PREFIX and DESTDIR variables: e.g.
 
 	make clean
-	make ENABLE_CONVOLUTION=yes PREFIX=/usr
-	make install ENABLE_CONVOLUTION=yes PREFIX=/usr DESTDIR=mypackage/setbfree/
+	make ENABLE_CONVOLUTION=yes PREFIX=/usr ENABLE_ALSA=yes
+	make install ENABLE_CONVOLUTION=yes ENABLE_ALSA=yes PREFIX=/usr DESTDIR=mypackage/setbfree/
 
 **Packagers**: see debian/rules in the git-repository. LDFLAGS can be passed as is,
 CFLAGS should be specified by overriding the OPTIMIZATIONS variable.

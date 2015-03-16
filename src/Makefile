@@ -48,7 +48,7 @@ ifeq ($(shell pkg-config --exists jack || echo no), no)
   $(error "JACK is required - install libjack-dev or libjack-jackd2-dev")
 endif
 
-ifeq ($(shell pkg-config --exists alsa && echo yes), yes)
+ifeq ($(shell pkg-config --exists alsa && echo yes)$(ENABLE_ALSA), yesyes)
   override CFLAGS+=-DHAVE_ASEQ `pkg-config --cflags alsa`
   LOADLIBES+=`pkg-config --libs alsa`
 else
