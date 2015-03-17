@@ -402,6 +402,7 @@ typedef struct {
   int pedal_key;
 
   unsigned int active_keys [5]; // MAX_KEYS/32;
+  bool highlight_keys;
 
   char lv2nfo [128];
 
@@ -1695,6 +1696,7 @@ static void txtentry_render(PuglView* view) {
  */
 
 static void piano_manual(PuglView* view, float y0, float z0, int active_key, unsigned int *active_keys) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
 
   const GLfloat no_mat[] = { 0.0, 0.0, 0.0, 1.0 };
   const GLfloat mat_key_white[] = { 0.7, 0.8, 0.8, 1.0 };
@@ -1719,8 +1721,13 @@ static void piano_manual(PuglView* view, float y0, float z0, int active_key, uns
       glMaterialfv(GL_FRONT, GL_AMBIENT, mat_key_white);
 
       if (/* i == active_key || */ active_keys[i/32] & (1<<(i%32))) {
-	glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
-	glMaterialfv(GL_FRONT, GL_DIFFUSE, glow_red);
+	if (ui->highlight_keys) {
+	  glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
+	  glMaterialfv(GL_FRONT, GL_DIFFUSE, glow_red);
+	} else {
+	  glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
+	  glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_key_white);
+	}
 	glRotatef(-5, 1, 0, 0);
       } else {
 	glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
@@ -1763,7 +1770,11 @@ static void piano_manual(PuglView* view, float y0, float z0, int active_key, uns
       glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_key_black);
 
       if (/* i == active_key || */ active_keys[i/32] & (1<<(i%32))) {
-	glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
+	if (ui->highlight_keys) {
+	  glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
+	} else {
+	  glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
+	}
 	glTranslatef(0.f, .0f, -.15f);
 	glRotatef(-2, 1, 0, 0);
       } else {
@@ -1776,6 +1787,7 @@ static void piano_manual(PuglView* view, float y0, float z0, int active_key, uns
 }
 
 static void piano_pedals(PuglView* view, int active_key, unsigned int active_keys) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
 
   const float y0 = -7;
   const float z0 = 27.25;
@@ -1804,7 +1816,11 @@ static void piano_pedals(PuglView* view, int active_key, unsigned int active_key
 
       if (/*i == active_key || */ active_keys & (1<<i)) {
 	glRotatef( 2, 1, 0, 0);
-	glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
+	if (ui->highlight_keys) {
+	  glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
+	} else {
+	  glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
+	}
       } else {
 	glRotatef( 0, 1, 0, 0);
 	glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
@@ -1822,7 +1838,11 @@ static void piano_pedals(PuglView* view, int active_key, unsigned int active_key
       glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_key_black);
 
       if (/*i == active_key || */ active_keys & (1<<i)) {
-	glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
+	if (ui->highlight_keys) {
+	  glMaterialfv(GL_FRONT, GL_EMISSION, glow_red);
+	} else {
+	  glMaterialfv(GL_FRONT, GL_EMISSION, no_mat);
+	}
 	glRotatef(-5, 1, 0, 0);
       } else {
 	glRotatef( 0, 1, 0, 0);
@@ -3444,6 +3464,10 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
       queue_reshape = 1;
       reset_state(view);
       break;
+    case 'r':
+      ui->highlight_keys = !ui->highlight_keys;
+      queue_reshape = 1;
+      break;
     case 13: // Enter
       if (ui->popupmsg) {
 	free(ui->popupmsg); ui->popupmsg = NULL;
@@ -4295,6 +4319,7 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   ui->keyboard_control = 0;
   ui->cfgtriover = 0;
   ui->cfgtab = 0;
+  ui->highlight_keys = true;
 #ifdef ANIMSTEPS
   ui->openanim = 0;
   ui->animdirection = 0;
