@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include <pthread.h>
 
@@ -55,7 +56,6 @@
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #include <libgen.h>
-#include <string.h>
 #include "OpenGL/glu.h"
 # ifdef JACK_DESCRIPT
 #include <libproc.h>
@@ -270,7 +270,7 @@ static const char *obj_control[] = {
   "swellpedal1",
   "reverb.mix", // 30
   "rotary.speed-select", // SPECIAL leslie horn  // rotary.speed-select 2^3
-  "rotary.speed-select"  // SPECIAL leslie baffle
+  "rotary.speed-preset"  // SPECIAL leslie baffle
 };
 
 typedef struct {
@@ -630,6 +630,7 @@ static void notifyPlugin(PuglView* view, int elem) {
     if (hr != 2) hr = (hr == 1) ? 0 : 1;
     if (bf != 2) bf = (bf == 1) ? 0 : 1;
     val = bf * 15 + hr * 45;
+    elem = 31; //  force to use  2^3 rotary.speed-select
   } else {
     // default MIDI-CC range 0..127
     val = vmap_val_to_midi(view, elem);
@@ -722,6 +723,9 @@ static void processCCevent(B3ui* ui, const char *k, int v) {
     ui->ctrls[32].cur = hr; // horn 0:chorale, 1:off, 2:tremolo
     ui->ctrls[31].cur = bf; // drum 0:chorale, 1:off, 2:tremolo
     puglPostRedisplay(ui->view);
+    return;
+  }
+  if (!strcmp("rotary.speed-preset", k)) {
     return;
   }
 
@@ -3180,11 +3184,21 @@ onDisplay(PuglView* view)
     if (i < 20)  y -= 0.4;
 
     if (ui->uiccbind == i) {
-      if (ui->uiccflag & MFLAG_INV) {
-	render_text(view, "move slider (inv)", x, y-.8, 1.65f, TA_CENTER_MIDDLE);
+
+      char bind_text[64];
+      if (i == 31) {
+	strcpy(bind_text, "move slider (8 step)");
+      } else if (i == 32) {
+	strcpy(bind_text, "move slider (3 step)");
       } else {
-	render_text(view, "move slider", x, y-.8, 1.65f, TA_CENTER_MIDDLE);
+	strcpy(bind_text, "move slider");
       }
+
+      if (ui->uiccflag & MFLAG_INV) {
+	strcat (bind_text, " (inv)");
+      }
+
+      render_text(view, bind_text, x, y-.8, 1.65f, TA_CENTER_MIDDLE);
     } else if (ui->show_mm) {
       render_text(view, ui->ctrls[i].midinfo, x, y, 1.6f, TA_CENTER_MIDDLE);
     }
