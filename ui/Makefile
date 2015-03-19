@@ -3,7 +3,7 @@ TX=../b_synth/textures/
 WINDRES=$(XWIN)-windres
 
 override CFLAGS+= -I../src -I../b_overdrive -I../b_reverb -I../b_whirl -I../b_synth/
-override CFLAGS+=`pkg-config --cflags lv2` -DLV2SYNTH
+override CFLAGS+=`pkg-config --cflags lv2` -DLV2SYNTH -DREQUIRE_UI
 
 ifeq ($(IS_OSX), yes)
   JACKWRAP=jackwrap.c jackwrap.mm $(WEAKJACK)
