@@ -122,9 +122,8 @@ puglCreate(PuglNativeWindow parent,
 	view->user_resizable = resizable;
 
 	impl->display = XOpenDisplay(0);
-	if (impl->display) { return 0; }
+	if (!impl->display) { return 0; }
 	impl->screen  = DefaultScreen(impl->display);
-	if (impl->screen) { return 0; }
 	impl->doubleBuffered = True;
 
 	XVisualInfo* vi = glXChooseVisual(impl->display, impl->screen, attrListDblMS);
