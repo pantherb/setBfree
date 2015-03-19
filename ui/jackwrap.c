@@ -1204,13 +1204,15 @@ int main (int argc, char **argv) {
 
 	}
 
-#ifdef REQUIRE_UI
 	if (!gui_instance || !extui) {
-		fprintf(stderr, "Error: GUI was not initialized.\n");
+#ifdef REQUIRE_UI
+		fprintf(stderr, "Error: GUI initialization failed.\n");
 		rv |= 2;
 		goto out;
-	}
+#else
+		fprintf(stderr, "Warning: GUI initialization failed.\n");
 #endif
+	}
 
 #ifndef _WIN32
 	if (mlockall (MCL_CURRENT | MCL_FUTURE)) {
