@@ -2094,6 +2094,11 @@ static void cfg_initialize(B3ui * ui) {
   CFGP("whirl.horn.filter.b.q",         "Horn Filter 2 Q",    CF_NUMBER, NULL);
   CFGP("whirl.horn.filter.b.type",      "Type",               CF_INTEGER, x_filtertype);
   //CFGP("", "", "", .0, .5);
+
+  p+=4;
+  p+=4;
+  CFGP("reverb.inputgain",              "Reverb Gain",        CF_DECIBEL, NULL);
+
 }
 
 static void cfg_set_defaults(B3ui * ui) {
