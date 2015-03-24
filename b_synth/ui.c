@@ -1990,7 +1990,7 @@ static void cfg_initialize(B3ui * ui) {
   int p = 0;
 
   CFGP("osc.tuning",                  "Tuning",                      CF_NUMBER, NULL);
-  CFGP("osc.temperament",             "Temerament",                  CF_LISTLUT, x_temperament); // 'gear60'
+  CFGP("osc.temperament",             "Temperament",                 CF_LISTLUT, x_temperament); // 'gear60'
 
   p+=2;
   CFGP("midi.transpose",              "Transpose",                   CF_INTEGER, NULL);
