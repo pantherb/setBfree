@@ -1338,7 +1338,7 @@ void whirlProc3 (struct b_whirl *w,
 		 float * tmpL, float * tmpR,
 		 size_t bufferLengthSamples) {
 
-  int i;
+  size_t i;
 
   const float dwF = w->drumMicWidth;
   const float dwP = dwF > 0.f ? (dwF >  1.f ? 1.f :  dwF) : 0.f;
