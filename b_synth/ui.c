@@ -2060,13 +2060,16 @@ static void cfg_initialize(B3ui * ui) {
   CFGP("whirl.horn.level",             "Horn Level",          CF_DECIBEL, NULL);
   CFGP("whirl.horn.leak",              "Horn leakage",        CF_DECIBEL, NULL);
 
-  p+=2;
+  p+=1;
+  CFGP("whirl.drum.width",             "Drum stereo",         CF_NUMBER, NULL);
+
   CFGP("whirl.horn.radius",            "Horn Radius",         CF_NUMBER, NULL);
-  CFGP("whirl.horn.brakepos",           "Horn Break",         CF_DEGREE, x_brakepos);
+  CFGP("whirl.horn.brakepos",          "Horn Break",          CF_DEGREE, x_brakepos);
   CFGP("whirl.drum.radius",            "Drum Radius",         CF_NUMBER, NULL);
-  CFGP("whirl.drum.brakepos",           "Drum Break",         CF_DEGREE, x_brakepos);
+  CFGP("whirl.drum.brakepos",          "Drum Break",          CF_DEGREE, x_brakepos);
 
   p+=4;
+
 #if 0
   CFGP("whirl.horn.offset.x",           "Horn X offset",      CF_NUMBER, NULL);
   CFGP("whirl.horn.offset.z",           "Horn Z offset",      CF_NUMBER, NULL);
