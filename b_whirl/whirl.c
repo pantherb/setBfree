@@ -144,6 +144,7 @@ void initValues(struct b_whirl *w) {
   w->hbQ =   1.0;
   w->hbG = -30.0;
 
+  w->drumMicWidth = 0;
   w->hornLevel = 0.7;
   w->leakLevel = 0.15;
   w->leakage = 0;
@@ -909,6 +910,9 @@ int whirlConfig (struct b_whirl *w, ConfigContext * cfg) {
   else if (getConfigParameter_d ("whirl.horn.leak", cfg, &d) == 1) {
     w->leakLevel = (float) d;
   }
+  else if (getConfigParameter_d ("whirl.drum.width", cfg, &d) == 1) {
+    w->drumMicWidth = (float) d;
+  }
   else if (getConfigParameter_d ("whirl.mic.distance", cfg, &d) == 1) {
     w->micDistCm = (float) d;
   }
@@ -1328,6 +1332,36 @@ void whirlProc (struct b_whirl *w,
 }
 
 
+void whirlProc3 (struct b_whirl *w,
+		 const float * inbuffer,
+		 float * outL, float * outR,
+		 float * tmpL, float * tmpR,
+		 size_t bufferLengthSamples) {
+
+  int i;
+
+  const float dwF = w->drumMicWidth;
+  const float dwP = dwF > 0.f ? (dwF >  1.f ? 1.f :  dwF) : 0.f;
+  const float dwN = dwF < 0.f ? (dwF < -1.f ? 1.f : -dwF) : 0.f;
+
+  const float dll = (1.f - dwP);
+  const float dlr = (0.f + dwP);
+  const float drl = (0.f + dwN);
+  const float drr = (1.f - dwN);
+
+  whirlProc2(w,
+      inbuffer, NULL, NULL,
+      outL, outR,
+      tmpL, tmpR,
+      bufferLengthSamples);
+
+  for (i = 0; i < bufferLengthSamples; ++i) {
+    outL[i] += tmpL[i] * dll + tmpR[i] * dlr;
+    outR[i] += tmpL[i] * drl + tmpR[i] * drr;
+  }
+}
+
+
 #else
 # include "cfgParser.h"
 #endif // CONFIGDOCONLY
@@ -1345,6 +1379,7 @@ static const ConfigDoc doc[] = {
   {"whirl.drum.acceleration",  CFG_DOUBLE,  "4.127",    "Time required to accelerate the drum (exponential time constant)", "s", 0.5, 10.0, .1},
   {"whirl.drum.deceleration",  CFG_DOUBLE,  "1.371",    "Time required to decelerate the drum (exponential time constant)", "s", 0.5, 10.0, .1},
   {"whirl.drum.brakepos",      CFG_DOUBLE,  "0",        "Drum stop position. Clockwise position where to stop. (0: free-stop, 1.0:front-center)", "deg", 0.0, 1.0, .025},
+  {"whirl.drum.width",         CFG_DOUBLE,  "0",        "Drum stereo width (LV2 only) (-1: right channel mono, 0: stereo 90deg, 1: left channel mono)", "", -1.0, 1.0, .05},
   {"whirl.horn.radius",        CFG_DOUBLE,  "19.2",     "Horn radius in centimeter", "cm", 9.0, 50.0, 0.5},
   {"whirl.drum.radius",        CFG_DOUBLE,  "22.0",     "Drum radius in centimeter", "cm", 9.0, 50.0, 0.5},
   {"whirl.mic.distance",       CFG_DOUBLE,  "42.0",     "Distance from mic to origin in centimeters", "cm", 9, 100, 1.},

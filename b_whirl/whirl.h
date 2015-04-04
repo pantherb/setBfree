@@ -195,6 +195,8 @@ struct b_whirl {
   float leakLevel;
   float leakage;
 
+  float drumMicWidth;
+
   void *midi_cfg_ptr;
 
 };
@@ -217,6 +219,12 @@ extern void whirlProc2 (struct b_whirl *w,
 		        float * outL, float * outR,
 		        float * outHL, float * outHR,
 		        float * outDL, float * outDR,
+		        size_t bufferLengthSamples);
+
+extern void whirlProc3 (struct b_whirl *w,
+			const float * inbuffer,
+		        float * outL, float * outR,
+		        float * tmpL, float * tmpR,
 		        size_t bufferLengthSamples);
 
 #define WHIRL_FAST 2

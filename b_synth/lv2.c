@@ -81,7 +81,8 @@ typedef struct {
   float bufA [BUFFER_SIZE_SAMPLES];
   float bufB [BUFFER_SIZE_SAMPLES];
   float bufC [BUFFER_SIZE_SAMPLES];
-  float bufJ [2][BUFFER_SIZE_SAMPLES];
+  float bufD [2][BUFFER_SIZE_SAMPLES]; // drum, tmp.
+  float bufL [2][BUFFER_SIZE_SAMPLES]; // leslie, out
 
   short suspend_ui_msg;
   short update_gui_now;
@@ -243,13 +244,14 @@ static uint32_t synthSound (B3S *instance, uint32_t written, uint32_t nframes, f
 #ifdef WITH_SIGNATURE
       scramble (b3s, b3s->bufC, BUFFER_SIZE_SAMPLES);
 #endif
-      whirlProc(instance->inst->whirl, b3s->bufC, b3s->bufJ[0], b3s->bufJ[1], BUFFER_SIZE_SAMPLES);
+      whirlProc3(instance->inst->whirl, b3s->bufC, b3s->bufL[0], b3s->bufL[1], b3s->bufD[0], b3s->bufD[1], BUFFER_SIZE_SAMPLES);
+
     }
 
     int nread = MIN(nremain, (BUFFER_SIZE_SAMPLES - b3s->boffset));
 
-    memcpy(&out[0][written], &b3s->bufJ[0][b3s->boffset], nread*sizeof(float));
-    memcpy(&out[1][written], &b3s->bufJ[1][b3s->boffset], nread*sizeof(float));
+    memcpy(&out[0][written], &b3s->bufL[0][b3s->boffset], nread*sizeof(float));
+    memcpy(&out[1][written], &b3s->bufL[1][b3s->boffset], nread*sizeof(float));
 
     written+=nread;
     b3s->boffset+=nread;
@@ -938,7 +940,7 @@ instantiate(const LV2_Descriptor*     descriptor,
 	  else data[len] = '\0';
 	  if ((tmp = strchr(data, '\n'))) *tmp = 0;
 	  b3s->lv2nfo[sizeof(b3s->lv2nfo) - 1] = 0;
-	  if (++tmp && *tmp) {
+	  if (tmp++ && *tmp) {
 	    if ((tmp = strstr(tmp, SB3_URI))) {
 	      char *t1, *t2;
 	      ok = true;
