@@ -1379,7 +1379,7 @@ static const ConfigDoc doc[] = {
   {"whirl.drum.acceleration",  CFG_DOUBLE,  "4.127",    "Time required to accelerate the drum (exponential time constant)", "s", 0.5, 10.0, .1},
   {"whirl.drum.deceleration",  CFG_DOUBLE,  "1.371",    "Time required to decelerate the drum (exponential time constant)", "s", 0.5, 10.0, .1},
   {"whirl.drum.brakepos",      CFG_DOUBLE,  "0",        "Drum stop position. Clockwise position where to stop. (0: free-stop, 1.0:front-center)", "deg", 0.0, 1.0, .025},
-  {"whirl.drum.width",         CFG_DOUBLE,  "0",        "Drum stereo width (LV2 only) (-1: right channel mono, 0: stereo 90deg, 1: left channel mono)", "", -1.0, 1.0, .05},
+  {"whirl.drum.width",         CFG_DOUBLE,  "0",        "Drum stereo width (LV2 only) (-1: left mic, 0: stereo, 1: right mic)", "", -1.0, 1.0, .05},
   {"whirl.horn.radius",        CFG_DOUBLE,  "19.2",     "Horn radius in centimeter", "cm", 9.0, 50.0, 0.5},
   {"whirl.drum.radius",        CFG_DOUBLE,  "22.0",     "Drum radius in centimeter", "cm", 9.0, 50.0, 0.5},
   {"whirl.mic.distance",       CFG_DOUBLE,  "42.0",     "Distance from mic to origin in centimeters", "cm", 9, 100, 1.},

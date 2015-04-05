@@ -1975,11 +1975,19 @@ static const b3scalepoint x_brakepos[] = {
   {1.0,  "Front (center)"},
   {0, NULL}
 };
+
+static const b3scalepoint x_drumwidth[] = {
+  {-1, "mono (left)"},
+  { 0, "stereo"},
+  { 1, "mono (right)"},
+};
+
 static const b3scalepoint x_bypass[] = {
   {0, "off (effect is active)"},
   {1, "on (effect is disabled)"},
   {0, NULL}
 };
+
 static const b3scalepoint x_zerooff[] = { {0, "off"}, {0, NULL} };
 static const b3scalepoint x_zeronone[] = { {0, "none"}, {0, NULL} };
 //static const b3scalepoint x_zerodisabled[] = { {0, "disabled"}, {0, NULL} };
@@ -2061,7 +2069,7 @@ static void cfg_initialize(B3ui * ui) {
   CFGP("whirl.horn.leak",              "Horn leakage",        CF_DECIBEL, NULL);
 
   p+=1;
-  CFGP("whirl.drum.width",             "Drum stereo",         CF_NUMBER, NULL);
+  CFGP("whirl.drum.width",             "Drum mic",            CF_NUMBER, x_drumwidth);
 
   CFGP("whirl.horn.radius",            "Horn Radius",         CF_NUMBER, NULL);
   CFGP("whirl.horn.brakepos",          "Horn Break",          CF_DEGREE, x_brakepos);
