@@ -151,6 +151,7 @@ __attribute__ ((visibility ("hidden")))
 	if (self) {
 		[[self openGLContext] makeCurrentContext];
 		[self reshape];
+		[NSOpenGLContext clearCurrentContext];
 	}
 	return self;
 }
@@ -168,11 +169,13 @@ __attribute__ ((visibility ("hidden")))
 		   deleting the view (?), so we must have reset puglview to NULL when
 		   this comes around.
 		*/
+		[[self openGLContext] makeCurrentContext];
 		if (puglview->reshapeFunc) {
 			puglview->reshapeFunc(puglview, width, height);
 		} else {
 			puglDefaultReshape(puglview, width, height);
 		}
+		[NSOpenGLContext clearCurrentContext];
 
 		puglview->width  = width;
 		puglview->height = height;
@@ -186,9 +189,11 @@ __attribute__ ((visibility ("hidden")))
 
 - (void) drawRect:(NSRect)rect
 {
+	[[self openGLContext] makeCurrentContext];
 	puglDisplay(puglview);
 	glFlush();
 	glSwapAPPLE();
+	[NSOpenGLContext clearCurrentContext];
 }
 
 static unsigned
@@ -458,9 +463,12 @@ puglResize(PuglView* view)
 	int set_hints; // ignored
 	view->resize = false;
 	if (!view->resizeFunc) { return; }
+
+	[[view->impl->glview openGLContext] makeCurrentContext];
 	view->resizeFunc(view, &view->width, &view->height, &set_hints);
 	[view->impl->window setContentSize:NSMakeSize(view->width, view->height) ];
 	[view->impl->glview reshape];
+	[NSOpenGLContext clearCurrentContext];
 }
 
 void
