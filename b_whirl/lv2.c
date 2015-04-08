@@ -98,6 +98,9 @@ typedef struct {
   float o_horn_level, o_drum_level;
   float o_drum_width;
 
+  float x_drum_width;
+  float x_dll, x_dlr, x_drl, x_drr;
+
   struct b_whirl *instance;
 
   float bufH[2][8192];
@@ -140,6 +143,10 @@ instantiate(const LV2_Descriptor*     descriptor,
   b3w->o_horn_level = 1.0;
   b3w->o_drum_level = 1.0;
   b3w->o_drum_width = 0.0;
+
+  b3w->x_drum_width = 0.0;
+  b3w->x_dll = b3w->x_drr = 1.0;
+  b3w->x_dlr = b3w->x_drl = 0.0;
 
   return (LV2_Handle)b3w;
 }
@@ -319,18 +326,25 @@ run(LV2_Handle instance, uint32_t n_samples)
 
   b3w->o_horn_level += _w * (hl - b3w->o_horn_level) + 1e-15;
   b3w->o_drum_level += _w * (dl - b3w->o_drum_level) + 1e-15;
-
   b3w->o_drum_width += _w * (dw - b3w->o_drum_width) + 1e-15;
 
-  const float dwF = b3w->o_drum_width;
-  const float dwP = dwF > 0.f ? (dwF >  1.f ? 1.f :  dwF) : 0.f;
-  const float dwN = dwF < 0.f ? (dwF < -1.f ? 1.f : -dwF) : 0.f;
 
-  const float dll = b3w->o_drum_level * (1.f - dwP);
-  const float dlr = b3w->o_drum_level * (0.f + dwP);
-  const float drl = b3w->o_drum_level * (0.f + dwN);
-  const float drr = b3w->o_drum_level * (1.f - dwN);
+  if (fabsf(b3w->x_drum_width - b3w->o_drum_width) > 1e-8) {
+    b3w->x_drum_width = b3w->o_drum_width;
 
+    const float dwF = b3w->o_drum_width;
+    const float dwP = dwF > 0.f ? (dwF >  1.f ? 1.f :  dwF) : 0.f;
+    const float dwN = dwF < 0.f ? (dwF < -1.f ? 1.f : -dwF) : 0.f;
+    b3w->x_dll = sqrtf(1.f - dwP);
+    b3w->x_dlr = sqrtf(0.f + dwP);
+    b3w->x_drl = sqrtf(0.f + dwN);
+    b3w->x_drr = sqrtf(1.f - dwN);
+  }
+
+  const float dll = b3w->o_drum_level * b3w->x_dll;
+  const float dlr = b3w->o_drum_level * b3w->x_dlr;
+  const float drl = b3w->o_drum_level * b3w->x_drl;
+  const float drr = b3w->o_drum_level * b3w->x_drr;
   const float hll = b3w->o_horn_level;
   const float hrr = b3w->o_horn_level;
 
