@@ -196,6 +196,10 @@ struct b_whirl {
   float leakage;
 
   float drumMicWidth;
+  float drumMic_dll;
+  float drumMic_dlr;
+  float drumMic_drl;
+  float drumMic_drr;
 
   void *midi_cfg_ptr;
 

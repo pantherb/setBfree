@@ -145,6 +145,12 @@ void initValues(struct b_whirl *w) {
   w->hbG = -30.0;
 
   w->drumMicWidth = 0;
+  // setDrumMicWidth
+  w->drumMic_dll = 1.0;
+  w->drumMic_dlr = 0.0;
+  w->drumMic_drl = 0.0;
+  w->drumMic_drr = 1.0;
+
   w->hornLevel = 0.7;
   w->leakLevel = 0.15;
   w->leakage = 0;
@@ -827,6 +833,34 @@ void setDrumDeceleration (void *d, unsigned char uc) {
   w->drumDec = .01 + (double)uc/14.0;
 }
 
+static void setDrumMicWidth (void *d, const float dw) {
+  struct b_whirl *w = (struct b_whirl *) d;
+
+  if (w->drumMicWidth == dw) {
+    return;
+  }
+
+  w->drumMicWidth = dw;
+
+  const float dwP = dw > 0.f ? (dw >  1.f ? 1.f :  dw) : 0.f;
+  const float dwN = dw < 0.f ? (dw < -1.f ? 1.f : -dw) : 0.f;
+
+  w->drumMic_dll = sqrtf(1.f - dwP);
+  w->drumMic_dlr = sqrtf(0.f + dwP);
+  w->drumMic_drl = sqrtf(0.f + dwN);
+  w->drumMic_drr = sqrtf(1.f - dwN);
+
+#if 0 // DEBUG
+#define DBV(X) ((X) > 0 ? 20 * log10f(X) : -INFINITY)
+  printf("LL: %4.1fdB  LR: %4.1fdB  ||  RL: %4.1fdB  RR: %4.1fdB\n",
+      DBV(w->drumMic_dll),
+      DBV(w->drumMic_dlr),
+      DBV(w->drumMic_drl),
+      DBV(w->drumMic_drr)
+      );
+#endif
+}
+
 /*
  * This function initialises this module. It is run after whirlConfig.
  */
@@ -911,7 +945,7 @@ int whirlConfig (struct b_whirl *w, ConfigContext * cfg) {
     w->leakLevel = (float) d;
   }
   else if (getConfigParameter_d ("whirl.drum.width", cfg, &d) == 1) {
-    w->drumMicWidth = (float) d;
+    setDrumMicWidth(w, d);
   }
   else if (getConfigParameter_d ("whirl.mic.distance", cfg, &d) == 1) {
     w->micDistCm = (float) d;
@@ -1339,15 +1373,10 @@ void whirlProc3 (struct b_whirl *w,
 		 size_t bufferLengthSamples) {
 
   size_t i;
-
-  const float dwF = w->drumMicWidth;
-  const float dwP = dwF > 0.f ? (dwF >  1.f ? 1.f :  dwF) : 0.f;
-  const float dwN = dwF < 0.f ? (dwF < -1.f ? 1.f : -dwF) : 0.f;
-
-  const float dll = (1.f - dwP);
-  const float dlr = (0.f + dwP);
-  const float drl = (0.f + dwN);
-  const float drr = (1.f - dwN);
+  const float dll = w->drumMic_dll;
+  const float dlr = w->drumMic_dlr;
+  const float drl = w->drumMic_drl;
+  const float drr = w->drumMic_drr;
 
   whirlProc2(w,
       inbuffer, NULL, NULL,
