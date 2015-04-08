@@ -250,5 +250,6 @@ extern void fsetDrumFilterFrequency (struct b_whirl *w, float v);
 extern void fsetDrumFilterQ (struct b_whirl *w, float v);
 extern void fsetDrumFilterGain (struct b_whirl *w, float v);
 extern void computeRotationSpeeds (struct b_whirl *w);
+extern void fsetDrumMicWidth (void *d, const float dw);
 #endif /* WHIRL_H */
 /* vi:set ts=8 sts=2 sw=2: */

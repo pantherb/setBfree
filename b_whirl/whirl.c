@@ -145,7 +145,7 @@ void initValues(struct b_whirl *w) {
   w->hbG = -30.0;
 
   w->drumMicWidth = 0;
-  // setDrumMicWidth
+  // fsetDrumMicWidth
   w->drumMic_dll = 1.0;
   w->drumMic_dlr = 0.0;
   w->drumMic_drl = 0.0;
@@ -803,22 +803,22 @@ void fsetDrumFilterGain (struct b_whirl *w, float v) {
   UPDATE_D_FILTER;
 }
 
-void setHornBrakePosition (void *d, unsigned char uc) {
+static void setHornBrakePosition (void *d, unsigned char uc) {
   struct b_whirl *w = (struct b_whirl *) d;
   w->hnBrakePos = (double)uc/127.0;
 }
 
-void setDrumBrakePosition (void *d, unsigned char uc) {
+static void setDrumBrakePosition (void *d, unsigned char uc) {
   struct b_whirl *w = (struct b_whirl *) d;
   w->drBrakePos = (double)uc/127.0;
 }
 
-void setHornAcceleration (void *d, unsigned char uc) {
+static void setHornAcceleration (void *d, unsigned char uc) {
   struct b_whirl *w = (struct b_whirl *) d;
   w->hornAcc = .01 + (double)uc/80.0;
 }
 
-void setHornDeceleration (void *d, unsigned char uc) {
+static void setHornDeceleration (void *d, unsigned char uc) {
   struct b_whirl *w = (struct b_whirl *) d;
   w->hornDec = .01 + (double)uc/80.0;
 }
@@ -828,12 +828,12 @@ void setDrumAcceleration (void *d, unsigned char uc) {
   w->drumAcc = .01 + (double)uc/14.0;
 }
 
-void setDrumDeceleration (void *d, unsigned char uc) {
+static void setDrumDeceleration (void *d, unsigned char uc) {
   struct b_whirl *w = (struct b_whirl *) d;
   w->drumDec = .01 + (double)uc/14.0;
 }
 
-static void setDrumMicWidth (void *d, const float dw) {
+void fsetDrumMicWidth (void *d, const float dw) {
   struct b_whirl *w = (struct b_whirl *) d;
 
   if (w->drumMicWidth == dw) {
@@ -945,7 +945,7 @@ int whirlConfig (struct b_whirl *w, ConfigContext * cfg) {
     w->leakLevel = (float) d;
   }
   else if (getConfigParameter_d ("whirl.drum.width", cfg, &d) == 1) {
-    setDrumMicWidth(w, d);
+    fsetDrumMicWidth(w, d);
   }
   else if (getConfigParameter_d ("whirl.mic.distance", cfg, &d) == 1) {
     w->micDistCm = (float) d;
