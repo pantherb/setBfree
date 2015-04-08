@@ -1980,6 +1980,7 @@ static const b3scalepoint x_drumwidth[] = {
   {-1, "mono (left)"},
   { 0, "stereo"},
   { 1, "mono (right)"},
+  {0, NULL}
 };
 
 static const b3scalepoint x_bypass[] = {
