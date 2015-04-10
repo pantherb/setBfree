@@ -1,3 +1,18 @@
+2014-04-10 (unreleased)  Robin Gareus <robin@gareus.org>
+* major GUI overhaul (LV2/openGL)
+	- add configuration/settings
+	- add preferences
+	- add keyboard manuals & pedals
+	- polish UI (3D model)
+* new standalone jack application with GL GUI
+* deprecate ALSA-MIDI (disable by default)
+* remove old tcl/tk prototype UI
+* update Leslie. fix aliasing during acceleration and deceleration
+* allow leslie baffle mono pickup
+* portability updates (ARM-CPU tweaks, Windows + OSX versions & bundles)
+* add presets for Kurzweil
+* countless tweaks and bug fixes (see git log)
+
 2013-09-10 (0.7.5)  Robin Gareus <robin@gareus.org>
 * setBfree: exit if ALSA and JACK MIDI port cannot be created
 * fix assignment of lower and pedal manual keys with transpose enable
