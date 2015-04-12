@@ -204,6 +204,8 @@ set +e
 chmod -Rf go-w "${MNTPATH}"
 set -e
 sync
+sleep 2
+sync
 
 echo "unmounting the disk image ..."
 # Umount the image ('eject' above may already have done that)
