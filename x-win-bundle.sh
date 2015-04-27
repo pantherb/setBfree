@@ -74,7 +74,6 @@ if test -n "$ZIPUP" ; then # build a standalone lv2 zip
 	cd ${DESTDIR}
 	rm -f ${OUTDIR}/${PRODUCT_NAME}-lv2-${WARCH}-${GITVERSION}.zip
 	zip -r ${OUTDIR}/${PRODUCT_NAME}-lv2-${WARCH}-${GITVERSION}.zip b_synth.lv2/
-	zip -r ${OUTDIR}/${PRODUCT_NAME}-lv2-${WARCH}-${GITVERSION}.zip b_whirl.lv2/
 	ls -l ${OUTDIR}/${PRODUCT_NAME}-lv2-${WARCH}-${GITVERSION}.zip
 	cd -
 fi

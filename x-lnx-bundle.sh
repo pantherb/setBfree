@@ -65,7 +65,7 @@ echo "$VERSION" > ${OUTDIR}/${PRODUCT_NAME}.latest.txt
 if test -n "$ZIPUP" ; then # build a standalone lv2 zip
 	cd ${BUNDLEDIR}/${PRODUCT_NAME}
 	rm -f ${OUTDIR}${PRODUCT_NAME}-lv2-linux-${WARCH}-${VERSION}.zip
-	zip -r ${OUTDIR}${PRODUCT_NAME}-lv2-linux-${WARCH}-${VERSION}.zip b_synth.lv2/ b_whirl/
+	zip -r ${OUTDIR}${PRODUCT_NAME}-lv2-linux-${WARCH}-${VERSION}.zip b_synth.lv2/
 	ls -l ${OUTDIR}${PRODUCT_NAME}-lv2-linux-${WARCH}-${VERSION}.zip
 	cd -
 fi
