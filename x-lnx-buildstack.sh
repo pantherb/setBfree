@@ -87,9 +87,9 @@ function autoconfconf {
 	set -e
 	echo "======= $(pwd) ======="
 	CPPFLAGS="-I${PREFIX}/include$CPPFLAGS" \
-	CFLAGS="-O3 -fvisibility=hidden -fPIC" \
-	CXXFLAGS="-O3 -fvisibility=hidden -fPIC" \
-	LDFLAGS="-L${PREFIX}/lib -fvisibility=hidden" \
+	CFLAGS="-O3 -fvisibility=hidden -fPIC -fdata-sections -ffunction-sections" \
+	CXXFLAGS="-O3 -fvisibility=hidden -fPIC -fdata-sections -ffunction-sections" \
+	LDFLAGS="-L${PREFIX}/lib -fvisibility=hidden -fdata-sections -ffunction-sections -Wl,--gc-sections -Wl,-O1 -Wl,--as-needed -Wl,--strip-all" \
 	./configure \
 	--disable-shared --enable-static \
 	--prefix=$PREFIX $@

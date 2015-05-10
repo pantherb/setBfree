@@ -22,7 +22,8 @@ PKG_CONFIG_PATH=${SBFSTACK}/lib/pkgconfig
 make clean
 make \
 	ENABLE_CONVOLUTION=no \
-	CFLAGS="-msse -msse2 -ffast-math -fomit-frame-pointer -O3 -fno-finite-math-only ${OSXCOMPAT} ${SBFARCH} -I${SBFSTACK}/src -DUSE_WEAK_JACK -DBUILTINFONT" \
+	CFLAGS="-msse -msse2 -ffast-math -fomit-frame-pointer -O3 -fno-finite-math-only ${OSXCOMPAT} ${SBFARCH} -I${SBFSTACK}/src -DUSE_WEAK_JACK -DBUILTINFONT -fdata-sections -ffunction-sections" \
+	LDFLAGS="-fdata-sections -ffunction-sections -Wl,-dead_strip"
 	IRPATH="../Resources/ir" \
 	WEAKJACK="${SBFSTACK}/src/weakjack/weak_libjack.c" \
 	FONTFILE=verabd.h \

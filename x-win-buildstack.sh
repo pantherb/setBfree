@@ -94,9 +94,9 @@ function autoconfbuild {
 set -e
 echo "======= $(pwd) ======="
 	CPPFLAGS="-I${PREFIX}/include -DPTW32_STATIC_LIB$CPPFLAGS" \
-	CFLAGS="-I${PREFIX}/include ${STACKCFLAGS} -fvisibility=hidden -DPTW32_STATIC_LIB -mstackrealign" \
-	CXXFLAGS="-I${PREFIX}/include ${STACKCFLAGS} -fvisibility=hidden -DPTW32_STATIC_LIB -mstackrealign" \
-	LDFLAGS="-L${PREFIX}/lib -fvisibility=hidden" \
+	CFLAGS="-I${PREFIX}/include ${STACKCFLAGS} -fvisibility=hidden -DPTW32_STATIC_LIB -mstackrealign -fdata-sections -ffunction-sections" \
+	CXXFLAGS="-I${PREFIX}/include ${STACKCFLAGS} -fvisibility=hidden -DPTW32_STATIC_LIB -mstackrealign -fdata-sections -ffunction-sections" \
+	LDFLAGS="-L${PREFIX}/lib -fvisibility=hidden -fdata-sections -ffunction-sections -Wl,--gc-sections -Wl,-O1 -Wl,--as-needed -Wl,--strip-all" \
 	./configure --host=${XPREFIX} --build=${HPREFIX}-linux \
 	--disable-shared --enable-static \
 	--prefix=$PREFIX $@

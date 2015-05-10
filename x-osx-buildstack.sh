@@ -56,9 +56,9 @@ function autoconfbuild {
 set -e
 echo "======= $(pwd) ======="
 	CPPFLAGS="-I${PREFIX}/include$CPPFLAGS" \
-	CFLAGS="${SBFARCH}${OSXCOMPAT:+ $OSXCOMPAT}$CFLAGS" \
-	CXXFLAGS="${SBFARCH}${OSXCOMPAT:+ $OSXCOMPAT}$CXXFLAGS" \
-	LDFLAGS="${SBFARCH}${OSXCOMPAT:+ $OSXCOMPAT} -headerpad_max_install_names$LDLAGS" \
+	CFLAGS="${SBFARCH}${OSXCOMPAT:+ $OSXCOMPAT}$CFLAGS -fdata-sections -ffunction-sections" \
+	CXXFLAGS="${SBFARCH}${OSXCOMPAT:+ $OSXCOMPAT}$CXXFLAGS -fdata-sections -ffunction-sections" \
+	LDFLAGS="${SBFARCH}${OSXCOMPAT:+ $OSXCOMPAT} -headerpad_max_install_names -fdata-sections -ffunction-sections -Wl,-dead_strip" \
 	./configure --disable-dependency-tracking --prefix=$PREFIX --enable-shared $@
 	make $MAKEFLAGS && make install
 }
@@ -71,7 +71,7 @@ echo "======= $(pwd) ======="
 	CPPFLAGS="-I${PREFIX}/include$CPPFLAGS" \
 	CFLAGS="${SBFARCH}${OSXCOMPAT:+ $OSXCOMPAT}$CFLAGS" \
 	CXXFLAGS="${SBFARCH}${OSXCOMPAT:+ $OSXCOMPAT}$CXXFLAGS" \
-	LDFLAGS="${SBFARCH}${OSXCOMPAT:+ $OSXCOMPAT} -headerpad_max_install_names$LDLAGS" \
+	LDFLAGS="${SBFARCH}${OSXCOMPAT:+ $OSXCOMPAT} -headerpad_max_install_names" \
 	./waf configure --prefix=$PREFIX $@ \
 	&& ./waf && ./waf install
 }

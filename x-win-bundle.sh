@@ -28,8 +28,8 @@ make \
 
 make \
   XWIN=${XPREFIX} \
-	CFLAGS="-I${PREFIX}/include -fvisibility=hidden -DNDEBUG -DPTW32_STATIC_LIB -msse -msse2 -mfpmath=sse -fomit-frame-pointer -O3 -mstackrealign -fno-finite-math-only -I${PREFIX}/src -DUSE_WEAK_JACK -DBUILTINFONT" \
-	LDFLAGS="-L${PREFIX}/lib -fvisibility=hidden" \
+	CFLAGS="-I${PREFIX}/include -fvisibility=hidden -DNDEBUG -DPTW32_STATIC_LIB -msse -msse2 -mfpmath=sse -fomit-frame-pointer -O3 -mstackrealign -fno-finite-math-only -I${PREFIX}/src -DUSE_WEAK_JACK -DBUILTINFONT -fdata-sections -ffunction-sections" \
+	LDFLAGS="-L${PREFIX}/lib -fvisibility=hidden -fdata-sections -ffunction-sections -Wl,--gc-sections -Wl,-O1 -Wl,--as-needed -Wl,--strip-all" \
 	ENABLE_CONVOLUTION=no \
 	WEAKJACK="${PREFIX}/src/weakjack/weak_libjack.c" \
 	FONTFILE=verabd.h \
