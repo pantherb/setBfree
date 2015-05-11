@@ -89,7 +89,7 @@ function autoconfconf {
 	CPPFLAGS="-I${PREFIX}/include$CPPFLAGS" \
 	CFLAGS="-O3 -fvisibility=hidden -fPIC -fdata-sections -ffunction-sections" \
 	CXXFLAGS="-O3 -fvisibility=hidden -fPIC -fdata-sections -ffunction-sections" \
-	LDFLAGS="-L${PREFIX}/lib -fvisibility=hidden -fdata-sections -ffunction-sections -Wl,--gc-sections -Wl,-O1 -Wl,--as-needed -Wl,--strip-all" \
+	LDFLAGS="-L${PREFIX}/lib -fvisibility=hidden -fdata-sections -ffunction-sections -Wl,--gc-sections -Wl,-O1 -Wl,--strip-all" \
 	./configure \
 	--disable-shared --enable-static \
 	--prefix=$PREFIX $@
