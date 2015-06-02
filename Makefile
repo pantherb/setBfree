@@ -5,6 +5,11 @@ ifneq ($(FONTFILE),)
 export FONTFILE
 endif
 
+ifneq ($(ROBTK),)
+RW=$(abspath $(ROBTK))/
+export RW
+endif
+
 SUBDIRS = b_overdrive b_whirl b_reverb b_conv src b_synth ui
 
 default: all

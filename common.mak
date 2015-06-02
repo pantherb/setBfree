@@ -24,7 +24,11 @@ override CFLAGS += -fPIC
 endif
 override CFLAGS += -DVERSION="\"$(VERSION)\""
 
+STRIP    ?= strip
+
 CXXFLAGS = $(OPTIMIZATIONS) -Wall
+GLUICFLAGS=-I. -Wno-unused-function
+STRIPFLAGS=-s
 
 # check for LV2
 LV2AVAIL=$(shell pkg-config --exists lv2 && echo yes)
@@ -34,6 +38,7 @@ LV2UIREQ=
 ifeq ($(shell pkg-config --atleast-version=1.4.6 lv2 || echo no), no)
   override CFLAGS+=-DOLD_SUIL
 else
+  GLUICFLAGS+=-DHAVE_IDLE_IFACE
   LV2UIREQ=lv2:requiredFeature ui:idleInterface; lv2:extensionData ui:idleInterface;
 endif
 
@@ -44,28 +49,50 @@ endif
 
 IS_OSX=
 IS_WIN=
+PKG_GL_LIBS=
 UNAME=$(shell uname)
 ifeq ($(UNAME),Darwin)
   IS_OSX=yes
   LV2LDFLAGS=-dynamiclib
   LIB_EXT=.dylib
+  GLUILIBS=-framework Cocoa -framework OpenGL -framework CoreFoundation
+  STRIPFLAGS=-u -r -arch all -s $(RW)lv2syms
+  UI_TYPE=CocoaUI
+  PUGL_SRC=$(RW)pugl/pugl_osx.m
 else
   ifneq ($(XWIN),)
     IS_WIN=yes
     CC=$(XWIN)-gcc
     CXX=$(XWIN)-g++
+    STRIP=$(XWIN)-strip
     LV2LDFLAGS=-Wl,-Bstatic -Wl,-Bdynamic -Wl,--as-needed -lpthread
     LIB_EXT=.dll
     EXE_EXT=.exe
+    GLUILIBS=-lws2_32 -lwinmm -lopengl32 -lglu32 -lgdi32 -lcomdlg32 -lpthread
+    UI_TYPE=WindowsUI
+    PUGL_SRC=$(RW)pugl/pugl_win.cpp
     override CFLAGS+= -DHAVE_MEMSTREAM
     override LDFLAGS += -static-libgcc -static-libstdc++ -DPTW32_STATIC_LIB
   else
     override CFLAGS+= -DHAVE_MEMSTREAM
     LV2LDFLAGS=-Wl,-Bstatic -Wl,-Bdynamic
     LIB_EXT=.so
+    PKG_GL_LIBS=glu gl
+    GLUILIBS=-lX11
+    UI_TYPE=X11UI
+    PUGL_SRC=$(RW)pugl/pugl_x11.c
   endif
 endif
 
+GLUICFLAGS+=`pkg-config --cflags cairo pango $(PKG_GL_LIBS)`
+GLUILIBS+=`pkg-config $(PKG_UI_FLAGS) --libs cairo pango pangocairo $(PKG_GL_LIBS)`
+
+ifneq ($(XWIN),)
+GLUILIBS+=-lpthread -lusp10
+endif
+
+GLUICFLAGS+=$(LIC_CFLAGS)
+GLUILIBS+=$(LIC_LOADLIBES)
 
 ifeq ($(ENABLE_CONVOLUTION), yes)
   CC=$(CXX)
@@ -83,11 +110,7 @@ else
   endif
 endif
 
-ifeq ($(IS_WIN)$(IS_OSX), yes)
-  HAVE_UI=$(shell pkg-config --exists ftgl && echo $(FONT_FOUND))
-else
-  HAVE_UI=$(shell pkg-config --exists glu ftgl && echo $(FONT_FOUND))
-endif
+HAVE_UI=$(shell pkg-config --exists $(PKG_GL_LIBS) ftgl && echo $(FONT_FOUND))
 
 ifeq ($(LV2AVAIL)$(HAVE_UI), yesyes)
   UICFLAGS=-I..
@@ -105,14 +128,12 @@ ifeq ($(LV2AVAIL)$(HAVE_UI), yesyes)
     UILIBS=../pugl/pugl_osx.m -framework Cocoa -framework OpenGL
     UILIBS+=`pkg-config --variable=libdir ftgl`/libftgl.a `pkg-config --variable=libdir ftgl`/libfreetype.a
     UILIBS+=-lm -mmacosx-version-min=10.5
-    UI_TYPE=CocoaUI
   else
     ifeq ($(IS_WIN), yes)
       UIDEPS+=../pugl/pugl_win.cpp
       UILIBS=../pugl/pugl_win.cpp
       UILIBS+=`pkg-config --variable=libdir ftgl`/libftgl.a `pkg-config --variable=libdir ftgl`/libfreetype.a
       UILIBS+=-lws2_32 -lwinmm -lopengl32 -lglu32 -lgdi32 -lcomdlg32 -lpthread
-      UI_TYPE=WindowsUI
     else
       UIDEPS+=../pugl/pugl_x11.c
       override CFLAGS+=`pkg-config --cflags glu`
@@ -123,7 +144,6 @@ ifeq ($(LV2AVAIL)$(HAVE_UI), yesyes)
       else
         UILIBS+=`pkg-config --libs glu ftgl`
       endif
-      UI_TYPE=X11UI
       UICFLAGS+=-DFONTFILE=\"$(FONTFILE)\"
     endif
   endif

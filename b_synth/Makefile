@@ -14,7 +14,7 @@ ifeq ($(LV2AVAIL), yes)
   ifeq ($(HAVE_UI), yes)
     targets+=$(LV2GUI)$(LIB_EXT)
   else
-    $(warning "GUI will not be built")
+    $(warning "Synth GUI will not be built")
     $(warning "either openGL/GLU is not available - install glu-dev, ftgl-dev")
     $(warning "or $(FONTFILE) cannot be found")
   endif

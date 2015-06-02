@@ -1,0 +1,16 @@
+
+@prefix ui:    <http://lv2plug.in/ns/extensions/ui#> .
+
+<http://gareus.org/oss/lv2/b_whirl#extended>
+	ui:ui <http://gareus.org/oss/lv2/b_whirl#ui_gl> ;
+	.
+
+<http://gareus.org/oss/lv2/b_whirl#ui_gl>
+	a ui:@UI_TYPE@;
+	@UI_REQ@
+	ui:portNotification [
+		ui:plugin <http://gareus.org/oss/lv2/b_whirl#extended> ;
+		lv2:symbol "notify";
+		ui:notifyType atom:Blank
+	]
+	.
