@@ -447,6 +447,54 @@
 		lv2:maximum  48.0 ;
 		 units:unit units:db;
 		pp:displayPriority 100 ;
+	],
+	[
+		a lv2:OutputPort ,
+			lv2:ControlPort ;
+		lv2:index 29 ;
+		lv2:symbol "hornrpm" ;
+		lv2:name "Current Horn speed [RPM]";
+		lv2:minimum 0.0 ;
+		lv2:maximum 1000.0 ;
+	],
+	[
+		a lv2:OutputPort ,
+			lv2:ControlPort ;
+		lv2:index 30 ;
+		lv2:symbol "drumrpm" ;
+		lv2:name "Current Drum speed [RPM]";
+		lv2:minimum 0.0 ;
+		lv2:maximum 600.0 ;
+
+	],
+	[
+		a lv2:OutputPort ,
+			lv2:ControlPort ;
+		lv2:index 31 ;
+		lv2:symbol "hornang" ;
+		lv2:name "Current position (deg)";
+		lv2:minimum 0.0 ;
+		lv2:maximum 1.0 ;
+	],
+	[
+		a lv2:OutputPort ,
+			lv2:ControlPort ;
+		lv2:index 32 ;
+		lv2:symbol "drumang" ;
+		lv2:name "Current Drum position (deg)";
+		lv2:minimum  0.0 ;
+		lv2:maximum  1.0 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 33 ;
+		lv2:symbol "guitrigger" ;
+		lv2:name "GUI to Plugin Notifications";
+		lv2:default  0.0 ;
+		lv2:minimum  0.0 ;
+		lv2:maximum  1.0 ;
+		lv2:portProperty pp:notOnGUI ;
 	];
 	rdfs:comment "A rotating louspeaker emulator designed to imitate the sound and properties of the sound modification device that brought world-wide fame to the name of Don Leslie" ;
 	.

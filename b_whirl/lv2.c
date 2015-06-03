@@ -67,6 +67,14 @@ typedef enum {
   B3W_FILTDFREQ,
   B3W_FILTDQUAL,
   B3W_FILTDGAIN,
+
+  B3W_HORNRPM,
+  B3W_DRUMRPM,
+
+  B3W_HORNANG,
+  B3W_DRUMANG,
+
+  B3W_GUINOTIFY,
 } PortIndex;
 
 typedef struct {
@@ -85,6 +93,9 @@ typedef struct {
 
   float *horn_level, *drum_level;
   float *drum_width;
+  float *c_horm_rpm, *c_drum_rpm;
+  float *c_horm_ang, *c_drum_ang;
+  float *p_resend_trigger;
 
   float o_rev_select;
   float o_filta_type, o_filtb_type, o_filtd_type;
@@ -106,7 +117,11 @@ typedef struct {
   float bufH[2][8192];
   float bufD[2][8192];
 
+  float rate;
   float _w;
+
+  int resend_trigger;
+  uint32_t resend_data_to_ui;
 } B3W;
 
 static LV2_Handle
@@ -137,12 +152,17 @@ instantiate(const LV2_Descriptor*     descriptor,
   b3w->instance->micDistCm    = 42.0;
 #endif
 
+  b3w->rate = rate;
+
   initWhirl(b3w->instance, NULL, rate);
 
   b3w->_w = 2000.0 / rate;
   b3w->o_horn_level = 1.0;
   b3w->o_drum_level = 1.0;
   b3w->o_drum_width = 0.0;
+
+  b3w->resend_data_to_ui = 0;
+  b3w->resend_trigger = 0;
 
   b3w->x_drum_width = 0.0;
   b3w->x_dll = b3w->x_drr = 1.0;
@@ -245,6 +265,21 @@ connect_port(LV2_Handle instance,
       break;
     case B3W_DRUMWIDTH:
       b3w->drum_width = (float*)data;
+      break;
+    case B3W_HORNRPM:
+      b3w->c_horm_rpm = (float*)data;
+      break;
+    case B3W_DRUMRPM:
+      b3w->c_drum_rpm = (float*)data;
+      break;
+    case B3W_HORNANG:
+      b3w->c_horm_ang = (float*)data;
+      break;
+    case B3W_DRUMANG:
+      b3w->c_drum_ang = (float*)data;
+      break;
+    case B3W_GUINOTIFY:
+      b3w->p_resend_trigger = (float*)data;
       break;
   }
 }
@@ -351,6 +386,33 @@ run(LV2_Handle instance, uint32_t n_samples)
   for (i=0; i < n_samples; ++i) {
     outL[i] = b3w->bufH[0][i] * hll + b3w->bufD[0][i] * dll + b3w->bufD[1][i] * dlr;
     outR[i] = b3w->bufH[1][i] * hrr + b3w->bufD[0][i] * drl + b3w->bufD[1][i] * drr;
+  }
+
+  if (!b3w->c_horm_rpm || !b3w->c_horm_rpm) {
+	  // simple version
+	  return;
+  }
+
+  const float hspd = b3w->instance->hornIncr * 60.f * b3w->rate;
+  const float dspd = b3w->instance->drumIncr * 60.f * b3w->rate;
+
+  if (b3w->resend_trigger != (int)(floorf (b3w->p_resend_trigger[0]))) {
+    b3w->resend_data_to_ui = ceilf (.5 * b3w->rate / n_samples);
+    b3w->resend_trigger = (int)(floorf (b3w->p_resend_trigger[0]));
+  }
+
+  if (b3w->resend_data_to_ui > 0) {
+	  // Force host to send update
+	  --b3w->resend_data_to_ui;
+	  *b3w->c_horm_rpm = -1.f - b3w->resend_data_to_ui / 100.f;
+	  *b3w->c_horm_ang = -1.f - b3w->resend_data_to_ui / 100.f;
+	  *b3w->c_drum_rpm = -1.f - b3w->resend_data_to_ui / 100.f;
+	  *b3w->c_drum_ang = -1.f - b3w->resend_data_to_ui / 100.f;
+  } else {
+	  *b3w->c_horm_rpm = hspd;
+	  *b3w->c_horm_ang = fmod(b3w->instance->hornAngleGRD + .25, 1.0);
+	  *b3w->c_drum_rpm = dspd;
+	  *b3w->c_drum_ang = fmod(b3w->instance->drumAngleGRD + .25, 1.0);
   }
 }
 
