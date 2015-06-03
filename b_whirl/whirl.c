@@ -1059,12 +1059,37 @@ void whirlProc2 (struct b_whirl *w,
     return;
   }
 
+
   /* compute rotational speeds for this cycle */
   if (w->hornAcDc) {
-    const double l = exp(-1.0/(w->SampleRateD / bufferLengthSamples * (w->hornAcDc>0? w->hornAcc : w->hornDec )));
-    w->hornIncr += (1-l) * (w->hornTarget - w->hornIncr);
+    /* brake position notch - see comment on brake below */
+    int flywheel = 0; // disable deceleration to smoothly reach desired stop position
+    const float hardstop = 10.f  / (60.f * w->SampleRateD); // limit deceleration 10 to 0. RPM
 
-    if (fabs(w->hornTarget - w->hornIncr) < (1.0/360.0/w->SampleRateD) ) {
+    if (w->hnBrakePos > 0 && w->hornTarget == 0 && w->hornIncr > 0 && w->hornIncr < hardstop) {
+      const double targetPos = fmod(w->hnBrakePos + .75, 1.0);
+      if (fabsf(w->hornAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
+	w->hornAngleGRD = targetPos;
+	w->hornIncr = 0;
+      } else {
+	// keep going. at most: speed needed to reach brake-pos, at least 3RPM.
+	const float minspeed = 3.f / (60.f * w->SampleRateD);
+	const float diffinc  = fmod(1. + targetPos - w->hornAngleGRD, 1.0) / (float) bufferLengthSamples;
+	if (w->hornIncr > diffinc) {
+	  w->hornIncr = diffinc;
+	} else if  (w->hornIncr < minspeed) {
+	  w->hornIncr = minspeed;
+	}
+	flywheel = 1; 
+      }
+    }
+
+    if (!flywheel) {
+      const double l = exp(-1.0/(w->SampleRateD / bufferLengthSamples * (w->hornAcDc>0? w->hornAcc : w->hornDec )));
+      w->hornIncr += (1-l) * (w->hornTarget - w->hornIncr);
+    }
+
+    if (fabs(w->hornTarget - w->hornIncr) < (.05 / (60.f * w->SampleRateD))) {
       /* provide a dead-zone for rounding */
 #ifdef DEBUG_SPEED
       printf("AcDc Horn off\n");
@@ -1075,10 +1100,33 @@ void whirlProc2 (struct b_whirl *w,
   }
 
   if (w->drumAcDc) {
-    const double l = exp(-1.0/(w->SampleRateD / bufferLengthSamples * (w->drumAcDc>0? w->drumAcc: w->drumDec )));
-    w->drumIncr += (1-l) * (w->drumTarget - w->drumIncr);
+    int flywheel = 0; // disable deceleration to smoothly reach desired stop position
+    const float hardstop = 8.f  / (60.f * w->SampleRateD); // limit deceleration
 
-    if (fabs(w->drumTarget - w->drumIncr) < (1.0/360.0/w->SampleRateD)) {
+    if (w->drBrakePos > 0 && w->drumTarget == 0 && w->drumIncr > 0 && w->drumIncr < hardstop) {
+      const double targetPos= fmod(w->drBrakePos + .75, 1.0);
+      if (fabsf(w->drumAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
+	w->drumAngleGRD = targetPos;
+	w->drumIncr = 0;
+      } else {
+	// keep going. at most: speed needed to reach brake-pos, at least 3RPM.
+	const float minspeed = 3.f / (60.f * w->SampleRateD);
+	const float diffinc  = fmod(1. + targetPos - w->drumAngleGRD, 1.0) / (float) bufferLengthSamples;
+	if (w->drumIncr > diffinc) {
+	  w->drumIncr = diffinc;
+	} else if  (w->drumIncr < minspeed) {
+	  w->drumIncr = minspeed;
+	}
+	flywheel = 1; 
+      }
+    }
+
+    if (!flywheel) {
+      const double l = exp(-1.0/(w->SampleRateD / bufferLengthSamples * (w->drumAcDc>0? w->drumAcc: w->drumDec )));
+      w->drumIncr += (1-l) * (w->drumTarget - w->drumIncr);
+    }
+
+    if (fabs(w->drumTarget - w->drumIncr) < (.05 / (60.f * w->SampleRateD))) {
 #ifdef DEBUG_SPEED
       printf("ACDC Drum off\n");
 #endif
@@ -1087,40 +1135,46 @@ void whirlProc2 (struct b_whirl *w,
     }
   }
 
-#if 1
+
   /* break position -- don't stop anywhere..
    * the original Leslie can not do this, sometimes the horn is aimed at the back of
    * the cabinet when it comes to a halt, which results in a less than desirable sound.
    *
-   * continue to slowly move the horn and drum to the center position after it actually
-   * came to a stop.
+   * move the horn and drum to the center position after it actually came to a stop.
+   * (this is used if brake pos is changed with stopped motors
    *
    * internal Pos = 0    towards left mic
    * internal Pos = 0.5  towards right mic
    * config: 1 = front, .5 = back
    */
+  int brake_enagaged = 0;
   if (w->hnBrakePos > 0) {
     const double targetPos = fmod(w->hnBrakePos + .75, 1.0);
     if (!w->hornAcDc && w->hornIncr == 0 && w->hornAngleGRD != targetPos) {
-      w->hornAngleGRD += 1.0 / 400.0;
-      w->hornAngleGRD = fmod(w->hornAngleGRD, 1.0);
-      if ((w->hornAngleGRD - targetPos) < (1.0/360.0)) {
+      brake_enagaged |= 1;
+      if (fabsf(w->hornAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
 	/* provide a dead-zone for rounding */
-	w->hornAngleGRD=targetPos;
+	w->hornAngleGRD = targetPos;
+      } else {
+	const float limit = 60.f /* RPM */ / (60. * w->SampleRateD);
+	w->hornIncr = fmod(1. + targetPos - w->hornAngleGRD, 1.0) / (float) bufferLengthSamples;
+	if (w->hornIncr > limit) w->hornIncr = limit;
       }
     }
   }
   if (w->drBrakePos > 0) {
     const double targetPos= fmod(w->drBrakePos + .75, 1.0);
     if (!w->drumAcDc && w->drumIncr == 0 && w->drumAngleGRD != targetPos) {
-      w->drumAngleGRD += 1.0/400.0;
-      w->drumAngleGRD = fmod(w->drumAngleGRD, 1.0);
-      if ((w->drumAngleGRD - targetPos) < (1.0/360.0)) {
-	w->drumAngleGRD=targetPos;
+      brake_enagaged |= 2;
+      if (fabsf(w->drumAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
+	w->drumAngleGRD = targetPos;
+      } else {
+	const float limit = 100.f /* RPM */ / (60. * w->SampleRateD);
+	w->drumIncr = fmod(1. + targetPos - w->drumAngleGRD, 1.0) / (float) bufferLengthSamples;
+	if (w->drumIncr > limit) w->drumIncr = limit;
       }
     }
   }
-#endif
 
   /* localize struct variables */
   double hornAngleGRD = w->hornAngleGRD;
@@ -1350,6 +1404,8 @@ void whirlProc2 (struct b_whirl *w,
   /* copy back variables */
   w->hornAngleGRD = hornAngleGRD;
   w->drumAngleGRD = drumAngleGRD;
+  if (brake_enagaged & 1) { w->hornIncr = 0; }
+  if (brake_enagaged & 2) { w->drumIncr = 0; }
   w->outpos = outpos;
 }
 
