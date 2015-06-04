@@ -20,13 +20,12 @@ ifeq ($(LV2AVAIL), yes)
     HAVE_RTK = $(shell pkg-config --exists pango cairo $(PKG_GL_LIBS) && echo yes)
   endif
 
-  # WORK IN PROGRESS
-  #ifeq ($(HAVE_RTK), yes)
-  #  targets+=$(LV2GUI)$(LIB_EXT)
-  #else
-  #  #$(warning "whirl/leslie GUI will not be built")
-  #  #$(warning "robtk or its dependencies are missing")
-  #endif
+  ifeq ($(HAVE_RTK), yes)
+    targets+=$(LV2GUI)$(LIB_EXT)
+  else
+    $(warning "whirl/leslie GUI will not be built")
+    $(warning "robtk or its dependencies are missing")
+  endif
 endif
 
 all: $(targets)
@@ -53,7 +52,7 @@ $(LV2NAME)$(LIB_EXT): lv2.c whirl.o eqcomp.o whirl.h eqcomp.h ../src/cfgParser.h
 
 -include $(RW)robtk.mk
 
-$(LV2GUI)$(LIB_EXT): gui/b_whirl.c
+$(LV2GUI)$(LIB_EXT): gui/b_whirl.c gui/rtk_lever.h
 
 install: $(targets)
 ifeq ($(LV2AVAIL), yes)
