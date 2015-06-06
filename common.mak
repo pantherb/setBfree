@@ -27,7 +27,7 @@ override CFLAGS += -DVERSION="\"$(VERSION)\""
 STRIP    ?= strip
 
 CXXFLAGS = $(OPTIMIZATIONS) -Wall
-GLUICFLAGS=-I. -Wno-unused-function
+GLUICFLAGS=-I. -I.. -Wno-unused-function
 STRIPFLAGS=-s
 
 # check for LV2
@@ -58,7 +58,7 @@ ifeq ($(UNAME),Darwin)
   GLUILIBS=-framework Cocoa -framework OpenGL -framework CoreFoundation
   STRIPFLAGS=-u -r -arch all -s $(RW)lv2syms
   UI_TYPE=CocoaUI
-  PUGL_SRC=$(RW)pugl/pugl_osx.m
+  PUGL_SRC=../pugl/pugl_osx.m
 else
   ifneq ($(XWIN),)
     IS_WIN=yes
@@ -70,7 +70,7 @@ else
     EXE_EXT=.exe
     GLUILIBS=-lws2_32 -lwinmm -lopengl32 -lglu32 -lgdi32 -lcomdlg32 -lpthread
     UI_TYPE=WindowsUI
-    PUGL_SRC=$(RW)pugl/pugl_win.cpp
+    PUGL_SRC=../pugl/pugl_win.cpp
     override CFLAGS+= -DHAVE_MEMSTREAM
     override LDFLAGS += -static-libgcc -static-libstdc++ -DPTW32_STATIC_LIB
   else
@@ -80,7 +80,7 @@ else
     PKG_GL_LIBS=glu gl
     GLUILIBS=-lX11
     UI_TYPE=X11UI
-    PUGL_SRC=$(RW)pugl/pugl_x11.c
+    PUGL_SRC=../pugl/pugl_x11.c
   endif
 endif
 

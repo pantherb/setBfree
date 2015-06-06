@@ -5,6 +5,10 @@ ifneq ($(FONTFILE),)
 export FONTFILE
 endif
 
+ifneq ($(wildcard robtk/robtk.mk),)
+  ROBTK ?= robtk/
+endif
+
 ifneq ($(ROBTK),)
 RW=$(abspath $(ROBTK))/
 export RW

@@ -404,6 +404,9 @@ puglCreate(PuglNativeWindow parent,
 		NSView* pview = (NSView*) parent;
 		[pview addSubview:impl->glview];
 		[impl->glview setHidden:NO];
+		if (!resizable) {
+			[impl->glview setAutoresizingMask:NSViewNotSizable];
+		}
 	} else {
 		NSString* titleString = [[NSString alloc]
 			initWithBytes:title
@@ -426,6 +429,9 @@ puglCreate(PuglNativeWindow parent,
 		[NSApp activateIgnoringOtherApps:YES];
 		[window makeFirstResponder:impl->glview];
 		[window makeKeyAndOrderFront:window];
+		if (!resizable) {
+			[window setStyleMask:[window styleMask] & ~NSResizableWindowMask];
+		}
 	}
 	return view;
 }
@@ -501,4 +507,43 @@ PuglNativeWindow
 puglGetNativeWindow(PuglView* view)
 {
 	return (PuglNativeWindow)view->impl->glview;
+}
+
+int
+puglOpenFileDialog(PuglView* view, const char *title)
+{
+	NSOpenPanel *panel = [NSOpenPanel openPanel];
+	[panel setCanChooseFiles:YES];
+	[panel setCanChooseDirectories:NO];
+	[panel setAllowsMultipleSelection:NO];
+
+	if (title) {
+		NSString* titleString = [[NSString alloc]
+			initWithBytes:title
+			     	 length:strlen(title)
+			   	 encoding:NSUTF8StringEncoding];
+		[panel setTitle:titleString];
+	}
+
+	[panel beginWithCompletionHandler:^(NSInteger result) {
+		bool file_ok = false;
+		if (result == NSFileHandlingPanelOKButton) {
+			for (NSURL *url in [panel URLs]) {
+				if (![url isFileURL]) continue;
+				//NSLog(@"%@", url.path);
+				const char *fn= [url.path UTF8String];
+				file_ok = true;
+				if (view->fileSelectedFunc) {
+					view->fileSelectedFunc(view, fn);
+				}
+				break;
+			}
+		}
+
+		if (!file_ok && view->fileSelectedFunc) {
+			view->fileSelectedFunc(view, NULL);
+		}
+	}];
+
+	return 0;
 }

@@ -208,7 +208,7 @@ puglReshape(PuglView* view, int width, int height)
 	view->height = height;
 }
 
-void
+static void
 puglDisplay(PuglView* view)
 {
 	wglMakeCurrent(view->impl->hdc, view->impl->hglrc);
@@ -292,7 +292,7 @@ processMouseEvent(PuglView* view, int button, bool press, LPARAM lParam)
 	} else {
 		ReleaseCapture();
 	}
-	
+
 	if (view->mouseFunc) {
 		view->mouseFunc(view, button, press,
 		                GET_X_LPARAM(lParam),
@@ -365,6 +365,7 @@ handleMessage(PuglView* view, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_MOUSEWHEEL:
 		if (view->scrollFunc) {
+			view->event_timestamp_ms = GetMessageTime();
 			POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
 			ScreenToClient(view->impl->hwnd, &pt);
 			view->scrollFunc(
@@ -374,6 +375,7 @@ handleMessage(PuglView* view, UINT message, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_MOUSEHWHEEL:
 		if (view->scrollFunc) {
+			view->event_timestamp_ms = GetMessageTime();
 			POINT pt = { GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam) };
 			ScreenToClient(view->impl->hwnd, &pt);
 			view->scrollFunc(
@@ -382,12 +384,12 @@ handleMessage(PuglView* view, UINT message, WPARAM wParam, LPARAM lParam)
 		}
 		break;
 	case WM_KEYDOWN:
-		view->event_timestamp_ms = (GetMessageTime());
 		if (view->ignoreKeyRepeat && (lParam & (1 << 30))) {
 			break;
 		} // else nobreak
 	case WM_KEYUP:
-		if (key = keySymToSpecial(wParam)) {
+		view->event_timestamp_ms = GetMessageTime();
+		if ((key = keySymToSpecial(wParam))) {
 			if (view->specialFunc) {
 				view->specialFunc(view, message == WM_KEYDOWN, key);
 			}
@@ -473,4 +475,37 @@ PuglNativeWindow
 puglGetNativeWindow(PuglView* view)
 {
 	return (PuglNativeWindow)view->impl->hwnd;
+}
+
+int
+puglOpenFileDialog(PuglView* view, const char *title)
+{
+	char fn[1024] = "";
+	OPENFILENAME ofn;
+	ZeroMemory(&ofn, sizeof(OPENFILENAME));
+	ofn.lStructSize = sizeof(OPENFILENAME);
+	ofn.lpstrFile = fn;
+	ofn.nMaxFile = 1024;
+	ofn.lpstrTitle = title;
+	ofn.lpstrFilter = "All\0*.*\0";
+	ofn.nFilterIndex = 0;
+	ofn.lpstrInitialDir = 0;
+	ofn.Flags = OFN_ENABLESIZING | OFN_FILEMUSTEXIST | OFN_NONETWORKBUTTON | OFN_HIDEREADONLY | OFN_READONLY;
+
+	// TODO look into async ofn.lpfnHook, OFN_ENABLEHOOK
+	// UINT_PTR CALLBACK openFileHook(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+	// yet it seems GetOpenFIleName itself won't return anyway.
+
+	ofn.hwndOwner = view->impl->hwnd; // modal
+
+	if (GetOpenFileName (&ofn)) {
+		if (view->fileSelectedFunc) {
+			view->fileSelectedFunc(view, fn);
+		}
+	} else {
+		if (view->fileSelectedFunc) {
+			view->fileSelectedFunc(view, NULL);
+		}
+	}
+	return 0;
 }

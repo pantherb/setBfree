@@ -37,6 +37,7 @@ struct PuglViewImpl {
 	PuglResizeFunc   resizeFunc;
 	PuglScrollFunc   scrollFunc;
 	PuglSpecialFunc  specialFunc;
+	PuglFileSelectedFunc fileSelectedFunc;
 
 	PuglInternals* impl;
 
@@ -150,4 +151,10 @@ void
 puglSetSpecialFunc(PuglView* view, PuglSpecialFunc specialFunc)
 {
 	view->specialFunc = specialFunc;
+}
+
+void
+puglSetFileSelectedFunc(PuglView* view, PuglFileSelectedFunc fileSelectedFunc)
+{
+	view->fileSelectedFunc = fileSelectedFunc;
 }
