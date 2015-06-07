@@ -76,7 +76,7 @@
 		lv2:default 0.0 ;
 		lv2:minimum -20.0;
 		lv2:maximum +20.0 ;
-		 units:unit units:db;
+		units:unit units:db;
 		pp:displayPriority 800 ;
 		rdfs:comment "Horn wet-signal volume" ;
 	],
@@ -89,7 +89,7 @@
 		lv2:default 0.0 ;
 		lv2:minimum -20.0;
 		lv2:maximum +20.0 ;
-		 units:unit units:db;
+		units:unit units:db;
 		pp:displayPriority 800 ;
 		rdfs:comment "Drum wet-signal level" ;
 	],
@@ -104,18 +104,17 @@
 		lv2:maximum 2.0 ;
 		pp:displayPriority 700 ;
 		rdfs:comment "Microphone angle/setup for the baffle" ;
-    lv2:scalePoint [
-      rdfs:label "Mono/Left" ;
-      rdf:value 0.0 ;
-    ] , [
-      rdfs:label "stereo" ;
-      rdf:value 1.0 ;
-    ] , [
-      rdfs:label "Mono/Right" ;
-      rdf:value 2.0 ;
-    ];
+		lv2:scalePoint [
+			rdfs:label "Mono/Left" ;
+			rdf:value 0.0 ;
+		] , [
+			rdfs:label "stereo" ;
+			rdf:value 1.0 ;
+		] , [
+			rdfs:label "Mono/Right" ;
+			rdf:value 2.0 ;
+		];
 	],
-
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
@@ -175,25 +174,24 @@
 		lv2:maximum 1.0 ;
 		pp:displayPriority 200 ;
 		rdfs:comment "Horn stop position. Clockwise position where to stop. (0: free-stop, 1.0:front-center). Note, the original Leslie can not do this, yet sometimes the horn is aimed at the back of the cabinet when it comes to a halt, which results in a less than desirable sound." ;
-    lv2:scalePoint [
-      rdfs:label "No brake" ;
-      rdf:value 0.0 ;
-    ] , [
-      rdfs:label "Left" ;
-      rdf:value .25 ;
-    ] , [
-      rdfs:label "Back" ;
-      rdf:value .5 ;
-    ] , [
-      rdfs:label "Right" ;
-      rdf:value .75 ;
-    ] , [
-      rdfs:label "Front" ;
-      rdf:value 1.0 ;
-    ];
+		lv2:scalePoint [
+			rdfs:label "No brake" ;
+			rdf:value 0.0 ;
+		] , [
+			rdfs:label "Left" ;
+			rdf:value .25 ;
+		] , [
+			rdfs:label "Back" ;
+			rdf:value .5 ;
+		] , [
+			rdfs:label "Right" ;
+			rdf:value .75 ;
+		] , [
+			rdfs:label "Front" ;
+			rdf:value 1.0 ;
+		];
 		pp:displayPriority 250 ;
 	],
-
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
@@ -213,8 +211,9 @@
 		lv2:scalePoint [ rdfs:label "peaking-eq"; rdf:value 6 ] ;
 		lv2:scalePoint [ rdfs:label "low-shelf"; rdf:value 7 ] ;
 		lv2:scalePoint [ rdfs:label "high-shelf"; rdf:value 8 ] ;
+		lv2:portProperty pp:causesArtifacts;
 		pp:displayPriority 100 ;
-		rdfs:comment "This is the first of two filters to shape the signal to be sent to the horn-speaker";
+		rdfs:comment "This is the first of two filters to shape the signal to be sent to the horn-speaker. Changing the type will fade the audio.";
 	],
 	[
 		a lv2:InputPort ,
@@ -246,10 +245,10 @@
 		lv2:index 15 ;
 		lv2:symbol "filtagain" ;
 		lv2:name "Horn Filter-1 Gain [dB]";
-		lv2:default -38.9291;
+		lv2:default -30.0 ;
 		lv2:minimum -48.0 ;
 		lv2:maximum  48.0 ;
-		 units:unit units:db;
+		units:unit units:db;
 		pp:displayPriority 100 ;
 	],
 	[
@@ -272,7 +271,8 @@
 		lv2:scalePoint [ rdfs:label "low-shelf"; rdf:value 7 ] ;
 		lv2:scalePoint [ rdfs:label "high-shelf"; rdf:value 8 ] ;
 		pp:displayPriority 100 ;
-		rdfs:comment "This is the second of two filters to shape the signal to be sent to the horn-speaker, by default a low-shelf filter with negative gain to remove frequencies which are sent to the drum";
+		lv2:portProperty pp:causesArtifacts;
+		rdfs:comment "This is the second of two filters to shape the signal to be sent to the horn-speaker, by default a low-shelf filter with negative gain to remove frequencies which are sent to the drum. Changing the type will fade the audio.";
 	],
 	[
 		a lv2:InputPort ,
@@ -307,7 +307,7 @@
 		lv2:default -30.0 ;
 		lv2:minimum -48.0 ;
 		lv2:maximum  48.0 ;
-		 units:unit units:db;
+		units:unit units:db;
 		pp:displayPriority 100 ;
 	],
 
@@ -370,26 +370,25 @@
 		lv2:minimum 0.0 ;
 		lv2:maximum 1.0 ;
 		pp:displayPriority 200 ;
-    lv2:scalePoint [
-      rdfs:label "No brake" ;
-      rdf:value 0.0 ;
-    ] , [
-      rdfs:label "Right" ;
-      rdf:value .25 ;
-    ] , [
-      rdfs:label "Back" ;
-      rdf:value .5 ;
-    ] , [
-      rdfs:label "Left" ;
-      rdf:value .75 ;
-    ] , [
-      rdfs:label "Front" ;
-      rdf:value 1.0 ;
-    ];
+		lv2:scalePoint [
+			rdfs:label "No brake" ;
+			rdf:value 0.0 ;
+		] , [
+			rdfs:label "Right" ;
+			rdf:value .25 ;
+		] , [
+			rdfs:label "Back" ;
+			rdf:value .5 ;
+		] , [
+			rdfs:label "Left" ;
+			rdf:value .75 ;
+		] , [
+			rdfs:label "Front" ;
+			rdf:value 1.0 ;
+		];
 		pp:displayPriority 250 ;
 		rdfs:comment "Drum stop position. Clockwise position where to stop. (0: free-stop, 1.0:front-center)";
 	],
-
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
@@ -410,7 +409,8 @@
 		lv2:scalePoint [ rdfs:label "low-shelf"; rdf:value 7 ] ;
 		lv2:scalePoint [ rdfs:label "high-shelf"; rdf:value 8 ] ;
 		pp:displayPriority 100 ;
-		rdfs:comment "This filter separates the signal to be sent to the drum-speaker. It should be a high-shelf filter with negative gain"
+		lv2:portProperty pp:causesArtifacts;
+		rdfs:comment "This filter separates the signal to be sent to the drum-speaker. It should be a high-shelf filter with negative gain. Changing the type will fade the audio."
 	],
 	[
 		a lv2:InputPort ,
@@ -445,13 +445,95 @@
 		lv2:default -38.9291;
 		lv2:minimum -48.0 ;
 		lv2:maximum  48.0 ;
-		 units:unit units:db;
+		units:unit units:db;
 		pp:displayPriority 100 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 29 ;
+		lv2:symbol "hornleak" ;
+		lv2:name "Horn signal leakage";
+		lv2:default -16.47;
+		lv2:minimum -80.0 ;
+		lv2:maximum  -3.0 ;
+		units:unit units:db;
+		pp:displayPriority 100 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 30 ;
+		lv2:symbol "hornradius" ;
+		lv2:name "Horn Radius";
+		lv2:default  19.2 ;
+		lv2:minimum   9.0 ;
+		lv2:maximum  50.0 ;
+		units:unit units:cm;
+		pp:displayPriority 50 ;
+		lv2:portProperty pp:causesArtifacts;
+		rdfs:comment "Radius of the speaker horn. Changing this value will reinitialize the effect.";
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 31 ;
+		lv2:symbol "drumradius" ;
+		lv2:name "Drum Radius";
+		lv2:default  22.0 ;
+		lv2:minimum   9.0 ;
+		lv2:maximum  50.0 ;
+		units:unit units:cm;
+		pp:displayPriority 50 ;
+		lv2:portProperty pp:causesArtifacts;
+		rdfs:comment "Radius of the baffle. Changing this value will reinitialize the effect.";
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 32 ;
+		lv2:symbol "hornxoff" ;
+		lv2:name "Horn X-Axis Offset" ;
+		lv2:default   0.0 ;
+		lv2:minimum -20.0 ;
+		lv2:maximum  20.0 ;
+		units:unit units:cm;
+		pp:displayPriority 50 ;
+		lv2:portProperty pp:causesArtifacts;
+		rdfs:comment "Offset of horn towards left mic in centimeters. Changing this value will reinitialize the effect.";
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 33 ;
+		lv2:symbol "hornzoff" ;
+		lv2:name "Horn Z-Axis Offset" ;
+		lv2:default   0.0 ;
+		lv2:minimum -20.0 ;
+		lv2:maximum  20.0 ;
+		units:unit units:cm;
+		pp:displayPriority 50 ;
+		lv2:portProperty pp:causesArtifacts;
+		rdfs:comment "Offset of horn perpendicular to mic to front in centimeters. Changing this value will reinitialize the effect.";
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 34 ;
+		lv2:symbol "micdist" ;
+		lv2:name "Microphone Distance" ;
+		lv2:default  42.0 ;
+		lv2:minimum   9.0 ;
+		lv2:maximum 300.0 ;
+		units:unit units:cm;
+		pp:displayPriority 50 ;
+		lv2:portProperty pp:causesArtifacts;
+		rdfs:comment "Distance from mic to origin in centimeters. Changing this value will reinitialize the effect.";
 	],
 	[
 		a lv2:OutputPort ,
 			lv2:ControlPort ;
-		lv2:index 29 ;
+		lv2:index 35 ;
 		lv2:symbol "hornrpm" ;
 		lv2:name "Current Horn speed [RPM]";
 		lv2:minimum 0.0 ;
@@ -460,7 +542,7 @@
 	[
 		a lv2:OutputPort ,
 			lv2:ControlPort ;
-		lv2:index 30 ;
+		lv2:index 36 ;
 		lv2:symbol "drumrpm" ;
 		lv2:name "Current Drum speed [RPM]";
 		lv2:minimum 0.0 ;
@@ -470,7 +552,7 @@
 	[
 		a lv2:OutputPort ,
 			lv2:ControlPort ;
-		lv2:index 31 ;
+		lv2:index 37 ;
 		lv2:symbol "hornang" ;
 		lv2:name "Current position (deg)";
 		lv2:minimum 0.0 ;
@@ -479,7 +561,7 @@
 	[
 		a lv2:OutputPort ,
 			lv2:ControlPort ;
-		lv2:index 32 ;
+		lv2:index 38 ;
 		lv2:symbol "drumang" ;
 		lv2:name "Current Drum position (deg)";
 		lv2:minimum  0.0 ;
@@ -488,7 +570,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 33 ;
+		lv2:index 39 ;
 		lv2:symbol "guitrigger" ;
 		lv2:name "GUI to Plugin Notifications";
 		lv2:default  0.0 ;
