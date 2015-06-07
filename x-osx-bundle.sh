@@ -19,6 +19,10 @@ PRODUCTDIR=$TARGET/setBfree.app
 PATH=$HOME/bin:${SBFSTACK}/bin/:/usr/bin:/bin:/usr/sbin:/sbin:/usr/local/bin
 PKG_CONFIG_PATH=${SBFSTACK}/lib/pkgconfig
 
+if test -f $HOME/.sbfbuild.cfg; then
+	. $HOME/.sbfbuild.cfg
+fi
+
 make clean
 make \
 	ENABLE_CONVOLUTION=no \
@@ -26,7 +30,7 @@ make \
 	LDFLAGS="-fdata-sections -ffunction-sections -Wl,-dead_strip" \
 	IRPATH="../Resources/ir" \
 	WEAKJACK="${SBFSTACK}/src/weakjack/weak_libjack.c" \
-	FONTFILE=verabd.h \
+	FONTFILE=verabd.h PKG_UI_FLAGS=--static \
 	SUBDIRS="b_synth b_whirl ui" $@ \
 	|| exit
 

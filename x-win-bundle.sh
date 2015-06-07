@@ -20,6 +20,10 @@ fi
 
 export PKG_CONFIG_PATH=${PREFIX}/lib/pkgconfig
 
+if test -f /home/robtk/.sbfbuild.cfg; then
+	. /home/robtk/.sbfbuild.cfg
+fi
+
 set -e
 
 make \
@@ -30,7 +34,7 @@ make \
   XWIN=${XPREFIX} \
 	CFLAGS="-I${PREFIX}/include -fvisibility=hidden -DNDEBUG -DPTW32_STATIC_LIB -msse -msse2 -mfpmath=sse -fomit-frame-pointer -O3 -mstackrealign -fno-finite-math-only -I${PREFIX}/src -DUSE_WEAK_JACK -DBUILTINFONT -fdata-sections -ffunction-sections" \
 	LDFLAGS="-L${PREFIX}/lib -fvisibility=hidden -fdata-sections -ffunction-sections -Wl,--gc-sections -Wl,-O1 -Wl,--as-needed -Wl,--strip-all" \
-	ENABLE_CONVOLUTION=no \
+	ENABLE_CONVOLUTION=no PKG_UI_FLAGS=--static \
 	WEAKJACK="${PREFIX}/src/weakjack/weak_libjack.c" \
 	FONTFILE=verabd.h \
 	SUBDIRS="b_synth b_whirl ui" \
