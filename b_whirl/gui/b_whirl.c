@@ -237,6 +237,9 @@ typedef struct {
 
 	cairo_pattern_t* hornp[2];
 
+	int eq_dragging;
+	struct { float x0, y0; } eq_ctrl [3];
+
 	int last_used_lever;
 	int initialized;
 	const char *nfo;
@@ -251,9 +254,14 @@ static const float c_dlf[4] = {0.8, 0.8, 0.8, 1.0}; // dial faceplate fg
 #define SQUARE(X) ( (X) * (X) )
 #endif
 
+#ifndef MAX
+#define MAX(A,B) ((A) > (B)) ? (A) : (B)
+#endif
+
 typedef struct {
 	float A, B, C, D, A1, B1;
 	float rate;
+	float x0, y0; // mouse position
 } FilterSection;
 
 static float get_eq_response (FilterSection *flt, const float freq) {
@@ -264,7 +272,8 @@ static float get_eq_response (FilterSection *flt, const float freq) {
 	const float B = flt->B * s1;
 	const float C = flt->C * c1 + flt->A1;
 	const float D = flt->D * s1;
-	return 20.f * log10f (sqrtf ((SQUARE(A) + SQUARE(B)) * (SQUARE(C) + SQUARE(D))) / (SQUARE(C) + SQUARE(D)));
+	const float rv = 20.f * log10f (sqrtf ((SQUARE(A) + SQUARE(B)) * (SQUARE(C) + SQUARE(D))) / (SQUARE(C) + SQUARE(D)));
+	return MAX(-100, rv);
 }
 
 static float freq_at_x (const int x, const int m0_width) {
@@ -372,6 +381,60 @@ static void draw_eq (WhirlUI* ui, const int f, const int w, const int h) {
 
 	cairo_restore (cr);
 
+#define DOTRADIUS 7
+#define BOXRADIUS 6
+	if (h > 60 && w > 120) {
+		// draw dots,  todo special case Notch & gain other out of bounds..
+		cairo_set_operator (cr, CAIRO_OPERATOR_ADD);
+		cairo_set_line_width(cr, 1.0);
+		const float fq = dial_to_param (&filter[f][0], robtk_dial_get_value (ui->s_ffreq[f]));
+		const float xf = 2.5 + x_at_freq(fq, xw) - .5f;
+		float yg;
+		if (ui->eq_dragging == f /* || (ui->dragging < 0 && ui->hover == j)*/) { // TODO
+			cairo_set_source_rgba (cr, 8, .4, .2, .6);
+		} else {
+			cairo_set_source_rgba (cr, 8, .4, .2, .3);
+		}
+
+		switch ((int)robtk_select_get_value (ui->sel_fil[f])) {
+			case EQC_LPF:
+			case EQC_HPF:
+			case EQC_NOTCH:
+				yg = ym;
+				cairo_move_to (cr, xf            , yg + BOXRADIUS + .5);
+				cairo_line_to (cr, xf - BOXRADIUS, yg - BOXRADIUS);
+				cairo_line_to (cr, xf + BOXRADIUS, yg - BOXRADIUS);
+				cairo_close_path (cr);
+				break;
+			case EQC_BPF0:
+				yg = ym;
+				cairo_move_to (cr, xf            , yg - BOXRADIUS - .5);
+				cairo_line_to (cr, xf - BOXRADIUS - .5, yg);
+				cairo_line_to (cr, xf            , yg + BOXRADIUS + .5);
+				cairo_line_to (cr, xf + BOXRADIUS + .5, yg);
+				cairo_close_path (cr);
+				break;
+			case EQC_APF:
+			case EQC_BPF1:
+				yg = ym - yr * get_eq_response (&flt, fq);
+				cairo_rectangle (cr, xf - BOXRADIUS, yg - BOXRADIUS, 2 * BOXRADIUS, 2 * BOXRADIUS);
+				break;
+			default:
+				yg = ym - yr * get_eq_response (&flt, fq);
+				cairo_arc (cr, xf, yg, DOTRADIUS, 0, 2 * M_PI);
+				break;
+		}
+		cairo_fill_preserve (cr);
+		cairo_set_source_rgba (cr, 8, .4, .2, .3);
+		cairo_stroke (cr);
+		ui->eq_ctrl[f].x0 = xf;
+		ui->eq_ctrl[f].y0 = yg;
+		cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
+	} else {
+		ui->eq_ctrl[f].x0 = -1;
+		ui->eq_ctrl[f].y0 = -1;
+	}
+
 	for (int i = 0; i < xw; ++i) {
 		// TODO interpolate (don't miss peaks)
 		const float xf = freq_at_x (i, xw);
@@ -453,6 +516,98 @@ m0_size_allocate (RobWidget* rw, int w, int h) {
 	update_eq (ui, f);
 }
 
+static bool check_control_point (WhirlUI* ui, const int f, const int x, const int y) {
+	if (ui->eq_ctrl[f].x0 < 0 || ui->eq_ctrl[f].y0 < 0) return false;
+	return (fabsf(x - ui->eq_ctrl[f].x0) <= DOTRADIUS && fabsf(y - ui->eq_ctrl[f].y0) <= DOTRADIUS);
+}
+
+static RobWidget* m0_mouse_move (RobWidget* rw, RobTkBtnEvent *ev) {
+	WhirlUI* ui = (WhirlUI*)GET_HANDLE(rw);
+	if (ui->eq_dragging < 0) return NULL;
+	const int f = ui->eq_dragging;
+
+	RobTkDial *fctl = ui->s_ffreq[f];
+	RobTkDial *gctl = ui->s_fgain[f];
+
+	if (!gctl->sensitive) {
+		gctl = NULL;
+	}
+
+	const float x0 = 2.5;
+	const float x1 = rw->area.width - 1.5;
+	const float xw = x1 - x0;
+
+	const int h = rw->area.height;
+	const float ym = floor (h * .5) + .5;
+	const float yr = (h - 4) / 100.f;
+
+	if (fctl && ev->x >= x0 && ev->x <= x1) {
+		const float hz = freq_at_x (ev->x - x0, xw);
+		robtk_dial_set_value (fctl, param_to_dial (&filter[f][0], hz));
+	}
+	if (gctl) {
+		const float db = (ym - ev->y) / yr;
+		robtk_dial_set_value (gctl, db);
+	}
+	return rw;
+}
+
+static RobWidget* m0_mouse_up (RobWidget* rw, RobTkBtnEvent *ev) {
+	WhirlUI* ui = (WhirlUI*)GET_HANDLE(rw);
+	if (ui->eq_dragging >= 0) {
+		update_eq (ui, ui->eq_dragging);
+	}
+	ui->eq_dragging = -1;
+	return NULL;
+}
+
+static RobWidget* m0_mouse_scroll (RobWidget* rw, RobTkBtnEvent *ev) {
+	WhirlUI* ui = (WhirlUI*)GET_HANDLE(rw);
+
+	const int f = find_filter (ui, rw);
+	if (!check_control_point (ui, f, ev->x, ev->y)) return NULL;
+
+	RobTkDial *bwctl = ui->s_fqual[f];
+	float v = robtk_dial_get_value (bwctl);
+	const float delta = (ev->state & ROBTK_MOD_CTRL) ? bwctl->acc : bwctl->scroll_mult * bwctl->acc;
+
+	switch (ev->direction) {
+		case ROBTK_SCROLL_RIGHT:
+		case ROBTK_SCROLL_UP:
+			v += delta;
+			robtk_dial_set_value (bwctl, v);
+			break;
+		case ROBTK_SCROLL_LEFT:
+		case ROBTK_SCROLL_DOWN:
+			v -= delta;
+			robtk_dial_set_value (bwctl, v);
+			break;
+		default:
+			break;
+	}
+	return NULL;
+}
+
+
+static RobWidget* m0_mouse_down (RobWidget* rw, RobTkBtnEvent *ev) {
+	WhirlUI* ui = (WhirlUI*)GET_HANDLE(rw);
+	if (ev->button != 1) return NULL;
+	const int f = find_filter (ui, rw);
+	if (f < 0 || f > 2) return NULL;
+	if (!check_control_point (ui, f, ev->x, ev->y)) return NULL;
+
+	if (ev->state & ROBTK_MOD_SHIFT) {
+		robtk_dial_set_value (ui->s_ffreq[f], param_to_dial (&filter[f][0], filter[f][0].dflt));
+		robtk_dial_set_value (ui->s_fqual[f], param_to_dial (&filter[f][1], filter[f][1].dflt));
+		robtk_dial_set_value (ui->s_fgain[f], filter[f][2].dflt);
+		update_eq (ui, f);
+		return NULL;
+	}
+
+	ui->eq_dragging = f;
+	update_eq (ui, f);
+	return rw;
+}
 
 /*** horn & drum display widgets ***/
 
@@ -1975,6 +2130,10 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 		robwidget_set_expose_event (ui->fil_tf[i], m0_expose_event);
 		robwidget_set_size_request (ui->fil_tf[i], m0_size_request);
 		robwidget_set_size_allocate (ui->fil_tf[i], m0_size_allocate);
+		robwidget_set_mousemove (ui->fil_tf[i], m0_mouse_move);
+		robwidget_set_mouseup (ui->fil_tf[i], m0_mouse_up);
+		robwidget_set_mousedown (ui->fil_tf[i], m0_mouse_down);
+		robwidget_set_mousescroll (ui->fil_tf[i], m0_mouse_scroll);
 
 		// table background
 		robwidget_set_expose_event (ui->tbl_flt[i], tblbox_expose_event);
@@ -2427,6 +2586,8 @@ instantiate (
 	ui->write      = write_function;
 	ui->controller = controller;
 	ui->initialized = 0;
+	ui->last_used_lever = 0;
+	ui->eq_dragging = -1;
 
 	for (int i = 0; i < 2; ++i) {
 		ui->cur_rpm[i] = -1;
