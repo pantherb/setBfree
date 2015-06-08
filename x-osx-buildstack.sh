@@ -22,8 +22,8 @@ case `sw_vers -productVersion | cut -d'.' -f1,2` in
 		;;
 	"10.6")
 		echo "Snow Leopard"
-		SBFARCH="-arch i386 -arch ppc -arch x86_64"
-		OSXCOMPAT="-isysroot /Developer/SDKs/MacOSX10.5.sdk -mmacosx-version-min=10.5"
+		SBFARCH="-arch i386 -arch x86_64"
+		OSXCOMPAT="-mmacosx-version-min=10.5"
 		;;
 	*)
 		echo "**UNTESTED OSX VERSION**"
