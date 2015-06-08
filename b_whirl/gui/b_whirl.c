@@ -1237,14 +1237,17 @@ static void prepare_faceplates (WhirlUI* ui) {
 	cairo_t *cr;
 	float xlp, ylp, ang;
 
-#define INIT_DIAL_SF(VAR, W, H) \
+#define INIT_DIAL_SF_CLR(VAR, W, H, CLR) \
 	VAR = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, W, H); \
 	cr = cairo_create (VAR); \
-	CairoSetSouerceRGBA (c_trs); \
+	CairoSetSouerceRGBA (CLR); \
 	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE); \
 	cairo_rectangle (cr, 0, 0, W, H); \
 	cairo_fill (cr); \
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER); \
+
+#define INIT_DIAL_SF(VAR, W, H) \
+	INIT_DIAL_SF_CLR(VAR, W, H, c_trs);
 
 #define DRAWDIALDOT(XADD, YADD) \
 	xlp = GED_CX + XADD + sinf (ang) * (GED_RADIUS + 3.0); \
@@ -1298,7 +1301,7 @@ static void prepare_faceplates (WhirlUI* ui) {
 
 
 	/* gain knob  -20,.+20*/
-	INIT_DIAL_SF(ui->dial_bg[0], GED_WIDTH + 12, GED_HEIGHT + 20);
+	INIT_DIAL_SF_CLR(ui->dial_bg[0], GED_WIDTH + 12, GED_HEIGHT + 20, c_blk);
 	DIALLABLEL(0.00, "-20", 1);
 	DIALLABLEL(0.25, "-10", 1);
 	DIALLABLEL(0.5, "0", 2);
@@ -1351,7 +1354,7 @@ static void prepare_faceplates (WhirlUI* ui) {
 	DIALCOMPLETE(13, deceleration[1])
 
 	/* stereo */
-	INIT_DIAL_SF(ui->dial_bg[14], GED_WIDTH + 12, GED_HEIGHT + 20);
+	INIT_DIAL_SF_CLR(ui->dial_bg[14], GED_WIDTH + 12, GED_HEIGHT + 20, c_blk);
 	{
 	DIALLABLEL(0.00, "L", 1);
 	DIALDOTS(0.00, 6.5, 15.5)
@@ -1388,7 +1391,7 @@ static void prepare_faceplates (WhirlUI* ui) {
 
 
 	/* leakage -60..-3*/
-	INIT_DIAL_SF(ui->dial_bg[16], GED_WIDTH + 12, GED_HEIGHT + 20);
+	INIT_DIAL_SF_CLR(ui->dial_bg[16], GED_WIDTH + 12, GED_HEIGHT + 20, c_blk);
 	DIALLABLEL(0.00, "-63", 1);
 	DIALLABLEL(0.25, "-48", 1);
 	DIALLABLEL(0.5,  "-33", 2);
@@ -1462,8 +1465,8 @@ static void draw_bg (WhirlUI *ui, const int w, const int h, struct rob_table *rt
 	float c[4];
 	get_color_from_theme (1, c);
 	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
-	cairo_set_source_rgb (cr, c[0], c[1], c[2]);
 	cairo_rectangle (cr, 0, 0, w ,h);
+	CairoSetSouerceRGBA (c_blk);
 	cairo_fill (cr);
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 
@@ -1477,6 +1480,8 @@ static void draw_bg (WhirlUI *ui, const int w, const int h, struct rob_table *rt
 	CairoSetSouerceRGBA (c_blk);
 	rounded_rectangle (cr, x0, y0, (x1 - x0), (y1 - y0), 9);
 	cairo_set_line_width (cr, 2.0);
+	cairo_set_source_rgb (cr, c[0], c[1], c[2]);
+	cairo_fill_preserve (cr);
 	cairo_stroke (cr);
 
 	cairo_set_line_width (cr, 1.0);
@@ -1886,6 +1891,8 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 #define SP_W(PTR) robtk_sep_widget(PTR)
 #define LV_W(PTR) robtk_lever_widget(PTR)
 #define CB_W(PTR) robtk_cbtn_widget(PTR)
+#define LABEL_BACKGROUND(LBL, R, G, B) \
+	ui->LBL->bg[0] = R; ui->LBL->bg[1] = G; ui->LBL->bg[2] = B;
 
 	ui->sel_spd = robtk_select_new ();
 
@@ -1924,6 +1931,8 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 
 	ui->lbl_drumwidth  = robtk_lbl_new ("Drum\nStereo");
 	ui->lbl_leak  = robtk_lbl_new ("Horn\nLeakage");
+	LABEL_BACKGROUND(lbl_leak, 0, 0, 0);
+	LABEL_BACKGROUND(lbl_drumwidth, 0, 0, 0);
 
 
 	ui->box_drmmic = rob_vbox_new (FALSE, 0);
@@ -2031,6 +2040,9 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 	ui->lbl_mix[1] = robtk_lbl_new ("Drum\nLevel");
 	ui->lbl_brk[0] = robtk_lbl_new ("Brake");
 	ui->lbl_brk[1] = robtk_lbl_new ("Brake");
+
+	LABEL_BACKGROUND(lbl_mix[0], 0, 0, 0);
+	LABEL_BACKGROUND(lbl_mix[1], 0, 0, 0);
 
 	ui->lbl_mtr[0][0]  = robtk_lbl_new ("<markup><b>Horn Motor</b></markup>");
 	ui->lbl_mtr[1][0]  = robtk_lbl_new ("<markup><b>Drum Motor</b></markup>");
