@@ -1152,16 +1152,19 @@ static bool cb_sel_spd (RobWidget *w, void* handle) {
 
 static void render_annotation (WhirlUI* ui, cairo_t *cr, const char *txt) {
 	int tw, th;
+	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	PangoLayout * pl = pango_cairo_create_layout (cr);
 	pango_layout_set_font_description (pl, ui->font[0]);
 	pango_layout_set_text (pl, txt, -1);
 	pango_layout_get_pixel_size (pl, &tw, &th);
-	cairo_translate (cr, -tw / 2.0 , -th);
-	cairo_set_source_rgba (cr, .0, .0, .0, .5);
-	rounded_rectangle (cr, -1, -1, tw+3, th+1, 3);
+	cairo_translate (cr, rint (-tw / 2.0) , rint (-th));
+	rounded_rectangle (cr, -2, -2, tw + 3, th + 3, 3);
+	cairo_set_line_width (cr, 1); \
+	cairo_set_source_rgba (cr, .5, .5, .5, .66);
+	cairo_stroke_preserve (cr);
+	cairo_set_source_rgba (cr, .0, .0, .0, .7);
 	cairo_fill (cr);
 	CairoSetSouerceRGBA (c_wht);
-	pango_cairo_layout_path (cr, pl);
 	pango_cairo_show_layout (cr, pl);
 	g_object_unref (pl);
 }
@@ -1180,7 +1183,7 @@ static void dial_annotation (RobTkDial * d, cairo_t *cr, void *data) {
 		snprintf (txt, 24, "%+5.2f dB", d->cur);
 	}
 	cairo_save (cr);
-	cairo_translate (cr, d->w_width / 2, d->w_height - 3);
+	cairo_translate (cr, rint (d->w_width / 2), rint (d->w_height - 3));
 	render_annotation (ui, cr, txt);
 	cairo_restore (cr);
 }
@@ -1201,7 +1204,7 @@ static void dial_annotation_stereo (RobTkDial * d, cairo_t *cr, void *data) {
 	}
 
 	cairo_save (cr);
-	cairo_translate (cr, d->w_width / 2, d->w_height - 3);
+	cairo_translate (cr, rint (d->w_width / 2), rint (d->w_height - 3));
 	render_annotation (ui, cr, txt);
 	cairo_restore (cr);
 }
@@ -1224,7 +1227,7 @@ static void dial_annotation_brake (RobTkDial * d, cairo_t *cr, void *data) {
 	}
 
 	cairo_save (cr);
-	cairo_translate (cr, d->w_width / 2, d->w_height);
+	cairo_translate (cr, rint (d->w_width / 2), rint (d->w_height - 3));
 	render_annotation (ui, cr, txt);
 	cairo_restore (cr);
 }
@@ -1239,7 +1242,7 @@ static void prepare_faceplates (WhirlUI* ui) {
 	cr = cairo_create (VAR); \
 	CairoSetSouerceRGBA (c_trs); \
 	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE); \
-	cairo_rectangle (cr, 0, 0, GED_WIDTH, GED_HEIGHT); \
+	cairo_rectangle (cr, 0, 0, W, H); \
 	cairo_fill (cr); \
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER); \
 
