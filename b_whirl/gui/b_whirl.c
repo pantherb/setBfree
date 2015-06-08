@@ -1906,7 +1906,7 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 	robtk_select_add_item (ui->sel_spd, 7, "horn: fast, drum:slow");
 	robtk_select_add_item (ui->sel_spd, 8, "horn: fast, drum:fast");
 
-	robtk_select_set_default_item (ui->sel_spd, 0);
+	robtk_select_set_default_item (ui->sel_spd, 4);
 	robtk_select_set_value (ui->sel_spd, 0);
 
 	ui->btn_link = robtk_cbtn_new ("Link", GBT_LED_LEFT, false);
@@ -1924,7 +1924,7 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 
 	ui->s_leak = robtk_dial_new_with_size (-63, -3, .02,
 			GED_WIDTH + 12, GED_HEIGHT + 20, GED_CX + 6, GED_CY + 15, GED_RADIUS);
-	robtk_dial_set_default (ui->s_leak, -15);
+	robtk_dial_set_default (ui->s_leak, -16.47);
 	robtk_dial_set_scroll_mult (ui->s_leak, 5.f);
 	robtk_dial_annotation_callback (ui->s_leak, dial_annotation, NULL);
 	robtk_dial_set_surface (ui->s_leak, ui->dial_bg[16]);
@@ -2156,7 +2156,7 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 	ui->sep_adv = robtk_sep_new (FALSE);
 	ui->btn_adv = robtk_cbtn_new ("Unlock", GBT_LED_LEFT, false);
 
-	ui->lbl_adv[0] = robtk_lbl_new ("<markup><b>Advanced</b>\n\nAll changes\nre-initialize the\nDSP. Expect \nclickless\nshort fades.\n\nThe settings\nconcern\nreflections and\nsample delays\n(comb filter).</markup>");
+	ui->lbl_adv[0] = robtk_lbl_new ("<markup><b>Advanced</b>\n\nThe settings\nconcern\nreflections and\nsample delays\n(comb filter).\n\nThis implies\nre-reinitializing\nthe DSP. Expect \nclickless short\nfades.</markup>");
 	ui->lbl_adv[1] = robtk_lbl_new ("Horn\nRadius:");
 	ui->lbl_adv[2] = robtk_lbl_new ("Drum\nRadius:");
 	ui->lbl_adv[3] = robtk_lbl_new ("Horn\nPos X:");
