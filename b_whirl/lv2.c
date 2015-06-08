@@ -409,6 +409,7 @@ static int reconfigure (B3W* b3w) {
 }
 
 static void process (B3W* b3w, uint32_t n_samples, float const * const in, float *outL, float *outR) {
+	uint32_t i;
 	assert (n_samples <= 64);
 	const float lpf = b3w->lpf1;
 
@@ -455,8 +456,7 @@ static void process (B3W* b3w, uint32_t n_samples, float const * const in, float
 	const float drr = b3w->o_drum_level * b3w->x_drr;
 	const float hll = b3w->o_horn_level;
 	const float hrr = b3w->o_horn_level;
-
-	for (uint32_t i = 0; i < n_samples; ++i) {
+	for (i = 0; i < n_samples; ++i) {
 		outL [i] = horn_left[i]  * hll + drum_left[i] * dll + drum_right[i] * dlr;
 		outR [i] = horn_right[i] * hrr + drum_left[i] * drl + drum_right[i] * drr;
 	}
@@ -537,9 +537,10 @@ static void run (LV2_Handle instance, uint32_t n_samples) {
 		}
 
 		if (g0 != g1) {
+			uint32_t i;
 			const float d = (g1 - g0) / n;
 			float g = g0;
-			for (uint32_t i = 0; i < n; ++i) {
+			for (i = 0; i < n; ++i) {
 				g += d;
 				outL[i] *= g;
 				outR[i] *= g;

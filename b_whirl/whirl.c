@@ -467,8 +467,6 @@ static void initTables (struct b_whirl *w) {
 }
 
 static void zeroBuffers (struct b_whirl *w) {
-	unsigned int i;
-
 	w->adi0 = w->adi1 = w->adi2 = 0;
 	w->outpos=0;
 
@@ -488,10 +486,10 @@ static void zeroBuffers (struct b_whirl *w) {
 }
 
 void computeOffsets (struct b_whirl *w) {
+	unsigned int i;
 
 	zeroBuffers (w);
 
-	unsigned int i, j;
 	/* Base values
 	 * Spacing between reflections in samples. The first can't be zero, since
 	 * we must allow for the swing of the extent to wander close to the reader.
