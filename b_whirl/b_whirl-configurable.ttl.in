@@ -53,7 +53,7 @@
 		lv2:default 4 ;
 		lv2:minimum 0 ;
 		lv2:maximum 8 ;
-		lv2:portProperty lv2:enumeration ;
+		lv2:portProperty lv2:integer, lv2:enumeration ;
 		lv2:scalePoint [ rdfs:label "horn: stop, drum:stop"; rdf:value 0 ; ] ;
 		lv2:scalePoint [ rdfs:label "horn: stop, drum:slow"; rdf:value 1 ; ] ;
 		lv2:scalePoint [ rdfs:label "horn: stop, drum:fast"; rdf:value 2 ; ] ;
@@ -577,6 +577,28 @@
 		lv2:minimum  0.0 ;
 		lv2:maximum  1.0 ;
 		lv2:portProperty pp:notOnGUI ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 40 ;
+		lv2:symbol "link" ;
+		lv2:name "Link Speed Control";
+		lv2:default  0.0 ;
+		lv2:minimum -1.0 ;
+		lv2:maximum  1.0 ;
+		lv2:portProperty lv2:integer, lv2:enumeration;
+		lv2:scalePoint [
+			rdfs:label "Separate Drum/Horn Ctrl" ;
+			rdf:value 0.0 ;
+		] , [
+			rdfs:label "Horn Ctrl affects Drum" ;
+			rdf:value 1.0 ;
+		] , [
+			rdfs:label "Drum Ctrl affects Horn" ;
+			rdf:value -1.0;
+		];
+		pp:displayPriority 800 ;
 	];
 	rdfs:comment "A rotating louspeaker emulator designed to imitate the sound and properties of the sound modification device that brought world-wide fame to the name of Don Leslie" ;
 	.

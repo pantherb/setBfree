@@ -80,6 +80,7 @@ typedef enum {
 	B3W_HORNANG,
 	B3W_DRUMANG,
 	B3W_GUINOTIFY,
+	B3W_LINKSPEED,
 } PortIndex;
 
 
@@ -226,7 +227,6 @@ typedef struct {
 	RobTkLbl    *lbl_leak;
 	RobTkDial   *s_leak;
 
-	RobTkSelect *sel_spd;
 	RobTkCBtn   *btn_link;
 
 	RobTkSep    *sep_h[3];
@@ -242,7 +242,8 @@ typedef struct {
 	int eq_hover;
 	struct { float x0, y0; } eq_ctrl [3];
 
-	int last_used_lever;
+	bool last_used_horn_lever;
+	bool set_last_used;
 	int initialized;
 	const char *nfo;
 } WhirlUI;
@@ -1125,11 +1126,20 @@ static bool drum_expose_event (RobWidget* rw, cairo_t* cr, cairo_rectangle_t *ev
 
 static void update_levers (WhirlUI *ui, float val) {
 	const int v = rintf (val);
-	const int h = v / 3; // 0: stop, 1: slow, 2: fast
-	const int d = v % 3; // 0: stop, 1: slow, 2: fast
+	int h = v / 3; // 0: stop, 1: slow, 2: fast
+	int d = v % 3; // 0: stop, 1: slow, 2: fast
 	// lever 0:slow 1:stop 2:fast
+	if (robtk_cbtn_get_active (ui->btn_link)) {
+		if (ui->last_used_horn_lever) {
+			d = h;
+		} else {
+			h = d;
+		}
+	}
+	ui->set_last_used = false;
 	robtk_lever_set_value (ui->lever[0], h > 1 ? h : h ^ 1);
 	robtk_lever_set_value (ui->lever[1], d > 1 ? d : d ^ 1);
+	ui->set_last_used = true;
 }
 
 static void update_rpm_display (WhirlUI *ui, const int which) {
@@ -1248,9 +1258,8 @@ static bool cb_dial_brk1 (RobWidget *w, void* handle) {
 
 
 static void handle_lever (WhirlUI* ui, int vh, int vd) {
-	float val = 3 * (vh > 1 ? vh : vh ^ 1) + (vd > 1 ? vd : vd ^ 1);
-	robtk_select_set_value (ui->sel_spd, val);
 	if (ui->disable_signals) return;
+	const float val = 3 * (vh > 1 ? vh : vh ^ 1) + (vd > 1 ? vd : vd ^ 1);
 	ui->write (ui->controller, B3W_REVSELECT, sizeof (float), 0, (const void*) &val);
 }
 
@@ -1261,8 +1270,15 @@ static bool cb_leverH (RobWidget *w, void* handle) {
 	if (robtk_cbtn_get_active (ui->btn_link)) {
 		vd = vh;
 		robtk_lever_set_value (ui->lever[1], vh);
+		if (ui->set_last_used && !ui->last_used_horn_lever) {
+			assert (!ui->disable_signals);
+			const float val = 1.f;
+			ui->write (ui->controller, B3W_LINKSPEED, sizeof (float), 0, (const void*) &val);
+		}
 	}
-	ui->last_used_lever = 0;
+	if (ui->set_last_used) {
+		ui->last_used_horn_lever = true;
+	}
 	handle_lever (ui, vh, vd);
 	return TRUE;
 }
@@ -1274,29 +1290,45 @@ static bool cb_leverD (RobWidget *w, void* handle) {
 	if (robtk_cbtn_get_active (ui->btn_link)) {
 		vh = vd;
 		robtk_lever_set_value (ui->lever[0], vd);
+		if (ui->set_last_used && ui->last_used_horn_lever) {
+			assert (!ui->disable_signals);
+			const float val = -1.f;
+			ui->write (ui->controller, B3W_LINKSPEED, sizeof (float), 0, (const void*) &val);
+		}
 	}
-	ui->last_used_lever = 1;
+	if (ui->set_last_used) {
+		ui->last_used_horn_lever = false;
+	}
 	handle_lever (ui, vh, vd);
 	return TRUE;
 }
 
 static bool cb_linked (RobWidget *w, void* handle) {
 	WhirlUI* ui = (WhirlUI*)handle;
-	if (!robtk_cbtn_get_active (ui->btn_link)) {
+	const float val = robtk_cbtn_get_active (ui->btn_link) ? (ui->last_used_horn_lever ? 1.f : -1.f) : 0.f;
+
+	if (!ui->disable_signals) {
+		ui->write (ui->controller, B3W_LINKSPEED, sizeof (float), 0, (const void*) &val);
+	}
+	if (val == 0.f) {
 		return TRUE;
 	}
+
 	int vh = robtk_lever_get_value (ui->lever[0]);
 	int vd = robtk_lever_get_value (ui->lever[1]);
 	if (vh == vd) {
 		return TRUE;
 	}
-	if (ui->last_used_lever == 1) {
-		vh = vd;
-		robtk_lever_set_value (ui->lever[0], vd);
-	} else {
+	ui->set_last_used = false;
+	if (ui->last_used_horn_lever) {
 		vd = vh;
 		robtk_lever_set_value (ui->lever[1], vh);
+	} else {
+		vh = vd;
+		robtk_lever_set_value (ui->lever[0], vd);
 	}
+	// cb_leverX() -> handle_lever() -> HOST -> update_levers()
+	ui->set_last_used = true;
 	return TRUE;
 }
 
@@ -1312,13 +1344,6 @@ static bool cb_adv_en (RobWidget *w, void* handle) {
 	for (int i = 1; i < 6; ++i) {
 		robtk_lbl_set_sensitive (ui->lbl_adv[i], en);
 	}
-	return TRUE;
-}
-
-static bool cb_sel_spd (RobWidget *w, void* handle) {
-	WhirlUI* ui = (WhirlUI*)handle;
-	const float val = robtk_select_get_value (ui->sel_spd);
-	update_levers (ui, val);
 	return TRUE;
 }
 
@@ -2069,21 +2094,6 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 #define LABEL_BACKGROUND(LBL, R, G, B) \
 	ui->LBL->bg[0] = R; ui->LBL->bg[1] = G; ui->LBL->bg[2] = B;
 
-	ui->sel_spd = robtk_select_new ();
-
-	robtk_select_add_item (ui->sel_spd, 0, "horn: stop, drum:stop");
-	robtk_select_add_item (ui->sel_spd, 1, "horn: stop, drum:slow");
-	robtk_select_add_item (ui->sel_spd, 2, "horn: stop, drum:fast");
-	robtk_select_add_item (ui->sel_spd, 3, "horn: slow, drum:stop");
-	robtk_select_add_item (ui->sel_spd, 4, "horn: slow, drum:slow");
-	robtk_select_add_item (ui->sel_spd, 5, "horn: slow, drum:fast");
-	robtk_select_add_item (ui->sel_spd, 6, "horn: fast, drum:stop");
-	robtk_select_add_item (ui->sel_spd, 7, "horn: fast, drum:slow");
-	robtk_select_add_item (ui->sel_spd, 8, "horn: fast, drum:fast");
-
-	robtk_select_set_default_item (ui->sel_spd, 4);
-	robtk_select_set_value (ui->sel_spd, 0);
-
 	ui->btn_link = robtk_cbtn_new ("Link", GBT_LED_LEFT, false);
 	robtk_cbtn_set_color_on (ui->btn_link,  .3, .9, .3);
 	robtk_cbtn_set_color_off (ui->btn_link, .1, .3, .1);
@@ -2298,7 +2308,7 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 		static const float bpos[4] = {.25, .5, .75, 1.0};
 		robtk_dial_set_detents (ui->s_brakepos[i], 4, bpos);
 
-		ui->lbl_rpm[i]  = robtk_lbl_new ("???????? RPM");
+		ui->lbl_rpm[i]  = robtk_lbl_new ("????.? RPM");
 
 		ui->lbl_mtr[i][1]  = robtk_lbl_new ("RPM slow");
 		ui->lbl_mtr[i][2]  = robtk_lbl_new ("RPM fast");
@@ -2389,7 +2399,6 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 	robwidget_set_expose_event (ui->spk_dpy[1], drum_expose_event);
 
 	/* callbacks */
-	robtk_select_set_callback (ui->sel_spd, cb_sel_spd, ui);
 	robtk_dial_set_callback (ui->s_drumwidth, cb_dial_width, ui);
 	robtk_dial_set_callback (ui->s_leak, cb_dial_leak, ui);
 	robtk_cbtn_set_callback (ui->btn_link, cb_linked, ui);
@@ -2472,7 +2481,6 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 	rob_table_attach (ui->rw, ui->tbl_mtr[0],       4,  5,  1,  4,  2, 2, RTK_FILL,   RTK_EXANDF);
 	rob_table_attach (ui->rw, ui->tbl_mtr[1],       4,  5,  5,  8,  2, 2, RTK_FILL,   RTK_EXANDF);
 
-	rob_table_attach (ui->rw, SL_W(ui->sel_spd),    4,  5,  4,  5,  1, 0, RTK_FILL,   RTK_SHRINK);
 	rob_table_attach (ui->rw, CB_W(ui->btn_link),   5,  6,  4,  5,  0, 0, RTK_FILL,   RTK_SHRINK);
 
 	rob_table_attach (ui->rw, ui->box_brk[0],       5,  6,  1,  2,  0, 0, RTK_SHRINK, RTK_EXANDF);
@@ -2561,7 +2569,6 @@ static void gui_cleanup (WhirlUI* ui) {
 	robtk_sep_destroy (ui->sep_drmmic);
 	rob_box_destroy (ui->box_drmmic);
 
-	robtk_select_destroy (ui->sel_spd);
 	robtk_cbtn_destroy (ui->btn_link);
 
 	if (ui->hornp[0]) { cairo_pattern_destroy (ui->hornp[0]); ui->hornp[0] = NULL; }
@@ -2617,7 +2624,8 @@ instantiate (
 	ui->write      = write_function;
 	ui->controller = controller;
 	ui->initialized = 0;
-	ui->last_used_lever = 0;
+	ui->last_used_horn_lever = true;
+	ui->set_last_used = true;
 	ui->eq_dragging = -1;
 
 	for (int i = 0; i < 2; ++i) {
@@ -2663,7 +2671,6 @@ port_event (LV2UI_Handle handle,
 	ui->disable_signals = true;
 	switch (port_index) {
 		case B3W_REVSELECT:
-			robtk_select_set_value (ui->sel_spd, v);
 			update_levers (ui, v);
 			break;
 		case B3W_HORNLVL:
@@ -2780,6 +2787,11 @@ port_event (LV2UI_Handle handle,
 			break;
 		case B3W_DRUMANG:
 			update_ang (ui, 1, v);
+			break;
+		case B3W_LINKSPEED:
+			if (v < -.5) { ui->last_used_horn_lever = false; }
+			if (v > 0.5) { ui->last_used_horn_lever = true; }
+			robtk_cbtn_set_active (ui->btn_link, fabsf(v) >= .5);
 			break;
 		default:
 			break;

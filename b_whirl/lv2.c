@@ -85,6 +85,7 @@ typedef enum {
 	B3W_DRUMANG,
 
 	B3W_GUINOTIFY,
+	B3W_LINKSPEED,
 } PortIndex;
 
 typedef struct {
@@ -112,6 +113,7 @@ typedef struct {
 	float *horn_xoff, *horn_zoff, *mic_dist;
 
 	float *p_resend_trigger; // GUI retrigger
+	float *p_link_speed; // GUI setting
 
 	/* output ports */
 	float *c_horm_rpm, *c_drum_rpm;
@@ -129,6 +131,8 @@ typedef struct {
 
 	float o_horn_radius, o_drum_radius;
 	float o_horn_xoff, o_horn_zoff, o_mic_dist;
+
+	int spd_horn, spd_drum, last_spd;
 
 	// cached coefficients (for dB values)
 	float x_drum_width;
@@ -275,6 +279,7 @@ connect_port (LV2_Handle instance,
     case B3W_DRUMANG:     b3w->c_drum_ang = (float*)data; break;
 
     case B3W_GUINOTIFY:   b3w->p_resend_trigger = (float*)data; break;
+    case B3W_LINKSPEED:   b3w->p_link_speed = (float*)data; break;
 		default: break;
   }
 }
@@ -462,14 +467,6 @@ static void process (B3W* b3w, uint32_t n_samples, float const * const in, float
 	}
 }
 
-#define SETPARAM(FN, NAME, PROC) \
-  if (b3w->NAME) { \
-    if (b3w->o_##NAME != *(b3w->NAME)) { \
-      FN (b3w->whirl, PROC (*(b3w->NAME))); \
-      b3w->o_##NAME = *(b3w->NAME); \
-    } \
-  }
-
 #define SETVALUE(VAR, NAME, PROC, FN) \
   if (b3w->NAME) { \
     if (b3w->o_##NAME != *(b3w->NAME)) { \
@@ -495,7 +492,16 @@ static void run (LV2_Handle instance, uint32_t n_samples) {
   SETVALUE(drumAcc, drum_accel, , )
   SETVALUE(drumDec, drum_decel, , )
 
-  SETPARAM(useRevOption, rev_select, (int) floorf) // Note: needs to be done last, see RPM assignment above
+  if (b3w->o_rev_select != *b3w->rev_select) {
+	  const float l = b3w->p_link_speed ? (*b3w->p_link_speed) : 0;
+	  const int v = (int) floorf (*b3w->rev_select);
+	  int h = v / 3; // 0: stop, 1: slow, 2: fast
+	  int d = v % 3; // 0: stop, 1: slow, 2: fast
+	  if (l <= -.5) { h = d; }
+	  if (l >= 0.5) { d = h; }
+	  useRevOption (b3w->whirl,h * 3 + d);
+	  b3w->o_rev_select = *b3w->rev_select;
+  }
 
   float* input = b3w->input;
   float* outL = b3w->outL;
