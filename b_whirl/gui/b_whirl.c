@@ -2642,7 +2642,7 @@ port_event (LV2UI_Handle handle,
 	WhirlUI* ui = (WhirlUI*)handle;
 	if (format != 0 || port_index < B3W_REVSELECT) return;
 
-	if (ui->initialized != 15) {
+	if (ui->initialized != 15 && port_index != B3W_GUINOTIFY) {
 		ui_enable (ui);
 	}
 

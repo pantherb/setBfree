@@ -22,6 +22,7 @@ ifeq ($(LV2AVAIL), yes)
 
   ifeq ($(HAVE_RTK), yes)
     targets+=$(LV2GUI)$(LIB_EXT)
+    override CFLAGS+=-DRTK_STATIC_INIT
   else
     $(warning "whirl/leslie GUI will not be built")
     $(warning "robtk or its dependencies are missing")
