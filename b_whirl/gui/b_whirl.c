@@ -238,6 +238,7 @@ typedef struct {
 	cairo_pattern_t* hornp[2];
 
 	int eq_dragging;
+	int eq_hover;
 	struct { float x0, y0; } eq_ctrl [3];
 
 	int last_used_lever;
@@ -390,7 +391,7 @@ static void draw_eq (WhirlUI* ui, const int f, const int w, const int h) {
 		const float fq = dial_to_param (&filter[f][0], robtk_dial_get_value (ui->s_ffreq[f]));
 		const float xf = 2.5 + x_at_freq(fq, xw) - .5f;
 		float yg;
-		if (ui->eq_dragging == f /* || (ui->dragging < 0 && ui->hover == j)*/) { // TODO
+		if (ui->eq_dragging == f || (ui->eq_dragging < 0 && ui->eq_hover == f)) {
 			cairo_set_source_rgba (cr, 8, .4, .2, .6);
 		} else {
 			cairo_set_source_rgba (cr, 8, .4, .2, .3);
@@ -436,7 +437,7 @@ static void draw_eq (WhirlUI* ui, const int f, const int w, const int h) {
 	}
 
 	for (int i = 0; i < xw; ++i) {
-		// TODO interpolate (don't miss peaks)
+		// TODO handle notch-peak if it's not on a px x-coordinate)
 		const float xf = freq_at_x (i, xw);
 		const float y = yr * get_eq_response (&flt, xf);
 		if (i == 0) {
@@ -523,8 +524,23 @@ static bool check_control_point (WhirlUI* ui, const int f, const int x, const in
 
 static RobWidget* m0_mouse_move (RobWidget* rw, RobTkBtnEvent *ev) {
 	WhirlUI* ui = (WhirlUI*)GET_HANDLE(rw);
-	if (ui->eq_dragging < 0) return NULL;
-	const int f = ui->eq_dragging;
+	int hv = -1;
+	int f = ui->eq_dragging;
+	if (f < 0) {
+		f = find_filter (ui, rw);
+	}
+	if (check_control_point (ui, f, ev->x, ev->y)) {
+		hv = f;
+	}
+	if (hv != ui->eq_hover) {
+		ui->eq_hover = hv;
+		if (ui->eq_dragging < 0) {
+			update_eq (ui, f);
+		}
+	}
+	if (ui->eq_dragging < 0) {
+		return NULL;
+	}
 
 	RobTkDial *fctl = ui->s_ffreq[f];
 	RobTkDial *gctl = ui->s_fgain[f];
@@ -537,15 +553,17 @@ static RobWidget* m0_mouse_move (RobWidget* rw, RobTkBtnEvent *ev) {
 	const float x1 = rw->area.width - 1.5;
 	const float xw = x1 - x0;
 
-	const int h = rw->area.height;
-	const float ym = floor (h * .5) + .5;
-	const float yr = (h - 4) / 100.f;
-
 	if (fctl && ev->x >= x0 && ev->x <= x1) {
 		const float hz = freq_at_x (ev->x - x0, xw);
 		robtk_dial_set_value (fctl, param_to_dial (&filter[f][0], hz));
 	}
 	if (gctl) {
+		const int h = rw->area.height;
+		const float ym = floor (h * .5) + .5;
+		float yr = (h - 4) / 100.f;
+		if (robtk_select_get_value (ui->sel_fil[f]) >= EQC_LOW) {
+			yr /= 2; // shelf filter mid-point
+		}
 		const float db = (ym - ev->y) / yr;
 		robtk_dial_set_value (gctl, db);
 	}
