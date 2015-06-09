@@ -172,6 +172,7 @@ typedef struct {
 	RobTkDial *s_rpm_fast[2];
 	RobTkDial *s_accel[2];
 	RobTkDial *s_decel[2];
+	RobTkSep  *sep_tbl[3];
 
 	// horn[0] / drum[1] - level/mix
 	RobTkSep  *sep_mix[2];
@@ -1655,6 +1656,7 @@ static void draw_bg (WhirlUI *ui, const int w, const int h, struct rob_table *rt
 	cairo_set_line_width (cr, 2.0);
 	cairo_set_source_rgb (cr, c[0], c[1], c[2]);
 	cairo_fill_preserve (cr);
+	CairoSetSouerceRGBA (c_gry);
 	cairo_stroke (cr);
 
 	cairo_set_line_width (cr, 1.0);
@@ -2019,10 +2021,10 @@ static bool tblbox_expose_event (RobWidget* rw, cairo_t* cr, cairo_rectangle_t *
 		cairo_save (cr);
 		cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
 		cairo_set_source_rgb (cr, c[0], c[1], c[2]);
-		cairo_rectangle (cr, event.x, event.y, event.width, event.height);
+		rounded_rectangle (cr, event.x, event.y, event.width, event.height, 9);
 		cairo_fill_preserve (cr);
 		cairo_clip_preserve (cr);
-		CairoSetSouerceRGBA (c_g10);
+		CairoSetSouerceRGBA (c_gry);
 		cairo_set_line_width (cr, 2.0);
 		cairo_stroke (cr);
 		cairo_restore (cr);
@@ -2032,9 +2034,9 @@ static bool tblbox_expose_event (RobWidget* rw, cairo_t* cr, cairo_rectangle_t *
 		cairo_clip (cr);
 		cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
 		cairo_set_source_rgb (cr, c[0], c[1], c[2]);
-		cairo_rectangle (cr, 0, 0, rw->area.width, rw->area.height);
+		rounded_rectangle (cr, 0, 0, rw->area.width, rw->area.height, 9);
 		cairo_fill_preserve (cr);
-		CairoSetSouerceRGBA (c_g10);
+		CairoSetSouerceRGBA (c_gry);
 		cairo_set_line_width (cr, 2.0);
 		cairo_stroke (cr);
 		cairo_restore (cr);
@@ -2154,7 +2156,9 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 		robwidget_set_mousescroll (ui->fil_tf[i], m0_mouse_scroll);
 
 		// table background
-		robwidget_set_expose_event (ui->tbl_flt[i], tblbox_expose_event);
+		if (i > 0) {
+			robwidget_set_expose_event (ui->tbl_flt[i], tblbox_expose_event);
+		}
 
 		robtk_dial_set_constained (ui->s_ffreq[i], false);
 		robtk_dial_set_constained (ui->s_fqual[i], false);
@@ -2225,7 +2229,7 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 	ui->lbl_mtr[1][0]  = robtk_lbl_new ("<markup><b>Drum Motor</b></markup>");
 
 	for (int i = 0; i < 2; ++i) {
-		ui->tbl_mtr[i] = rob_table_new (/*rows*/ 5, /*cols*/ 2, FALSE);
+		ui->tbl_mtr[i] = rob_table_new (/*rows*/ 7, /*cols*/ 2, FALSE);
 		ui->box_mix[i] = rob_vbox_new (FALSE, 0);
 		ui->box_brk[i] = rob_vbox_new (FALSE, 0);
 		ui->sep_mix[i] = robtk_sep_new (FALSE);
@@ -2312,6 +2316,9 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 			rob_vbox_child_pack (ui->box_mix[i], SP_W(ui->sep_mix[i]), TRUE, TRUE);
 		}
 
+		ui->sep_tbl[i] = robtk_sep_new (TRUE);
+		robwidget_set_expose_event (ui->sep_tbl[i]->rw, noop_expose_event);
+
 		rob_vbox_child_pack (ui->box_brk[i], DL_W(ui->s_brakepos[i]), TRUE, FALSE);
 		rob_vbox_child_pack (ui->box_brk[i], LB_W(ui->lbl_brk[i]), TRUE, FALSE);
 
@@ -2320,20 +2327,21 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 		rob_table_attach (ui->tbl_mtr[i], LB_W(ui->lbl_mtr[i][1]), 0, 1, 2, 3,  2, 0, RTK_EXANDF, RTK_SHRINK);
 		rob_table_attach (ui->tbl_mtr[i], LB_W(ui->lbl_mtr[i][2]), 0, 1, 3, 4,  2, 0, RTK_EXANDF, RTK_SHRINK);
 		rob_table_attach (ui->tbl_mtr[i], LB_W(ui->lbl_mtr[i][3]), 0, 1, 4, 5,  2, 0, RTK_EXANDF, RTK_SHRINK);
-		rob_table_attach (ui->tbl_mtr[i], LB_W(ui->lbl_mtr[i][4]), 0, 1, 5, 6,  2, 2, RTK_EXANDF, RTK_SHRINK);
+		rob_table_attach (ui->tbl_mtr[i], LB_W(ui->lbl_mtr[i][4]), 0, 1, 5, 6,  2, 0, RTK_EXANDF, RTK_SHRINK);
 
 		rob_table_attach (ui->tbl_mtr[i], DL_W(ui->s_rpm_slow[i]), 1, 2, 2, 3,  2, 0, RTK_EXANDF, RTK_SHRINK);
 		rob_table_attach (ui->tbl_mtr[i], DL_W(ui->s_rpm_fast[i]), 1, 2, 3, 4,  2, 0, RTK_EXANDF, RTK_SHRINK);
 		rob_table_attach (ui->tbl_mtr[i], DL_W(ui->s_accel[i]),    1, 2, 4, 5,  2, 0, RTK_EXANDF, RTK_SHRINK);
-		rob_table_attach (ui->tbl_mtr[i], DL_W(ui->s_decel[i]),    1, 2, 5, 6,  2, 2, RTK_EXANDF, RTK_SHRINK);
+		rob_table_attach (ui->tbl_mtr[i], DL_W(ui->s_decel[i]),    1, 2, 5, 6,  2, 0, RTK_EXANDF, RTK_SHRINK);
+		rob_table_attach (ui->tbl_mtr[i], SP_W(ui->sep_tbl[i]),    0, 2, 6, 7,  0, 0, RTK_EXANDF, RTK_SHRINK);
 	}
 
-	ui->tbl_adv = rob_table_new (/*rows*/ 8, /*cols*/ 2, FALSE);
+	ui->tbl_adv = rob_table_new (/*rows*/ 9, /*cols*/ 2, FALSE);
 	robwidget_set_expose_event (ui->tbl_adv, tblbox_expose_event);
 	ui->sep_adv = robtk_sep_new (FALSE);
 	ui->btn_adv = robtk_cbtn_new ("Unlock", GBT_LED_LEFT, false);
 
-	ui->lbl_adv[0] = robtk_lbl_new ("<markup><b>Advanced</b>\n\nThe settings\nconcern\nreflections and\nsample delays\n(comb filter).\n\nThis implies\nre-reinitializing\nthe DSP. Expect \nclickless short\nfades.</markup>");
+	ui->lbl_adv[0] = robtk_lbl_new ("<markup><b>Advanced</b>\n\nChanging these\nparameters\nre-reinitializes\nthe DSP.\nExpect clickless\nshort fades.</markup>");
 	ui->lbl_adv[1] = robtk_lbl_new ("Horn\nRadius:");
 	ui->lbl_adv[2] = robtk_lbl_new ("Drum\nRadius:");
 	ui->lbl_adv[3] = robtk_lbl_new ("Horn\nPos X:");
@@ -2347,6 +2355,9 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 	robtk_lbl_set_alignment (ui->lbl_adv[4], 1, .5);
 	robtk_lbl_set_alignment (ui->lbl_adv[5], 1, .5);
 
+	ui->sep_tbl[2] = robtk_sep_new (TRUE);
+	robwidget_set_expose_event (ui->sep_tbl[2]->rw, noop_expose_event);
+
 	rob_table_attach (ui->tbl_adv, LB_W(ui->lbl_adv[0]),  0, 2,  0, 1,   2, 2, RTK_EXANDF, RTK_SHRINK);
 	rob_table_attach (ui->tbl_adv, CB_W(ui->btn_adv),     0, 2,  1, 2,   2, 2, RTK_EXANDF, RTK_SHRINK);
 	rob_table_attach (ui->tbl_adv, SP_W(ui->sep_adv),     0, 2,  2, 3,   2, 2, RTK_EXANDF, RTK_EXANDF);
@@ -2357,11 +2368,12 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 	rob_table_attach (ui->tbl_adv, LB_W(ui->lbl_adv[4]),  0, 1,  6, 7,   2, 2, RTK_EXANDF, RTK_SHRINK);
 	rob_table_attach (ui->tbl_adv, LB_W(ui->lbl_adv[5]),  0, 1,  7, 8,   2, 4, RTK_EXANDF, RTK_SHRINK);
 
-	rob_table_attach (ui->tbl_adv, DL_W(ui->s_radius[0]), 1, 2, 3, 4,   1, 4, RTK_EXANDF, RTK_SHRINK);
-	rob_table_attach (ui->tbl_adv, DL_W(ui->s_radius[1]), 1, 2, 4, 5,   1, 4, RTK_EXANDF, RTK_SHRINK);
-	rob_table_attach (ui->tbl_adv, DL_W(ui->s_xzmpos[0]), 1, 2, 5, 6,   1, 4, RTK_EXANDF, RTK_SHRINK);
-	rob_table_attach (ui->tbl_adv, DL_W(ui->s_xzmpos[1]), 1, 2, 6, 7,   1, 4, RTK_EXANDF, RTK_SHRINK);
-	rob_table_attach (ui->tbl_adv, DL_W(ui->s_xzmpos[2]), 1, 2, 7, 8,   1, 4, RTK_EXANDF, RTK_SHRINK);
+	rob_table_attach (ui->tbl_adv, DL_W(ui->s_radius[0]), 1, 2, 3, 4,   1, 2, RTK_EXANDF, RTK_SHRINK);
+	rob_table_attach (ui->tbl_adv, DL_W(ui->s_radius[1]), 1, 2, 4, 5,   1, 2, RTK_EXANDF, RTK_SHRINK);
+	rob_table_attach (ui->tbl_adv, DL_W(ui->s_xzmpos[0]), 1, 2, 5, 6,   1, 2, RTK_EXANDF, RTK_SHRINK);
+	rob_table_attach (ui->tbl_adv, DL_W(ui->s_xzmpos[1]), 1, 2, 6, 7,   1, 2, RTK_EXANDF, RTK_SHRINK);
+	rob_table_attach (ui->tbl_adv, DL_W(ui->s_xzmpos[2]), 1, 2, 7, 8,   1, 2, RTK_EXANDF, RTK_SHRINK);
+	rob_table_attach (ui->tbl_adv, SP_W(ui->sep_tbl[2]),  0, 2, 8, 9,   0, 0, RTK_EXANDF, RTK_SHRINK);
 
 
 	ui->spk_dpy[0] = robwidget_new (ui);
@@ -2468,7 +2480,7 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 	rob_table_attach (ui->rw, LV_W(ui->lever[1]),   5,  6,  5,  7,  0, 3, RTK_SHRINK, RTK_EXANDF);
 	rob_table_attach (ui->rw, ui->box_brk[1],       5,  6,  7,  8,  0, 0, RTK_SHRINK, RTK_EXANDF);
 
-	rob_table_attach (ui->rw, ui->tbl_adv,          6,  7,  1,  8,  4, 0, RTK_FILL,   RTK_EXANDF);
+	rob_table_attach (ui->rw, ui->tbl_adv,          6,  7,  2,  7,  4, 0, RTK_FILL,   RTK_EXANDF);
 
 	rob_table_attach (ui->rw, ui->box_leak,         8,  9,  1,  2,  4, 0, RTK_FILL,   RTK_EXANDF);
 	rob_table_attach (ui->rw, ui->box_mix[0],       8,  9,  3,  4,  4, 0, RTK_FILL,   RTK_EXANDF);
@@ -2528,6 +2540,7 @@ static void gui_cleanup (WhirlUI* ui) {
 	for (int i = 0; i < 3; ++i) {
 		robtk_sep_destroy (ui->sep_v[i]);
 		robtk_sep_destroy (ui->sep_h[i]);
+		robtk_sep_destroy (ui->sep_tbl[i]);
 	}
 
 	for (int i = 0; i < 6; ++i) {
