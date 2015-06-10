@@ -85,12 +85,15 @@ static bool robtk_dial_expose_event (RobWidget* handle, cairo_t* cr, cairo_recta
 	cairo_rectangle (cr, ev->x, ev->y, ev->width, ev->height);
 	cairo_clip (cr);
 
-	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
 	float c[4];
 	get_color_from_theme(1, c);
 	cairo_set_source_rgb (cr, c[0], c[1], c[2]);
-	cairo_rectangle (cr, 0, 0, d->w_width, d->w_height);
-	cairo_fill(cr);
+
+	if ((d->displaymode & 16) == 0) {
+		cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
+		cairo_rectangle (cr, 0, 0, d->w_width, d->w_height);
+		cairo_fill(cr);
+	}
 
 	if (d->bg) {
 		if (!d->sensitive) {
@@ -163,18 +166,27 @@ static bool robtk_dial_expose_event (RobWidget* handle, cairo_t* cr, cairo_recta
 		cairo_restore(cr);
 	}
 
-	if (d->displaymode & 4) {
+	if ((d->displaymode & 4) && !d->threesixty) {
+		cairo_set_line_width(cr, 1.5);
+		CairoSetSouerceRGBA(d->dcol[3]);
+		cairo_arc (cr, d->w_cx, d->w_cy, d->w_radius + 1.5, (.75 * M_PI), (2.25 * M_PI));
+		cairo_stroke (cr);
 		if (d->sensitive) {
 			CairoSetSouerceRGBA(d->dcol[2]);
 		} else {
 			CairoSetSouerceRGBA(d->dcol[3]);
 		}
-		cairo_set_line_width(cr, 1.5);
-		cairo_arc (cr, d->w_cx, d->w_cy, d->w_radius + 1.5, (.75 * M_PI), ang);
-		cairo_stroke (cr);
-		if (ang < (2.25 * M_PI)) {
-			CairoSetSouerceRGBA(d->dcol[3]);
-			cairo_arc (cr, d->w_cx, d->w_cy, d->w_radius + 1.5, ang, (2.25 * M_PI));
+		if (d->displaymode & 8) {
+			float dfl = (.75 * M_PI) + (1.5 * M_PI) * (d->dfl - d->min) / (d->max - d->min);
+			if (dfl < ang) {
+				cairo_arc (cr, d->w_cx, d->w_cy, d->w_radius + 1.5, dfl, ang);
+				cairo_stroke (cr);
+			} else if (dfl > ang) {
+				cairo_arc (cr, d->w_cx, d->w_cy, d->w_radius + 1.5, ang, dfl);
+				cairo_stroke (cr);
+			}
+		} else {
+			cairo_arc (cr, d->w_cx, d->w_cy, d->w_radius + 1.5, (.75 * M_PI), ang);
 			cairo_stroke (cr);
 		}
 	}

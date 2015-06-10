@@ -46,7 +46,7 @@ static bool robtk_lbl_expose_event(RobWidget* handle, cairo_t* cr, cairo_rectang
 
 	cairo_rectangle (cr, ev->x, ev->y, ev->width, ev->height);
 	cairo_clip (cr);
-	cairo_set_source_rgb (cr, d->bg[0], d->bg[1], d->bg[2]);
+	cairo_set_source_rgba (cr, d->bg[0], d->bg[1], d->bg[2], d->bg[3]);
 	if (!d->rounded) {
 		cairo_rectangle (cr, 0, 0, d->w_width, d->w_height);
 		cairo_fill(cr);
