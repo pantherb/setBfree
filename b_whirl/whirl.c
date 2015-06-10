@@ -74,6 +74,7 @@ void initValues (struct b_whirl *w) {
 	/* The current angle of rotating elements */
 	w->hornAngleGRD = 0; /* 0..1 */
 	w->drumAngleGRD = 0;
+	w->micAngle = 0;
 
 	/* angular speed  grad / sample */
 	w->hornIncr     = 0; /* horn's current angular speed */
@@ -542,7 +543,6 @@ void computeOffsets (struct b_whirl *w) {
 		if (maxdr < w->drFwdDispl[i]) maxdr = w->drFwdDispl[i];
 	}
 
-	// TODO expose mic placement
 	w->hornPhase[0] = 0;
 	w->hornPhase[1] = WHIRL_DISPLC_SIZE >> 1;
 
@@ -1153,6 +1153,8 @@ void whirlProc2 (struct b_whirl *w,
   double hornAngleGRD = w->hornAngleGRD;
   double drumAngleGRD = w->drumAngleGRD;
   unsigned int outpos = w->outpos;
+  const double fwAng = w->micAngle * .25;
+  const double bwAng = 1. + w->micAngle * -.25;
 
   const float leakage = w->leakage;
   const float hornLevel = w->hornLevel;
@@ -1182,7 +1184,7 @@ void whirlProc2 (struct b_whirl *w,
   float * const z = w->z;
 
   const struct _bw * const bfw = w->bfw;
-  const struct _bw * const bbw = w->bfw;
+  const struct _bw * const bbw = w->bbw;
 
 
 #ifdef DEBUG_SPEED
@@ -1210,15 +1212,13 @@ void whirlProc2 (struct b_whirl *w,
     DI = (DI + AGMASK) & AGMASK; \
     DX[DI] = XS;}
 
-#define HN_MOTION(P,BUF,DSP,BW,DX,DI) {                                    \
-    const float h1 = hornAngleGRD * WHIRL_DISPLC_SIZE + hornPhase[(P)];    \
+#define HN_MOTION(P,BUF,DSP,BW,DX,DI,ANG) {                                \
+    const float h1 = (ANG) * WHIRL_DISPLC_SIZE + hornPhase[(P)];           \
     const float hd = fmod(h1, 1.0);                                        \
     const unsigned int hl = (unsigned int)floor(h1) & WHIRL_DISPLC_MASK;   \
     const unsigned int hh = (hl + 1) & WHIRL_DISPLC_MASK;                  \
     const float intp = DSP[hl] * (1.f - hd) + hd * DSP[hh];                \
-    const unsigned int k = (unsigned int)                                  \
-        (round(hornAngleGRD * WHIRL_DISPLC_MASK) + hornPhase[(P)])         \
-        & WHIRL_DISPLC_MASK;                                               \
+    const unsigned int k = (unsigned int) floor(hd);                       \
     const float t = hornSpacing[(P)] + intp + (float) outpos;              \
     const float r = floorf (t);                                            \
     float xa;                                                              \
@@ -1298,24 +1298,24 @@ void whirlProc2 (struct b_whirl *w,
 
     /* --- STATIC HORN FILTER --- */
     /* HORN PRIMARY */
-    HN_MOTION(0, HLbuf, hnFwdDispl, bfw, adx0, w->adi0);
-    HN_MOTION(1, HRbuf, hnBwdDispl, bbw, adx0, w->adi0);
+    HN_MOTION(0, HLbuf, hnFwdDispl, bfw, adx0, w->adi0, hornAngleGRD + fwAng);
+    HN_MOTION(1, HRbuf, hnBwdDispl, bbw, adx0, w->adi0, hornAngleGRD + bwAng);
     ADDHIST(adx0, w->adi0, x);
 
     /* HORN FIRST REFLECTION FILTER */
     FILTER_C(0.4, 0.4, 0);
 
     /* HORN FIRST REFLECTION */
-    HN_MOTION(2, HLbuf, hnBwdDispl, bbw, adx1, w->adi1);
-    HN_MOTION(3, HRbuf, hnFwdDispl, bfw, adx1, w->adi1);
+    HN_MOTION(2, HLbuf, hnBwdDispl, bbw, adx1, w->adi1, hornAngleGRD + fwAng);
+    HN_MOTION(3, HRbuf, hnFwdDispl, bfw, adx1, w->adi1, hornAngleGRD + bwAng);
     ADDHIST(adx1, w->adi1, x);
 
     /* HORN SECOND REFLECTION FILTER */
     FILTER_C(0.4, 0.4, 1);
 
     /* HORN SECOND REFLECTION */
-    HN_MOTION(4, HLbuf, hnFwdDispl, bfw, adx2, w->adi2);
-    HN_MOTION(5, HRbuf, hnBwdDispl, bbw, adx2, w->adi2);
+    HN_MOTION(4, HLbuf, hnFwdDispl, bfw, adx2, w->adi2, hornAngleGRD + fwAng);
+    HN_MOTION(5, HRbuf, hnBwdDispl, bbw, adx2, w->adi2, hornAngleGRD + bwAng);
     ADDHIST(adx2, w->adi2, x);
 
     /* 1A) do doppler shift for drum (actually orig signal -- FM

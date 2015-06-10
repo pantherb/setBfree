@@ -93,6 +93,8 @@ struct b_whirl {
   double hornAngleGRD;  /* 0..1 */
   double drumAngleGRD;
 
+  double micAngle;
+
 /* target speed - rotational frequency */
   float hornRPMslow;
   float hornRPMfast;

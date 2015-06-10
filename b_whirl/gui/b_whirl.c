@@ -80,7 +80,8 @@ typedef enum {
 	B3W_HORNANG,
 	B3W_DRUMANG,
 	B3W_GUINOTIFY,
-	B3W_LINKSPEED,
+	B3W_LINKSPEED, // 40
+	B3W_MICANGLE,
 } PortIndex;
 
 

@@ -599,6 +599,18 @@
 			rdf:value -1.0;
 		];
 		pp:displayPriority 800 ;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 41 ;
+		lv2:symbol "micangle" ;
+		lv2:name "MicAngle";
+		lv2:default 180.0 ;
+		lv2:minimum 0.0 ;
+		lv2:maximum 180.0 ;
+		lv2:portProperty pp:causesArtifacts;
+		pp:displayPriority 50 ;
 	];
 	rdfs:comment "A rotating louspeaker emulator designed to imitate the sound and properties of the sound modification device that brought world-wide fame to the name of Don Leslie" ;
 	.

@@ -85,7 +85,8 @@ typedef enum {
 	B3W_DRUMANG,
 
 	B3W_GUINOTIFY,
-	B3W_LINKSPEED,
+	B3W_LINKSPEED, // 40
+	B3W_MICANGLE,
 } PortIndex;
 
 typedef struct {
@@ -110,7 +111,7 @@ typedef struct {
 	float *drum_width, *horn_leak;
 
 	float *horn_radius, *drum_radius;
-	float *horn_xoff, *horn_zoff, *mic_dist;
+	float *horn_xoff, *horn_zoff, *mic_dist, *mic_angle;
 
 	float *p_resend_trigger; // GUI retrigger
 	float *p_link_speed; // GUI setting
@@ -130,7 +131,7 @@ typedef struct {
 	float o_drum_width, o_horn_leak;
 
 	float o_horn_radius, o_drum_radius;
-	float o_horn_xoff, o_horn_zoff, o_mic_dist;
+	float o_horn_xoff, o_horn_zoff, o_mic_dist, o_mic_angle;
 
 	int spd_horn, spd_drum, last_spd;
 
@@ -159,15 +160,15 @@ instantiate (const LV2_Descriptor*     descriptor,
              const char*               bundle_path,
              const LV2_Feature* const* features)
 {
-  B3W* b3w = (B3W*)calloc (1, sizeof (B3W));
-  if (!b3w) { return NULL ;}
+	B3W* b3w = (B3W*)calloc (1, sizeof (B3W));
+	if (!b3w) { return NULL ;}
 
-  if (!(b3w->whirl = allocWhirl ())) {
-    free (b3w);
-    return NULL;
-  }
+	if (!(b3w->whirl = allocWhirl ())) {
+		free (b3w);
+		return NULL;
+	}
 
-  initWhirl (b3w->whirl, NULL, rate);
+	initWhirl (b3w->whirl, NULL, rate);
 
 	// reference filters
 	b3w->flt[0].W[0] = b3w->whirl->hafw;
@@ -191,34 +192,34 @@ instantiate (const LV2_Descriptor*     descriptor,
 	b3w->flt[2]._g = b3w->whirl->lpG;
 	b3w->flt[2]._q = b3w->whirl->lpQ;
 
-  b3w->o_horn_radius = b3w->whirl->hornRadiusCm;
-  b3w->o_drum_radius = b3w->whirl->drumRadiusCm;
-  b3w->o_mic_dist = b3w->whirl->micDistCm;
-  b3w->o_horn_xoff = b3w->whirl->hornXOffsetCm;
-  b3w->o_horn_zoff = b3w->whirl->hornZOffsetCm;
+	b3w->o_horn_radius = b3w->whirl->hornRadiusCm;
+	b3w->o_drum_radius = b3w->whirl->drumRadiusCm;
+	b3w->o_mic_dist = b3w->whirl->micDistCm;
+	b3w->o_horn_xoff = b3w->whirl->hornXOffsetCm;
+	b3w->o_horn_zoff = b3w->whirl->hornZOffsetCm;
 	b3w->o_horn_leak = b3w->whirl->leakLevel;
 
-  b3w->fade_dir = false;
-  b3w->fade = 0;
+	b3w->fade_dir = false;
+	b3w->fade = 0;
 
-  b3w->rate = rate;
-  b3w->nyq  = rate * 0.4998;
-  b3w->lpf1  = 2000.0 / rate;
-  b3w->lpf2  = 880.0 / rate;
+	b3w->rate = rate;
+	b3w->nyq  = rate * 0.4998;
+	b3w->lpf1  = 2000.0 / rate;
+	b3w->lpf2  = 880.0 / rate;
 
-  b3w->resend_data_to_ui = 0;
-  b3w->resend_trigger = 0;
+	b3w->resend_data_to_ui = 0;
+	b3w->resend_trigger = 0;
 
 	// fade in levels
-  b3w->o_horn_level = 0.0;
-  b3w->o_drum_level = 0.0;
-  b3w->o_drum_width = 0.0;
+	b3w->o_horn_level = 0.0;
+	b3w->o_drum_level = 0.0;
+	b3w->o_drum_width = 0.0;
 
-  b3w->x_drum_width = 0.0;
-  b3w->x_dll = b3w->x_drr = 1.0;
-  b3w->x_dlr = b3w->x_drl = 0.0;
+	b3w->x_drum_width = 0.0;
+	b3w->x_dll = b3w->x_drr = 1.0;
+	b3w->x_dlr = b3w->x_drl = 0.0;
 
-  return (LV2_Handle)b3w;
+	return (LV2_Handle)b3w;
 }
 
 static void
@@ -280,7 +281,8 @@ connect_port (LV2_Handle instance,
 
     case B3W_GUINOTIFY:   b3w->p_resend_trigger = (float*)data; break;
     case B3W_LINKSPEED:   b3w->p_link_speed = (float*)data; break;
-		default: break;
+    case B3W_MICANGLE:    b3w->mic_angle = (float*)data; break;
+    default: break;
   }
 }
 
@@ -377,10 +379,10 @@ static int interpolate_filter (B3W *b3w,  Filter *flt) {
 	return 0;
 }
 
-#define SETVAR(PARAM, VAR, MIN, MAX) { \
+#define SETVAR(PARAM, VAR, MIN, MAX, MOD) { \
 	const float val = *b3w->VAR; \
 	 b3w->o_ ## VAR = val; \
-	if (val >= MIN && val <= MAX) { b3w->whirl->PARAM = val; } \
+	if (val >= MIN && val <= MAX) { b3w->whirl->PARAM = MOD val; } \
 }
 
 #define CHECKDIFF(VAR) \
@@ -394,6 +396,7 @@ static int reconfigure (B3W* b3w) {
 	CHECKDIFF(horn_xoff);
 	CHECKDIFF(horn_zoff);
 	CHECKDIFF(mic_dist);
+	CHECKDIFF(mic_angle);
 
 	if (!changed) {
 		return 0;
@@ -403,11 +406,12 @@ static int reconfigure (B3W* b3w) {
 		return 1;
 	}
 
-	SETVAR(hornRadiusCm, horn_radius, 9, 50)
-	SETVAR(drumRadiusCm, drum_radius, 9, 50)
-	SETVAR(micDistCm, mic_dist, 9, 300)
-	SETVAR(hornXOffsetCm, horn_xoff, -20 , 20)
-	SETVAR(hornZOffsetCm, horn_zoff, -20 , 20)
+	SETVAR(hornRadiusCm, horn_radius, 9, 50,)
+	SETVAR(drumRadiusCm, drum_radius, 9, 50,)
+	SETVAR(micDistCm, mic_dist, 9, 300,)
+	SETVAR(hornXOffsetCm, horn_xoff, -20 , 20,)
+	SETVAR(hornZOffsetCm, horn_zoff, -20 , 20,)
+	SETVAR(micAngle, mic_angle, 0 , 180, 1.f - 1.f/180.f *)
 
 	computeOffsets (b3w->whirl);
 	return 0;
