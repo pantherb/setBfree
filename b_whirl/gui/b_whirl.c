@@ -123,10 +123,11 @@ static const Parameter radius[2] = {
 	{  9, 50.0, 22.0,  0, S_("%.1f cm")}, // baffle
 };
 
-static const Parameter xzmpos[3] = {
+static const Parameter xzmpos[4] = {
 	{  -20,  20.0,  0.0,  0, S_("%.1f cm")}, // horn X
 	{  -20,  20.0,  0.0,  0, S_("%.1f cm")}, // horn Z
 	{    9, 150.0, 42.0,  0, S_("%.1f cm")}, // all mics
+	{  0.0, 180.0, 180.0, 0, S_("%.1f deg")}, // horn mic angle
 };
 
 static const Parameter filter[3][3] = {
@@ -210,11 +211,12 @@ typedef struct {
 	cairo_surface_t *spk_sf[2];
 
 	// advanced controls
-	RobWidget *tbl_adv;
 	RobTkCBtn *btn_adv;
-	RobTkLbl  *lbl_adv[6];
+	RobTkSep  *sep_adv[3];
+	RobWidget *tbl_adv[2];
+	RobTkLbl  *lbl_adv[7];
 	RobTkDial *s_radius[2]; // horn, drum
-	RobTkDial *s_xzmpos[3]; // horn x, horn z, all-mics
+	RobTkDial *s_xzmpos[4]; // horn x, horn z, all-mics
 
 	// misc other widgets
 	RobWidget   *box_drmmic;
@@ -1232,6 +1234,7 @@ DIAL_CALLBACK(drad,   radius[1],   B3W_DRUMRADIUS, );
 DIAL_CALLBACK(hornx,  xzmpos[0],   B3W_HORNOFFX, );
 DIAL_CALLBACK(hornz,  xzmpos[1],   B3W_HORNOFFZ, );
 DIAL_CALLBACK(micd,   xzmpos[2],   B3W_MICDIST, );
+DIAL_CALLBACK(mica,   xzmpos[3],   B3W_MICANGLE, );
 
 DIAL_CALLBACK(width,  drumwidth,   B3W_DRUMWIDTH, );
 DIAL_CALLBACK(leak,   leak,        B3W_HORNLEAK, );
@@ -1344,7 +1347,8 @@ static bool cb_adv_en (RobWidget *w, void* handle) {
 	robtk_dial_set_sensitive (ui->s_xzmpos[0], en);
 	robtk_dial_set_sensitive (ui->s_xzmpos[1], en);
 	robtk_dial_set_sensitive (ui->s_xzmpos[2], en);
-	for (int i = 1; i < 6; ++i) {
+	robtk_dial_set_sensitive (ui->s_xzmpos[3], en);
+	for (int i = 1; i < 7; ++i) {
 		robtk_lbl_set_sensitive (ui->lbl_adv[i], en);
 	}
 	return TRUE;
@@ -2156,8 +2160,8 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 	rob_vbox_child_pack (ui->box_leak, LB_W(ui->lbl_leak), FALSE, FALSE);
 	rob_vbox_child_pack (ui->box_leak, SP_W(ui->sep_leak), TRUE, TRUE);
 
-	// distances
-	for (int i = 0; i < 3; ++i) {
+	// distances, mic pos & angle
+	for (int i = 0; i < 4; ++i) {
 		ui->s_xzmpos[i] = robtk_dial_new (xzmpos[i].min, xzmpos[i].max, 1./2);
 		robtk_dial_set_default (ui->s_xzmpos[i], xzmpos[i].dflt);
 		robtk_dial_annotation_callback (ui->s_xzmpos[i], dial_annotation, (void*)&xzmpos[i]);
@@ -2381,44 +2385,65 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 		rob_table_attach (ui->tbl_mtr[i], SP_W(ui->sep_tbl[i]),    0, 2, 6, 7,  0, 0, RTK_EXANDF, RTK_SHRINK);
 	}
 
-	ui->tbl_adv = rob_table_new (/*rows*/ 5, /*cols*/ 2, FALSE);
-	robwidget_set_expose_event (ui->tbl_adv, rcontainer_expose_event_no_clear);
+	ui->tbl_adv[0] = rob_table_new (/*rows*/ 4, /*cols*/ 2, FALSE);
+	ui->tbl_adv[1] = rob_table_new (/*rows*/ 6, /*cols*/ 2, FALSE);
+	robwidget_set_expose_event (ui->tbl_adv[0], rcontainer_expose_event_no_clear);
+	robwidget_set_expose_event (ui->tbl_adv[1], rcontainer_expose_event_no_clear);
+
 	ui->btn_adv = robtk_cbtn_new ("Unlock", GBT_LED_LEFT, false);
 
-	ui->lbl_adv[0] = robtk_lbl_new ("<markup><b>Advanced</b>\n\nChanging these\nparameters\nre-reinitializes\nthe DSP.\nExpect clickless\nshort fades.</markup>");
-	ui->lbl_adv[1] = robtk_lbl_new ("Horn\nRadius:");
-	ui->lbl_adv[2] = robtk_lbl_new ("Drum\nRadius:");
-	ui->lbl_adv[3] = robtk_lbl_new ("Mic \nDist.:");
-	ui->lbl_adv[4] = robtk_lbl_new ("Horn\nPos L/R:");
-	ui->lbl_adv[5] = robtk_lbl_new ("Horn\nPos F/B:");
-
-	robtk_lbl_set_alignment (ui->lbl_adv[0], .5, .5);
-	robtk_lbl_set_alignment (ui->lbl_adv[1], 1, .5);
-	robtk_lbl_set_alignment (ui->lbl_adv[2], 1, .5);
-	robtk_lbl_set_alignment (ui->lbl_adv[3], 1, .5);
-	robtk_lbl_set_alignment (ui->lbl_adv[4], 1, .5);
-	robtk_lbl_set_alignment (ui->lbl_adv[5], 1, .5);
+	ui->lbl_adv[0] = robtk_lbl_new ("<markup><b>Advanced</b>\nChanging these\nparameters\nre-reinitializes\nthe DSP.\nExpect clickless\nshort fades.</markup>");
+	ui->lbl_adv[1] = robtk_lbl_new ("Mic \nDist.:");
+	ui->lbl_adv[2] = robtk_lbl_new ("Mic \nWidth:");
+	ui->lbl_adv[3] = robtk_lbl_new ("Horn\nRadius:");
+	ui->lbl_adv[4] = robtk_lbl_new ("Drum\nRadius:");
+	ui->lbl_adv[5] = robtk_lbl_new ("Horn\nPos L/R:");
+	ui->lbl_adv[6] = robtk_lbl_new ("Horn\nPos F/B:");
 
 	ui->s_xzmpos[0]->displaymode = 31;
 	ui->s_xzmpos[1]->displaymode = 31;
 	ui->s_xzmpos[2]->displaymode = 20;
+	ui->s_xzmpos[3]->displaymode = 20;
 	ui->s_radius[0]->displaymode = 20;
 	ui->s_radius[1]->displaymode = 20;
-	for (int j = 0; j < 6; ++j) {
+
+	robtk_dial_set_alignment (ui->s_xzmpos[0], 1.0, .5);
+	robtk_dial_set_alignment (ui->s_xzmpos[1], 1.0, .5);
+	robtk_dial_set_alignment (ui->s_xzmpos[2], 1.0, .5);
+	robtk_dial_set_alignment (ui->s_xzmpos[3], 1.0, .5);
+	robtk_dial_set_alignment (ui->s_radius[0], 1.0, .5);
+	robtk_dial_set_alignment (ui->s_radius[1], 1.0, .5);
+
+	robtk_lbl_set_alignment (ui->lbl_adv[0], .5, 0);
+	for (int j = 0; j < 7; ++j) {
+		robtk_lbl_set_alignment (ui->lbl_adv[j], .5, 0);
 		LABEL_BACKGROUND(lbl_adv[j], 0, 0, 0, 0);
 	}
 
-	rob_table_attach (ui->tbl_adv, LB_W(ui->lbl_adv[1]),  0, 1, 0, 1,  1, 2, RTK_EXANDF, RTK_SHRINK);
-	rob_table_attach (ui->tbl_adv, LB_W(ui->lbl_adv[2]),  0, 1, 1, 2,  1, 2, RTK_EXANDF, RTK_SHRINK);
-	rob_table_attach (ui->tbl_adv, LB_W(ui->lbl_adv[3]),  0, 1, 2, 3,  1, 2, RTK_EXANDF, RTK_SHRINK);
-	rob_table_attach (ui->tbl_adv, LB_W(ui->lbl_adv[4]),  0, 1, 3, 4,  1, 2, RTK_EXANDF, RTK_SHRINK);
-	rob_table_attach (ui->tbl_adv, LB_W(ui->lbl_adv[5]),  0, 1, 4, 5,  1, 4, RTK_EXANDF, RTK_SHRINK);
+	for (int j = 0; j < 3; ++j) {
+		ui->sep_adv[j] = robtk_sep_new (FALSE);
+		robwidget_set_expose_event (ui->sep_adv[j]->rw, noop_expose_event);
+	}
 
-	rob_table_attach (ui->tbl_adv, DL_W(ui->s_radius[0]), 1, 2, 0, 1,  0, 2, RTK_EXANDF, RTK_SHRINK);
-	rob_table_attach (ui->tbl_adv, DL_W(ui->s_radius[1]), 1, 2, 1, 2,  0, 2, RTK_EXANDF, RTK_SHRINK);
-	rob_table_attach (ui->tbl_adv, DL_W(ui->s_xzmpos[2]), 1, 2, 2, 3,  0, 2, RTK_EXANDF, RTK_SHRINK);
-	rob_table_attach (ui->tbl_adv, DL_W(ui->s_xzmpos[0]), 1, 2, 3, 4,  0, 2, RTK_EXANDF, RTK_SHRINK);
-	rob_table_attach (ui->tbl_adv, DL_W(ui->s_xzmpos[1]), 1, 2, 4, 5,  0, 2, RTK_EXANDF, RTK_SHRINK);
+	rob_table_attach (ui->tbl_adv[0], LB_W(ui->lbl_adv[0]),  0, 2, 0, 1,  2, 6, RTK_EXANDF, RTK_EXANDF);
+	rob_table_attach (ui->tbl_adv[0], LB_W(ui->lbl_adv[1]),  0, 1, 1, 2,  2, 2, RTK_EXANDF, RTK_SHRINK);
+	rob_table_attach (ui->tbl_adv[0], LB_W(ui->lbl_adv[2]),  0, 1, 2, 3,  2, 2, RTK_EXANDF, RTK_SHRINK);
+	rob_table_attach (ui->tbl_adv[0], SP_W(ui->sep_adv[0]),  0, 1, 3, 4,  2, 2, RTK_EXANDF, RTK_SHRINK);
+
+	rob_table_attach (ui->tbl_adv[0], DL_W(ui->s_xzmpos[2]), 1, 2, 1, 2,  0, 2, RTK_SHRINK, RTK_SHRINK);
+	rob_table_attach (ui->tbl_adv[0], DL_W(ui->s_xzmpos[3]), 1, 2, 2, 3,  0, 2, RTK_SHRINK, RTK_SHRINK);
+
+	rob_table_attach (ui->tbl_adv[1], SP_W(ui->sep_adv[1]),  0, 1, 0, 1,  2, 2, RTK_EXANDF, RTK_SHRINK);
+	rob_table_attach (ui->tbl_adv[1], LB_W(ui->lbl_adv[3]),  0, 1, 1, 2,  2, 2, RTK_EXANDF, RTK_SHRINK);
+	rob_table_attach (ui->tbl_adv[1], LB_W(ui->lbl_adv[4]),  0, 1, 2, 3,  2, 2, RTK_EXANDF, RTK_SHRINK);
+	rob_table_attach (ui->tbl_adv[1], LB_W(ui->lbl_adv[5]),  0, 1, 3, 4,  2, 2, RTK_EXANDF, RTK_SHRINK);
+	rob_table_attach (ui->tbl_adv[1], LB_W(ui->lbl_adv[6]),  0, 1, 4, 5,  2, 2, RTK_EXANDF, RTK_SHRINK);
+	rob_table_attach (ui->tbl_adv[1], SP_W(ui->sep_adv[2]),  0, 1, 5, 6,  2, 2, RTK_EXANDF, RTK_EXANDF);
+
+	rob_table_attach (ui->tbl_adv[1], DL_W(ui->s_radius[0]), 1, 2, 1, 2,  0, 2, RTK_SHRINK, RTK_SHRINK);
+	rob_table_attach (ui->tbl_adv[1], DL_W(ui->s_radius[1]), 1, 2, 2, 3,  0, 2, RTK_SHRINK, RTK_SHRINK);
+	rob_table_attach (ui->tbl_adv[1], DL_W(ui->s_xzmpos[0]), 1, 2, 3, 4,  0, 2, RTK_SHRINK, RTK_SHRINK);
+	rob_table_attach (ui->tbl_adv[1], DL_W(ui->s_xzmpos[1]), 1, 2, 4, 5,  0, 2, RTK_SHRINK, RTK_SHRINK);
 
 	ui->spk_dpy[0] = robwidget_new (ui);
 	robwidget_set_alignment (ui->spk_dpy[0], .5, .5);
@@ -2476,6 +2501,7 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 	robtk_dial_set_callback (ui->s_xzmpos[0], cb_dial_hornx, ui);
 	robtk_dial_set_callback (ui->s_xzmpos[1], cb_dial_hornz, ui);
 	robtk_dial_set_callback (ui->s_xzmpos[2], cb_dial_micd, ui);
+	robtk_dial_set_callback (ui->s_xzmpos[3], cb_dial_mica, ui);
 
 	for (int i = 0; i < 3; ++i) {
 		ui->sep_v[i] = robtk_sep_new (FALSE);
@@ -2520,9 +2546,9 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 	rob_table_attach (ui->rw, LV_W(ui->lever[1]),   5,  6,  5,  7,  0, 16,RTK_SHRINK, RTK_EXANDF);
 	rob_table_attach (ui->rw, ui->box_brk[1],       5,  7,  7,  8,  0, 3, RTK_SHRINK, RTK_SHRINK);
 
-	rob_table_attach (ui->rw, LB_W(ui->lbl_adv[0]), 6,  7,  2,  4,  6, 0, RTK_FILL,   RTK_EXANDF);
-	rob_table_attach (ui->rw, CB_W(ui->btn_adv),    6,  7,  4,  5,  8, 0, RTK_FILL,   RTK_SHRINK);
-	rob_table_attach (ui->rw, ui->tbl_adv,          6,  7,  5,  7,  6, 0, RTK_FILL,   RTK_EXANDF);
+	rob_table_attach (ui->rw, ui->tbl_adv[0],       6,  7,  2,  4,  6, 0, RTK_EXANDF, RTK_EXANDF);
+	rob_table_attach (ui->rw, CB_W(ui->btn_adv),    6,  7,  4,  5,  6, 0, RTK_FILL,   RTK_SHRINK);
+	rob_table_attach (ui->rw, ui->tbl_adv[1],       6,  7,  5,  7,  6, 0, RTK_EXANDF, RTK_EXANDF);
 
 	rob_table_attach (ui->rw, ui->box_leak,         8,  9,  1,  2,  4, 0, RTK_FILL,   RTK_EXANDF);
 	rob_table_attach (ui->rw, ui->box_mix[0],       8,  9,  3,  4,  4, 0, RTK_FILL,   RTK_EXANDF);
@@ -2555,6 +2581,8 @@ static void gui_cleanup (WhirlUI* ui) {
 		if (ui->fil_sf[i]) {
 			cairo_surface_destroy (ui->fil_sf[i]);
 		}
+	}
+	for (int i = 0; i < 4; ++i) {
 		robtk_dial_destroy (ui->s_xzmpos[i]);
 	}
 	for (int i = 0; i < 2; ++i) {
@@ -2583,6 +2611,7 @@ static void gui_cleanup (WhirlUI* ui) {
 	for (int i = 0; i < 3; ++i) {
 		robtk_sep_destroy (ui->sep_v[i]);
 		robtk_sep_destroy (ui->sep_h[i]);
+		robtk_sep_destroy (ui->sep_adv[i]);
 	}
 
 	for (int i = 0; i < 6; ++i) {
@@ -2590,7 +2619,8 @@ static void gui_cleanup (WhirlUI* ui) {
 	}
 
 	robtk_cbtn_destroy (ui->btn_adv);
-	rob_table_destroy (ui->tbl_adv);
+	rob_table_destroy (ui->tbl_adv[0]);
+	rob_table_destroy (ui->tbl_adv[1]);
 
 	robtk_lbl_destroy (ui->lbl_leak);
 	robtk_dial_destroy (ui->s_leak);
@@ -2826,6 +2856,9 @@ port_event (LV2UI_Handle handle,
 			if (v <= -.5) { ui->last_used_horn_lever = false; }
 			if (v >= 0.5) { ui->last_used_horn_lever = true; }
 			robtk_cbtn_set_active (ui->btn_link, fabsf(v) >= .5);
+			break;
+		case B3W_MICANGLE:
+			robtk_dial_set_value (ui->s_xzmpos[3], v);
 			break;
 		default:
 			break;
