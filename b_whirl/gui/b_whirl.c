@@ -2789,8 +2789,8 @@ port_event (LV2UI_Handle handle,
 			update_ang (ui, 1, v);
 			break;
 		case B3W_LINKSPEED:
-			if (v < -.5) { ui->last_used_horn_lever = false; }
-			if (v > 0.5) { ui->last_used_horn_lever = true; }
+			if (v <= -.5) { ui->last_used_horn_lever = false; }
+			if (v >= 0.5) { ui->last_used_horn_lever = true; }
 			robtk_cbtn_set_active (ui->btn_link, fabsf(v) >= .5);
 			break;
 		default:
