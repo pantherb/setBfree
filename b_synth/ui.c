@@ -393,6 +393,9 @@ typedef struct {
 
   int mouseover;
   int cfgtriover;
+  int cfgdrag;
+  int cfgdrag_x, cfgdrag_y;
+  float dragval, dragmult;
   int cfgtab;
 
   b3config cfgvar[MAXCFG];
@@ -1382,19 +1385,14 @@ unity_box(PuglView* view,
 }
 
 static void
-unity_button(PuglView* view,
+unity_button_color(PuglView* view,
     const float x0, const float x1,
     const float y0, const float y1,
-    int hover
+    GLfloat btncol[3]
     )
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   const float invaspect = 320. / 960.;
-  GLfloat btncol[] = {0.1, 0.3, 0.1, 1.0 };
-
-  if (hover) {
-    btncol[0] = 0.2; btncol[1] = 0.6; btncol[2] = 0.2;
-  }
   float x0A, x0B;
 
   /* button texture: x/3 (left-circle + x/3 (box) + x/3 (right-circle) ;; texture aspect: 4/3
@@ -1440,6 +1438,20 @@ unity_button(PuglView* view,
   glDisable(GL_BLEND);
   glBlendFunc(GL_SRC_ALPHA, GL_SRC_ALPHA_SATURATE);
   glPopMatrix();
+}
+
+static void
+unity_button(PuglView* view,
+    const float x0, const float x1,
+    const float y0, const float y1,
+    int hover
+    )
+{
+  GLfloat btncol[] = {0.1, 0.3, 0.1, 1.0 };
+  if (hover) {
+    btncol[0] = 0.2; btncol[1] = 0.6; btncol[2] = 0.2;
+  }
+  unity_button_color(view, x0, x1, y0, y1, btncol);
 }
 
 static void
@@ -2198,49 +2210,57 @@ static void cfg_special_button(PuglView *view, int ccc) {
   }
 }
 
-/* handle user click or wheel */
-static void cfg_update_value(PuglView *view, int ccc, int dir) {
-  B3ui* ui = (B3ui*)puglGetHandle(view);
+static void cfg_start_drag(B3ui* ui, int cfg) {
+  assert (cfg > 0 && cfg <= 24);
 
-  assert(dir >= -10 && dir <= 10);
-
-  if (ccc >= 24) return;
-
-  if (ui->reinit) {
-    puglPostRedisplay(view);
-    return;
-  }
-
-  ccc += 24 * ui->cfgtab;
-
+  int ccc = 24 * ui->cfgtab + cfg - 1;
   if (ccc >= MAXCFG || !ui->cfgvar[ccc].d) return;
 
-  float oldval = ui->cfgvar[ccc].cur;
+  ui->cfgdrag = cfg;
+  ui->dragval = ui->cfgvar[ccc].cur;
 
-  if (dir == 0) {
-    ui->cfgvar[ccc].cur = ui->cfgvar[ccc].dflt;
+  float range;
+  const float step  = ui->cfgvar[ccc].d->ui_step;
+  switch (ui->cfgvar[ccc].format) {
+    case CF_DECIBEL:
+      range = fabsf (coeff_to_db (ui->cfgvar[ccc].d->max, -120) - coeff_to_db (ui->cfgvar[ccc].d->min, -120));
+      break;
+    default:
+      range = ui->cfgvar[ccc].d->max - ui->cfgvar[ccc].d->min;
+      break;
+  }
+  assert (range > step);
+  ui->dragmult = (range / step < 10) ? 10 : (range / step);
+  ui->dragmult /= 350; // px
+  //printf("DRAG S:%f  R: %f   M: %f  1/M : %f\n", step, range, ui->dragmult, 1.0 / ui->dragmult);
+}
+
+static float cfg_update_parameter(B3ui* ui, int ccc, float val, int delta) {
+  assert (ccc >= 0 && ccc < MAXCFG && ui->cfgvar[ccc].d);
+
+  float rv;
+  if (delta == 0) {
+    rv = ui->cfgvar[ccc].dflt;
   } else {
     switch (ui->cfgvar[ccc].format) {
       case CF_DECIBEL:
-	ui->cfgvar[ccc].cur =
-	  db_to_coeff(coeff_to_db(ui->cfgvar[ccc].cur, -120) + dir * ui->cfgvar[ccc].d->ui_step);
+	rv = db_to_coeff(coeff_to_db(val, -120) + delta * ui->cfgvar[ccc].d->ui_step);
 	break;
       default:
-	ui->cfgvar[ccc].cur += dir * ui->cfgvar[ccc].d->ui_step;
+	rv = val + delta * ui->cfgvar[ccc].d->ui_step;
 	break;
     }
   }
 
-  if (ui->cfgvar[ccc].cur < ui->cfgvar[ccc].d->min)
-    ui->cfgvar[ccc].cur = ui->cfgvar[ccc].d->min;
+  if (rv < ui->cfgvar[ccc].d->min)
+    rv = ui->cfgvar[ccc].d->min;
 
-  if (ui->cfgvar[ccc].cur > ui->cfgvar[ccc].d->max)
-    ui->cfgvar[ccc].cur = ui->cfgvar[ccc].d->max;
+  if (rv > ui->cfgvar[ccc].d->max)
+    rv = ui->cfgvar[ccc].d->max;
+  return rv;
+}
 
-  if (oldval == ui->cfgvar[ccc].cur) {
-    return;
-  }
-
+static void cfg_tx_update(B3ui* ui, int ccc) {
   char cfgstr[128];
   switch(ui->cfgvar[ccc].format) {
     case CF_LISTLUT:
@@ -2267,11 +2287,38 @@ static void cfg_update_value(PuglView *view, int ccc, int dir) {
   ui->reinit = 1;
 }
 
+/* handle user click or wheel */
+static void cfg_update_value(PuglView *view, int ccc, int dir) {
+  B3ui* ui = (B3ui*)puglGetHandle(view);
+
+  assert(dir >= -10 && dir <= 10);
+
+  if (ccc >= 24) return;
+
+  if (ui->reinit) {
+    puglPostRedisplay(view);
+    return;
+  }
+
+  ccc += 24 * ui->cfgtab;
+
+  if (ccc >= MAXCFG || !ui->cfgvar[ccc].d) return;
+
+  float oldval = ui->cfgvar[ccc].cur;
+
+  ui->cfgvar[ccc].cur = cfg_update_parameter(ui, ccc, ui->cfgvar[ccc].cur, dir);
+
+  if (oldval == ui->cfgvar[ccc].cur) {
+    return;
+  }
+  cfg_tx_update(ui, ccc);
+}
+
 static void
 render_cfg_button(PuglView* view,
     int ccc,
     float x0, float x1, float y0, float y1,
-    int hover_btn, int hover_tri)
+    int hover_btn, int hover_tri, bool dragging)
 {
   B3ui* ui = (B3ui*)puglGetHandle(view);
   const GLfloat mat_tri[] = {0.1, 0.1, 0.1, 1.0};
@@ -2280,61 +2327,70 @@ render_cfg_button(PuglView* view,
   const GLfloat mat_b[] = {0.0, 0.0, 0.0, 1.0};
   const float invaspect = 320. / 960.;
 
-  unity_button(view, x0, x1, y0, y1, hover_btn);
+  GLfloat btncol[] = {0.1, 0.3, 0.1, 1.0 };
+  if (dragging) {
+    btncol[0] = 0.6; btncol[1] = 0.6; btncol[2] = 0.1;
+  } else if (hover_btn) {
+    btncol[0] = 0.2; btncol[1] = 0.6; btncol[2] = 0.2;
+  }
+
+  unity_button_color(view, x0, x1, y0, y1, btncol);
   if (!hover_btn) hover_tri = 0;
   unity_tri(view, x0 + .004, y0 + .020, y1 - .020, hover_tri < 0 ? mat_act : mat_tri);
   unity_tri(view, x1 - .004, y1 - .020, y0 + .020, hover_tri > 0 ? mat_act : mat_tri);
 
   char txt[64]; char const * lbl;
 
+  const float val = dragging ? ui->dragval : ui->cfgvar[ccc].cur;
+
   switch(ui->cfgvar[ccc].format) {
     case CF_LISTLUT:
       snprintf(txt, sizeof(txt), "%s: %s", ui->cfgvar[ccc].title,
-	  ui->cfgvar[ccc].lut[(int)rint(ui->cfgvar[ccc].cur)].label);
+	  ui->cfgvar[ccc].lut[(int)rint(val)].label);
       break;
     case CF_INTEGER:
-      if ((lbl = lut_lookup_value(ui->cfgvar[ccc].lut, ui->cfgvar[ccc].cur))) {
+      if ((lbl = lut_lookup_value(ui->cfgvar[ccc].lut, val))) {
 	snprintf(txt, sizeof(txt), "%s: %s",
 	    ui->cfgvar[ccc].title, lbl);
       } else {
 	snprintf(txt, sizeof(txt), "%s: %.0f %s",
-	    ui->cfgvar[ccc].title, ui->cfgvar[ccc].cur, ui->cfgvar[ccc].d->unit);
+	    ui->cfgvar[ccc].title, val, ui->cfgvar[ccc].d->unit);
       }
       break;
     case CF_PERCENT:
-      if ((lbl = lut_lookup_value(ui->cfgvar[ccc].lut, ui->cfgvar[ccc].cur))) {
+      if ((lbl = lut_lookup_value(ui->cfgvar[ccc].lut, val))) {
 	snprintf(txt, sizeof(txt), "%s: %s",
 	    ui->cfgvar[ccc].title, lbl);
       } else {
 	snprintf(txt, sizeof(txt), "%s: %.1f%s",
-	    ui->cfgvar[ccc].title, 100.f * ui->cfgvar[ccc].cur, ui->cfgvar[ccc].d->unit);
+	    ui->cfgvar[ccc].title, 100.f * val, ui->cfgvar[ccc].d->unit);
       }
       break;
     case CF_DEGREE:
-      if ((lbl = lut_lookup_value(ui->cfgvar[ccc].lut, ui->cfgvar[ccc].cur))) {
+      if ((lbl = lut_lookup_value(ui->cfgvar[ccc].lut, val))) {
 	snprintf(txt, sizeof(txt), "%s: %s",
 	    ui->cfgvar[ccc].title, lbl);
       } else {
 	snprintf(txt, sizeof(txt), "%s: %.1f%s",
-	    ui->cfgvar[ccc].title, 360.f * ui->cfgvar[ccc].cur, ui->cfgvar[ccc].d->unit);
+	    ui->cfgvar[ccc].title, 360.f * val, ui->cfgvar[ccc].d->unit);
       }
       break;
     case CF_DECIBEL:
-      if ((lbl = lut_lookup_value(ui->cfgvar[ccc].lut, ui->cfgvar[ccc].cur))) {
+      if ((lbl = lut_lookup_value(ui->cfgvar[ccc].lut, val))) {
 	snprintf(txt, sizeof(txt), "%s: %s",
 	    ui->cfgvar[ccc].title, lbl);
       } else {
 	snprintf(txt, sizeof(txt), "%s: %+.0f%s",
-	    ui->cfgvar[ccc].title, coeff_to_db(ui->cfgvar[ccc].cur, -INFINITY), ui->cfgvar[ccc].d->unit);
+	    ui->cfgvar[ccc].title, coeff_to_db(val, -INFINITY), ui->cfgvar[ccc].d->unit);
       }
       break;
     default:
-      if ((lbl = lut_lookup_value(ui->cfgvar[ccc].lut, ui->cfgvar[ccc].cur))) {
+      if ((lbl = lut_lookup_value(ui->cfgvar[ccc].lut, val))) {
 	snprintf(txt, sizeof(txt), "%s: %s",
 	    ui->cfgvar[ccc].title, lbl);
       } else {
 	snprintf(txt, sizeof(txt), "%s: %.2f%s",
-	    ui->cfgvar[ccc].title, ui->cfgvar[ccc].cur, ui->cfgvar[ccc].d->unit);
+	    ui->cfgvar[ccc].title, val, ui->cfgvar[ccc].d->unit);
       }
       break;
   }
@@ -2435,13 +2491,16 @@ advanced_config_screen(PuglView* view)
 	0, yto, 0.5, mat_w, TA_CENTER_BOTTOM); yto+=.75;
     render_small_text(view,
 	"NOTE: changing any of these parameters re-initializes the synth.",
-	0, yto, 0.5, mat_w, TA_CENTER_BOTTOM); yto+=.75; yto+=.75;
+	0, yto, 0.5, mat_w, TA_CENTER_BOTTOM); yto+=.75; yto+=.5;
     render_small_text(view,
 	"Shift + Click on an element to restore its setting to the default value.",
 	0, yto, 0.5, mat_w, TA_CENTER_BOTTOM); yto+=.75;
     render_small_text(view,
-	"Ctrl + Click on the arrows increases the step-size .",
-	0, yto, 0.5, mat_w, TA_CENTER_BOTTOM);
+	"Click and drag on the button for large changes, click on the arrows for stepwise adjustment.",
+	0, yto, 0.5, mat_w, TA_CENTER_BOTTOM); yto+=.75;
+    render_small_text(view,
+	"Hold Ctrl to alter the granularity (fine graind drag; or large click-steps).",
+	0, yto, 0.5, mat_w, TA_CENTER_BOTTOM); yto+=.75;
 
   }
 
@@ -2459,7 +2518,7 @@ advanced_config_screen(PuglView* view)
       const float ccx = -.95 + .5 * xh;
       const float ccy = -.70 + .25 * yh;
       render_cfg_button(view, ccc, ccx, ccx+.4, ccy, ccy+ .15,
-	  mouseover == ccm + 1, ui->cfgtriover);
+	  mouseover == ccm + 1, ui->cfgtriover, ui->cfgdrag == ccm + 1);
     }
   }
 
@@ -2675,6 +2734,7 @@ static void reset_state(PuglView* view) {
   ui->dir_hidedotfiles = 0;
   ui->mouseover = 0;
   ui->cfgtriover = 0;
+  ui->cfgdrag = 0;
   reset_state_ccbind(view);
 }
 
@@ -3689,7 +3749,20 @@ onMotion(PuglView* view, int x, int y)
   else if (ui->displaymode == 8) { // cfg
     const int trih = ui->cfgtriover;
     ui->cfgtriover = 0;
-    if (MOUSEIN(MENU_CANC, fx, fy)) {
+    if (ui->cfgdrag > 0) {
+      ui->mouseover = ui->cfgdrag;
+      float mult = ui->dragmult;
+      if (puglGetModifiers(view) & PUGL_MOD_CTRL) { mult *= .1; } // DND TODO
+      int delta = rintf (((x - ui->cfgdrag_x) - (y - ui->cfgdrag_y)) * mult);
+      if (delta != 0) {
+	const float oldval = ui->dragval;
+	int ccc = 24 * ui->cfgtab + ui->cfgdrag - 1;
+	ui->dragval = cfg_update_parameter(ui, ccc, ui->dragval, delta);
+	if (oldval != ui->dragval) { puglPostRedisplay(view); }
+	ui->cfgdrag_x = x; ui->cfgdrag_y = y;
+      }
+
+    } else if (MOUSEIN(MENU_CANC, fx, fy)) {
       ui->mouseover = HOVER_MCANC;
     } else if (fy < -.8) { // TAB bar
       int tab = cfg_tabbar(fx);
@@ -3819,6 +3892,16 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
       forge_note(ui, 2, ui->pedal_key + 24, false);
       puglPostRedisplay(view);
     }
+    if (ui->cfgdrag) {
+      int ccc = 24 * ui->cfgtab + ui->cfgdrag - 1;
+      if (ui->dragval != ui->cfgvar[ccc].cur) {
+	ui->cfgvar[ccc].cur = ui->dragval;
+	cfg_tx_update(ui, ccc);
+      }
+      ui->cfgdrag = 0;
+      onMotion(view, x, y);
+      puglPostRedisplay(view);
+    }
 
     ui->dndid = -1;
     ui->upper_key = -1;
@@ -3919,6 +4002,8 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 	int tri = 0;
 	int cfg = cfg_mousepos(fx, fy, &tri);
 
+	assert (ui->cfgdrag == 0);
+
 	if (cfg > 21 && cfg < 24  && ui->cfgtab == 0) {
 	  // special push buttons
 	  cfg_special_button(view, cfg -1);
@@ -3926,6 +4011,10 @@ onMouse(PuglView* view, int button, bool press, int x, int y)
 	  cfg_update_value(view, cfg - 1, 0);
 	} else if (cfg > 0 && tri != 0) {
 	  cfg_update_value(view, cfg - 1, tri * ((puglGetModifiers(view) & PUGL_MOD_CTRL) ? 5 : 1));
+	} else if (cfg > 0 && cfg <= 24) {
+	  ui->cfgdrag_x = x; ui->cfgdrag_y = y;
+	  cfg_start_drag(ui, cfg);
+	  puglPostRedisplay(view);
 	}
       }
       return;
@@ -4350,6 +4439,7 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
   ui->pedal_key = -1;
   ui->keyboard_control = 0;
   ui->cfgtriover = 0;
+  ui->cfgdrag = 0;
   ui->cfgtab = 0;
   ui->highlight_keys = true;
 #ifdef ANIMSTEPS
@@ -4617,7 +4707,9 @@ instantiate(const LV2UI_Descriptor*   descriptor,
       ui->bundlePath = (char*) malloc(strlen(d) + 12);
       strcpy(ui->bundlePath, d);
       strcat(ui->bundlePath, "/Resources/");
+#ifndef NDEBUG
       printf("%s\n", ui->bundlePath);
+#endif
       struct stat fs;
       if (stat(ui->bundlePath, &fs) == 0) {
 	if (!S_ISDIR(fs.st_mode))
