@@ -105,11 +105,11 @@ void initValues (struct b_whirl *w) {
 	w->hbQ =   1.0;
 	w->hbG = -30.0;
 
-	w->drumMicWidth = 0;
-	w->drumMic_dll = 1.0;
-	w->drumMic_dlr = 0.0;
-	w->drumMic_drl = 0.0;
-	w->drumMic_drr = 1.0;
+	w->hornMicWidth = w->drumMicWidth = 0;
+	w->hornMic_hll = w->drumMic_dll = 1.0;
+	w->hornMic_hlr = w->drumMic_dlr = 0.0;
+	w->hornMic_hrl = w->drumMic_drl = 0.0;
+	w->hornMic_hrr = w->drumMic_drr = 1.0;
 
 	w->hornLevel = 0.7;
 	w->leakLevel = 0.15;
@@ -831,16 +831,24 @@ void fsetDrumMicWidth (void *d, const float dw) {
   w->drumMic_dlr = sqrtf(0.f + dwP);
   w->drumMic_drl = sqrtf(0.f + dwN);
   w->drumMic_drr = sqrtf(1.f - dwN);
+}
 
-#if 0 // DEBUG
-#define DBV(X) ((X) > 0 ? 20 * log10f(X) : -INFINITY)
-  printf("LL: %4.1fdB  LR: %4.1fdB  ||  RL: %4.1fdB  RR: %4.1fdB\n",
-      DBV(w->drumMic_dll),
-      DBV(w->drumMic_dlr),
-      DBV(w->drumMic_drl),
-      DBV(w->drumMic_drr)
-      );
-#endif
+void fsetHornMicWidth (void *d, const float hw) {
+  struct b_whirl *w = (struct b_whirl *) d;
+
+  if (w->hornMicWidth == hw) {
+    return;
+  }
+
+  w->hornMicWidth = hw;
+
+  const float hwP = hw > 0.f ? (hw >  1.f ? 1.f :  hw) : 0.f;
+  const float hwN = hw < 0.f ? (hw < -1.f ? 1.f : -hw) : 0.f;
+
+  w->hornMic_hll = sqrtf(1.f - hwP);
+  w->hornMic_hlr = sqrtf(0.f + hwP);
+  w->hornMic_hrl = sqrtf(0.f + hwN);
+  w->hornMic_hrr = sqrtf(1.f - hwN);
 }
 
 /*
@@ -922,6 +930,9 @@ int whirlConfig (struct b_whirl *w, ConfigContext * cfg) {
   else if (getConfigParameter_d ("whirl.drum.width", cfg, &d) == 1) {
     fsetDrumMicWidth(w, d);
   }
+  else if (getConfigParameter_d ("whirl.horn.width", cfg, &d) == 1) {
+    fsetHornMicWidth(w, d);
+  }
   else if (getConfigParameter_d ("whirl.mic.distance", cfg, &d) == 1) {
     w->micDistCm = (float) d;
   }
@@ -1001,6 +1012,9 @@ int whirlConfig (struct b_whirl *w, ConfigContext * cfg) {
   }
   else if (getConfigParameter_dr ("whirl.drum.brakepos", cfg, &d, 0, 1.0) == 1) {
     w->drBrakePos = (double) d;
+  }
+  else if (getConfigParameter_dr ("whirl.horn.mic.angle", cfg, &d, 0, 180.0) == 1) {
+    w->micAngle = 1.0 - (double)d / 180.0;
   }
 
   else {
@@ -1397,40 +1411,46 @@ void whirlProc2 (struct b_whirl *w,
 }
 
 void whirlProc (struct b_whirl *w,
-		const float * inbuffer,
-		float * outbL,
-		float * outbR,
-		size_t bufferLengthSamples)
+                const float * inbuffer,
+                float * outbL,
+                float * outbR,
+                size_t bufferLengthSamples)
 {
-  whirlProc2(w, inbuffer, outbL, outbR,
-      NULL, NULL,
-      NULL, NULL,
-      bufferLengthSamples);
+	whirlProc2(w, inbuffer, outbL, outbR,
+			NULL, NULL,
+			NULL, NULL,
+			bufferLengthSamples);
 }
 
 
 void whirlProc3 (struct b_whirl *w,
-		 const float * inbuffer,
-		 float * outL, float * outR,
-		 float * tmpL, float * tmpR,
-		 size_t bufferLengthSamples) {
+                 const float * inbuffer,
+                 float * outL, float * outR,
+                 float * tmpL, float * tmpR,
+                 size_t bufferLengthSamples)
+{
 
-  size_t i;
-  const float dll = w->drumMic_dll;
-  const float dlr = w->drumMic_dlr;
-  const float drl = w->drumMic_drl;
-  const float drr = w->drumMic_drr;
+	size_t i;
+	const float dll = w->drumMic_dll;
+	const float dlr = w->drumMic_dlr;
+	const float drl = w->drumMic_drl;
+	const float drr = w->drumMic_drr;
+	const float hll = w->hornMic_hll;
+	const float hlr = w->hornMic_hlr;
+	const float hrl = w->hornMic_hrl;
+	const float hrr = w->hornMic_hrr;
 
-  whirlProc2(w,
-      inbuffer, NULL, NULL,
-      outL, outR,
-      tmpL, tmpR,
-      bufferLengthSamples);
+	whirlProc2(w,
+	           inbuffer, NULL, NULL,
+	           outL, outR,
+	           tmpL, tmpR,
+	           bufferLengthSamples);
 
-  for (i = 0; i < bufferLengthSamples; ++i) {
-    outL[i] += tmpL[i] * dll + tmpR[i] * dlr;
-    outR[i] += tmpL[i] * drl + tmpR[i] * drr;
-  }
+	for (i = 0; i < bufferLengthSamples; ++i) {
+		const float tmp = outL[i];
+		outL[i] = outL[i] * hll + outR[i] * hlr + tmpL[i] * dll + tmpR[i] * dlr;
+		outR[i] = tmp     * hrl + outR[i] * hrr + tmpL[i] * drl + tmpR[i] * drr;
+	}
 }
 
 
@@ -1452,9 +1472,11 @@ static const ConfigDoc doc[] = {
   {"whirl.drum.deceleration",  CFG_DOUBLE,  "1.371",    "Time required to decelerate the drum (exponential time constant)", "s", 0.5, 10.0, .1},
   {"whirl.drum.brakepos",      CFG_DOUBLE,  "0",        "Drum stop position. Clockwise position where to stop. (0: free-stop, 1.0:front-center)", "deg", 0.0, 1.0, .025},
   {"whirl.drum.width",         CFG_DOUBLE,  "0",        "Drum stereo width (LV2 only) (-1: left mic, 0: stereo, 1: right mic)", "", -1.0, 1.0, .05},
+  {"whirl.horn.width",         CFG_DOUBLE,  "0",        "Horn stereo width (LV2 only) (-1: left mic, 0: stereo, 1: right mic)", "", -1.0, 1.0, .05},
   {"whirl.horn.radius",        CFG_DOUBLE,  "19.2",     "Horn radius in centimeter", "cm", 9.0, 50.0, 0.5},
   {"whirl.drum.radius",        CFG_DOUBLE,  "22.0",     "Drum radius in centimeter", "cm", 9.0, 50.0, 0.5},
   {"whirl.mic.distance",       CFG_DOUBLE,  "42.0",     "Distance from mic to origin in centimeters", "cm", 9, 100, 1.},
+  {"whirl.horn.mic.angle",     CFG_DOUBLE,  "180.0",    "Horn Stereo Mic angle", "deg", 0.0, 180.0, .5},
   {"whirl.horn.offset.z",      CFG_DOUBLE,  "0.0",      "Offset of horn perpendicular to mic to front, in centimeters", "cm", -20, 20, 1.},
   {"whirl.horn.offset.x",      CFG_DOUBLE,  "0.0",      "Offset of horn towards left mic, in centimeters", "cm", -20, 20, 1.},
   {"whirl.horn.level",         CFG_DECIBEL, "0.7",      "Horn wet-signal volume", "dB", 0, 1.0, 2.0},
