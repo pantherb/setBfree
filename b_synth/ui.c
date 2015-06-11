@@ -2229,10 +2229,10 @@ static void cfg_start_drag(B3ui* ui, int cfg) {
       range = ui->cfgvar[ccc].d->max - ui->cfgvar[ccc].d->min;
       break;
   }
-  assert (range > step);
-  ui->dragmult = (range / step < 10) ? 10 : (range / step);
+  assert (range >= step);
+  ui->dragmult = (range / step < 12) ? 5 : (range / step);
   ui->dragmult /= 350; // px
-  //printf("DRAG S:%f  R: %f   M: %f  1/M : %f\n", step, range, ui->dragmult, 1.0 / ui->dragmult);
+  //printf("DRAG S:%f  R: %f   M: %f  1/M: %f\n", step, range, ui->dragmult, 1.0 / ui->dragmult);
 }
 
 static float cfg_update_parameter(B3ui* ui, int ccc, float val, int delta) {
@@ -2334,14 +2334,18 @@ render_cfg_button(PuglView* view,
     btncol[0] = 0.2; btncol[1] = 0.6; btncol[2] = 0.2;
   }
 
+  const float val = dragging ? ui->dragval : ui->cfgvar[ccc].cur;
+
+  if (val != ui->cfgvar[ccc].dflt) {
+    btncol[2] += 0.15;
+  }
+
   unity_button_color(view, x0, x1, y0, y1, btncol);
   if (!hover_btn) hover_tri = 0;
   unity_tri(view, x0 + .004, y0 + .020, y1 - .020, hover_tri < 0 ? mat_act : mat_tri);
   unity_tri(view, x1 - .004, y1 - .020, y0 + .020, hover_tri > 0 ? mat_act : mat_tri);
 
   char txt[64]; char const * lbl;
-
-  const float val = dragging ? ui->dragval : ui->cfgvar[ccc].cur;
 
   switch(ui->cfgvar[ccc].format) {
     case CF_LISTLUT:
