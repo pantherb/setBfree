@@ -2078,51 +2078,51 @@ static void cfg_initialize(B3ui * ui) {
   CFGP("whirl.drum.acceleration",     "Drum Acceleraton",     CF_NUMBER, NULL);
   CFGP("whirl.drum.deceleration",     "Drum Deceleration",    CF_NUMBER, NULL);
 
-  CFGP("whirl.horn.level",             "Horn Level",          CF_DECIBEL, NULL);
-  CFGP("whirl.horn.leak",              "Horn leakage",        CF_DECIBEL, NULL);
+  CFGP("whirl.horn.level",            "Horn Level",           CF_DECIBEL, NULL);
+  CFGP("whirl.horn.leak",             "Horn leakage",         CF_DECIBEL, NULL);
 
-  CFGP("whirl.horn.width",             "HOrn mic",            CF_NUMBER, x_micwidth);
-  CFGP("whirl.drum.width",             "Drum mic",            CF_NUMBER, x_micwidth);
+  CFGP("whirl.horn.width",            "Horn mic",             CF_NUMBER, x_micwidth);
+  CFGP("whirl.drum.width",            "Drum mic",             CF_NUMBER, x_micwidth);
 
-  CFGP("whirl.horn.radius",            "Horn Radius",         CF_NUMBER, NULL);
-  CFGP("whirl.horn.brakepos",          "Horn Break",          CF_DEGREE, x_brakepos);
-  CFGP("whirl.drum.radius",            "Drum Radius",         CF_NUMBER, NULL);
-  CFGP("whirl.drum.brakepos",          "Drum Break",          CF_DEGREE, x_brakepos);
+  CFGP("whirl.horn.radius",           "Horn Radius",          CF_NUMBER, NULL);
+  CFGP("whirl.horn.brakepos",         "Horn Break",           CF_DEGREE, x_brakepos);
+  CFGP("whirl.drum.radius",           "Drum Radius",          CF_NUMBER, NULL);
+  CFGP("whirl.drum.brakepos",         "Drum Break",           CF_DEGREE, x_brakepos);
 
-  CFGP("whirl.horn.mic.angle",         "Horn mic Agle",       CF_NUMBER, NULL);
+  CFGP("whirl.horn.mic.angle",        "Horn mic Agle",        CF_NUMBER, NULL);
   p+=3;
 
-#if 0
-  CFGP("whirl.horn.offset.x",           "Horn X offset",      CF_NUMBER, NULL);
-  CFGP("whirl.horn.offset.z",           "Horn Z offset",      CF_NUMBER, NULL);
-  CFGP("whirl.mic.distance",            "Mic distance",       CF_NUMBER, NULL);
+#if 1
+  CFGP("whirl.horn.offset.x",         "Horn X offset",        CF_NUMBER, NULL);
+  CFGP("whirl.horn.offset.z",         "Horn Z offset",        CF_NUMBER, NULL);
+  CFGP("whirl.mic.distance",          "Mic distance",         CF_NUMBER, NULL);
 #else
-  CFGP("whirl.mic.distance",            "Mic distance",       CF_NUMBER, NULL);
+  CFGP("whirl.mic.distance",          "Mic distance",         CF_NUMBER, NULL);
   p+=2;
 #endif
 
-  CFGP("whirl.bypass",                  "Bypass",             CF_INTEGER, x_bypass);
+  CFGP("whirl.bypass",                "Bypass",               CF_INTEGER, x_bypass);
 
   p=96;
-  CFGP("whirl.drum.filter.hz",          "Drum Filter Freq",   CF_NUMBER, NULL);
-  CFGP("whirl.drum.filter.gain",        "Drum Filter Gain",   CF_NUMBER, NULL);
-  CFGP("whirl.drum.filter.q",           "Drum Filter Q",      CF_NUMBER, NULL);
-  CFGP("whirl.drum.filter.type",        "Type",               CF_INTEGER, x_filtertype);
+  CFGP("whirl.drum.filter.hz",        "Drum Filter Freq",     CF_NUMBER, NULL);
+  CFGP("whirl.drum.filter.gain",      "Drum Filter Gain",     CF_NUMBER, NULL);
+  CFGP("whirl.drum.filter.q",         "Drum Filter Q",        CF_NUMBER, NULL);
+  CFGP("whirl.drum.filter.type",      "Type",                 CF_INTEGER, x_filtertype);
 
-  CFGP("whirl.horn.filter.a.hz",        "Horn Filter 1 Freq", CF_NUMBER, NULL);
-  CFGP("whirl.horn.filter.a.gain",      "Horn Filter 1 Gain", CF_NUMBER, NULL);
-  CFGP("whirl.horn.filter.a.q",         "Horn Filter 1 Q",    CF_NUMBER, NULL);
-  CFGP("whirl.horn.filter.a.type",      "Type",               CF_INTEGER, x_filtertype);
+  CFGP("whirl.horn.filter.a.hz",      "Horn Filter 1 Freq",   CF_NUMBER, NULL);
+  CFGP("whirl.horn.filter.a.gain",    "Horn Filter 1 Gain",   CF_NUMBER, NULL);
+  CFGP("whirl.horn.filter.a.q",       "Horn Filter 1 Q",      CF_NUMBER, NULL);
+  CFGP("whirl.horn.filter.a.type",    "Type",                 CF_INTEGER, x_filtertype);
 
-  CFGP("whirl.horn.filter.b.hz",        "Horn Filter 2 Freq", CF_NUMBER, NULL);
-  CFGP("whirl.horn.filter.b.gain",      "Horn Filter 2 Gain", CF_NUMBER, NULL);
-  CFGP("whirl.horn.filter.b.q",         "Horn Filter 2 Q",    CF_NUMBER, NULL);
-  CFGP("whirl.horn.filter.b.type",      "Type",               CF_INTEGER, x_filtertype);
+  CFGP("whirl.horn.filter.b.hz",      "Horn Filter 2 Freq",   CF_NUMBER, NULL);
+  CFGP("whirl.horn.filter.b.gain",    "Horn Filter 2 Gain",   CF_NUMBER, NULL);
+  CFGP("whirl.horn.filter.b.q",       "Horn Filter 2 Q",      CF_NUMBER, NULL);
+  CFGP("whirl.horn.filter.b.type",    "Type",                 CF_INTEGER, x_filtertype);
   //CFGP("", "", "", .0, .5);
 
   p+=4;
   p+=4;
-  CFGP("reverb.inputgain",              "Reverb Gain",        CF_DECIBEL, NULL);
+  CFGP("reverb.inputgain",            "Reverb Gain",          CF_DECIBEL, NULL);
 
 }
 
