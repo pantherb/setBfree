@@ -1976,7 +1976,7 @@ static const b3scalepoint x_brakepos[] = {
   {0, NULL}
 };
 
-static const b3scalepoint x_drumwidth[] = {
+static const b3scalepoint x_micwidth[] = {
   {-1, "mono (left)"},
   { 0, "stereo"},
   { 1, "mono (right)"},
@@ -2069,15 +2069,16 @@ static void cfg_initialize(B3ui * ui) {
   CFGP("whirl.horn.level",             "Horn Level",          CF_DECIBEL, NULL);
   CFGP("whirl.horn.leak",              "Horn leakage",        CF_DECIBEL, NULL);
 
-  p+=1;
-  CFGP("whirl.drum.width",             "Drum mic",            CF_NUMBER, x_drumwidth);
+  CFGP("whirl.horn.width",             "HOrn mic",            CF_NUMBER, x_micwidth);
+  CFGP("whirl.drum.width",             "Drum mic",            CF_NUMBER, x_micwidth);
 
   CFGP("whirl.horn.radius",            "Horn Radius",         CF_NUMBER, NULL);
   CFGP("whirl.horn.brakepos",          "Horn Break",          CF_DEGREE, x_brakepos);
   CFGP("whirl.drum.radius",            "Drum Radius",         CF_NUMBER, NULL);
   CFGP("whirl.drum.brakepos",          "Drum Break",          CF_DEGREE, x_brakepos);
 
-  p+=4;
+  CFGP("whirl.horn.mic.angle",         "Horn mic Agle",       CF_NUMBER, NULL);
+  p+=3;
 
 #if 0
   CFGP("whirl.horn.offset.x",           "Horn X offset",      CF_NUMBER, NULL);
