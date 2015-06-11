@@ -87,6 +87,7 @@ typedef enum {
 	B3W_GUINOTIFY,
 	B3W_LINKSPEED, // 40
 	B3W_MICANGLE,
+	B3W_HORNWIDTH,
 } PortIndex;
 
 typedef struct {
@@ -108,7 +109,7 @@ typedef struct {
 	float *drum_brake, *drum_accel, *drum_decel, *drum_slow, *drum_fast;
 
 	float *horn_level, *drum_level;
-	float *drum_width, *horn_leak;
+	float *drum_width, *horn_leak, *horn_width;
 
 	float *horn_radius, *drum_radius;
 	float *horn_xoff, *horn_zoff, *mic_dist, *mic_angle;
@@ -128,7 +129,7 @@ typedef struct {
 	float o_horn_brake, o_horn_accel, o_horn_decel, o_horn_slow, o_horn_fast;
 	float o_drum_brake, o_drum_accel, o_drum_decel, o_drum_slow, o_drum_fast;
 	float o_horn_level, o_drum_level;
-	float o_drum_width, o_horn_leak;
+	float o_drum_width, o_horn_leak, o_horn_width;
 
 	float o_horn_radius, o_drum_radius;
 	float o_horn_xoff, o_horn_zoff, o_mic_dist, o_mic_angle;
@@ -138,6 +139,8 @@ typedef struct {
 	// cached coefficients (for dB values)
 	float x_drum_width;
 	float x_dll, x_dlr, x_drl, x_drr;
+	float x_horn_width;
+	float x_hll, x_hlr, x_hrl, x_hrr;
 
 	// fade in/out for re-configuration
 	bool     fade_dir; // true: fade-out, false: fade-in
@@ -219,6 +222,10 @@ instantiate (const LV2_Descriptor*     descriptor,
 	b3w->x_dll = b3w->x_drr = 1.0;
 	b3w->x_dlr = b3w->x_drl = 0.0;
 
+	b3w->x_horn_width = 0.0;
+	b3w->x_hll = b3w->x_hrr = 1.0;
+	b3w->x_hlr = b3w->x_hrl = 0.0;
+
 	return (LV2_Handle)b3w;
 }
 
@@ -266,6 +273,7 @@ connect_port (LV2_Handle instance,
     case B3W_HORNLVL:     b3w->horn_level = (float*)data; break;
     case B3W_DRUMLVL:     b3w->drum_level = (float*)data; break;
     case B3W_DRUMWIDTH:   b3w->drum_width = (float*)data; break;
+    case B3W_HORNWIDTH:   b3w->horn_width = (float*)data; break;
 
     case B3W_HORNLEAK:    b3w->horn_leak = (float*)data; break;
     case B3W_HORNRADIUS:  b3w->horn_radius = (float*)data; break;
@@ -439,10 +447,13 @@ static void process (B3W* b3w, uint32_t n_samples, float const * const in, float
 	// mixdown
 	const float hl = db_to_coefficient (*b3w->horn_level);
 	const float dl = db_to_coefficient (*b3w->drum_level);
+
 	const float dw = *b3w->drum_width - 1.f;
+	const float hw = b3w->horn_width ? *b3w->horn_width - 1.f : 0.0;
 
 	b3w->o_horn_level += lpf * (hl - b3w->o_horn_level) + 1e-15;
 	b3w->o_drum_level += lpf * (dl - b3w->o_drum_level) + 1e-15;
+	b3w->o_horn_width += lpf * (hw - b3w->o_horn_width) + 1e-15;
 	b3w->o_drum_width += lpf * (dw - b3w->o_drum_width) + 1e-15;
 
 	// re-calc coefficients only when changed
@@ -458,16 +469,32 @@ static void process (B3W* b3w, uint32_t n_samples, float const * const in, float
 		b3w->x_drr = sqrtf (1.f - dwN);
 	}
 
+	if (fabsf (b3w->x_horn_width - b3w->o_horn_width) > 1e-8) {
+		b3w->x_horn_width = b3w->o_horn_width;
+
+		const float hwF = b3w->o_horn_width;
+		const float hwP = hwF > 0.f ? (hwF >  1.f ? 1.f :  hwF) : 0.f;
+		const float hwN = hwF < 0.f ? (hwF < -1.f ? 1.f : -hwF) : 0.f;
+		b3w->x_hll = sqrtf (1.f - hwP);
+		b3w->x_hlr = sqrtf (0.f + hwP);
+		b3w->x_hrl = sqrtf (0.f + hwN);
+		b3w->x_hrr = sqrtf (1.f - hwN);
+	}
+
 	// localize variable, small loop
 	const float dll = b3w->o_drum_level * b3w->x_dll;
 	const float dlr = b3w->o_drum_level * b3w->x_dlr;
 	const float drl = b3w->o_drum_level * b3w->x_drl;
 	const float drr = b3w->o_drum_level * b3w->x_drr;
-	const float hll = b3w->o_horn_level;
-	const float hrr = b3w->o_horn_level;
+
+	const float hll = b3w->o_horn_level * b3w->x_hll;
+	const float hlr = b3w->o_horn_level * b3w->x_hlr;
+	const float hrl = b3w->o_horn_level * b3w->x_hrl;
+	const float hrr = b3w->o_horn_level * b3w->x_hrr;
+
 	for (i = 0; i < n_samples; ++i) {
-		outL [i] = horn_left[i]  * hll + drum_left[i] * dll + drum_right[i] * dlr;
-		outR [i] = horn_right[i] * hrr + drum_left[i] * drl + drum_right[i] * drr;
+		outL [i] = horn_left[i] * hll + horn_right[i] * hlr + drum_left[i] * dll + drum_right[i] * dlr;
+		outR [i] = horn_left[i] * hrl + horn_right[i] * hrr + drum_left[i] * drl + drum_right[i] * drr;
 	}
 }
 

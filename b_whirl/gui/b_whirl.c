@@ -82,6 +82,7 @@ typedef enum {
 	B3W_GUINOTIFY,
 	B3W_LINKSPEED, // 40
 	B3W_MICANGLE,
+	B3W_HORNWIDTH,
 } PortIndex;
 
 
