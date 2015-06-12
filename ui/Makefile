@@ -22,7 +22,6 @@ else
   else
     LOADLIBES=-lrt
     UILIBS+=-ldl
-    endif
     ifneq ($(ENABLE_CONVOLUTION), yes)
       override CFLAGS+=-std=c99
     endif
