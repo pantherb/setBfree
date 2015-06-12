@@ -1681,7 +1681,7 @@ static float tbl_x0 (struct rob_table *rt, int c0) {
 	return x0 - .5;
 }
 
-static RobWidget* tbl_cld (struct rob_table *rt, int c, int r) {
+static RobWidget* tbl_cld (struct rob_table *rt, const int c, const int r) {
 	for (unsigned int i=0; i < rt->nchilds; ++i) {
 		struct rob_table_child *tc = &rt->chld[i];
 		if (tc->top == r && tc->left == c) {
@@ -1691,14 +1691,14 @@ static RobWidget* tbl_cld (struct rob_table *rt, int c, int r) {
 	return NULL;
 }
 
-static float tbl_yt (struct rob_table *rt, int c, int r, int e) {
+static float tbl_yt (struct rob_table *rt, const int c, const int r, const unsigned int e) {
 	RobWidget *rw = tbl_cld (rt, c, r);
 	assert (rw && rw->childcount > e);
 	RobWidget *cld = rw->children[e];
 	return rw->area.y + cld->area.y;
 }
 
-static float tbl_yb (struct rob_table *rt, int c, int r, int e) {
+static float tbl_yb (struct rob_table *rt, const int c, const int r, const unsigned int e) {
 	RobWidget *rw = tbl_cld (rt, c, r);
 	assert (rw && rw->childcount > e);
 	RobWidget *cld = rw->children[rw->childcount - (e + 1)];
