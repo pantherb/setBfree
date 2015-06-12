@@ -69,7 +69,7 @@ setBfreeUI$(EXE_EXT): $(RW)jackwrap.c $(LV2OBJ) $(OSXJACKWRAP) $(RW)weakjack/wea
 
 # windows icon
 .SUFFFIXES: .rc
-win_icon.rc.o: win_icon.rc ../doc/setbfree.ico
+win_icon.rc.o: win_icon.rc ../img/setbfree.ico
 	$(WINDRES) -o $@ $<
 
 install: $(targets)

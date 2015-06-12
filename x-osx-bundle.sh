@@ -48,7 +48,8 @@ cp -v b_whirl/*.dylib ${LV2TMPDIR}/b_whirl.lv2/
 #############################################################################
 # Create LOCAL APP DIR
 export PRODUCT_NAME="setBfree"
-export RSRC_DIR="$(pwd)/doc/"
+export RSRC_DIR="$(pwd)/img/"
+export DOC_DIR="$(pwd)/doc/"
 export APPNAME="${PRODUCT_NAME}.app"
 
 export BUNDLEDIR=`mktemp -d -t bundle`
@@ -154,7 +155,7 @@ cp -a ${TARGET_BUILD_DIR} "${MNTPATH}/${APPNAME}"
 cp -a ${BUNDLEDIR}/* "${MNTPATH}/"
 cp -a ${LV2TMPDIR}/b_synth.lv2 "${MNTPATH}/b_synth.lv2"
 cp -a ${LV2TMPDIR}/b_whirl.lv2 "${MNTPATH}/b_whirl.lv2"
-cp ${RSRC_DIR}/osx_readme.txt "${MNTPATH}/README.txt"
+cp ${DOC_DIR}/osx_readme.txt "${MNTPATH}/README.txt"
 
 mkdir "${MNTPATH}/.background"
 cp -vi ${DMGBACKGROUND} "${MNTPATH}/.background/dmgbg.png"

@@ -83,7 +83,7 @@ fi
 
 cp -v COPYING "$DESTDIR/share/"
 cp -v ui/setBfreeUI.exe "$DESTDIR/"
-cp -v doc/setbfree.ico "$DESTDIR/share/"
+cp -v img/setbfree.ico "$DESTDIR/share/"
 #cp -v doc/win_readme.txt "${DESTDIR}/README.txt"
 
 echo " === complete"

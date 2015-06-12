@@ -57,10 +57,12 @@ endif
 
 
 override CFLAGS+=`pkg-config --cflags jack`
-ifeq ($(WEAKJACK),)
-  LOADLIBES+=`pkg-config --libs jack`
-else
+
+ifeq ($(USEWEAKJACK),1)
+  CFLAGS+=-DUSE_WEAK_JACK -I$(RW)
   LOADLIBES+=-ldl
+else
+  LOADLIBES+=`pkg-config --libs jack`
 endif
 
 ifeq ($(shell pkg-config --exists sndfile \
