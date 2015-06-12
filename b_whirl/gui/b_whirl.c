@@ -705,13 +705,16 @@ static bool horn_expose_event (RobWidget* rw, cairo_t* cr, cairo_rectangle_t *ev
 	cairo_stroke (cr);
 #endif
 
-	const float cy = rintf (h * .5f);
-	const float cx = rintf (w * .5f);
+	const float xoff = robtk_dial_get_value (ui->s_xzmpos[0]) / 20.0;
+	const float zoff = robtk_dial_get_value (ui->s_xzmpos[1]) / 20.0;
 
-	const float sc = w < 1.5 * h ? w : 1.5 * h;
+	const float cx = rintf (w * .5f + w * .05 * xoff);
+	const float cy = rintf (h * .5f + h * .05 * zoff);
 
-	const float ww = sc * .42f;
-	const float hh = sc * .14f;
+	const float sc = (w < 1.5 * h ? w : 1.5 * h) * (1 + .05 * zoff);
+
+	const float ww = sc * .38f;
+	const float hh = sc * .13f;
 	const float rd = sc * .10f;
 
 	const float sa = sinf (ang);
@@ -723,6 +726,13 @@ static bool horn_expose_event (RobWidget* rw, cairo_t* cr, cairo_rectangle_t *ev
 	const float bw = r0 * 3.f;
 	const float bx = -bw * sa * .5f;
 	const float xs = 1.f - .5f * fabsf (sa);
+
+	// sep line
+	CairoSetSouerceRGBA (c_blk);
+	cairo_set_line_width (cr, 1);
+	cairo_move_to (cr, w * .1, rint (h * .5f - y0 * 3.35) + .5);
+	cairo_line_to (cr, w * .9, rint (h * .5f - y0 * 3.35) + .5);
+	cairo_stroke (cr);
 
 	cairo_matrix_t matrix;
 
@@ -824,13 +834,6 @@ static bool horn_expose_event (RobWidget* rw, cairo_t* cr, cairo_rectangle_t *ev
 	}
 
 	cairo_pattern_destroy (hornpr);
-
-
-	CairoSetSouerceRGBA (c_blk);
-	cairo_set_line_width (cr, 1);
-	cairo_move_to (cr, -w * .4, rint (-y0 * 3.2) + .5);
-	cairo_line_to (cr,  w * .4, rint (-y0 * 3.2) + .5);
-	cairo_stroke (cr);
 
 	/* speed blur */
 	if (spd > 150) {
@@ -1181,6 +1184,14 @@ static void update_ang (WhirlUI *ui, const int which, const float val) {
 	queue_draw (ui->spk_dpy[which]);
 }
 
+static void reexpose_bg (WhirlUI *ui) {
+	if (ui->gui_bg) {
+		cairo_surface_destroy (ui->gui_bg);
+		ui->gui_bg = NULL;
+	}
+	queue_draw (ui->rw);
+}
+
 /***  value changed calllbacks ***/
 
 #define SELECT_CALLBACK(name, widget, port, hook) \
@@ -1237,10 +1248,10 @@ DIAL_CALLBACK(gain2,  fgain[2],    B3W_FILTDGAIN, update_eq (ui, 2));
 DIAL_CALLBACK(hrad,   radius[0],   B3W_HORNRADIUS, );
 DIAL_CALLBACK(drad,   radius[1],   B3W_DRUMRADIUS, );
 
-DIAL_CALLBACK(hornx,  xzmpos[0],   B3W_HORNOFFX, );
-DIAL_CALLBACK(hornz,  xzmpos[1],   B3W_HORNOFFZ, );
+DIAL_CALLBACK(hornx,  xzmpos[0],   B3W_HORNOFFX, queue_draw (ui->spk_dpy[0]););
+DIAL_CALLBACK(hornz,  xzmpos[1],   B3W_HORNOFFZ, queue_draw (ui->spk_dpy[0]););
 DIAL_CALLBACK(micd,   xzmpos[2],   B3W_MICDIST, );
-DIAL_CALLBACK(mica,   xzmpos[3],   B3W_MICANGLE, );
+DIAL_CALLBACK(mica,   xzmpos[3],   B3W_MICANGLE, reexpose_bg (ui););
 
 DIAL_CALLBACK(dwidth, drumwidth,   B3W_DRUMWIDTH, );
 DIAL_CALLBACK(hwidth, hornwidth,   B3W_HORNWIDTH, );
@@ -1623,10 +1634,7 @@ static void prepare_faceplates (WhirlUI* ui) {
 static void bg_size_allocate (RobWidget* rw, int w, int h) {
 	WhirlUI *ui = (WhirlUI*)((GlMetersLV2UI*)rw->top)->ui;
 	rtable_size_allocate (rw, w, h);
-	if (ui->gui_bg) {
-		cairo_surface_destroy (ui->gui_bg);
-		ui->gui_bg = NULL;
-	}
+	reexpose_bg (ui);
 #if 0
 	printf ("GUI SIZE: %d %d\n", w, h); // XXX
 #endif
@@ -1998,6 +2006,33 @@ static void draw_bg (WhirlUI *ui, const int w, const int h, struct rob_table *rt
 	CairoSetSouerceRGBA (c_blk);
 	cairo_stroke (cr);
 
+	// middle brace
+	cairo_arc (cr, 0, 0, rd,                .45 * M_PI, .55 * M_PI);
+	cairo_arc_negative (cr, 0, -rd/.50, rs, .55 * M_PI, .45 * M_PI);
+	cairo_close_path (cr);
+	cairo_set_source (cr, spat[0]);
+	cairo_fill_preserve (cr);
+	cairo_set_source_rgba (cr, .0, .0, .0, .6);
+	cairo_fill (cr);
+
+	// right brace
+	cairo_arc (cr, 0, 0, rd,                .12 * M_PI, .22 * M_PI);
+	cairo_arc_negative (cr, 0, -rd/.50, rs, .22 * M_PI, .12 * M_PI);
+	cairo_close_path (cr);
+	cairo_set_source (cr, spat[0]);
+	cairo_fill_preserve (cr);
+	cairo_set_source_rgba (cr, .0, .0, .0, .6);
+	cairo_fill (cr);
+
+	// left brace
+	cairo_arc (cr, 0, 0, rd,                .78 * M_PI, .88 * M_PI);
+	cairo_arc_negative (cr, 0, -rd/.50, rs, .88 * M_PI, .78 * M_PI);
+	cairo_close_path (cr);
+	cairo_set_source (cr, spat[0]);
+	cairo_fill_preserve (cr);
+	cairo_set_source_rgba (cr, .0, .0, .0, .7);
+	cairo_fill (cr);
+
 	// magnet
 	cairo_arc (cr, 0, -rd/.50, rs, 0,  M_PI);
 	cairo_line_to (cr, -rs, -rd/.30);
@@ -2028,7 +2063,8 @@ static void draw_bg (WhirlUI *ui, const int w, const int h, struct rob_table *rt
 	cairo_stroke (cr);
 
 	// bottom mount
-	cairo_arc (cr, 0, 0, rd + 1, 0, M_PI);
+	CairoSetSouerceRGBA (c_blk);
+	cairo_arc (cr, 0, -1, rd + 1, 0, M_PI);
 	cairo_arc_negative (cr, 0, 30, rd + 1, M_PI, 0);
 	cairo_close_path (cr);
 	CairoSetSouerceRGBA (c_blk);
@@ -2039,19 +2075,32 @@ static void draw_bg (WhirlUI *ui, const int w, const int h, struct rob_table *rt
 	cairo_pattern_destroy (spat[0]);
 	cairo_pattern_destroy (spat[1]);
 
+	y0 = rintf (tbl_ym (rt, 5, 8));
+	x0 = rintf (tbl_x0 (rt, 4));
+	write_text_full (cr, "not to scale", ui->font[1], x0, y0, 1.5 * M_PI, 5, c_gry);
+
+
+	/* *** microphone positions ***/
+	// TODO separate these from the main static background
 	// drum mics
 	y0 = rintf (tbl_ym (rt, 7, 8));
-	x0 = rintf (cx - sc * .5);
+	x0 = rintf (cx - sc * .5); // re-use pos from speaker
 	write_text_full (cr, "L", ui->font[1], x0, y0,  0, 3, c_wht);
 	x0 = rintf (cx + sc * .5);
 	write_text_full (cr, "R", ui->font[1], x0, y0,  0, 1, c_wht);
 
 	// horn mics
-	y0 = rintf (tbl_ym (rt, 4, 6));
-	x0 = rintf (cx - sc * .5);
-	write_text_full (cr, "L", ui->font[1], x0, y0,  0, 3, c_wht);
-	x0 = rintf (cx + sc * .5);
-	write_text_full (cr, "R", ui->font[1], x0, y0,  0, 1, c_wht);
+	const float mang = robtk_dial_get_value (ui->s_xzmpos[3]) * M_PI / 360.f;
+	const float hcy = rintf (tbl_ym (rt, 4, 6));
+	const float hcx = rintf (tbl_xm (rt, 3, 4));
+	const float hsc = ui->spk_dpy[0]->area.width < 1.5 * ui->spk_dpy[0]->area.height ? ui->spk_dpy[0]->area.width : 1.5 *  ui->spk_dpy[0]->area.height;
+	const float hww = hsc * .45f;
+	const float hhh = hsc * .23f;
+	y0 = hcy - hhh * cos (mang);
+	x0 = hcx - hww * sin (mang);
+	write_text_full (cr, "L", ui->font[1], x0, y0,  0, 1, c_wht);
+	x0 = hcx + hww * sin (mang);
+	write_text_full (cr, "R", ui->font[1], x0, y0,  0, 3, c_wht);
 
 	write_text_full (cr, ui->nfo, ui->font[0], 22, h - 21, 1.5 * M_PI, 6, c_gry);
 
@@ -2462,8 +2511,8 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 	ui->btn_adv = robtk_cbtn_new ("Unlock", GBT_LED_LEFT, false);
 
 	ui->lbl_adv[0] = robtk_lbl_new ("<markup><b>Advanced</b>\nChanging these\nparameters\nre-reinitializes\nthe DSP.\nExpect clickless\nshort fades.</markup>");
-	ui->lbl_adv[1] = robtk_lbl_new ("Horn Mic\nDist.:");
-	ui->lbl_adv[2] = robtk_lbl_new ("Horn Mic\nAngle:");
+	ui->lbl_adv[1] = robtk_lbl_new ("Mic \nDistance:");
+	ui->lbl_adv[2] = robtk_lbl_new ("Horn\nMic Angle:");
 	ui->lbl_adv[3] = robtk_lbl_new ("Horn\nRadius:");
 	ui->lbl_adv[4] = robtk_lbl_new ("Drum\nRadius:");
 	ui->lbl_adv[5] = robtk_lbl_new ("Horn\nPos L/R:");
@@ -2491,11 +2540,11 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 	robtk_dial_set_detent_default (ui->s_radius[0], true);
 	robtk_dial_set_detent_default (ui->s_radius[1], true);
 
-	robtk_lbl_set_alignment (ui->lbl_adv[0], .5, 0);
 	for (int j = 0; j < 7; ++j) {
-		robtk_lbl_set_alignment (ui->lbl_adv[j], .5, 0);
+		robtk_lbl_set_alignment (ui->lbl_adv[j], 1, .5);
 		LABEL_BACKGROUND(lbl_adv[j], 0, 0, 0, 0);
 	}
+	robtk_lbl_set_alignment (ui->lbl_adv[0], .5, 0);
 
 	for (int j = 0; j < 3; ++j) {
 		ui->sep_adv[j] = robtk_sep_new (FALSE);
