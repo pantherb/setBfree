@@ -23,6 +23,9 @@ if test -f $HOME/.sbfbuild.cfg; then
 	. $HOME/.sbfbuild.cfg
 fi
 
+export PKG_CONFIG_PATH=$HOME/src/rtk_stack/lib/pkgconfig:${PKG_CONFIG_PATH}
+export PKG_UI_FLAGS=--static
+
 make clean
 make \
 	ENABLE_CONVOLUTION=no \
@@ -33,7 +36,6 @@ make \
 	SUBDIRS="b_synth b_whirl ui" $@ \
 	|| exit
 
-# zip-up LV2
 export LV2TMPDIR=`mktemp -d -t lv2tmp`
 trap "rm -rf $LV2TMPDIR" EXIT
 
@@ -45,44 +47,20 @@ mkdir -p ${LV2TMPDIR}/b_whirl.lv2/
 cp -v b_whirl/*.ttl ${LV2TMPDIR}/b_whirl.lv2/
 cp -v b_whirl/*.dylib ${LV2TMPDIR}/b_whirl.lv2/
 
-#############################################################################
-# Create LOCAL APP DIR
-export PRODUCT_NAME="setBfree"
-export RSRC_DIR="$(pwd)/img/"
-export DOC_DIR="$(pwd)/doc/"
-export APPNAME="${PRODUCT_NAME}.app"
 
-export BUNDLEDIR=`mktemp -d -t bundle`
-trap "rm -rf $BUNDLEDIR $LV2TMPDIR" EXIT
 
-export TARGET_BUILD_DIR="${BUNDLEDIR}/${APPNAME}/"
-export TARGET_CONTENTS="${TARGET_BUILD_DIR}Contents/"
-
-mkdir ${TARGET_BUILD_DIR}
-mkdir ${TARGET_BUILD_DIR}Contents
-mkdir ${TARGET_BUILD_DIR}Contents/MacOS
-mkdir ${TARGET_BUILD_DIR}Contents/Resources
+##############################################################################
+##############################################################################
+##############################################################################
+function bundleit {
 
 if test -n "$ZIPUP" ; then # build a standalone lv2 zip
 	cd ${LV2TMPDIR}
 	rm -f  ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip
-	zip -r ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip b_synth.lv2/
+	zip -r ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip b_${LV2BUNDLE}/
 	ls -l ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip
 	cd -
 fi
-
-#############################################################################
-# DEPLOY TO LOCAL APP DIR
-
-cp -v ui/setBfreeUI ${TARGET_CONTENTS}MacOS/setBfreeUI
-cp -v pgm/default.pgm ${TARGET_CONTENTS}Resources/
-cp -v cfg/default.cfg ${TARGET_CONTENTS}Resources/
-cp -v cfg/bcf2000.cfg ${TARGET_CONTENTS}Resources/
-cp -v cfg/oxy61.cfg ${TARGET_CONTENTS}Resources/
-cp -v cfg/K2500.cfg ${TARGET_CONTENTS}Resources/
-cp -v cfg/KB3X42_1.K25 ${TARGET_CONTENTS}Resources/
-cp -v ${RSRC_DIR}/${PRODUCT_NAME}.icns ${TARGET_CONTENTS}Resources/
-#cp -av b_conv/ir ${TARGET_CONTENTS}Resources/
 
 echo "APPL~~~~" > ${TARGET_CONTENTS}PkgInfo
 
@@ -92,9 +70,9 @@ cat > ${TARGET_CONTENTS}Info.plist << EOF
 <plist version="1.0">
 <dict>
 	<key>CFBundleExecutable</key>
-	<string>setBfreeUI</string>
+	<string>${MAIN_BINARY}</string>
 	<key>CFBundleName</key>
-	<string>setBfree</string>
+	<string>${PRODUCT_NAME}</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleSignature</key>
@@ -102,7 +80,7 @@ cat > ${TARGET_CONTENTS}Info.plist << EOF
 	<key>CFBundleVersion</key>
 	<string>1.0</string>
 	<key>CFBundleIconFile</key>
-	<string>setBfree</string>
+	<string>${PRODUCT_NAME}</string>
 	<key>CSResourcesFileMapped</key>
 	<true/>
 </dict>
@@ -113,17 +91,13 @@ EOF
 if test -n "$LV2INSTALLER"; then
 	$LV2INSTALLER
 	DMGPOSA="set position of item \"LV2Installer.app\" of container window to {100, 260}"
-	DMGPOSB="set position of item \"b_synth.lv2\" of container window to {205, 300}"
-	DMGPOSC="set position of item \"b_whirl.lv2\" of container window to {205, 210}"
+	DMGPOSB="set position of item \"$LV2BUNDLE\" of container window to {205, 260}"
 else
-	DMGPOSA="set position of item \"b_synth.lv2\" of container window to {100, 260}"
-	DMGPOSB="set position of item \"b_whirl.lv2\" of container window to {205, 260}"
-	DMGPOSC=""
+	DMGPOSA="set position of item \"$LV2BUNDLE\" of container window to {100, 260}"
+	DMGPOSB=""
 fi
 
-##############################################################################
-#roll a DMG
-
+# roll a DMG
 UC_DMG="${OUTDIR}${PRODUCT_NAME}-${VERSION}.dmg"
 
 DMGBACKGROUND=${RSRC_DIR}dmgbg.png
@@ -153,9 +127,8 @@ mount -t hfs -o nobrowse "${DiskDevice}" "${MNTPATH}"
 
 cp -a ${TARGET_BUILD_DIR} "${MNTPATH}/${APPNAME}"
 cp -a ${BUNDLEDIR}/* "${MNTPATH}/"
-cp -a ${LV2TMPDIR}/b_synth.lv2 "${MNTPATH}/b_synth.lv2"
-cp -a ${LV2TMPDIR}/b_whirl.lv2 "${MNTPATH}/b_whirl.lv2"
-cp ${DOC_DIR}/osx_readme.txt "${MNTPATH}/README.txt"
+cp -a ${LV2TMPDIR}/${LV2BUNDLE} "${MNTPATH}/"
+cp ${README} "${MNTPATH}/README.txt"
 
 mkdir "${MNTPATH}/.background"
 cp -vi ${DMGBACKGROUND} "${MNTPATH}/.background/dmgbg.png"
@@ -188,7 +161,6 @@ echo '
 	   set position of item "Applications" of container window to {310, 100}
 	   '${DMGPOSA}'
 	   '${DMGPOSB}'
-	   '${DMGPOSC}'
 	   set position of item "README.txt" of container window to {310, 260}
 	   close
 	   open
@@ -220,7 +192,7 @@ hdiutil eject "${DiskDevice}" || true
 echo "compressing Image ..."
 hdiutil convert -format UDZO "${TMPDMG}" -imagekey zlib-level=9 -o "${UC_DMG}"
 # Delete the temporary files
-rm "$TMPDMG"
+rm -f "$TMPDMG" "${TMPDMG}"
 rm -rf "$MNTPATH"
 
 echo "setting file icon ..."
@@ -231,7 +203,7 @@ DeRez -only icns ${ICNSTMP}.icns > ${ICNSTMP}.rsrc
 Rez -append ${ICNSTMP}.rsrc -o "$UC_DMG"
 SetFile -a C "$UC_DMG"
 
-rm ${ICNSTMP}.icns ${ICNSTMP}.rsrc
+rm -f ${ICNSTMP}.icns ${ICNSTMP}.rsrc $ICNSTMP
 rm -rf $BUNDLEDIR
 
 echo
@@ -240,3 +212,74 @@ ls -l "$UC_DMG"
 echo "Done."
 
 echo "$VERSION" > ${OUTDIR}/${PRODUCT_NAME}.latest.txt
+}
+##############################################################################
+##############################################################################
+##############################################################################
+
+
+
+#############################################################################
+# Create LOCAL APP DIR
+export PRODUCT_NAME="setBfree"
+export LV2BUNDLE="b_synth.lv2"
+export RSRC_DIR="$(pwd)/img/"
+export README="$(pwd)/doc/osx_readme.txt"
+export APPNAME="${PRODUCT_NAME}.app"
+export MAIN_BINARY=setBfreeUI
+
+export BUNDLEDIR=`mktemp -d -t bundle`
+trap "rm -rf $BUNDLEDIR $LV2TMPDIR" EXIT
+
+export TARGET_BUILD_DIR="${BUNDLEDIR}/${APPNAME}/"
+export TARGET_CONTENTS="${TARGET_BUILD_DIR}Contents/"
+
+mkdir ${TARGET_BUILD_DIR}
+mkdir ${TARGET_BUILD_DIR}Contents
+mkdir ${TARGET_BUILD_DIR}Contents/MacOS
+mkdir ${TARGET_BUILD_DIR}Contents/Resources
+#############################################################################
+# DEPLOY TO LOCAL APP DIR
+
+cp -v ui/setBfreeUI ${TARGET_CONTENTS}MacOS/${MAIN_BINARY}
+cp -v pgm/default.pgm ${TARGET_CONTENTS}Resources/
+cp -v cfg/default.cfg ${TARGET_CONTENTS}Resources/
+cp -v cfg/bcf2000.cfg ${TARGET_CONTENTS}Resources/
+cp -v cfg/oxy61.cfg ${TARGET_CONTENTS}Resources/
+cp -v cfg/K2500.cfg ${TARGET_CONTENTS}Resources/
+cp -v cfg/KB3X42_1.K25 ${TARGET_CONTENTS}Resources/
+cp -v ${RSRC_DIR}/${PRODUCT_NAME}.icns ${TARGET_CONTENTS}Resources/
+#cp -av b_conv/ir ${TARGET_CONTENTS}Resources/
+
+#############################################################################
+# create Bundle
+bundleit
+
+
+#############################################################################
+# Create LOCAL APP DIR
+export PRODUCT_NAME="x42-whirl"
+export LV2BUNDLE="b_whirl.lv2"
+export APPNAME="${PRODUCT_NAME}.app"
+export MAIN_BINARY=x42-whirl
+export README="$(pwd)/doc/osx_readme.txt" # XXX
+
+export BUNDLEDIR=`mktemp -d -t bundle`
+trap "rm -rf $BUNDLEDIR $LV2TMPDIR" EXIT
+
+export TARGET_BUILD_DIR="${BUNDLEDIR}/${APPNAME}/"
+export TARGET_CONTENTS="${TARGET_BUILD_DIR}Contents/"
+
+mkdir ${TARGET_BUILD_DIR}
+mkdir ${TARGET_BUILD_DIR}Contents
+mkdir ${TARGET_BUILD_DIR}Contents/MacOS
+mkdir ${TARGET_BUILD_DIR}Contents/Resources
+#############################################################################
+# DEPLOY TO LOCAL APP DIR
+
+cp -v b_whirl/x42-whirl ${TARGET_CONTENTS}MacOS/${MAIN_BINARY}
+cp -v ${RSRC_DIR}/${PRODUCT_NAME}.icns ${TARGET_CONTENTS}Resources/
+
+#############################################################################
+# create Bundle
+bundleit

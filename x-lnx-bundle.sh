@@ -43,24 +43,20 @@ make \
 	STATICBUILD=yes \
 	SUBDIRS="b_synth b_whirl ui src" $@
 
-
-##############################################################################
-
-PRODUCT_NAME=setBfree
-
 if test -z "$OUTDIR"; then
 	OUTDIR=/tmp/
 fi
 
+##############################################################################
+
+PRODUCT_NAME=setBfree
 BUNDLEDIR=`mktemp -d`
 trap "rm -rf ${BUNDLEDIR}" EXIT
 
 mkdir -p ${BUNDLEDIR}/${PRODUCT_NAME}/bin
 mkdir -p ${BUNDLEDIR}/${PRODUCT_NAME}/b_synth.lv2
-mkdir -p ${BUNDLEDIR}/${PRODUCT_NAME}/b_whirl.lv2
 
 cp -v b_synth/*.ttl b_synth/*.so "${BUNDLEDIR}/${PRODUCT_NAME}/b_synth.lv2"
-cp -v b_whirl/*.ttl b_whirl/*.so "${BUNDLEDIR}/${PRODUCT_NAME}/b_whirl.lv2"
 cp -v ui/setBfreeUI "${BUNDLEDIR}/${PRODUCT_NAME}/bin"
 cp -v src/setBfree "${BUNDLEDIR}/${PRODUCT_NAME}/bin"
 
@@ -79,7 +75,42 @@ fi
 # makeself installer?!
 
 cd ${BUNDLEDIR}
-rm -f ${OUTDIR}${PRODUCT_NAME}-${VERSION}ar.gz
+rm -f ${OUTDIR}${PRODUCT_NAME}-${VERSION}-${WARCH}.tar.gz
+tar czf ${OUTDIR}${PRODUCT_NAME}-${VERSION}-${WARCH}.tar.gz ${PRODUCT_NAME}
+ls -l ${OUTDIR}${PRODUCT_NAME}-${VERSION}-${WARCH}.tar.gz
+
+rm -rf ${BUNDLEDIR}
+
+
+##############################################################################
+
+PRODUCT_NAME=x42-whirl
+
+BUNDLEDIR=`mktemp -d`
+trap "rm -rf ${BUNDLEDIR}" EXIT
+
+mkdir -p ${BUNDLEDIR}/${PRODUCT_NAME}/bin
+mkdir -p ${BUNDLEDIR}/${PRODUCT_NAME}/b_whirl.lv2
+
+cp -v b_whirl/*.ttl b_whirl/*.so "${BUNDLEDIR}/${PRODUCT_NAME}/b_whirl.lv2"
+cp -v b_whirl/x42-whirl "${BUNDLEDIR}/${PRODUCT_NAME}/bin"
+
+echo "$VERSION" > ${OUTDIR}/${PRODUCT_NAME}.latest.txt
+
+if test -n "$ZIPUP" ; then # build a standalone lv2 zip
+	cd ${BUNDLEDIR}/${PRODUCT_NAME}
+	rm -f ${OUTDIR}${PRODUCT_NAME}-lv2-linux-${WARCH}-${VERSION}.zip
+	zip -r ${OUTDIR}${PRODUCT_NAME}-lv2-linux-${WARCH}-${VERSION}.zip b_whirl.lv2/
+	ls -l ${OUTDIR}${PRODUCT_NAME}-lv2-linux-${WARCH}-${VERSION}.zip
+	cd -
+fi
+
+# TODO add README, man-pages, default cfg,..
+# desktop file
+# makeself installer?!
+
+cd ${BUNDLEDIR}
+rm -f ${OUTDIR}${PRODUCT_NAME}-${VERSION}-${WARCH}.tar.gz
 tar czf ${OUTDIR}${PRODUCT_NAME}-${VERSION}-${WARCH}.tar.gz ${PRODUCT_NAME}
 ls -l ${OUTDIR}${PRODUCT_NAME}-${VERSION}-${WARCH}.tar.gz
 

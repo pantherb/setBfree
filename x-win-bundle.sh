@@ -40,8 +40,6 @@ make \
 	$@
 
 ### package
-PRODUCT_NAME=setBfree
-XREGKEY=setbfree
 
 if [ "$(id -u)" = "0" ]; then
 	apt-get -y install nsis curl
@@ -56,40 +54,22 @@ if test -z "$GITVERSION"; then
 	exit 1
 fi
 
-OUTFILE="${OUTDIR}/${PRODUCT_NAME}-${GITVERSION}-${WARCH}-Setup.exe"
 
 ################################################################################
+################################################################################
+################################################################################
 
-DESTDIR=`mktemp -d`
-trap 'rm -rf $DESTDIR' exit SIGINT SIGTERM
-
-echo " === bundle to $DESTDIR"
-
-mkdir -p $DESTDIR/share
-mkdir -p ${DESTDIR}/b_synth.lv2
-mkdir -p ${DESTDIR}/b_whirl.lv2
-
-cp -v b_synth/*.ttl b_synth/*.dll "$DESTDIR/b_synth.lv2"
-cp -v b_whirl/*.ttl b_whirl/*.dll "$DESTDIR/b_whirl.lv2"
+function dothemagic {
 
 # zip-up LV2
 if test -n "$ZIPUP" ; then # build a standalone lv2 zip
 	cd ${DESTDIR}
 	rm -f ${OUTDIR}/${PRODUCT_NAME}-lv2-${WARCH}-${GITVERSION}.zip
-	zip -r ${OUTDIR}/${PRODUCT_NAME}-lv2-${WARCH}-${GITVERSION}.zip b_synth.lv2/
+	zip -r ${OUTDIR}/${PRODUCT_NAME}-lv2-${WARCH}-${GITVERSION}.zip ${LV2BUNDLE}/
 	ls -l ${OUTDIR}/${PRODUCT_NAME}-lv2-${WARCH}-${GITVERSION}.zip
 	cd -
 fi
 
-cp -v COPYING "$DESTDIR/share/"
-cp -v ui/setBfreeUI.exe "$DESTDIR/"
-cp -v img/setbfree.ico "$DESTDIR/share/"
-#cp -v doc/win_readme.txt "${DESTDIR}/README.txt"
-
-echo " === complete"
-du -sh $DESTDIR
-
-################################################################################
 echo " === Preparing Windows Installer"
 NSISFILE="$DESTDIR/sbf.nsis"
 
@@ -120,7 +100,7 @@ RequestExecutionLevel admin
 InstallDir "\$${PGF}\\${PRODUCT_NAME}"
 InstallDirRegKey HKLM "Software\\RSS\\${XREGKEY}\\$WARCH" "Install_Dir"
 
-!define MUI_ICON "share\\setbfree.ico"
+!define MUI_ICON "share\\${ICONFILE}"
 
 !define MUI_ABORTWARNING
 !insertmacro MUI_PAGE_LICENSE "share\\COPYING"
@@ -134,8 +114,7 @@ InstallDirRegKey HKLM "Software\\RSS\\${XREGKEY}\\$WARCH" "Install_Dir"
 Section "LV2 Plugin (required)" SecLV2
   SectionIn RO
   SetOutPath "\$${CMF}\\LV2"
-  File /r b_synth.lv2
-  File /r b_whirl.lv2
+  File /r ${LV2BUNDLE}
   SetOutPath "\$INSTDIR"
   File /nonfatal README.txt
   WriteRegStr HKLM SOFTWARE\\RSS\\${XREGKEY}\\$WARCH "Install_Dir" "\$INSTDIR"
@@ -151,10 +130,10 @@ SectionEnd
 
 Section "JACK Application" SecJACK
   SetOutPath \$INSTDIR
-  File setBfreeUI.exe
+  File ${MAIN_BINARY}
   SetShellVarContext all
   CreateDirectory "\$SMPROGRAMS\\${PRODUCT_NAME}"
-  CreateShortCut "\$SMPROGRAMS\\${PRODUCT_NAME}\\setBfree.lnk" "\$INSTDIR\\setBfreeUI.exe" "0" "\$INSTDIR\\setBfreeUI.exe" 0
+  CreateShortCut "\$SMPROGRAMS\\${PRODUCT_NAME}\\${PRODUCT_NAME}.lnk" "\$INSTDIR\\${MAIN_BINARY}" "0" "\$INSTDIR\\${MAIN_BINARY}" 0
 SectionEnd
 
 LangString DESC_SecLV2 \${LANG_ENGLISH} "${PRODUCT_NAME}.lv2 ${GITVERSION}\$\\r\$\\nLV2 Plugins.\$\\r\$\\n${BUILDDATE}"
@@ -168,9 +147,8 @@ Section "Uninstall"
   SetShellVarContext all
   DeleteRegKey HKLM "Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\${XREGKEY}"
   DeleteRegKey HKLM SOFTWARE\\RSS\\${XREGKEY}\\$WARCH
-  RMDir /r "\$${CMF}\\LV2\\b_synth.lv2"
-  RMDir /r "\$${CMF}\\LV2\\b_whirl.lv2"
-  Delete "\$INSTDIR\\setBfreeUI.exe"
+  RMDir /r "\$${CMF}\\LV2\\${LV2BUNDLE}"
+  Delete "\$INSTDIR\\${MAIN_BINARY}"
   Delete "\$INSTDIR\\README.txt"
   Delete "\$INSTDIR\uninstall.exe"
   RMDir "\$INSTDIR"
@@ -192,3 +170,66 @@ fi
 time makensis -V2 "$NSISFILE"
 rm -rf $DESTDIR
 ls -lh "$OUTFILE"
+
+}
+################################################################################
+################################################################################
+################################################################################
+
+
+
+################################################################################
+export PRODUCT_NAME=setBfree
+export LV2BUNDLE=b_synth.lv2
+export XREGKEY=setbfree
+export MAIN_BINARY=setBfreeUI.exe
+export ICONFILE=setbfree.ico
+export OUTFILE="${OUTDIR}/${PRODUCT_NAME}-${GITVERSION}-${WARCH}-Setup.exe"
+
+DESTDIR=`mktemp -d`
+trap 'rm -rf $DESTDIR' exit SIGINT SIGTERM
+
+echo " === bundle to $DESTDIR"
+
+mkdir -p $DESTDIR/share
+mkdir -p "$DESTDIR/$LV2BUNDLE"
+cp -v b_synth/*.ttl b_synth/*.dll "$DESTDIR/$LV2BUNDLE"
+cp -v COPYING "$DESTDIR/share/"
+cp -v ui/setBfreeUI.exe "$DESTDIR/"
+cp -v img/setbfree.ico "$DESTDIR/share/"
+#cp -v doc/win_readme.txt "${DESTDIR}/README.txt"
+
+echo " === complete"
+du -sh $DESTDIR
+
+dothemagic
+
+
+################################################################################
+export PRODUCT_NAME=x42-whirl
+export LV2BUNDLE=b_whirl.lv2
+export XREGKEY=x42whirl
+export MAIN_BINARY=x42-whirl.exe
+export ICONFILE=whirl.ico
+export OUTFILE="${OUTDIR}/${PRODUCT_NAME}-${GITVERSION}-${WARCH}-Setup.exe"
+
+DESTDIR=`mktemp -d`
+trap 'rm -rf $DESTDIR' exit SIGINT SIGTERM
+
+echo " === bundle to $DESTDIR"
+
+mkdir -p $DESTDIR/share
+mkdir -p "$DESTDIR/$LV2BUNDLE"
+mkdir -p ${DESTDIR}/b_synth.lv2
+mkdir -p ${DESTDIR}/b_whirl.lv2
+
+cp -v b_whirl/*.ttl b_whirl/*.dll "$DESTDIR/$LV2BUNDLE"
+cp -v COPYING "$DESTDIR/share/"
+cp -v b_whirl/x42-whirl.exe "$DESTDIR/"
+cp -v b_whirl/img/x42.ico "$DESTDIR/share/"
+#cp -v doc/win_readme.txt "${DESTDIR}/README.txt"
+
+echo " === complete"
+du -sh $DESTDIR
+
+dothemagic
