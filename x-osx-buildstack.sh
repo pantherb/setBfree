@@ -123,14 +123,6 @@ cd "$PREFIX"
 tar xzf ${SRCDIR}/jack_headers.tar.gz
 "$PREFIX"/update_pc_prefix.sh
 
-if test ! -d ${SRCDIR}/weakjack.git.reference; then
-	git clone --mirror git://github.com/x42/weakjack.git ${SRCDIR}/weakjack.git.reference
-fi
-
-cd "$PREFIX"
-mkdir src/ && cd src
-git clone git://github.com/x42/weakjack.git
-
 ################################################################################
 
 src liblo-0.28 tar.gz http://downloads.sourceforge.net/liblo/liblo-0.28.tar.gz

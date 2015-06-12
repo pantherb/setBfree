@@ -29,7 +29,6 @@ make \
 	CFLAGS="-msse -msse2 -ffast-math -fomit-frame-pointer -O3 -fno-finite-math-only ${OSXCOMPAT} ${SBFARCH} -I${SBFSTACK}/src -DUSE_WEAK_JACK -DBUILTINFONT -fdata-sections -ffunction-sections" \
 	LDFLAGS="-fdata-sections -ffunction-sections -Wl,-dead_strip" \
 	IRPATH="../Resources/ir" \
-	WEAKJACK="${SBFSTACK}/src/weakjack/weak_libjack.c" \
 	FONTFILE=verabd.h PKG_UI_FLAGS=--static \
 	SUBDIRS="b_synth b_whirl ui" $@ \
 	|| exit

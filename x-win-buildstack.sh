@@ -113,15 +113,6 @@ cd "$PREFIX"
 tar xzf ${SRCDIR}/jack_headers.tar.gz
 "$PREFIX"/update_pc_prefix.sh
 
-if test ! -d ${SRCDIR}/weakjack.git.reference; then
-	git clone --mirror git://github.com/x42/weakjack.git ${SRCDIR}/weakjack.git.reference
-fi
-
-cd "$PREFIX"
-mkdir src/ && cd src
-git clone git://github.com/x42/weakjack.git
-
-
 download pthreads-w32-2-9-1-release.tar.gz ftp://sourceware.org/pub/pthreads-win32/pthreads-w32-2-9-1-release.tar.gz
 cd ${BUILDD}
 rm -rf pthreads-w32-2-9-1-release
