@@ -1054,7 +1054,7 @@ void whirlProc2 (struct b_whirl *w,
     const float hardstop = 10.f  / (60.f * w->SampleRateD); // limit deceleration 10 to 0. RPM
 
     if (w->hnBrakePos > 0 && w->hornTarget == 0 && w->hornIncr > 0 && w->hornIncr < hardstop) {
-      const double targetPos = fmod(w->hnBrakePos + .75, 1.0);
+      const double targetPos = fmod(1.25 - w->hnBrakePos, 1.0);
       if (fabsf(w->hornAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
 	w->hornAngleGRD = targetPos;
 	w->hornIncr = 0;
@@ -1136,7 +1136,7 @@ void whirlProc2 (struct b_whirl *w,
    */
   int brake_enagaged = 0;
   if (w->hnBrakePos > 0) {
-    const double targetPos = fmod(w->hnBrakePos + .75, 1.0);
+    const double targetPos = fmod(1.25 - w->hnBrakePos, 1.0);
     if (!w->hornAcDc && w->hornIncr == 0 && w->hornAngleGRD != targetPos) {
       brake_enagaged |= 1;
       if (fabsf(w->hornAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
@@ -1312,24 +1312,24 @@ void whirlProc2 (struct b_whirl *w,
 
     /* --- STATIC HORN FILTER --- */
     /* HORN PRIMARY */
-    HN_MOTION(0, HLbuf, hnFwdDispl, bfw, adx0, w->adi0, hornAngleGRD + fwAng);
-    HN_MOTION(1, HRbuf, hnBwdDispl, bbw, adx0, w->adi0, hornAngleGRD + bwAng);
+    HN_MOTION(0, HLbuf, hnFwdDispl, bbw, adx0, w->adi0, hornAngleGRD + fwAng);
+    HN_MOTION(1, HRbuf, hnBwdDispl, bfw, adx0, w->adi0, hornAngleGRD + bwAng);
     ADDHIST(adx0, w->adi0, x);
 
     /* HORN FIRST REFLECTION FILTER */
     FILTER_C(0.4, 0.4, 0);
 
     /* HORN FIRST REFLECTION */
-    HN_MOTION(2, HLbuf, hnBwdDispl, bbw, adx1, w->adi1, hornAngleGRD + fwAng);
-    HN_MOTION(3, HRbuf, hnFwdDispl, bfw, adx1, w->adi1, hornAngleGRD + bwAng);
+    HN_MOTION(2, HLbuf, hnBwdDispl, bfw, adx1, w->adi1, hornAngleGRD + fwAng);
+    HN_MOTION(3, HRbuf, hnFwdDispl, bbw, adx1, w->adi1, hornAngleGRD + bwAng);
     ADDHIST(adx1, w->adi1, x);
 
     /* HORN SECOND REFLECTION FILTER */
     FILTER_C(0.4, 0.4, 1);
 
     /* HORN SECOND REFLECTION */
-    HN_MOTION(4, HLbuf, hnFwdDispl, bfw, adx2, w->adi2, hornAngleGRD + fwAng);
-    HN_MOTION(5, HRbuf, hnBwdDispl, bbw, adx2, w->adi2, hornAngleGRD + bwAng);
+    HN_MOTION(4, HLbuf, hnFwdDispl, bbw, adx2, w->adi2, hornAngleGRD + fwAng);
+    HN_MOTION(5, HRbuf, hnBwdDispl, bfw, adx2, w->adi2, hornAngleGRD + bwAng);
     ADDHIST(adx2, w->adi2, x);
 
     /* 1A) do doppler shift for drum (actually orig signal -- FM

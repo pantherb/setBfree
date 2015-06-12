@@ -611,7 +611,7 @@ static void run (LV2_Handle instance, uint32_t n_samples) {
 	  *b3w->c_drum_ang = -1.f - b3w->resend_data_to_ui / 100.f;
   } else {
 	  *b3w->c_horm_rpm = hspd;
-	  *b3w->c_horm_ang = fmod (b3w->whirl->hornAngleGRD + .25, 1.0);
+	  *b3w->c_horm_ang = fmod (1.25 - b3w->whirl->hornAngleGRD, 1.0);
 	  *b3w->c_drum_rpm = dspd;
 	  *b3w->c_drum_ang = fmod (b3w->whirl->drumAngleGRD + .25, 1.0);
   }
