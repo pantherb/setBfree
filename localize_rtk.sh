@@ -16,6 +16,7 @@ mkdir -p robtk
 rsync -va \
 	$ROBTK/robtk/ui_gl.c $ROBTK/robtk/robtk.mk $ROBTK/robtk/widgets $ROBTK/robtk/gl \
 	$ROBTK/robtk/lv2uisyms $ROBTK/robtk/lv2syms $ROBTK/robtk/robtk.h $ROBTK/robtk/rtk \
+	$ROBTK/robtk/jackwrap.c $ROBTK/robtk/jackwrap.mm $ROBTK/robtk/weakjack \
 	robtk/
 echo "exported git://github.com/x42/robtk.git $RTKVERSION" > robtk/README
 git add robtk

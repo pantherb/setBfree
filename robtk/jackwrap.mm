@@ -21,12 +21,16 @@ void rtk_osx_api_init(void) {
 	//[NSApp finishLaunching];
 }
 
+#ifndef OSX_SHUTDOWN_WAIT
+#define OSX_SHUTDOWN_WAIT 100 // run loop callbacks, jack to allow graceful close
+#endif
+
 void rtk_osx_api_terminate(void) {
 	static int term_from_term = 0;
 	if (term_from_term) {
 		[[NSApplication sharedApplication] stop:nil];
 	}
-	if (++term_from_term > 100) {
+	if (++term_from_term > OSX_SHUTDOWN_WAIT) {
 		[[NSApplication sharedApplication] terminate:nil];
 	}
 }

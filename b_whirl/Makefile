@@ -11,7 +11,7 @@ LV2GUI=b_whirlUI_gl
 HAVE_RTK = no
 
 ifeq ($(LV2AVAIL), yes)
-  targets+=lv2
+  targets+=lv2 x42-whirl$(EXE_EXT)
 
   ifeq ($(wildcard $(RW)robtk.mk),)
     $(warning This plugin GUI needs https://github.com/x42/robtk)
@@ -22,11 +22,13 @@ ifeq ($(LV2AVAIL), yes)
 
   ifeq ($(HAVE_RTK), yes)
     targets+=$(LV2GUI)$(LIB_EXT)
+    targets+=x42-whirl$(EXE_EXT)
     override CFLAGS+=-DRTK_STATIC_INIT
   else
     $(warning "whirl/leslie GUI will not be built")
     $(warning "robtk or its dependencies are missing")
   endif
+  $(warning $(targets))
 endif
 
 all: $(targets)
@@ -42,14 +44,28 @@ endif
 b_whirl-configurable.ttl: b_whirl-configurable.ttl.in b_whirl-configurable.ui.ttl.in
 	cat b_whirl-configurable.ttl.in > b_whirl-configurable.ttl
 ifeq ($(HAVE_RTK), yes)
-	sed "s/@UI_TYPE@/$(UI_TYPE)/;s/@UI_REQ@/$(LV2UIREQ)/;" b_whirl-configurable.ui.ttl.in >>  b_whirl-configurable.ttl 
+	sed "s/@UI_TYPE@/$(UI_TYPE)/;s/@UI_REQ@/$(LV2UIREQ)/;" b_whirl-configurable.ui.ttl.in >>  b_whirl-configurable.ttl
 endif
 
-$(LV2NAME)$(LIB_EXT): lv2.c whirl.o eqcomp.o whirl.h eqcomp.h ../src/cfgParser.h
+DSP_SRC = lv2.c
+DSP_DEPS = whirl.o eqcomp.o whirl.h eqcomp.h ../src/cfgParser.h
+GUI_DEPS = gui/b_whirl.c
+
+$(LV2NAME)$(LIB_EXT): $(DSP_SRC) $(DSP_DEPS) Makefile
 	$(CC) $(CPPFLAGS) $(CFLAGS) \
 		-o $(LV2NAME)$(LIB_EXT) lv2.c whirl.o eqcomp.o \
-	  -shared $(LV2LDFLAGS) $(LDFLAGS)
+		-shared $(LV2LDFLAGS) $(LDFLAGS)
 
+JACKCFLAGS=$(CFLAGS) $(GLUICFLAGS) $(LIC_CFLAGS) -Wno-unused-function
+JACKCFLAGS+=`pkg-config --cflags jack lv2 pango pangocairo $(PKG_GL_LIBS)`
+JACKLIBS=-lm $(GLUILIBS) $(LIC_LOADLIBES)
+
+$(eval x42_whirl_JACKSRC = lv2.c whirl.c)
+x42_whirl_JACKGUI = gui/b_whirl.c
+x42_whirl_LV2HTTL = b_whirl.h
+x42_whirl_JACKDESC = lv2ui_descriptor
+x42-whirl$(EXE_EXT): $(DSP_DEPS) $(GUI_DEPS) \
+	        $(x42_whirl_JACKGUI) $(x42_whirl_LV2HTTL)
 
 -include $(RW)robtk.mk
 
@@ -72,6 +88,6 @@ uninstall:
 	-rmdir $(DESTDIR)$(lv2dir)/$(LV2NAME)
 
 clean:
-	rm -f *.o manifest.ttl $(LV2NAME)$(LIB_EXT) b_whirl-configurable.ttl $(LV2GUI)$(LIB_EXT)
+	rm -f *.o manifest.ttl $(LV2NAME)$(LIB_EXT) b_whirl-configurable.ttl $(LV2GUI)$(LIB_EXT) x42-whirl$(EXE_EXT)
 
 .PHONY: clean all install uninstall lv2

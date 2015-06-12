@@ -5,17 +5,21 @@ WINDRES=$(XWIN)-windres
 override CFLAGS+= -I../src -I../b_overdrive -I../b_reverb -I../b_whirl -I../b_synth/
 override CFLAGS+=`pkg-config --cflags lv2` -DLV2SYNTH -DREQUIRE_UI
 
+JACKEXTRA=
+OSXJACKWRAP=
+
 ifeq ($(IS_OSX), yes)
-  JACKWRAP=jackwrap.c jackwrap.mm $(WEAKJACK)
+  OSXJACKWRAP=$(RW)jackwrap.mm
+  USEWEAKJACK=1
   CC=$(CXX)
 else
   ifeq ($(IS_WIN), yes)
     CC=$(CXX)
     UIDEPS+=win_icon.rc.o
-    JACKWRAP=jackwrap.c $(WEAKJACK) win_icon.rc.o
+    JACKEXTRA+=win_icon.rc.o
+    USEWEAKJACK=1
     override CFLAGS+=-mwindows
   else
-    JACKWRAP=jackwrap.c $(WEAKJACK)
     LOADLIBES=-lrt
     ifeq ($(WEAKJACK),)
       UILIBS+=`pkg-config --libs jack`
@@ -28,7 +32,16 @@ else
   endif
 endif
 
+ifeq ($(USEWEAKJACK),1)
+  JACKCFLAGS+=-DUSE_WEAK_JACK
+  JACKEXTRA+=$(RW)weakjack/weak_libjack.c
+else
+  JACKLIBS+=`pkg-config $(PKG_UI_FLAGS) --libs jack`
+endif
+
 targets=
+
+DESC=$(abspath desc.h)
 
 ifeq ($(LV2AVAIL)$(HAVE_UI), yesyes)
   targets+=setBfreeUI$(EXE_EXT)
@@ -38,7 +51,7 @@ endif
 
 all: $(targets)
 
-setBfreeUI$(EXE_EXT): jackwrap.c $(LV2OBJ) \
+setBfreeUI$(EXE_EXT): $(RW)jackwrap.c $(LV2OBJ) $(OSXJACKWRAP) $(RW)weakjack/weak_libjack.def $(RW)weakjack/weak_libjack.h $(JACKEXTRA) \
 	../b_synth/lv2.c ../b_synth/uris.h \
 	../b_synth/ui.c $(UIDEPS) \
 	../src/cfgParser.h ../src/midi.h
@@ -46,9 +59,10 @@ setBfreeUI$(EXE_EXT): jackwrap.c $(LV2OBJ) \
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(UICFLAGS) $(LIC_CFLAGS) \
 		-pthread \
 		-DXTERNAL_UI -DJACK_AUTOCONNECT=15 \
-		-DJACK_DESCRIPT=\"desc.h\" \
+		-DAPPNAME="\"setBfree\"" \
+		-DJACK_DESCRIPT=\"$(DESC)\" \
 		-o setBfreeUI$(EXE_EXT) \
-		$(JACKWRAP) \
+		$(RW)jackwrap.c $(OSXJACKWRAP) $(JACKEXTRA) \
 		$(LV2OBJ) ../b_synth/lv2.c ../b_synth/ui.c \
 		$(LDFLAGS) $(UILIBS) $(LOADLIBES) $(LIC_LOADLIBES) \
 		-lm

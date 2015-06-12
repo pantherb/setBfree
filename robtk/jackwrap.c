@@ -64,7 +64,6 @@ extern void rtk_osx_api_err(const char *msg);
 #include <string.h>
 #include <math.h>
 #include <time.h>
-#include <getopt.h>
 #include <assert.h>
 
 #if (defined _WIN32 && defined RTK_STATIC_INIT)
@@ -96,7 +95,7 @@ extern void rtk_osx_api_err(const char *msg);
 #include "lv2/lv2plug.in/ns/ext/time/time.h"
 #include "lv2/lv2plug.in/ns/ext/worker/worker.h"
 
-#include "xternalui.h"
+#include "./gl/xternalui.h"
 
 #ifndef WIN32
 #include <signal.h>
@@ -663,7 +662,7 @@ static int jack_portsetup(void) {
 		if ((midi_out = jack_port_register (j_client,
 						inst->ports[portmap_atom_to_ui].name,
 						JACK_DEFAULT_MIDI_TYPE, JackPortIsOutput, 0)) == 0) {
-			fprintf (stderr, "cannot register midi ouput port \"%s\"!\n", inst->ports[portmap_atom_to_ui].name);
+			fprintf (stderr, "cannot register midi output port \"%s\"!\n", inst->ports[portmap_atom_to_ui].name);
 			return (-1);
 		}
 	}
@@ -973,22 +972,77 @@ static void on_external_ui_closed(void* controller) {
 	catchsig(0);
 }
 
+#ifdef X42_MULTIPLUGIN
+static void list_plugins (void) {
+	unsigned int i;
+	for (i = 0; i < sizeof(_plugins) / sizeof(RtkLv2Description); ++i) {
+		const LV2_Descriptor* d = _plugins[i].lv2_descriptor(_plugins[i].dsp_descriptor_id);
+		printf(" %2d   \"%s\" %s\n", i, _plugins[i].plugin_human_id, d->URI);
+	}
+}
+#endif
+
+static void print_usage (void) {
+#ifdef X42_MULTIPLUGIN
+	printf ("x42-%s - JACK %s\n\n", APPNAME, X42_MULTIPLUGIN_NAME);
+	printf ("Usage: x42-%s [ Plugin-ID or URI ]\n\n", APPNAME);
+	printf ("This is a standalone JACK application of a collection of LV2 plugins.\n"
+		"Use ID -1, -l or --list for a dedicated list of included plugins.\n"
+		"By default the first listed plugin (ID 0) is used.\n\n");
+	printf ("List if available plugins: (ID \"Name\" URI)\n");
+	list_plugins();
+	printf ("\nSee also: <%s>\n", X42_MULTIPLUGIN_URI);
+#else
+
+#if defined X42_PLUGIN_STRUCT
+	inst = & X42_PLUGIN_STRUCT;
+#else
+	inst = &_plugin;
+#endif
+	const LV2_Descriptor* d = inst->lv2_descriptor(inst->dsp_descriptor_id);
+
+	printf ("x42-%s - JACK %s\n\n", APPNAME, inst->plugin_human_id);
+	printf ("Usage: x42-%s\n\n", APPNAME);
+	printf ("This is a standalone JACK application of the LV2 plugin:\n"
+	        "\"%s\".\n", inst->plugin_human_id);
+
+	printf ("\nSee also: <%s>\n", d->URI);
+#endif
+	printf ("Website: <http://x42-plugins.com/>\n");
+}
+
+static void print_version (void) {
+	printf ("x42-%s version %s\n\n", APPNAME, VERSION);
+	printf ("\n"
+		"Copyright (C) GPL 2013-2015 Robin Gareus <robin@gareus.org>\n"
+		"This is free software; see the source for copying conditions.  There is NO\n"
+		"warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n");
+}
+
 int main (int argc, char **argv) {
 	int rv = 0;
 	uint32_t c_ain  = 0;
 	uint32_t c_aout = 0;
 	uint32_t c_ctrl = 0;
 
-	// TODO parse options (autoconnect)
-	// --help, --version
+	if (argc > 2) {
+		print_usage();
+		return -1;
+	}
+	if (argc > 1 && (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help"))) {
+		print_usage();
+		return 0;
+	}
+	if (argc > 1 && (!strcmp(argv[1], "-V") || !strcmp(argv[1], "--version"))) {
+		print_version();
+		return 0;
+	}
+
+	// TODO autoconnect option.
 
 #ifdef X42_MULTIPLUGIN
-	if (argc > 1 && atoi(argv[1]) < 0) {
-		unsigned int i;
-		for (i = 0; i < sizeof(_plugins) / sizeof(RtkLv2Description); ++i) {
-			const LV2_Descriptor* d = _plugins[i].lv2_descriptor(_plugins[i].dsp_descriptor_id);
-			printf("* %d '%s' %s\n", i, _plugins[i].plugin_human_id, d->URI);
-		}
+	if (argc > 1 && (atoi(argv[1]) < 0 || !strcmp(argv[1], "-l") || !strcmp(argv[1], "--list"))) {
+		list_plugins();
 		return 0;
 	}
 
