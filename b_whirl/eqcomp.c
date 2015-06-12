@@ -19,15 +19,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* eqcomp.c
- * Fredrik Kilander
- * 19-oct-2003/FK
- *
- * Computes biquad EQ filter settings.
- * Based on 'Cookbook formulae for audio EQ biquad filter coefficents'
- * by Robert Bristow-Johnson <robert@wavemechanics.com>
- */
 #define _XOPEN_SOURCE 700
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -37,9 +30,11 @@
 # define M_PI 3.14159265358979323846/* pi */
 #endif
 
-extern double SampleRateD;
-
-/*
+/* Computes biquad EQ filter settings.
+ * Based on 'Cookbook formulae for audio EQ biquad filter coefficents'
+ * by Robert Bristow-Johnson <robert@wavemechanics.com>
+ *
+ *
  * The functions below compute the coefficients for a single IIR stage.
  * Consider cascading two or more stages if you need a more powerful filter.
  * A single stage can easily become unstable if the parameters request too
@@ -72,20 +67,20 @@ extern double SampleRateD;
  */
 
 const char * filterTypeNames [10] = {
-  "LPF low-pass",
-  "HPF high-pass",
-  "BF0 band-pass 0",
-  "BF1 band-pass 1",
-  "NOT notch",
-  "APF all-pass",
-  "PEQ peaking eq",
-  "LSH low shelf",
-  "HSH high shelf",
-  "???"
+	"LPF low-pass",
+	"HPF high-pass",
+	"BF0 band-pass 0",
+	"BF1 band-pass 1",
+	"NOT notch",
+	"APF all-pass",
+	"PEQ peaking eq",
+	"LSH low shelf",
+	"HSH high shelf",
+	"???"
 };
 
 const char * eqGetTypeString (int t) {
-  return filterTypeNames [((0 <= t) && (t < 9)) ? t : 9];
+	return filterTypeNames [((0 <= t) && (t < 9)) ? t : 9];
 }
 
 /*
@@ -98,221 +93,109 @@ const char * eqGetTypeString (int t) {
  * @param C    Array[6] of coefficients.
  */
 void eqCompute (int type,
-		double fqHz,
-		double Q,
-		double dbG,
-		double * C,
-		double SampleRateD)
+                double fqHz,
+                double Q,
+                double dbG,
+                double * C,
+                double SampleRateD)
 {
-  double     A = pow (10.0, (dbG / 40.0));
-  double omega = (2.0 * M_PI * fqHz) / SampleRateD;
-  double sin_  = sin (omega);
-  double cos_  = cos (omega);
-  double alpha = sin_ / (2.0 * Q);
-  double beta  = sqrt (A) / Q;
+	double     A = pow (10.0, (dbG / 40.0));
+	double omega = (2.0 * M_PI * fqHz) / SampleRateD;
+	double sin_  = sin (omega);
+	double cos_  = cos (omega);
+	double alpha = sin_ / (2.0 * Q);
+	double beta  = sqrt (A) / Q;
 
-  switch (type) {
+	switch (type) {
 
-  case EQC_LPF:
-    C[EQC_B0] = (1.0 - cos_) / 2.0;
-    C[EQC_B1] =  1.0 - cos_;
-    C[EQC_B2] = (1.0 - cos_) / 2.0;
-    C[EQC_A0] =  1.0 + alpha;
-    C[EQC_A1] = -2.0 * cos_;
-    C[EQC_A2] =  1.0 - alpha;
-    break;			/* EQC_LPF */
+		case EQC_LPF: /* Low Pass */
+			C[EQC_B0] = (1.0 - cos_) / 2.0;
+			C[EQC_B1] =  1.0 - cos_;
+			C[EQC_B2] = (1.0 - cos_) / 2.0;
+			C[EQC_A0] =  1.0 + alpha;
+			C[EQC_A1] = -2.0 * cos_;
+			C[EQC_A2] =  1.0 - alpha;
+			break;
 
-  case EQC_HPF:
-    C[EQC_B0] =  (1.0 + cos_) / 2.0;
-    C[EQC_B1] = -(1.0 + cos_);
-    C[EQC_B2] =  (1.0 + cos_) / 2.0;
-    C[EQC_A0] =   1.0 + alpha;
-    C[EQC_A1] =  -2.0 * cos_;
-    C[EQC_A2] =   1.0 - alpha;
-    break;			/* EQC_HPF */
+		case EQC_HPF: /* High Pass */
+			C[EQC_B0] =  (1.0 + cos_) / 2.0;
+			C[EQC_B1] = -(1.0 + cos_);
+			C[EQC_B2] =  (1.0 + cos_) / 2.0;
+			C[EQC_A0] =   1.0 + alpha;
+			C[EQC_A1] =  -2.0 * cos_;
+			C[EQC_A2] =   1.0 - alpha;
+			break;
 
-  case EQC_BPF0:		/* Constant skirt gain, peak gain = Q */
-    C[EQC_B0] =  sin_ / 2.0;
-    C[EQC_B1] =  0.0;
-    C[EQC_B2] = -sin_ / 2.0;
-    C[EQC_A0] =  1.0 + alpha;
-    C[EQC_A1] = -2.0 * cos_;
-    C[EQC_A2] =  1.0 - alpha;
-    break;			/* EQC_BPF0 */
+		case EQC_BPF0: /* Constant skirt gain, peak gain = Q */
+			C[EQC_B0] =  sin_ / 2.0;
+			C[EQC_B1] =  0.0;
+			C[EQC_B2] = -sin_ / 2.0;
+			C[EQC_A0] =  1.0 + alpha;
+			C[EQC_A1] = -2.0 * cos_;
+			C[EQC_A2] =  1.0 - alpha;
+			break;
 
-  case EQC_BPF1:		/* Constant 0 dB peak gain */
-    C[EQC_B0] =  alpha;
-    C[EQC_B1] =  0.0;
-    C[EQC_B2] = -alpha;
-    C[EQC_A0] =  1.0 + alpha;
-    C[EQC_A1] = -2.0 * cos_;
-    C[EQC_A2] =  1.0 - alpha;
-    break;			/* EQC_BPF1 */
+		case EQC_BPF1: /* Constant 0 dB peak gain */
+			C[EQC_B0] =  alpha;
+			C[EQC_B1] =  0.0;
+			C[EQC_B2] = -alpha;
+			C[EQC_A0] =  1.0 + alpha;
+			C[EQC_A1] = -2.0 * cos_;
+			C[EQC_A2] =  1.0 - alpha;
+			break;
 
-  case EQC_NOTCH:
-    C[EQC_B0] =  1.0;
-    C[EQC_B1] = -2.0 * cos_;
-    C[EQC_B2] =  1.0;
-    C[EQC_A0] =  1.0 + alpha;
-    C[EQC_A1] = -2.0 * cos_;
-    C[EQC_A2] =  1.0 - alpha;
-    break;			/* EQC_NOTCH */
+		case EQC_NOTCH: /* Notch filter */
+			C[EQC_B0] =  1.0;
+			C[EQC_B1] = -2.0 * cos_;
+			C[EQC_B2] =  1.0;
+			C[EQC_A0] =  1.0 + alpha;
+			C[EQC_A1] = -2.0 * cos_;
+			C[EQC_A2] =  1.0 - alpha;
+			break;
 
-  case EQC_APF:			/* Allpass filter */
-    C[EQC_B0] =  1.0 - alpha;
-    C[EQC_B1] = -2.0 * cos_;
-    C[EQC_B2] =  1.0 + alpha;
-    C[EQC_A0] =  1.0 + alpha;
-    C[EQC_A1] = -2.0 * cos_;
-    C[EQC_A2] =  1.0 - alpha;
-    break;			/* EQC_APF */
+		case EQC_APF: /* Allpass filter */
+			C[EQC_B0] =  1.0 - alpha;
+			C[EQC_B1] = -2.0 * cos_;
+			C[EQC_B2] =  1.0 + alpha;
+			C[EQC_A0] =  1.0 + alpha;
+			C[EQC_A1] = -2.0 * cos_;
+			C[EQC_A2] =  1.0 - alpha;
+			break;
 
-  case EQC_PEQ:			/* Peaking EQ */
-    C[EQC_B0] =  1.0 + (alpha * A);
-    C[EQC_B1] = -2.0 * cos_;
-    C[EQC_B2] =  1.0 - (alpha * A);
-    C[EQC_A0] =  1.0 + (alpha / A);
-    C[EQC_A1] = -2.0 * cos_;
-    C[EQC_A2] =  1.0 - (alpha / A);
-    break;			/* EQC_PEQ */
+		case EQC_PEQ: /* Peaking EQ */
+			C[EQC_B0] =  1.0 + (alpha * A);
+			C[EQC_B1] = -2.0 * cos_;
+			C[EQC_B2] =  1.0 - (alpha * A);
+			C[EQC_A0] =  1.0 + (alpha / A);
+			C[EQC_A1] = -2.0 * cos_;
+			C[EQC_A2] =  1.0 - (alpha / A);
+			break;
 
-  case EQC_LOW:			/* Low shelf */
-    C[EQC_B0] =         A * ((A + 1) - ((A - 1) * cos_) + (beta * sin_));
-    C[EQC_B1] = (2.0 * A) * ((A - 1) - ((A + 1) * cos_));
-    C[EQC_B2] =         A * ((A + 1) - ((A - 1) * cos_) - (beta * sin_));
-    C[EQC_A0] =              (A + 1) + ((A - 1) * cos_) + (beta * sin_);
-    C[EQC_A1] =      -2.0 * ((A - 1) + ((A + 1) * cos_));
-    C[EQC_A2] =              (A + 1) + ((A - 1) * cos_) - (beta * sin_);
-    break;			/* EQC_LOW */
+		case EQC_LOW: /* Low shelf */
+			C[EQC_B0] =         A * ((A + 1) - ((A - 1) * cos_) + (beta * sin_));
+			C[EQC_B1] = (2.0 * A) * ((A - 1) - ((A + 1) * cos_));
+			C[EQC_B2] =         A * ((A + 1) - ((A - 1) * cos_) - (beta * sin_));
+			C[EQC_A0] =              (A + 1) + ((A - 1) * cos_) + (beta * sin_);
+			C[EQC_A1] =      -2.0 * ((A - 1) + ((A + 1) * cos_));
+			C[EQC_A2] =              (A + 1) + ((A - 1) * cos_) - (beta * sin_);
+			break;
 
-  case EQC_HIGH:		/* High shelf */
-    C[EQC_B0] =          A * ((A + 1) + ((A - 1) * cos_) + (beta * sin_));
-    C[EQC_B1] = -(2.0 * A) * ((A - 1) + ((A + 1) * cos_));
-    C[EQC_B2] =          A * ((A + 1) + ((A - 1) * cos_) - (beta * sin_));
-    C[EQC_A0] =               (A + 1) - ((A - 1) * cos_) + (beta * sin_);
-    C[EQC_A1] =        2.0 * ((A - 1) - ((A + 1) * cos_));
-    C[EQC_A2] =               (A + 1) - ((A - 1) * cos_) - (beta * sin_);
-    break;			/* EQC_HIGH */
-  }
+		case EQC_HIGH: /* High shelf */
+			C[EQC_B0] =          A * ((A + 1) + ((A - 1) * cos_) + (beta * sin_));
+			C[EQC_B1] = -(2.0 * A) * ((A - 1) + ((A + 1) * cos_));
+			C[EQC_B2] =          A * ((A + 1) + ((A - 1) * cos_) - (beta * sin_));
+			C[EQC_A0] =               (A + 1) - ((A - 1) * cos_) + (beta * sin_);
+			C[EQC_A1] =        2.0 * ((A - 1) - ((A + 1) * cos_));
+			C[EQC_A2] =               (A + 1) - ((A - 1) * cos_) - (beta * sin_);
+			break;
+	}
 
-  C[EQC_B0] /= C[EQC_A0];
-  C[EQC_B1] /= C[EQC_A0];
-  C[EQC_B2] /= C[EQC_A0];
-  C[EQC_A1] /= C[EQC_A0];
-  C[EQC_A2] /= C[EQC_A0];
+	C[EQC_B0] /= C[EQC_A0];
+	C[EQC_B1] /= C[EQC_A0];
+	C[EQC_B2] /= C[EQC_A0];
+	C[EQC_A1] /= C[EQC_A0];
+	C[EQC_A2] /= C[EQC_A0];
 
 }
 
-/*
- * Helper function to load a double array into a float array.
- */
-static void loadArray_f (float * F, double * C) {
-  int i;
-  for (i = 0; i < 6; i++) {
-    F[i] = (float) C[i];
-  }
-}
-
-/*
- * Lowpass filter.
- * fqHz cutoff
- * Q    Bandwidth of resonance peak
- */
-void eqcLowPass_f (double fqHz, double Q, float * F, double SR) {
-  double C[6];
-  eqCompute (EQC_LPF, fqHz, Q, 0.0, C, SR);
-  loadArray_f (F, C);
-}
-
-/*
- * Highpass filter.
- * fqHz cutoff
- * Q    Bandwidth of resonance peak
- */
-void eqcHighPass_f (double fqHz, double Q, float * F, double SR) {
-  double C[6];
-  eqCompute (EQC_HPF, fqHz, Q, 0.0, C, SR);
-  loadArray_f (F, C);
-}
-
-/*
- * Bandpass filter with constant skirt gain
- * fqHz Resonance frequency
- * Q    Bandwidth of resonance peak
- */
-void eqcBandPass0_f (double fqHz, double Q, float * F, double SR) {
-  double C[6];
-  eqCompute (EQC_BPF0, fqHz, Q, 0.0, C, SR);
-  loadArray_f (F, C);
-}
-
-/*
- * Bandpass filter with 0 dB peak gain.
- * fqHz Resonance frequency
- * Q    Bandwidth of resonance peak
- */
-void eqcBandPass1_f (double fqHz, double Q, float * F, double SR) {
-  double C[6];
-  eqCompute (EQC_BPF1, fqHz, Q, 0.0, C, SR);
-  loadArray_f (F, C);
-}
-
-/*
- * Notch filter with constant skirt gain
- * fqHz Cut frequency
- * Q    Bandwidth of cut trough.
- */
-void eqcNotch_f (double fqHz, double Q, float * F, double SR) {
-  double C[6];
-  eqCompute (EQC_NOTCH, fqHz, Q, 0.0, C, SR);
-  loadArray_f (F, C);
-}
-
-/*
- * Allpass filter
- * fqHz Resonance frequency?
- * Q    Bandwidth of resonance?
- */
-void eqcAllPass_f (double fqHz, double Q, float * F, double SR) {
-  double C[6];
-  eqCompute (EQC_APF, fqHz, Q, 0.0, C, SR);
-  loadArray_f (F, C);
-}
-
-/*
- * Peaking EQ filter
- * fqHz Resonance frequency
- * Q    Bandwidth of resonance peak
- * dBGain Gain (positive or negative)
- */
-void eqcPeaking_f (double fqHz, double Q, double dBGain, float * F, double SR) {
-  double C[6];
-  eqCompute (EQC_PEQ, fqHz, Q, dBGain, C, SR);
-  loadArray_f (F, C);
-}
-
-/*
- * Low shelf filter
- * fqHz Cutoff frequency
- * Q    Resonance at cutoff
- * dBGain Gain
- */
-void eqcLowShelf_f (double fqHz, double Q, double dBGain, float * F, double SR) {
-  double C[6];
-  eqCompute (EQC_LOW, fqHz, Q, dBGain, C, SR);
-  loadArray_f (F, C);
-}
-
-/*
- * High shelf filter
- * fqHz Cutoff frequency
- * Q    Resonance at cutoff
- * dBGain Gain
- */
-void eqcHighShelf_f (double fqHz, double Q, double dBGain, float * F, double SR) {
-  double C[6];
-  eqCompute (EQC_HIGH, fqHz, Q, dBGain, C, SR);
-  loadArray_f (F, C);
-}
-
-/* vi:set ts=8 sts=2 sw=2: */
+/* vi:set ts=2 sts=2 sw=2: */

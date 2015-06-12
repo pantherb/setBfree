@@ -82,7 +82,7 @@ void initValues (struct b_whirl *w) {
 
 	w->hornTarget   = 0; /* target angular speed */
 	w->drumTarget   = 0; /* target angular speed */
-	
+
 	w->airSpeed      = 340.0; /* Meters per second */
 	w->micDistCm     =  42.0; /* From mic to origin */
 	w->hornXOffsetCm =   0.0; /* offset of horn, towards left mic */
@@ -129,151 +129,152 @@ void initValues (struct b_whirl *w) {
 }
 
 struct b_whirl *allocWhirl() {
-  struct b_whirl *w = (struct b_whirl*) calloc(1, sizeof(struct b_whirl));
-  if (!w) return NULL;
-  initValues(w);
-
-  return (w);
+	struct b_whirl *w = (struct b_whirl*) calloc(1, sizeof(struct b_whirl));
+	if (!w) return NULL;
+	initValues(w);
+	return (w);
 }
 
 void freeWhirl(struct b_whirl *w) {
-  free(w);
+	free(w);
 }
 
 static void setIIRFilter (iir_t W[],
-			  int T,
-			  const double F,
-			  const double Q,
-			  const double G,
-			  const double SR) {
-  double C[6];
-  eqCompute (T, F, Q, G, C, SR);
-  W[a1] = C[EQC_A1];
-  W[a2] = C[EQC_A2];
-  W[b0] = C[EQC_B0];
-  W[b1] = C[EQC_B1];
-  W[b2] = C[EQC_B2];
+                          int T,
+                          const double F,
+                          const double Q,
+                          const double G,
+                          const double SR)
+{
+	double C[6];
+	eqCompute (T, F, Q, G, C, SR);
+	W[a1] = C[EQC_A1];
+	W[a2] = C[EQC_A2];
+	W[b0] = C[EQC_B0];
+	W[b1] = C[EQC_B1];
+	W[b2] = C[EQC_B2];
 }
 
 /*
  * Sets the revolution selection.
  */
 void setRevSelect (struct b_whirl *w, int n) {
-  int i;
+	int i;
 
-  w->revSelect = n % revSelectEnd;
-  i = w->revselects[w->revSelect];
-  useRevOption(w, i);
+	w->revSelect = n % revSelectEnd;
+	i = w->revselects[w->revSelect];
+	useRevOption(w, i);
 }
 
 void useRevOption (struct b_whirl *w, int n) {
-  int i = n % 9;
+	int i = n % 9;
 
-#if 0 // not in RT callback
-  printf ("\rREV:%d %d ", n, i); fflush (stdout);
-#endif
+	w->hornTarget = w->revoptions[i].hornTarget;
+	w->drumTarget = w->revoptions[i].drumTarget;
 
-  w->hornTarget = w->revoptions[i].hornTarget;
-  w->drumTarget = w->revoptions[i].drumTarget;
+	if (w->hornIncr < w->hornTarget) {
+		w->hornAcDc = 1;
+	}
+	else if (w->hornTarget < w->hornIncr) {
+		w->hornAcDc = -1;
+	}
+	if (w->drumIncr < w->drumTarget) {
+		w->drumAcDc = 1;
+	}
+	else if (w->drumTarget < w->drumIncr) {
+		w->drumAcDc = -1;
+	}
 
-  if (w->hornIncr < w->hornTarget) {
-    w->hornAcDc = 1;
-  }
-  else if (w->hornTarget < w->hornIncr) {
-    w->hornAcDc = -1;
-  }
-  if (w->drumIncr < w->drumTarget) {
-    w->drumAcDc = 1;
-  }
-  else if (w->drumTarget < w->drumIncr) {
-    w->drumAcDc = -1;
-  }
-
-  notifyControlChangeByName(w->midi_cfg_ptr, "rotary.speed-select", n * 15);
+	notifyControlChangeByName(w->midi_cfg_ptr, "rotary.speed-select", n * 15);
 }
 
 void advanceRevSelect (struct b_whirl *w) {
-  setRevSelect (w, w->revSelect + 1);
+	setRevSelect (w, w->revSelect + 1);
 }
 
 static void revControlAll (void *d, unsigned char u) {
-  struct b_whirl *w = (struct b_whirl *) d;
-  useRevOption (w, (int) (u / 15)); // 0..8
+	struct b_whirl *w = (struct b_whirl *) d;
+	useRevOption (w, (int) (u / 15)); // 0..8
 }
 
 static void revControl (void *d, unsigned char u) {
-  struct b_whirl *w = (struct b_whirl *) d;
-  setRevSelect (w, (int) (u / 32)); // 3 modes only - stop, slow, fast, stop
+	struct b_whirl *w = (struct b_whirl *) d;
+	setRevSelect (w, (int) (u / 32)); // 3 modes only - stop, slow, fast, stop
 }
 
-/* 11-may-2004/FK Hack to make the pedal work. See midiIn.c */
 void setWhirlSustainPedal (void *d, unsigned char u) {
-  struct b_whirl *w = (struct b_whirl *) d;
-  if (u) {
-    setRevSelect (w, (w->revSelect == 1) ? 2 : 1);
-  }
+	struct b_whirl *w = (struct b_whirl *) d;
+	if (u) {
+		setRevSelect (w, (w->revSelect == 1) ? 2 : 1);
+	}
 }
 
 static void setRevOption (struct b_whirl *w,
-			  int i,
-			  double hnTgt,
-			  double drTgt) {
-  w->revoptions[i].hornTarget = hnTgt;
-  w->revoptions[i].drumTarget = drTgt;
+                          int i,
+                          double hnTgt,
+                          double drTgt) {
+	w->revoptions[i].hornTarget = hnTgt;
+	w->revoptions[i].drumTarget = drTgt;
 }
 
 void computeRotationSpeeds (struct b_whirl *w) {
-  const double hfast = w->hornRPMfast / (w->SampleRateD * 60.0);
-  const double hslow = w->hornRPMslow / (w->SampleRateD * 60.0);
-  const double hstop = 0;
-  const double dfast = w->drumRPMfast / (w->SampleRateD * 60.0);
-  const double dslow = w->drumRPMslow / (w->SampleRateD * 60.0);
-  const double dstop = 0;
+	const double hfast = w->hornRPMfast / (w->SampleRateD * 60.0);
+	const double hslow = w->hornRPMslow / (w->SampleRateD * 60.0);
+	const double hstop = 0;
+	const double dfast = w->drumRPMfast / (w->SampleRateD * 60.0);
+	const double dslow = w->drumRPMslow / (w->SampleRateD * 60.0);
+	const double dstop = 0;
 
-  setRevOption (w, 8, hfast, dfast);
-  setRevOption (w, 7, hfast, dslow);
-  setRevOption (w, 6, hfast, dstop);
-  setRevOption (w, 5, hslow, dfast);
-  setRevOption (w, 4, hslow, dslow);
-  setRevOption (w, 3, hslow, dstop);
-  setRevOption (w, 2, hstop, dfast);
-  setRevOption (w, 1, hstop, dslow);
-  setRevOption (w, 0, hstop, dstop);
+	setRevOption (w, 8, hfast, dfast);
+	setRevOption (w, 7, hfast, dslow);
+	setRevOption (w, 6, hfast, dstop);
+	setRevOption (w, 5, hslow, dfast);
+	setRevOption (w, 4, hslow, dslow);
+	setRevOption (w, 3, hslow, dstop);
+	setRevOption (w, 2, hstop, dfast);
+	setRevOption (w, 1, hstop, dslow);
+	setRevOption (w, 0, hstop, dstop);
 
-  w->revselects[0] = 0;		/* stop */
-  w->revselects[1] = 4;		/* both slow */
-  w->revselects[2] = 8;		/* both fast */
-  w->revselects[3] = 4;		/* both slow */
-  setRevSelect(w, w->revSelect);
+	w->revselects[0] = 0; /* stop */
+	w->revselects[1] = 4; /* both slow */
+	w->revselects[2] = 8; /* both fast */
+	w->revselects[3] = 4; /* both slow */
+	setRevSelect(w, w->revSelect);
 }
 
 /* interpolate angular IR */
-static void _ipoldraw (struct b_whirl *sw, double degrees, double level, int partial, double *ipx, double *ipy) {
-  double d;
-  double e;
-  double range;
-  int fromIndex;
-  int toIndex;
-  int i;
+static void _ipoldraw (struct b_whirl *sw,
+                       double degrees,
+                       double level,
+                       int partial,
+                       double *ipx,
+                       double *ipy)
+{
+	double d;
+	double e;
+	double range;
+	int fromIndex;
+	int toIndex;
+	int i;
 
-  d = *ipx;
-  while (d < 0.0) d += 360.0;
-  fromIndex = (int) ((d * (double) WHIRL_DISPLC_SIZE) / 360.0);
+	d = *ipx;
+	while (d < 0.0) d += 360.0;
+	fromIndex = (int) ((d * (double) WHIRL_DISPLC_SIZE) / 360.0);
 
-  *ipx = degrees;
+	*ipx = degrees;
 
-  e = *ipx;
-  while (e < d) e += 360.0;
-  toIndex = (int) ((e * (double) WHIRL_DISPLC_SIZE) / 360.0);
+	e = *ipx;
+	while (e < d) e += 360.0;
+	toIndex = (int) ((e * (double) WHIRL_DISPLC_SIZE) / 360.0);
 
-  range = (double) (toIndex - fromIndex);
-  for (i = fromIndex; i <= toIndex; i++) {
-    double x = (double) (i - fromIndex);
-    double w = (*ipy) + ((x / range) * (level - (*ipy)));
-    sw->bfw[i & WHIRL_DISPLC_MASK].b[partial] = (float) w;
-  }
+	range = (double) (toIndex - fromIndex);
+	for (i = fromIndex; i <= toIndex; i++) {
+		double x = (double) (i - fromIndex);
+		double w = (*ipy) + ((x / range) * (level - (*ipy)));
+		sw->bfw[i & WHIRL_DISPLC_MASK].b[partial] = (float) w;
+	}
 
-  *ipy = level;
+	*ipy = level;
 }
 
 #define ipolmark(degrees, level) { ipx = degrees; ipy = level; }
@@ -491,16 +492,13 @@ void computeOffsets (struct b_whirl *w) {
 
 	zeroBuffers (w);
 
-	/* Base values
-	 * Spacing between reflections in samples. The first can't be zero, since
-	 * we must allow for the swing of the extent to wander close to the reader.
-	 *
-	 * TODO adjust for horn position
+	/* Spacing between reflections in samples. Normalized for 22.1k
+	 * The first can't be zero, since we must allow for the swing of
+	 * the extent to wander close to the reader.
 	 */
-
-	w->hornSpacing[0] = 12.0; /* Primary */
+	w->hornSpacing[0] = 12.0;  /* Primary */
 	w->hornSpacing[1] = 18.0;
-	w->hornSpacing[2] = 53.0; /* First reflection */
+	w->hornSpacing[2] = 53.0;  /* First reflection */
 	w->hornSpacing[3] = 50.0;
 	w->hornSpacing[4] = 106.0; /* Secondary reflection */
 	w->hornSpacing[5] = 116.0;
@@ -641,214 +639,214 @@ static void displayFilter (const char * id, int T, float F, float Q, float G) {
  * Sets the type of the A horn IIR filter.
  */
 static void setHornFilterAType (void *d, unsigned char uc) {
-  struct b_whirl *w = (struct b_whirl *) d;
-  w->haT = (int) (uc / 15);
-  UPDATE_A_FILTER;
+	struct b_whirl *w = (struct b_whirl *) d;
+	w->haT = (int) (uc / 15);
+	UPDATE_A_FILTER;
 }
 
 void isetHornFilterAType (struct b_whirl *w, int v) {
-  w->haT = (int) (v % 9);
-  UPDATE_A_FILTER;
+	w->haT = (int) (v % 9);
+	UPDATE_A_FILTER;
 }
 
 /*
  * Sets the cutoff frequency of the A horn IIR filter.
  */
 static void setHornFilterAFrequency (void *d, unsigned char uc) {
-  struct b_whirl *w = (struct b_whirl *) d;
-  double u = (double) uc;
-  double minv = 250.0;
-  double maxv = 8000.0;
-  w->haF = minv + ((maxv - minv) * ((u * u) / 16129.0));
-  UPDATE_A_FILTER;
+	struct b_whirl *w = (struct b_whirl *) d;
+	double u = (double) uc;
+	double minv = 250.0;
+	double maxv = 8000.0;
+	w->haF = minv + ((maxv - minv) * ((u * u) / 16129.0));
+	UPDATE_A_FILTER;
 }
 
 void fsetHornFilterAFrequency (struct b_whirl *w, float v) {
-  if (v<250.0 || v> 8000.0) return;
-  w->haF = v;
-  UPDATE_A_FILTER;
+	if (v<250.0 || v> 8000.0) return;
+	w->haF = v;
+	UPDATE_A_FILTER;
 }
 
 /*
  * Sets the Q value of the A horn IIR filter.
  */
 static void setHornFilterAQ (void *d, unsigned char uc) {
-  struct b_whirl *w = (struct b_whirl *) d;
-  double u = (double) uc;
-  double minv = 0.01;
-  double maxv = 6.00;
-  w->haQ = minv + ((maxv - minv) * (u / 127.0));
-  UPDATE_A_FILTER;
+	struct b_whirl *w = (struct b_whirl *) d;
+	double u = (double) uc;
+	double minv = 0.01;
+	double maxv = 6.00;
+	w->haQ = minv + ((maxv - minv) * (u / 127.0));
+	UPDATE_A_FILTER;
 }
 
 void fsetHornFilterAQ (struct b_whirl *w, float v) {
-  if (v<0.01 || v> 6.0) return;
-  w->haQ = v;
-  UPDATE_A_FILTER;
+	if (v<0.01 || v> 6.0) return;
+	w->haQ = v;
+	UPDATE_A_FILTER;
 }
 
 /*
  * Sets the Gain value of the A horn IIR filter.
  */
 static void setHornFilterAGain (void *d, unsigned char uc) {
-  struct b_whirl *w = (struct b_whirl *) d;
-  double u = (double) uc;
-  double minv = -48.0;
-  double maxv =  48.0;
-  w->haG = minv + ((maxv - minv) * (u / 127.0));
-  UPDATE_A_FILTER;
+	struct b_whirl *w = (struct b_whirl *) d;
+	double u = (double) uc;
+	double minv = -48.0;
+	double maxv =  48.0;
+	w->haG = minv + ((maxv - minv) * (u / 127.0));
+	UPDATE_A_FILTER;
 }
 
 void fsetHornFilterAGain (struct b_whirl *w, float v) {
-  if (v<-48.0 || v> 48.0) return;
-  w->haG = v;
-  UPDATE_A_FILTER;
+	if (v<-48.0 || v> 48.0) return;
+	w->haG = v;
+	UPDATE_A_FILTER;
 }
 
 
 static void setHornFilterBType (void *d, unsigned char uc) {
-  struct b_whirl *w = (struct b_whirl *) d;
-  w->hbT = (int) (uc / 15);
-  UPDATE_B_FILTER;
+	struct b_whirl *w = (struct b_whirl *) d;
+	w->hbT = (int) (uc / 15);
+	UPDATE_B_FILTER;
 }
 
 void isetHornFilterBType (struct b_whirl *w, int v) {
-  w->hbT = (int) (v % 9);
-  UPDATE_B_FILTER;
+	w->hbT = (int) (v % 9);
+	UPDATE_B_FILTER;
 }
 
 static void setHornFilterBFrequency (void *d, unsigned char uc) {
-  struct b_whirl *w = (struct b_whirl *) d;
-  double u = (double) uc;
-  double minv = 250.0;
-  double maxv = 8000.0;
-  w->hbF = minv + ((maxv - minv) * ((u * u) / 16129.0));
-  UPDATE_B_FILTER;
+	struct b_whirl *w = (struct b_whirl *) d;
+	double u = (double) uc;
+	double minv = 250.0;
+	double maxv = 8000.0;
+	w->hbF = minv + ((maxv - minv) * ((u * u) / 16129.0));
+	UPDATE_B_FILTER;
 }
 
 void fsetHornFilterBFrequency (struct b_whirl *w, float v) {
-  if (v<250.0 || v> 8000.0) return;
-  w->hbF = v;
-  UPDATE_B_FILTER;
+	if (v<250.0 || v> 8000.0) return;
+	w->hbF = v;
+	UPDATE_B_FILTER;
 }
 
 static void setHornFilterBQ (void *d, unsigned char uc) {
-  struct b_whirl *w = (struct b_whirl *) d;
-  double u = (double) uc;
-  double minv = 0.01;
-  double maxv = 6.00;
-  w->hbQ = minv + ((maxv - minv) * (u / 127.0));
-  UPDATE_B_FILTER;
+	struct b_whirl *w = (struct b_whirl *) d;
+	double u = (double) uc;
+	double minv = 0.01;
+	double maxv = 6.00;
+	w->hbQ = minv + ((maxv - minv) * (u / 127.0));
+	UPDATE_B_FILTER;
 }
 
 void fsetHornFilterBQ (struct b_whirl *w, float v) {
-  if (v<0.01 || v> 6.0) return;
-  w->hbQ = v;
-  UPDATE_B_FILTER;
+	if (v<0.01 || v> 6.0) return;
+	w->hbQ = v;
+	UPDATE_B_FILTER;
 }
 
 static void setHornFilterBGain (void *d, unsigned char uc) {
-  struct b_whirl *w = (struct b_whirl *) d;
-  double u = (double) uc;
-  double minv = -48.0;
-  double maxv =  48.0;
-  w->hbG = minv + ((maxv - minv) * (u / 127.0));
-  UPDATE_B_FILTER;
+	struct b_whirl *w = (struct b_whirl *) d;
+	double u = (double) uc;
+	double minv = -48.0;
+	double maxv =  48.0;
+	w->hbG = minv + ((maxv - minv) * (u / 127.0));
+	UPDATE_B_FILTER;
 }
 
 void fsetHornFilterBGain (struct b_whirl *w, float v) {
-  if (v<-48.0 || v> 48.0) return;
-  w->hbG = v;
-  UPDATE_B_FILTER;
+	if (v<-48.0 || v> 48.0) return;
+	w->hbG = v;
+	UPDATE_B_FILTER;
 }
 
 void isetDrumFilterType (struct b_whirl *w, int v) {
-  w->lpT = (int) (v % 9);
-  UPDATE_D_FILTER;
+	w->lpT = (int) (v % 9);
+	UPDATE_D_FILTER;
 }
 
 void fsetDrumFilterFrequency (struct b_whirl *w, float v) {
-  if (v<20.0 || v> 8000.0) return;
-  w->lpF = v;
-  UPDATE_D_FILTER;
+	if (v<20.0 || v> 8000.0) return;
+	w->lpF = v;
+	UPDATE_D_FILTER;
 }
 
 void fsetDrumFilterQ (struct b_whirl *w, float v) {
-  if (v<0.01 || v> 6.0) return;
-  w->lpQ = v;
-  UPDATE_D_FILTER;
+	if (v<0.01 || v> 6.0) return;
+	w->lpQ = v;
+	UPDATE_D_FILTER;
 }
 
 void fsetDrumFilterGain (struct b_whirl *w, float v) {
-  if (v<-48.0 || v> 48.0) return;
-  w->lpG = v;
-  UPDATE_D_FILTER;
+	if (v<-48.0 || v> 48.0) return;
+	w->lpG = v;
+	UPDATE_D_FILTER;
 }
 
 static void setHornBrakePosition (void *d, unsigned char uc) {
-  struct b_whirl *w = (struct b_whirl *) d;
-  w->hnBrakePos = (double)uc/127.0;
+	struct b_whirl *w = (struct b_whirl *) d;
+	w->hnBrakePos = (double)uc/127.0;
 }
 
 static void setDrumBrakePosition (void *d, unsigned char uc) {
-  struct b_whirl *w = (struct b_whirl *) d;
-  w->drBrakePos = (double)uc/127.0;
+	struct b_whirl *w = (struct b_whirl *) d;
+	w->drBrakePos = (double)uc/127.0;
 }
 
 static void setHornAcceleration (void *d, unsigned char uc) {
-  struct b_whirl *w = (struct b_whirl *) d;
-  w->hornAcc = .01 + (double)uc/80.0;
+	struct b_whirl *w = (struct b_whirl *) d;
+	w->hornAcc = .01 + (double)uc/80.0;
 }
 
 static void setHornDeceleration (void *d, unsigned char uc) {
-  struct b_whirl *w = (struct b_whirl *) d;
-  w->hornDec = .01 + (double)uc/80.0;
+	struct b_whirl *w = (struct b_whirl *) d;
+	w->hornDec = .01 + (double)uc/80.0;
 }
 
 void setDrumAcceleration (void *d, unsigned char uc) {
-  struct b_whirl *w = (struct b_whirl *) d;
-  w->drumAcc = .01 + (double)uc/14.0;
+	struct b_whirl *w = (struct b_whirl *) d;
+	w->drumAcc = .01 + (double)uc/14.0;
 }
 
 static void setDrumDeceleration (void *d, unsigned char uc) {
-  struct b_whirl *w = (struct b_whirl *) d;
-  w->drumDec = .01 + (double)uc/14.0;
+	struct b_whirl *w = (struct b_whirl *) d;
+	w->drumDec = .01 + (double)uc/14.0;
 }
 
 void fsetDrumMicWidth (void *d, const float dw) {
-  struct b_whirl *w = (struct b_whirl *) d;
+	struct b_whirl *w = (struct b_whirl *) d;
 
-  if (w->drumMicWidth == dw) {
-    return;
-  }
+	if (w->drumMicWidth == dw) {
+		return;
+	}
 
-  w->drumMicWidth = dw;
+	w->drumMicWidth = dw;
 
-  const float dwP = dw > 0.f ? (dw >  1.f ? 1.f :  dw) : 0.f;
-  const float dwN = dw < 0.f ? (dw < -1.f ? 1.f : -dw) : 0.f;
+	const float dwP = dw > 0.f ? (dw >  1.f ? 1.f :  dw) : 0.f;
+	const float dwN = dw < 0.f ? (dw < -1.f ? 1.f : -dw) : 0.f;
 
-  w->drumMic_dll = sqrtf(1.f - dwP);
-  w->drumMic_dlr = sqrtf(0.f + dwP);
-  w->drumMic_drl = sqrtf(0.f + dwN);
-  w->drumMic_drr = sqrtf(1.f - dwN);
+	w->drumMic_dll = sqrtf(1.f - dwP);
+	w->drumMic_dlr = sqrtf(0.f + dwP);
+	w->drumMic_drl = sqrtf(0.f + dwN);
+	w->drumMic_drr = sqrtf(1.f - dwN);
 }
 
 void fsetHornMicWidth (void *d, const float hw) {
-  struct b_whirl *w = (struct b_whirl *) d;
+	struct b_whirl *w = (struct b_whirl *) d;
 
-  if (w->hornMicWidth == hw) {
-    return;
-  }
+	if (w->hornMicWidth == hw) {
+		return;
+	}
 
-  w->hornMicWidth = hw;
+	w->hornMicWidth = hw;
 
-  const float hwP = hw > 0.f ? (hw >  1.f ? 1.f :  hw) : 0.f;
-  const float hwN = hw < 0.f ? (hw < -1.f ? 1.f : -hw) : 0.f;
+	const float hwP = hw > 0.f ? (hw >  1.f ? 1.f :  hw) : 0.f;
+	const float hwN = hw < 0.f ? (hw < -1.f ? 1.f : -hw) : 0.f;
 
-  w->hornMic_hll = sqrtf(1.f - hwP);
-  w->hornMic_hlr = sqrtf(0.f + hwP);
-  w->hornMic_hrl = sqrtf(0.f + hwN);
-  w->hornMic_hrr = sqrtf(1.f - hwN);
+	w->hornMic_hll = sqrtf(1.f - hwP);
+	w->hornMic_hlr = sqrtf(0.f + hwP);
+	w->hornMic_hrl = sqrtf(0.f + hwN);
+	w->hornMic_hrr = sqrtf(1.f - hwN);
 }
 
 /*
@@ -856,372 +854,361 @@ void fsetHornMicWidth (void *d, const float hw) {
  */
 void initWhirl (struct b_whirl *w, void *m, double rate) {
 
-  w->SampleRateD = rate;
-  w->midi_cfg_ptr = m; // used for notify -- translate "rotary.speed-*"
+	w->SampleRateD = rate;
+	w->midi_cfg_ptr = m; // used for notify -- translate "rotary.speed-*"
 
-  useMIDIControlFunction (m, "rotary.speed-toggle",    setWhirlSustainPedal, (void*)w);
-  useMIDIControlFunction (m, "rotary.speed-preset",    revControl, (void*)w);
-  useMIDIControlFunction (m, "rotary.speed-select",    revControlAll, (void*)w);
+	useMIDIControlFunction (m, "rotary.speed-toggle",    setWhirlSustainPedal, (void*)w);
+	useMIDIControlFunction (m, "rotary.speed-preset",    revControl, (void*)w);
+	useMIDIControlFunction (m, "rotary.speed-select",    revControlAll, (void*)w);
 
-  useMIDIControlFunction (m, "whirl.horn.filter.a.type", setHornFilterAType, (void*)w);
-  useMIDIControlFunction (m, "whirl.horn.filter.a.hz",   setHornFilterAFrequency, (void*)w);
-  useMIDIControlFunction (m, "whirl.horn.filter.a.q",    setHornFilterAQ, (void*)w);
-  useMIDIControlFunction (m, "whirl.horn.filter.a.gain", setHornFilterAGain, (void*)w);
-  useMIDIControlFunction (m, "whirl.horn.filter.b.type", setHornFilterBType, (void*)w);
-  useMIDIControlFunction (m, "whirl.horn.filter.b.hz",   setHornFilterBFrequency, (void*)w);
-  useMIDIControlFunction (m, "whirl.horn.filter.b.q",    setHornFilterBQ, (void*)w);
-  useMIDIControlFunction (m, "whirl.horn.filter.b.gain", setHornFilterBGain, (void*)w);
+	useMIDIControlFunction (m, "whirl.horn.filter.a.type", setHornFilterAType, (void*)w);
+	useMIDIControlFunction (m, "whirl.horn.filter.a.hz",   setHornFilterAFrequency, (void*)w);
+	useMIDIControlFunction (m, "whirl.horn.filter.a.q",    setHornFilterAQ, (void*)w);
+	useMIDIControlFunction (m, "whirl.horn.filter.a.gain", setHornFilterAGain, (void*)w);
+	useMIDIControlFunction (m, "whirl.horn.filter.b.type", setHornFilterBType, (void*)w);
+	useMIDIControlFunction (m, "whirl.horn.filter.b.hz",   setHornFilterBFrequency, (void*)w);
+	useMIDIControlFunction (m, "whirl.horn.filter.b.q",    setHornFilterBQ, (void*)w);
+	useMIDIControlFunction (m, "whirl.horn.filter.b.gain", setHornFilterBGain, (void*)w);
 
-  useMIDIControlFunction (m, "whirl.horn.brakepos", setHornBrakePosition, (void*)w);
-  useMIDIControlFunction (m, "whirl.drum.brakepos", setDrumBrakePosition, (void*)w);
+	useMIDIControlFunction (m, "whirl.horn.brakepos", setHornBrakePosition, (void*)w);
+	useMIDIControlFunction (m, "whirl.drum.brakepos", setDrumBrakePosition, (void*)w);
 
-  useMIDIControlFunction (m, "whirl.horn.acceleration", setHornAcceleration, (void*)w);
-  useMIDIControlFunction (m, "whirl.horn.deceleration", setHornDeceleration, (void*)w);
-  useMIDIControlFunction (m, "whirl.drum.acceleration", setDrumAcceleration, (void*)w);
-  useMIDIControlFunction (m, "whirl.drum.deceleration", setDrumDeceleration, (void*)w);
+	useMIDIControlFunction (m, "whirl.horn.acceleration", setHornAcceleration, (void*)w);
+	useMIDIControlFunction (m, "whirl.horn.deceleration", setHornDeceleration, (void*)w);
+	useMIDIControlFunction (m, "whirl.drum.acceleration", setDrumAcceleration, (void*)w);
+	useMIDIControlFunction (m, "whirl.drum.deceleration", setDrumDeceleration, (void*)w);
 
-  initialize (w);
-  computeRotationSpeeds(w);
+	initialize (w);
+	computeRotationSpeeds(w);
 }
 
 /*
  * Configuration interface.
  */
 int whirlConfig (struct b_whirl *w, ConfigContext * cfg) {
-  double d;
-  int k;
-  int rtn = 1;
-  if (getConfigParameter_d ("whirl.horn.slowrpm", cfg, &d) == 1) {
-    w->hornRPMslow = (float) d;
-  }
-  else if (getConfigParameter_d ("whirl.horn.fastrpm", cfg, &d) == 1) {
-    w->hornRPMfast = (float) d;
-  }
-  else if (getConfigParameter_d ("whirl.horn.acceleration", cfg, &d) == 1) {
-    w->hornAcc = (float) d;
-  }
-  else if (getConfigParameter_d ("whirl.horn.deceleration", cfg, &d) == 1) {
-    w->hornDec = (float) d;
-  }
-  else if (getConfigParameter_d ("whirl.drum.slowrpm", cfg, &d) == 1) {
-    w->drumRPMslow = (float) d;
-  }
-  else if (getConfigParameter_d ("whirl.drum.fastrpm", cfg, &d) == 1) {
-    w->drumRPMfast = (float) d;
-  }
-  else if (getConfigParameter_d ("whirl.drum.acceleration", cfg, &d) == 1) {
-    w->drumAcc = (float) d;
-  }
-  else if (getConfigParameter_d ("whirl.drum.deceleration", cfg, &d) == 1) {
-    w->drumDec = (float) d;
-  }
-  else if (getConfigParameter_d ("whirl.horn.radius", cfg, &d) == 1) {
-    w->hornRadiusCm = (float) d;
-  }
-  else if (getConfigParameter_d ("whirl.drum.radius", cfg, &d) == 1) {
-    w->drumRadiusCm = (float) d;
-  }
-  else if (getConfigParameter_d ("whirl.horn.level", cfg, &d) == 1) {
-    w->hornLevel = (float) d;
-  }
-  else if (getConfigParameter_d ("whirl.horn.leak", cfg, &d) == 1) {
-    w->leakLevel = (float) d;
-  }
-  else if (getConfigParameter_d ("whirl.drum.width", cfg, &d) == 1) {
-    fsetDrumMicWidth(w, d);
-  }
-  else if (getConfigParameter_d ("whirl.horn.width", cfg, &d) == 1) {
-    fsetHornMicWidth(w, d);
-  }
-  else if (getConfigParameter_d ("whirl.mic.distance", cfg, &d) == 1) {
-    w->micDistCm = (float) d;
-  }
-  else if (getConfigParameter_d ("whirl.horn.offset.x", cfg, &d) == 1) {
-    w->hornXOffsetCm = (float) d;
-  }
-  else if (getConfigParameter_d ("whirl.horn.offset.z", cfg, &d) == 1) {
-    w->hornZOffsetCm = (float) d;
-  }
-  else if (getConfigParameter_ir
-	   ("whirl.drum.filter.type", cfg, &k, 0, 8) == 1) {
-    w->lpT = k;
-  }
-  else if (getConfigParameter_d ("whirl.drum.filter.q", cfg, &d) == 1) {
-    w->lpQ =  d;
-  }
-  else if (getConfigParameter_d ("whirl.drum.filter.hz", cfg, &d) == 1) {
-    w->lpF =  d;
-  }
-  else if (getConfigParameter_d ("whirl.drum.filter.gain", cfg, &d) == 1) {
-    w->lpG =  d;
-  }
-  else if (getConfigParameter_ir
-	   ("whirl.horn.filter.a.type", cfg, &k, 0, 8) == 1) {
-    w->haT = k;
-  }
-  else if (getConfigParameter_d ("whirl.horn.filter.a.hz", cfg, &d) == 1) {
-    w->haF = (double) d;
-  }
-  else if (getConfigParameter_d ("whirl.horn.filter.a.q", cfg, &d) == 1) {
-    w->haQ = (double) d;
-  }
-  else if (getConfigParameter_d ("whirl.horn.filter.a.gain", cfg, &d) == 1) {
-    w->haG = (double) d;
-  }
-  else if (getConfigParameter_ir
-	   ("whirl.horn.filter.b.type", cfg, &k, 0, 8) == 1) {
-    w->hbT = k;
-  }
-  else if (getConfigParameter_d ("whirl.horn.filter.b.hz", cfg, &d) == 1) {
-    w->hbF = (double) d;
-  }
-  else if (getConfigParameter_d ("whirl.horn.filter.b.q", cfg, &d) == 1) {
-    w->hbQ = (double) d;
-  }
-  else if (getConfigParameter_d ("whirl.horn.filter.b.gain", cfg, &d) == 1) {
-    w->hbG = (double) d;
-  }
-  else if (getConfigParameter_d ("whirl.horn.comb.a.feedback", cfg, &d) == 1) {
-    w->cb0fb = (double) d;
-  }
-  else if (getConfigParameter_i ("whirl.horn.comb.a.delay", cfg, &k) == 1) {
-    w->cb0dl = k;
-  }
-  else if (getConfigParameter_d ("whirl.horn.comb.b.feedback", cfg, &d) == 1) {
-    w->cb1fb = (double) d;
-  }
-  else if (getConfigParameter_i ("whirl.horn.comb.b.delay", cfg, &k) == 1) {
-    w->cb1dl = k;
-  }
-  else if (getConfigParameter_i ("whirl.speed-preset", cfg, &k) == 1) {
-    w->revSelect = k % revSelectEnd;
-  }
-  else if (getConfigParameter_ir ("whirl.bypass", cfg, &k, 0, 1) == 1) {
-    w->bypass = k;
-  }
+	double d;
+	int k;
+	int rtn = 1;
+	if (getConfigParameter_d ("whirl.horn.slowrpm", cfg, &d) == 1) {
+		w->hornRPMslow = (float) d;
+	}
+	else if (getConfigParameter_d ("whirl.horn.fastrpm", cfg, &d) == 1) {
+		w->hornRPMfast = (float) d;
+	}
+	else if (getConfigParameter_d ("whirl.horn.acceleration", cfg, &d) == 1) {
+		w->hornAcc = (float) d;
+	}
+	else if (getConfigParameter_d ("whirl.horn.deceleration", cfg, &d) == 1) {
+		w->hornDec = (float) d;
+	}
+	else if (getConfigParameter_d ("whirl.drum.slowrpm", cfg, &d) == 1) {
+		w->drumRPMslow = (float) d;
+	}
+	else if (getConfigParameter_d ("whirl.drum.fastrpm", cfg, &d) == 1) {
+		w->drumRPMfast = (float) d;
+	}
+	else if (getConfigParameter_d ("whirl.drum.acceleration", cfg, &d) == 1) {
+		w->drumAcc = (float) d;
+	}
+	else if (getConfigParameter_d ("whirl.drum.deceleration", cfg, &d) == 1) {
+		w->drumDec = (float) d;
+	}
+	else if (getConfigParameter_d ("whirl.horn.radius", cfg, &d) == 1) {
+		w->hornRadiusCm = (float) d;
+	}
+	else if (getConfigParameter_d ("whirl.drum.radius", cfg, &d) == 1) {
+		w->drumRadiusCm = (float) d;
+	}
+	else if (getConfigParameter_d ("whirl.horn.level", cfg, &d) == 1) {
+		w->hornLevel = (float) d;
+	}
+	else if (getConfigParameter_d ("whirl.horn.leak", cfg, &d) == 1) {
+		w->leakLevel = (float) d;
+	}
+	else if (getConfigParameter_d ("whirl.drum.width", cfg, &d) == 1) {
+		fsetDrumMicWidth(w, d);
+	}
+	else if (getConfigParameter_d ("whirl.horn.width", cfg, &d) == 1) {
+		fsetHornMicWidth(w, d);
+	}
+	else if (getConfigParameter_d ("whirl.mic.distance", cfg, &d) == 1) {
+		w->micDistCm = (float) d;
+	}
+	else if (getConfigParameter_d ("whirl.horn.offset.x", cfg, &d) == 1) {
+		w->hornXOffsetCm = (float) d;
+	}
+	else if (getConfigParameter_d ("whirl.horn.offset.z", cfg, &d) == 1) {
+		w->hornZOffsetCm = (float) d;
+	}
+	else if (getConfigParameter_ir ("whirl.drum.filter.type", cfg, &k, 0, 8) == 1) {
+		w->lpT = k;
+	}
+	else if (getConfigParameter_d ("whirl.drum.filter.q", cfg, &d) == 1) {
+		w->lpQ =  d;
+	}
+	else if (getConfigParameter_d ("whirl.drum.filter.hz", cfg, &d) == 1) {
+		w->lpF =  d;
+	}
+	else if (getConfigParameter_d ("whirl.drum.filter.gain", cfg, &d) == 1) {
+		w->lpG =  d;
+	}
+	else if (getConfigParameter_ir ("whirl.horn.filter.a.type", cfg, &k, 0, 8) == 1) {
+		w->haT = k;
+	}
+	else if (getConfigParameter_d ("whirl.horn.filter.a.hz", cfg, &d) == 1) {
+		w->haF = (double) d;
+	}
+	else if (getConfigParameter_d ("whirl.horn.filter.a.q", cfg, &d) == 1) {
+		w->haQ = (double) d;
+	}
+	else if (getConfigParameter_d ("whirl.horn.filter.a.gain", cfg, &d) == 1) {
+		w->haG = (double) d;
+	}
+	else if (getConfigParameter_ir ("whirl.horn.filter.b.type", cfg, &k, 0, 8) == 1) {
+		w->hbT = k;
+	}
+	else if (getConfigParameter_d ("whirl.horn.filter.b.hz", cfg, &d) == 1) {
+		w->hbF = (double) d;
+	}
+	else if (getConfigParameter_d ("whirl.horn.filter.b.q", cfg, &d) == 1) {
+		w->hbQ = (double) d;
+	}
+	else if (getConfigParameter_d ("whirl.horn.filter.b.gain", cfg, &d) == 1) {
+		w->hbG = (double) d;
+	}
+	else if (getConfigParameter_d ("whirl.horn.comb.a.feedback", cfg, &d) == 1) {
+		w->cb0fb = (double) d;
+	}
+	else if (getConfigParameter_i ("whirl.horn.comb.a.delay", cfg, &k) == 1) {
+		w->cb0dl = k;
+	}
+	else if (getConfigParameter_d ("whirl.horn.comb.b.feedback", cfg, &d) == 1) {
+		w->cb1fb = (double) d;
+	}
+	else if (getConfigParameter_i ("whirl.horn.comb.b.delay", cfg, &k) == 1) {
+		w->cb1dl = k;
+	}
+	else if (getConfigParameter_i ("whirl.speed-preset", cfg, &k) == 1) {
+		w->revSelect = k % revSelectEnd;
+	}
+	else if (getConfigParameter_ir ("whirl.bypass", cfg, &k, 0, 1) == 1) {
+		w->bypass = k;
+	}
+	else if (getConfigParameter_dr ("whirl.horn.mic.angle", cfg, &d, 0, 180.0) == 1) {
+		w->micAngle = 1.0 - (double)d / 180.0;
+	}
+	else if (getConfigParameter_dr ("whirl.horn.brakepos", cfg, &d, 0, 1.0) == 1) {
+		w->hnBrakePos = (double) d;
+	}
+	else if (getConfigParameter_dr ("whirl.drum.brakepos", cfg, &d, 0, 1.0) == 1) {
+		w->drBrakePos = (double) d;
+	}
 #if 1 // backwards compat typo
-  else if (getConfigParameter_dr ("whirl.horn.breakpos", cfg, &d, 0, 1.0) == 1) {
-    w->hnBrakePos = (double) d;
-  }
-  else if (getConfigParameter_dr ("whirl.drum.breakpos", cfg, &d, 0, 1.0) == 1) {
-    w->drBrakePos = (double) d;
-  }
+	else if (getConfigParameter_dr ("whirl.horn.breakpos", cfg, &d, 0, 1.0) == 1) {
+		w->hnBrakePos = (double) d;
+	}
+	else if (getConfigParameter_dr ("whirl.drum.breakpos", cfg, &d, 0, 1.0) == 1) {
+		w->drBrakePos = (double) d;
+	}
 #endif
-  else if (getConfigParameter_dr ("whirl.horn.brakepos", cfg, &d, 0, 1.0) == 1) {
-    w->hnBrakePos = (double) d;
-  }
-  else if (getConfigParameter_dr ("whirl.drum.brakepos", cfg, &d, 0, 1.0) == 1) {
-    w->drBrakePos = (double) d;
-  }
-  else if (getConfigParameter_dr ("whirl.horn.mic.angle", cfg, &d, 0, 180.0) == 1) {
-    w->micAngle = 1.0 - (double)d / 180.0;
-  }
-
-  else {
-    rtn = 0;
-  }
-  return rtn;
+	else {
+		rtn = 0;
+	}
+	return rtn;
 }
 
 void whirlProc2 (struct b_whirl *w,
-		 const float * inbuffer,
-		 float * outL,  float * outR,
-		 float * outHL, float * outHR,
-		 float * outDL, float * outDR,
-		 size_t bufferLengthSamples) {
+                 const float * inbuffer,
+                 float * outL,  float * outR,
+                 float * outHL, float * outHR,
+                 float * outDL, float * outDR,
+                 size_t bufferLengthSamples)
+{
 
-  const float * xp = inbuffer;
-  unsigned int i;
+	const float * xp = inbuffer;
+	unsigned int i;
 
-  if (w->bypass) {
-    for (i = 0; i < bufferLengthSamples; i++) {
-      if (outL) *outL++ = inbuffer[i];
-      if (outR) *outR++ = inbuffer[i];
-      if (outHL) *outHL++ = inbuffer[i];
-      if (outHR) *outHR++ = inbuffer[i];
-      if (outDL) *outDL++ = 0;
-      if (outDR) *outDR++ = 0;
-    }
-    return;
-  }
-
-
-  /* compute rotational speeds for this cycle */
-
-  if (w->hornAcDc) {
-    /* brake position notch - see comment on brake below */
-    int flywheel = 0; // disable deceleration to smoothly reach desired stop position
-    const float hardstop = 10.f  / (60.f * w->SampleRateD); // limit deceleration 10 to 0. RPM
-
-    if (w->hnBrakePos > 0 && w->hornTarget == 0 && w->hornIncr > 0 && w->hornIncr < hardstop) {
-      const double targetPos = fmod(1.25 - w->hnBrakePos, 1.0);
-      if (fabsf(w->hornAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
-	w->hornAngleGRD = targetPos;
-	w->hornIncr = 0;
-      } else {
-	// keep going. at most: speed needed to reach brake-pos, at least 3RPM.
-	const float minspeed = 3.f / (60.f * w->SampleRateD);
-	const float diffinc  = fmod(1. + targetPos - w->hornAngleGRD, 1.0) / (float) bufferLengthSamples;
-	if (w->hornIncr > diffinc) {
-	  w->hornIncr = diffinc;
-	} else if  (w->hornIncr < minspeed) {
-	  w->hornIncr = minspeed;
+	if (w->bypass) {
+		for (i = 0; i < bufferLengthSamples; i++) {
+			if (outL) *outL++ = inbuffer[i];
+			if (outR) *outR++ = inbuffer[i];
+			if (outHL) *outHL++ = inbuffer[i];
+			if (outHR) *outHR++ = inbuffer[i];
+			if (outDL) *outDL++ = 0;
+			if (outDR) *outDR++ = 0;
+		}
+		return;
 	}
-	flywheel = 1; 
-      }
-    }
 
-    if (!flywheel) {
-      const double l = exp(-1.0/(w->SampleRateD / bufferLengthSamples * (w->hornAcDc>0? w->hornAcc : w->hornDec )));
-      w->hornIncr += (1-l) * (w->hornTarget - w->hornIncr);
-    }
 
-    if (fabs(w->hornTarget - w->hornIncr) < (.05 / (60.f * w->SampleRateD))) {
-      /* provide a dead-zone for rounding */
+	/* compute rotational speeds for this cycle */
+
+	if (w->hornAcDc) {
+		/* brake position notch - see comment on brake below */
+		int flywheel = 0; // disable deceleration to smoothly reach desired stop position
+		const float hardstop = 10.f  / (60.f * w->SampleRateD); // limit deceleration 10 to 0. RPM
+
+		if (w->hnBrakePos > 0 && w->hornTarget == 0 && w->hornIncr > 0 && w->hornIncr < hardstop) {
+			const double targetPos = fmod(1.25 - w->hnBrakePos, 1.0);
+			if (fabsf(w->hornAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
+				w->hornAngleGRD = targetPos;
+				w->hornIncr = 0;
+			} else {
+				// keep going. at most: speed needed to reach brake-pos, at least 3RPM.
+				const float minspeed = 3.f / (60.f * w->SampleRateD);
+				const float diffinc  = fmod(1. + targetPos - w->hornAngleGRD, 1.0) / (float) bufferLengthSamples;
+				if (w->hornIncr > diffinc) {
+					w->hornIncr = diffinc;
+				} else if  (w->hornIncr < minspeed) {
+					w->hornIncr = minspeed;
+				}
+				flywheel = 1;
+			}
+		}
+
+		if (!flywheel) {
+			const double l = exp(-1.0/(w->SampleRateD / bufferLengthSamples * (w->hornAcDc>0? w->hornAcc : w->hornDec )));
+			w->hornIncr += (1-l) * (w->hornTarget - w->hornIncr);
+		}
+
+		if (fabs(w->hornTarget - w->hornIncr) < (.05 / (60.f * w->SampleRateD))) {
+			/* provide a dead-zone for rounding */
 #ifdef DEBUG_SPEED
-      printf("AcDc Horn off\n");
+			printf("AcDc Horn off\n");
 #endif
-      w->hornAcDc = 0;
-      w->hornIncr = w->hornTarget;
-    }
-  }
-
-  if (w->drumAcDc) {
-    int flywheel = 0; // disable deceleration to smoothly reach desired stop position
-    const float hardstop = 8.f  / (60.f * w->SampleRateD); // limit deceleration
-
-    if (w->drBrakePos > 0 && w->drumTarget == 0 && w->drumIncr > 0 && w->drumIncr < hardstop) {
-      const double targetPos= fmod(w->drBrakePos + .75, 1.0);
-      if (fabsf(w->drumAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
-	w->drumAngleGRD = targetPos;
-	w->drumIncr = 0;
-      } else {
-	// keep going. at most: speed needed to reach brake-pos, at least 3RPM.
-	const float minspeed = 3.f / (60.f * w->SampleRateD);
-	const float diffinc  = fmod(1. + targetPos - w->drumAngleGRD, 1.0) / (float) bufferLengthSamples;
-	if (w->drumIncr > diffinc) {
-	  w->drumIncr = diffinc;
-	} else if  (w->drumIncr < minspeed) {
-	  w->drumIncr = minspeed;
+			w->hornAcDc = 0;
+			w->hornIncr = w->hornTarget;
+		}
 	}
-	flywheel = 1; 
-      }
-    }
 
-    if (!flywheel) {
-      const double l = exp(-1.0/(w->SampleRateD / bufferLengthSamples * (w->drumAcDc>0? w->drumAcc: w->drumDec )));
-      w->drumIncr += (1-l) * (w->drumTarget - w->drumIncr);
-    }
+	if (w->drumAcDc) {
+		int flywheel = 0; // disable deceleration to smoothly reach desired stop position
+		const float hardstop = 8.f  / (60.f * w->SampleRateD); // limit deceleration
 
-    if (fabs(w->drumTarget - w->drumIncr) < (.05 / (60.f * w->SampleRateD))) {
+		if (w->drBrakePos > 0 && w->drumTarget == 0 && w->drumIncr > 0 && w->drumIncr < hardstop) {
+			const double targetPos= fmod(w->drBrakePos + .75, 1.0);
+			if (fabsf(w->drumAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
+				w->drumAngleGRD = targetPos;
+				w->drumIncr = 0;
+			} else {
+				// keep going. at most: speed needed to reach brake-pos, at least 3RPM.
+				const float minspeed = 3.f / (60.f * w->SampleRateD);
+				const float diffinc  = fmod(1. + targetPos - w->drumAngleGRD, 1.0) / (float) bufferLengthSamples;
+				if (w->drumIncr > diffinc) {
+					w->drumIncr = diffinc;
+				} else if  (w->drumIncr < minspeed) {
+					w->drumIncr = minspeed;
+				}
+				flywheel = 1;
+			}
+		}
+
+		if (!flywheel) {
+			const double l = exp(-1.0/(w->SampleRateD / bufferLengthSamples * (w->drumAcDc>0? w->drumAcc: w->drumDec )));
+			w->drumIncr += (1-l) * (w->drumTarget - w->drumIncr);
+		}
+
+		if (fabs(w->drumTarget - w->drumIncr) < (.05 / (60.f * w->SampleRateD))) {
 #ifdef DEBUG_SPEED
-      printf("ACDC Drum off\n");
+			printf("ACDC Drum off\n");
 #endif
-      w->drumAcDc = 0;
-      w->drumIncr = w->drumTarget;
-    }
-  }
+			w->drumAcDc = 0;
+			w->drumIncr = w->drumTarget;
+		}
+	}
 
 
-  /* break position -- don't stop anywhere..
-   * the original Leslie can not do this, sometimes the horn is aimed at the back of
-   * the cabinet when it comes to a halt, which results in a less than desirable sound.
-   *
-   * move the horn and drum to the center position after it actually came to a stop.
-   * (this is used if brake pos is changed with stopped motors
-   *
-   * internal Pos = 0    towards left mic
-   * internal Pos = 0.5  towards right mic
-   * config: 1 = front, .5 = back
-   */
-  int brake_enagaged = 0;
-  if (w->hnBrakePos > 0) {
-    const double targetPos = fmod(1.25 - w->hnBrakePos, 1.0);
-    if (!w->hornAcDc && w->hornIncr == 0 && w->hornAngleGRD != targetPos) {
-      brake_enagaged |= 1;
-      if (fabsf(w->hornAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
-	/* provide a dead-zone for rounding */
-	w->hornAngleGRD = targetPos;
-      } else {
-	const float limit = 60.f /* RPM */ / (60. * w->SampleRateD);
-	w->hornIncr = fmod(1. + targetPos - w->hornAngleGRD, 1.0) / (float) bufferLengthSamples;
-	if (w->hornIncr > limit) w->hornIncr = limit;
-      }
-    }
-  }
-  if (w->drBrakePos > 0) {
-    const double targetPos= fmod(w->drBrakePos + .75, 1.0);
-    if (!w->drumAcDc && w->drumIncr == 0 && w->drumAngleGRD != targetPos) {
-      brake_enagaged |= 2;
-      if (fabsf(w->drumAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
-	w->drumAngleGRD = targetPos;
-      } else {
-	const float limit = 100.f /* RPM */ / (60. * w->SampleRateD);
-	w->drumIncr = fmod(1. + targetPos - w->drumAngleGRD, 1.0) / (float) bufferLengthSamples;
-	if (w->drumIncr > limit) w->drumIncr = limit;
-      }
-    }
-  }
+	/* break position -- don't stop anywhere..
+	 * the original Leslie can not do this, sometimes the horn is aimed at the back of
+	 * the cabinet when it comes to a halt, which results in a less than desirable sound.
+	 *
+	 * move the horn and drum to the center position after it actually came to a stop.
+	 * (this is used if brake pos is changed with stopped motors
+	 *
+	 * internal Pos = 0    towards left mic
+	 * internal Pos = 0.5  towards right mic
+	 * config: 1 = front, .5 = back
+	 */
+	int brake_enagaged = 0;
+	if (w->hnBrakePos > 0) {
+		const double targetPos = fmod(1.25 - w->hnBrakePos, 1.0);
+		if (!w->hornAcDc && w->hornIncr == 0 && w->hornAngleGRD != targetPos) {
+			brake_enagaged |= 1;
+			if (fabsf(w->hornAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
+				/* provide a dead-zone for rounding */
+				w->hornAngleGRD = targetPos;
+			} else {
+				const float limit = 60.f /* RPM */ / (60. * w->SampleRateD);
+				w->hornIncr = fmod(1. + targetPos - w->hornAngleGRD, 1.0) / (float) bufferLengthSamples;
+				if (w->hornIncr > limit) w->hornIncr = limit;
+			}
+		}
+	}
+	if (w->drBrakePos > 0) {
+		const double targetPos= fmod(w->drBrakePos + .75, 1.0);
+		if (!w->drumAcDc && w->drumIncr == 0 && w->drumAngleGRD != targetPos) {
+			brake_enagaged |= 2;
+			if (fabsf(w->drumAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
+				w->drumAngleGRD = targetPos;
+			} else {
+				const float limit = 100.f /* RPM */ / (60. * w->SampleRateD);
+				w->drumIncr = fmod(1. + targetPos - w->drumAngleGRD, 1.0) / (float) bufferLengthSamples;
+				if (w->drumIncr > limit) w->drumIncr = limit;
+			}
+		}
+	}
 
-  /* localize struct variables */
-  double hornAngleGRD = w->hornAngleGRD;
-  double drumAngleGRD = w->drumAngleGRD;
-  unsigned int outpos = w->outpos;
-  const double fwAng = w->micAngle * .25;
-  const double bwAng = 1. + w->micAngle * -.25;
+	/* localize struct variables */
+	double hornAngleGRD = w->hornAngleGRD;
+	double drumAngleGRD = w->drumAngleGRD;
+	unsigned int outpos = w->outpos;
+	const double fwAng = w->micAngle * .25;
+	const double bwAng = 1. + w->micAngle * -.25;
 
-  const float leakage = w->leakage;
-  const float hornLevel = w->hornLevel;
-  const double hornIncr = w->hornIncr;
-  const double drumIncr = w->drumIncr;
+	const float leakage = w->leakage;
+	const float hornLevel = w->hornLevel;
+	const double hornIncr = w->hornIncr;
+	const double drumIncr = w->drumIncr;
 
-  const int * const hornPhase = w->hornPhase;
-  const int * const drumPhase = w->drumPhase;
-  const float * const hornSpacing = w->hornSpacing;
-  const float * const drumSpacing = w->drumSpacing;
-  const float * const hnFwdDispl = w->hnFwdDispl;
-  const float * const hnBwdDispl = w->hnBwdDispl;
-  const float * const drFwdDispl = w->drFwdDispl;
-  const float * const drBwdDispl = w->drBwdDispl;
+	const int * const hornPhase = w->hornPhase;
+	const int * const drumPhase = w->drumPhase;
+	const float * const hornSpacing = w->hornSpacing;
+	const float * const drumSpacing = w->drumSpacing;
+	const float * const hnFwdDispl = w->hnFwdDispl;
+	const float * const hnBwdDispl = w->hnBwdDispl;
+	const float * const drFwdDispl = w->drFwdDispl;
+	const float * const drBwdDispl = w->drBwdDispl;
 
-  iir_t * const hafw = w->hafw;
-  iir_t * const hbfw = w->hbfw;
-  float * const HLbuf = w->HLbuf;
-  float * const HRbuf = w->HRbuf;
-  float * const DLbuf = w->DLbuf;
-  float * const DRbuf = w->DRbuf;
-  float * const adx0 = w->adx0;
-  float * const adx1 = w->adx1;
-  float * const adx2 = w->adx2;
-  iir_t * const drfL = w->drfL;
-  iir_t * const drfR = w->drfR;
-  float * const z = w->z;
+	iir_t * const hafw = w->hafw;
+	iir_t * const hbfw = w->hbfw;
+	float * const HLbuf = w->HLbuf;
+	float * const HRbuf = w->HRbuf;
+	float * const DLbuf = w->DLbuf;
+	float * const DRbuf = w->DRbuf;
+	float * const adx0 = w->adx0;
+	float * const adx1 = w->adx1;
+	float * const adx2 = w->adx2;
+	iir_t * const drfL = w->drfL;
+	iir_t * const drfR = w->drfR;
+	float * const z = w->z;
 
-  const struct _bw * const bfw = w->bfw;
-  const struct _bw * const bbw = w->bbw;
+	const struct _bw * const bfw = w->bfw;
+	const struct _bw * const bbw = w->bbw;
 
 
 #ifdef DEBUG_SPEED
-  char const * const acdc[3]= {"<","#",">"};
-  static int fgh=0;
-  if ((fgh++ % (int)(w->SampleRateD/128/5) ) ==0) {
-    printf ("H:%.3f D:%.3f | HS:%.3f DS:%.3f [Hz]| HT:%.2f DT:%.2f [Hz]| %s %s\n",
-	hornAngleGRD, drumAngleGRD,
-	w->SampleRateD*(double)hornIncr, w->SampleRateD*(double)drumIncr,
-	w->SampleRateD*(double)w->hornTarget, w->SampleRateD*(double)w->drumTarget,
-	acdc[w->hornAcDc+1], acdc[w->drumAcDc+1]
-	);
-  }
+	char const * const acdc[3]= {"<","#",">"};
+	static int fgh=0;
+	if ((fgh++ % (int)(w->SampleRateD/128/5) ) ==0) {
+		printf ("H:%.3f D:%.3f | HS:%.3f DS:%.3f [Hz]| HT:%.2f DT:%.2f [Hz]| %s %s\n",
+				hornAngleGRD, drumAngleGRD,
+				w->SampleRateD*(double)hornIncr, w->SampleRateD*(double)drumIncr,
+				w->SampleRateD*(double)w->hornTarget, w->SampleRateD*(double)w->drumTarget,
+				acdc[w->hornAcDc+1], acdc[w->drumAcDc+1]
+		       );
+	}
 #endif
 
-  /* process each sample */
-  for (i = 0; i < bufferLengthSamples; i++) {
-    unsigned int n;
-    float x = (float) (*xp++) + DENORMAL_HACK;
-    float xx = x;
-    float leak = 0;
-
-    /* 0) define macros for code below */
 #define ADDHIST(DX,DI,XS) {      \
     DI = (DI + AGMASK) & AGMASK; \
     DX[DI] = XS;}
@@ -1262,152 +1249,159 @@ void whirlProc2 (struct b_whirl *w,
     BUF[n] += q;}
 
     /* This is just a bum filter to take some high-end off. */
-#define FILTER_C(W0,W1,I) {           \
-    float temp = x;                   \
-    x = ((W0) * x) + ((W1) * z[(I)]); \
+#define FILTER_C(W0,W1,I) {                                                \
+    float temp = x;                                                        \
+    x = ((W0) * x) + ((W1) * z[(I)]);                                      \
     z[(I)] = temp; }
 
-#define EQ_IIR(W,X,Y) {                                     \
-    float temp = (X) - (W[a1] * W[z0]) - (W[a2] * W[z1]);   \
-    Y = (temp * W[b0]) + (W[b1] * W[z0]) + (W[b2] * W[z1]); \
+#define EQ_IIR(W,X,Y) {                                                    \
+    float temp = (X) - (W[a1] * W[z0]) - (W[a2] * W[z1]);                  \
+    Y = (temp * W[b0]) + (W[b1] * W[z0]) + (W[b2] * W[z1]);                \
     W[z1] = W[z0]; \
     W[z0] = temp;}
 
-#define EQ_IIR_NAN(W) {                                     \
-    if (isnan(W[z0])) W[z0] = 0;                            \
+#define EQ_IIR_NAN(W) {                                                    \
+    if (isnan(W[z0])) W[z0] = 0;                                           \
     if (isnan(W[z1])) W[z1] = 0;}
 
 #ifdef HORN_COMB_FILTER
 
-#define COMB(WP,RP,BP,ES,FB,X) { \
-    X += ((*(RP)++) * (FB));     \
-    *(WP)++ = X;                 \
-    if ((RP) == (ES)) RP = BP;   \
+#define COMB(WP,RP,BP,ES,FB,X) {                                           \
+    X += ((*(RP)++) * (FB));                                               \
+    *(WP)++ = X;                                                           \
+    if ((RP) == (ES)) RP = BP;                                             \
     if ((WP) == (ES)) WP = BP;}
 
 #endif
 
-    /* 1) apply filters A,B -- horn-speaker characteristics
-     * input: x
-     * output: x', leak
-     */
+	/* process each sample */
+	for (i = 0; i < bufferLengthSamples; i++) {
+		unsigned int n;
+		float x = (float) (*xp++) + DENORMAL_HACK;
+		float xx = x;
+		float leak = 0;
 
-    EQ_IIR(hafw, x, x);
-    EQ_IIR(hbfw, x, x);
+		/* 1) apply filters A,B -- horn-speaker characteristics
+		 * input: x
+		 * output: x', leak
+		 */
 
-    leak = x * leakage;
+		EQ_IIR(hafw, x, x);
+		EQ_IIR(hbfw, x, x);
+
+		leak = x * leakage;
 
 #ifdef HORN_COMB_FILTER
-    /* only causes hiss-noise - in particular on 'E-4,F-4' ~660Hz
-     * no audible benefit to leslie effect so far, needs tweaking
-     */
-    COMB(w->cb0wp, w->cb0rp, w->cb0bp, w->cb0es, w->cb0fb, x);
-    COMB(w->cb1wp, w->cb1rp, w->cb1bp, w->cb1es, w->cb1fb, x);
+		/* only causes hiss-noise - in particular on 'E-4,F-4' ~660Hz
+		 * no audible benefit to leslie effect so far, needs tweaking
+		 */
+		COMB(w->cb0wp, w->cb0rp, w->cb0bp, w->cb0es, w->cb0fb, x);
+		COMB(w->cb1wp, w->cb1rp, w->cb1bp, w->cb1es, w->cb1fb, x);
 #endif
 
-    /* 2) now do doppler shift for the horn -- FM
-     * input: x' (filtered x)
-     * output: HLbuf, HRbuf, leak
-     */
+		/* 2) now do doppler shift for the horn -- FM
+		 * input: x' (filtered x)
+		 * output: HLbuf, HRbuf, leak
+		 */
 
-    /* --- STATIC HORN FILTER --- */
-    /* HORN PRIMARY */
-    HN_MOTION(0, HLbuf, hnFwdDispl, bbw, adx0, w->adi0, hornAngleGRD + fwAng);
-    HN_MOTION(1, HRbuf, hnBwdDispl, bfw, adx0, w->adi0, hornAngleGRD + bwAng);
-    ADDHIST(adx0, w->adi0, x);
+		/* --- STATIC HORN FILTER --- */
+		/* HORN PRIMARY */
+		HN_MOTION(0, HLbuf, hnFwdDispl, bbw, adx0, w->adi0, hornAngleGRD + fwAng);
+		HN_MOTION(1, HRbuf, hnBwdDispl, bfw, adx0, w->adi0, hornAngleGRD + bwAng);
+		ADDHIST(adx0, w->adi0, x);
 
-    /* HORN FIRST REFLECTION FILTER */
-    FILTER_C(0.4, 0.4, 0);
+		/* HORN FIRST REFLECTION FILTER */
+		FILTER_C(0.4, 0.4, 0);
 
-    /* HORN FIRST REFLECTION */
-    HN_MOTION(2, HLbuf, hnBwdDispl, bfw, adx1, w->adi1, hornAngleGRD + fwAng);
-    HN_MOTION(3, HRbuf, hnFwdDispl, bbw, adx1, w->adi1, hornAngleGRD + bwAng);
-    ADDHIST(adx1, w->adi1, x);
+		/* HORN FIRST REFLECTION */
+		HN_MOTION(2, HLbuf, hnBwdDispl, bfw, adx1, w->adi1, hornAngleGRD + fwAng);
+		HN_MOTION(3, HRbuf, hnFwdDispl, bbw, adx1, w->adi1, hornAngleGRD + bwAng);
+		ADDHIST(adx1, w->adi1, x);
 
-    /* HORN SECOND REFLECTION FILTER */
-    FILTER_C(0.4, 0.4, 1);
+		/* HORN SECOND REFLECTION FILTER */
+		FILTER_C(0.4, 0.4, 1);
 
-    /* HORN SECOND REFLECTION */
-    HN_MOTION(4, HLbuf, hnFwdDispl, bbw, adx2, w->adi2, hornAngleGRD + fwAng);
-    HN_MOTION(5, HRbuf, hnBwdDispl, bfw, adx2, w->adi2, hornAngleGRD + bwAng);
-    ADDHIST(adx2, w->adi2, x);
+		/* HORN SECOND REFLECTION */
+		HN_MOTION(4, HLbuf, hnFwdDispl, bbw, adx2, w->adi2, hornAngleGRD + fwAng);
+		HN_MOTION(5, HRbuf, hnBwdDispl, bfw, adx2, w->adi2, hornAngleGRD + bwAng);
+		ADDHIST(adx2, w->adi2, x);
 
-    /* 1A) do doppler shift for drum (actually orig signal -- FM
-     * input: x
-     * output: DLbuf, DRbuf
-     */
+		/* 1A) do doppler shift for drum (actually orig signal -- FM
+		 * input: x
+		 * output: DLbuf, DRbuf
+		 */
 
-    x = xx; // use original input signal ('x' was modified by horn filters)
+		x = xx; // use original input signal ('x' was modified by horn filters)
 
-    /* --- DRUM --- */
-    DR_MOTION(0, DLbuf, drFwdDispl);
-    DR_MOTION(1, DRbuf, drBwdDispl);
+		/* --- DRUM --- */
+		DR_MOTION(0, DLbuf, drFwdDispl);
+		DR_MOTION(1, DRbuf, drBwdDispl);
 
-    /* DRUM FIRST REFLECTION FILTER */
-    FILTER_C(0.4, 0.4, 2);
+		/* DRUM FIRST REFLECTION FILTER */
+		FILTER_C(0.4, 0.4, 2);
 
-    /* DRUM FIRST REFLECTION */
-    DR_MOTION(2, DLbuf, drBwdDispl);
-    DR_MOTION(3, DRbuf, drFwdDispl);
+		/* DRUM FIRST REFLECTION */
+		DR_MOTION(2, DLbuf, drBwdDispl);
+		DR_MOTION(3, DRbuf, drFwdDispl);
 
-    /* DRUM SECOND REFLECTION FILTER */
-    FILTER_C(0.4, 0.4, 3);
+		/* DRUM SECOND REFLECTION FILTER */
+		FILTER_C(0.4, 0.4, 3);
 
-    /* DRUM SECOND REFLECTION */
-    DR_MOTION(4, DLbuf, drFwdDispl);
-    DR_MOTION(5, DRbuf, drBwdDispl);
+		/* DRUM SECOND REFLECTION */
+		DR_MOTION(4, DLbuf, drFwdDispl);
+		DR_MOTION(5, DRbuf, drBwdDispl);
 
 
-    /* 1B) apply filter to drum-signal - and add horn */
+		/* 1B) apply filter to drum-signal - and add horn */
 
-    {
-      float y;
-      EQ_IIR(drfL, DLbuf[outpos], y);
-      if (outL)
-	*outL++ = y + hornLevel * HLbuf[outpos] + leak;
-      if (outHL)
-	*outHL++ = hornLevel * HLbuf[outpos] + leak;
-      if (outDL)
-	*outDL++ = y;
+		{
+			float y;
+			EQ_IIR(drfL, DLbuf[outpos], y);
+			if (outL)
+				*outL++ = y + hornLevel * HLbuf[outpos] + leak;
+			if (outHL)
+				*outHL++ = hornLevel * HLbuf[outpos] + leak;
+			if (outDL)
+				*outDL++ = y;
 
-      EQ_IIR(drfR, DRbuf[outpos], y);
-      if (outR)
-	*outR++ =  y + hornLevel * HRbuf[outpos] + leak;
-      if (outHR)
-	*outHR++ = hornLevel * HRbuf[outpos] + leak;
-      if (outDR)
-	*outDR++ = y;
-    }
+			EQ_IIR(drfR, DRbuf[outpos], y);
+			if (outR)
+				*outR++ =  y + hornLevel * HRbuf[outpos] + leak;
+			if (outHR)
+				*outHR++ = hornLevel * HRbuf[outpos] + leak;
+			if (outDR)
+				*outDR++ = y;
+		}
 
-    HLbuf[outpos] = 0.0;
-    HRbuf[outpos] = 0.0;
-    DLbuf[outpos] = 0.0;
-    DRbuf[outpos] = 0.0;
+		HLbuf[outpos] = 0.0;
+		HRbuf[outpos] = 0.0;
+		DLbuf[outpos] = 0.0;
+		DRbuf[outpos] = 0.0;
 
-    /* rotate speakers */
+		/* rotate speakers */
 
-    outpos = (outpos + 1) & WHIRL_BUF_MASK_SAMPLES;
+		outpos = (outpos + 1) & WHIRL_BUF_MASK_SAMPLES;
 
-    hornAngleGRD = fmod(hornAngleGRD + hornIncr, 1.0);
-    drumAngleGRD = fmod(drumAngleGRD + drumIncr, 1.0);
-  }
+		hornAngleGRD = fmod(hornAngleGRD + hornIncr, 1.0);
+		drumAngleGRD = fmod(drumAngleGRD + drumIncr, 1.0);
+	}
 
-  EQ_IIR_NAN(hafw)
-  EQ_IIR_NAN(hbfw)
-  EQ_IIR_NAN(drfL)
-  EQ_IIR_NAN(drfR)
+	EQ_IIR_NAN(hafw)
+		EQ_IIR_NAN(hbfw)
+		EQ_IIR_NAN(drfL)
+		EQ_IIR_NAN(drfR)
 
-  if (isnan(z[0])) z[0] = 0;
-  if (isnan(z[1])) z[1] = 0;
-  if (isnan(z[2])) z[2] = 0;
-  if (isnan(z[3])) z[3] = 0;
+		if (isnan(z[0])) z[0] = 0;
+	if (isnan(z[1])) z[1] = 0;
+	if (isnan(z[2])) z[2] = 0;
+	if (isnan(z[3])) z[3] = 0;
 
-  /* copy back variables */
-  w->hornAngleGRD = hornAngleGRD;
-  w->drumAngleGRD = drumAngleGRD;
-  if (brake_enagaged & 1) { w->hornIncr = 0; }
-  if (brake_enagaged & 2) { w->drumIncr = 0; }
-  w->outpos = outpos;
+	/* copy back variables */
+	w->hornAngleGRD = hornAngleGRD;
+	w->drumAngleGRD = drumAngleGRD;
+	if (brake_enagaged & 1) { w->hornIncr = 0; }
+	if (brake_enagaged & 2) { w->drumIncr = 0; }
+	w->outpos = outpos;
 }
 
 void whirlProc (struct b_whirl *w,
@@ -1503,7 +1497,7 @@ static const ConfigDoc doc[] = {
 };
 
 const ConfigDoc *whirlDoc () {
-  return doc;
+	return doc;
 }
 
 
