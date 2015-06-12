@@ -1232,7 +1232,7 @@ void whirlProc2 (struct b_whirl *w,
     const unsigned int hl = (unsigned int)floor(h1) & WHIRL_DISPLC_MASK;   \
     const unsigned int hh = (hl + 1) & WHIRL_DISPLC_MASK;                  \
     const float intp = DSP[hl] * (1.f - hd) + hd * DSP[hh];                \
-    const unsigned int k = (unsigned int) floor(hd);                       \
+    const unsigned int k = ((unsigned int) round(h1)) & WHIRL_DISPLC_MASK; \
     const float t = hornSpacing[(P)] + intp + (float) outpos;              \
     const float r = floorf (t);                                            \
     float xa;                                                              \
