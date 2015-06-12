@@ -9,6 +9,7 @@
 # custom build scripts
 /build-deb.sh export-ignore
 /release.sh export-ignore
+/localize_rtk.sh export-ignore
 /x-lnx-buildstack.sh export-ignore
 /x-lnx-bundle.sh export-ignore
 /x-osx-buildstack.sh export-ignore
@@ -16,11 +17,10 @@
 /x-win-buildstack.sh export-ignore
 /x-win-bundle.sh export-ignore
 
-# OSX + win bundle related files
-/doc/dmgbg.png export-ignore
-/doc/setBfree.icns export-ignore
+# bundle related files
 /doc/osx_readme.txt export-ignore
-/doc/setbfree.ico export-ignore
+/img export-ignore
+/b_whirl/img export-ignore
 
 # custom debian packaging, superseded by debian.org
 /debian export-ignore

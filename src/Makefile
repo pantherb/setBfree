@@ -59,8 +59,9 @@ endif
 override CFLAGS+=`pkg-config --cflags jack`
 
 ifeq ($(USEWEAKJACK),1)
-  CFLAGS+=-DUSE_WEAK_JACK -I$(RW)
+  override CFLAGS+=-DUSE_WEAK_JACK -I$(RW)
   LOADLIBES+=-ldl
+  WEAKJACK=$(RW)weakjack/weak_libjack.c
 else
   LOADLIBES+=`pkg-config --libs jack`
 endif

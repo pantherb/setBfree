@@ -28,7 +28,6 @@ ifeq ($(LV2AVAIL), yes)
     $(warning "whirl/leslie GUI will not be built")
     $(warning "robtk or its dependencies are missing")
   endif
-  $(warning $(targets))
 endif
 
 all: $(targets)

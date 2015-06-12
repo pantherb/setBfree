@@ -21,10 +21,7 @@ else
     override CFLAGS+=-mwindows
   else
     LOADLIBES=-lrt
-    ifeq ($(WEAKJACK),)
-      UILIBS+=`pkg-config --libs jack`
-    else
-      UILIBS+=-ldl
+    UILIBS+=-ldl
     endif
     ifneq ($(ENABLE_CONVOLUTION), yes)
       override CFLAGS+=-std=c99
@@ -33,10 +30,10 @@ else
 endif
 
 ifeq ($(USEWEAKJACK),1)
-  JACKCFLAGS+=-DUSE_WEAK_JACK
+  UICFLAGS+=-DUSE_WEAK_JACK
   JACKEXTRA+=$(RW)weakjack/weak_libjack.c
 else
-  JACKLIBS+=`pkg-config $(PKG_UI_FLAGS) --libs jack`
+  UILIBS+=`pkg-config --libs jack`
 endif
 
 targets=
