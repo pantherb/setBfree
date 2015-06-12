@@ -226,7 +226,7 @@ mkdir -p ${DESTDIR}/b_whirl.lv2
 cp -v b_whirl/*.ttl b_whirl/*.dll "$DESTDIR/$LV2BUNDLE"
 cp -v COPYING "$DESTDIR/share/"
 cp -v b_whirl/x42-whirl.exe "$DESTDIR/"
-cp -v b_whirl/img/x42.ico "$DESTDIR/share/"
+cp -v b_whirl/img/x42.ico "$DESTDIR/share/whirl.ico"
 #cp -v doc/win_readme.txt "${DESTDIR}/README.txt"
 
 echo " === complete"

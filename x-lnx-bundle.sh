@@ -47,6 +47,8 @@ if test -z "$OUTDIR"; then
 	OUTDIR=/tmp/
 fi
 
+TOP=`pwd`
+
 ##############################################################################
 
 PRODUCT_NAME=setBfree
@@ -56,6 +58,7 @@ trap "rm -rf ${BUNDLEDIR}" EXIT
 mkdir -p ${BUNDLEDIR}/${PRODUCT_NAME}/bin
 mkdir -p ${BUNDLEDIR}/${PRODUCT_NAME}/b_synth.lv2
 
+cd $TOP
 cp -v b_synth/*.ttl b_synth/*.so "${BUNDLEDIR}/${PRODUCT_NAME}/b_synth.lv2"
 cp -v ui/setBfreeUI "${BUNDLEDIR}/${PRODUCT_NAME}/bin"
 cp -v src/setBfree "${BUNDLEDIR}/${PRODUCT_NAME}/bin"
@@ -85,13 +88,13 @@ rm -rf ${BUNDLEDIR}
 ##############################################################################
 
 PRODUCT_NAME=x42-whirl
-
 BUNDLEDIR=`mktemp -d`
 trap "rm -rf ${BUNDLEDIR}" EXIT
 
 mkdir -p ${BUNDLEDIR}/${PRODUCT_NAME}/bin
 mkdir -p ${BUNDLEDIR}/${PRODUCT_NAME}/b_whirl.lv2
 
+cd $TOP
 cp -v b_whirl/*.ttl b_whirl/*.so "${BUNDLEDIR}/${PRODUCT_NAME}/b_whirl.lv2"
 cp -v b_whirl/x42-whirl "${BUNDLEDIR}/${PRODUCT_NAME}/bin"
 
