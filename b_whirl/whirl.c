@@ -492,23 +492,23 @@ void computeOffsets (struct b_whirl *w) {
 
 	zeroBuffers (w);
 
-	/* Spacing between reflections in samples. Normalized for 22.1k
+	/* Spacing between reflections in samples, normalized for 22.1k.
 	 * The first can't be zero, since we must allow for the swing of
 	 * the extent to wander close to the reader.
 	 */
-	w->hornSpacing[0] = 12.0;  /* Primary */
-	w->hornSpacing[1] = 18.0;
-	w->hornSpacing[2] = 53.0;  /* First reflection */
-	w->hornSpacing[3] = 50.0;
-	w->hornSpacing[4] = 106.0; /* Secondary reflection */
-	w->hornSpacing[5] = 116.0;
+	w->hornSpacing[0] = 12.0;  //  18.4cm  1842Hz -- Primary L
+	w->hornSpacing[1] = 18.0;  //  27.7cm  1227Hz -- Primary R
+	w->hornSpacing[2] = 53.0;  //  81.5cm   417Hz -- First reflection (backwards)
+	w->hornSpacing[3] = 50.0;  //  76.9cm   442Hz
+	w->hornSpacing[4] = 106.0; // 163.0cm   208Hz -- Secondary reflection
+	w->hornSpacing[5] = 116.0; // 178.5cm   190Hz
 
-	w->drumSpacing[0] = 36.0;
-	w->drumSpacing[1] = 39.0;
-	w->drumSpacing[2] = 79.0;
-	w->drumSpacing[3] = 86.0;
-	w->drumSpacing[4] = 123.0;
-	w->drumSpacing[5] = 116.0;
+	w->drumSpacing[0] = 36.0;  //  55.3cm   614Hz
+	w->drumSpacing[1] = 39.0;  //  60.0cm   567Hz
+	w->drumSpacing[2] = 79.0;  // 121.5cm   280Hz
+	w->drumSpacing[3] = 86.0;  // 132.3cm   257Hz
+	w->drumSpacing[4] = 123.0; // 189.2cm   179Hz
+	w->drumSpacing[5] = 116.0; // 178.5cm   190Hz
 
 	const double hornRadiusSamples = (w->hornRadiusCm * w->SampleRateD/100.0) / w->airSpeed;
 	const double drumRadiusSamples = (w->drumRadiusCm * w->SampleRateD/100.0) / w->airSpeed;
