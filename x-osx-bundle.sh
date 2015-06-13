@@ -57,7 +57,7 @@ function bundleit {
 if test -n "$ZIPUP" ; then # build a standalone lv2 zip
 	cd ${LV2TMPDIR}
 	rm -f  ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip
-	zip -r ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip b_${LV2BUNDLE}/
+	zip -r ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip ${LV2BUNDLE}/
 	ls -l ${OUTDIR}${PRODUCT_NAME}-lv2-osx-${VERSION}.zip
 	cd -
 fi
