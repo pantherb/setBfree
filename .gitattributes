@@ -6,6 +6,11 @@
 # large files used to originally generate textures
 /doc/lv2images export-ignore
 
+# screenshots etc
+/doc/b_whirl.png
+/doc/b_synth.png
+/doc/signal_flow.png
+
 # custom build scripts
 /build-deb.sh export-ignore
 /release.sh export-ignore
