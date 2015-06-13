@@ -8,10 +8,11 @@ Build-Depends: debhelper (>= 8), dpkg-dev (>= 1.16.1~),
  libglu1-mesa-dev | libglu-dev,
  libjack-dev | libjack-jackd2-dev,
  liblo-dev,
- libsndfile1-dev,
- libzita-convolver-dev (>=3.1.0),
+ libcairo2-dev (>=1.12.10~),
+ libpango1.0-dev (>=1.32.5~),
+ libpixman-1-dev (>=0.30.2~),
  libx11-dev,
- lv2-dev (>=1.0.0~dfsg2-2),
+ lv2-dev (>=1.4.2~),
  ttf-bitstream-vera
 Homepage: http://setbfree.org
 Standards-Version: 3.9.3

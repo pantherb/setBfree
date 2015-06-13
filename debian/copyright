@@ -46,6 +46,11 @@ X-Comment:
  This code is only used on OSX (or other systems w/o GPL libc).
  Jeff Verkoeyen's part in the file is apache licensed
 
+Files: robtk/*
+Copyright:
+  2012-2014 Robin Gareus <robin@gareus.org>
+License: GPL-2+
+
 Files: debian/*
 Copyright:
   2012 Robin Gareus <robin@gareus.org>

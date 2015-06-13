@@ -8,14 +8,12 @@ include /usr/share/dpkg/buildflags.mk
 
 override_dh_auto_build:
 	$(MAKE) \
-		ENABLE_CONVOLUTION=yes \
 		OPTIMIZATIONS="$(CFLAGS)" \
 		LDFLAGS="-Wl,--as-needed $(LDFLAGS)" \
 		PREFIX=/usr
 
 override_dh_auto_install:
 	$(MAKE) install \
-		ENABLE_CONVOLUTION=yes \
 		DESTDIR=$(CURDIR)/debian/setbfree \
 		PREFIX=/usr
 	install -d $(CURDIR)/debian/setbfree/usr/share/applications
