@@ -2368,8 +2368,8 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 	LABEL_BACKGROUND(lbl_mix[0], 0, 0, 0, 1);
 	LABEL_BACKGROUND(lbl_mix[1], 0, 0, 0, 1);
 
-	ui->lbl_mtr[0][0]  = robtk_lbl_new ("<markup><b>Horn Motor</b></markup>");
-	ui->lbl_mtr[1][0]  = robtk_lbl_new ("<markup><b>Drum Motor</b></markup>");
+	ui->lbl_mtr[0][0]  = robtk_lbl_new ("<markup><b>Horn Rotor</b></markup>");
+	ui->lbl_mtr[1][0]  = robtk_lbl_new ("<markup><b>Drum Rotor</b></markup>");
 
 	for (int i = 0; i < 2; ++i) {
 		ui->tbl_mtr[i] = rob_table_new (/*rows*/ 7, /*cols*/ 2, FALSE);
