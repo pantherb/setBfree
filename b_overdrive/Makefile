@@ -15,7 +15,7 @@ ifeq ($(shell pkg-config --exists liblo && echo yes), yes)
   LOADLIBES+=`pkg-config --libs liblo`
 endif
 
-ifeq ($(shell pkg-config --exists jack && echo yes), yes)
+ifeq ($(shell pkg-config --exists jack && echo yes)$(OVERDRIVEJACK), yesyes)
   targets+=jboverdrive
   binaries+=jboverdrive
   override CFLAGS+=-DHAVE_JACK `pkg-config --cflags jack`
