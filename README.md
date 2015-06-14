@@ -20,6 +20,15 @@ Quick-start
  - run `setBfree` for the headless commandline application
  - or load the LV2 plugin "setBfree DSP Tonewheel Organ" in your favorite DAW
 
+Screenshots
+-----------
+
+![screenshot](https://raw.githubusercontent.com/pantherb/setBfree/master/doc/b_synth.png "setBfree GUI")
+
+
+[Demo Video](https://player.vimeo.com/video/130633814)
+
+
 Usage
 -----
 
@@ -110,6 +119,7 @@ Summary of Changes since Beatrix
 *   broken-out effects as LV2 plugins; LV2 wrapper around synth-engine
 *   built-in documentation
 *   Graphical User Interface, with MIDI-feedback and dynamically bound MIDI-CC
+*   fixed leslie aliasing noise
 *   state save/restore
 *   numerous bug fixes
 
@@ -124,31 +134,23 @@ Install the dependencies and simply call `make` followed by `sudo make install`.
 *   libjack-dev - **required** - [JACK](http://jackaudio.org/) is used for audio and MIDI I/O
 *   libftgl-dev, libglu1-mesa-dev, ttf-bitstream-vera - optional, **recommended** - openGL GUI
 *   lv2-dev - optional, **recommended** - [LV2](http://lv2plug.in/) plugins and GUI
-*   libzita-convolver-dev - optional - [libzita-convolver](http://kokkinizita.linuxaudio.org/linuxaudio/downloads/index.html) is used for cabinet-emulation
-*   libsndfile1-dev - optional - [libsndfile](http://www.mega-nerd.com/libsndfile/) is needed to load IR samples for zita-convolver
-*   liblo-dev - optional - [OSC](http://opensoundcontrol.org/) used only in standalone preamp/overdrive app.
-*   libasound2-dev - optional - ALSA MIDI
+*   libcairo and libpango - optional, **recommended** - GUI for standalone Leslie/Whirl-speaker LV2
+*   libasound2-dev - optional - ALSA MIDI support
 *   help2man - optional - re-create the man pages
 *   doxygen - optional - create source-code annotations
+*   liblo-dev - optional - [OSC](http://opensoundcontrol.org/) used only in standalone preamp/overdrive app, mainly useful for testing.
+*   libzita-convolver-dev - optional, deprecated - [libzita-convolver](http://kokkinizita.linuxaudio.org/linuxaudio/downloads/index.html) is used for cabinet-emulation
+*   libsndfile1-dev - optional, deprecated - [libsndfile](http://www.mega-nerd.com/libsndfile/) is needed to load IR samples for zita-convolver
 
 
-If zita-convolver and libsndfile1-dev are available one can use
-
-	make clean
-	make ENABLE_CONVOLUTION=yes
-
-to enable additional leslie cabinet simulation.
-This is an additional optional post-processing step and not related to the 
-leslie doppler and built-in angular-dependent leslie speaker emulation.
-
-As for version 0.8, alsa-sequencer support is deprecated and no longer enabled by
+Since version 0.8, alsa-sequencer support is deprecated and no longer enabled by
 default (even if libasound is found), It is still available via `ENABLE_ALSA=yes`.
 
 The Makefile understands PREFIX and DESTDIR variables: e.g.
 
 	make clean
-	make ENABLE_CONVOLUTION=yes PREFIX=/usr ENABLE_ALSA=yes
-	make install ENABLE_CONVOLUTION=yes ENABLE_ALSA=yes PREFIX=/usr DESTDIR=mypackage/setbfree/
+	make PREFIX=/usr ENABLE_ALSA=yes
+	make install ENABLE_ALSA=yes PREFIX=/usr DESTDIR=mypackage/setbfree/
 
 **Packagers**: see debian/rules in the git-repository. LDFLAGS can be passed as is,
 CFLAGS should be specified by overriding the OPTIMIZATIONS variable.
@@ -160,4 +162,4 @@ Thanks
 
 Many thanks to all who contributed ideas, bug-reports, patches and feedback. In
 Particular (in alphabetical order): Dominique Michel, Fons Adriaensen, Jeremy
-Jongepier, Julien Claasen and Ken Restivo.
+Jongepier, Julien Claasen, Jean-Luc Nest and Ken Restivo.
