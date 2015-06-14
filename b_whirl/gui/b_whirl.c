@@ -244,7 +244,7 @@ typedef struct {
 	cairo_surface_t* dial_bg[17];
 	cairo_surface_t* gui_bg;
 
-	cairo_pattern_t* hornp[2];
+	cairo_pattern_t* hornp[4];
 
 	int eq_dragging;
 	int eq_hover;
@@ -658,27 +658,46 @@ static void
 m1_size_allocate (RobWidget* rw, int w, int h) {
 	WhirlUI* ui = (WhirlUI*)GET_HANDLE (rw);
 	robwidget_set_size (rw, w, h);
-	if (ui->hornp[0]) { cairo_pattern_destroy (ui->hornp[0]); ui->hornp[0] = NULL; }
-	if (ui->hornp[1]) { cairo_pattern_destroy (ui->hornp[1]); ui->hornp[1] = NULL; }
+	for (int i = 0; i < 4; ++i) {
+		if (ui->hornp[i]) { cairo_pattern_destroy (ui->hornp[i]); ui->hornp[i] = NULL; }
+	}
 }
 
 static void
 create_horn_patterns (WhirlUI* ui, float x, float y) {
-	assert (!ui->hornp[0] && !ui->hornp[1]);
+	assert (!ui->hornp[0] && !ui->hornp[1] && !ui->hornp[2] && !ui->hornp[3]);
 
+	// horn c30
 	ui->hornp[0] = cairo_pattern_create_linear (x * .05, -y, 0, y);
-	cairo_pattern_add_color_stop_rgba (ui->hornp[0], 0.00, .30, .30, .30, .1);
-	cairo_pattern_add_color_stop_rgba (ui->hornp[0], 0.32, .35, .35, .35, .2);
-	cairo_pattern_add_color_stop_rgba (ui->hornp[0], 0.50, .80, .80, .80, .2);
-	cairo_pattern_add_color_stop_rgba (ui->hornp[0], 0.68, .35, .35, .35, .2);
-	cairo_pattern_add_color_stop_rgba (ui->hornp[0], 1.00, .30, .30, .30, .1);
+	cairo_pattern_add_color_stop_rgb (ui->hornp[0], 0.00, .30, .30, .30);
+	cairo_pattern_add_color_stop_rgb (ui->hornp[0], 0.32, .31, .31, .31);
+	cairo_pattern_add_color_stop_rgb (ui->hornp[0], 0.50, .40, .40, .40);
+	cairo_pattern_add_color_stop_rgb (ui->hornp[0], 0.68, .31, .31, .31);
+	cairo_pattern_add_color_stop_rgb (ui->hornp[0], 1.00, .30, .30, .30);
 
-	ui->hornp[1] = cairo_pattern_create_linear (-x * .5, 0, x * .5, 0);
-	cairo_pattern_add_color_stop_rgba (ui->hornp[1], 0.00, .30, .30, .30, .0);
-	cairo_pattern_add_color_stop_rgba (ui->hornp[1], 0.10, .20, .20, .20, .3);
-	cairo_pattern_add_color_stop_rgba (ui->hornp[1], 0.66, .90, .90, .90, .5);
-	cairo_pattern_add_color_stop_rgba (ui->hornp[1], 0.90, .20, .20, .20, .3);
-	cairo_pattern_add_color_stop_rgba (ui->hornp[1], 1.00, .30, .30, .30, .0);
+	// horn c60
+	ui->hornp[1] = cairo_pattern_create_linear (x * .05, -y, 0, y);
+	cairo_pattern_add_color_stop_rgb (ui->hornp[1], 0.00, .57, .57, .57);
+	cairo_pattern_add_color_stop_rgb (ui->hornp[1], 0.32, .55, .55, .55);
+	cairo_pattern_add_color_stop_rgb (ui->hornp[1], 0.50, .64, .64, .64);
+	cairo_pattern_add_color_stop_rgb (ui->hornp[1], 0.68, .55, .55, .55);
+	cairo_pattern_add_color_stop_rgb (ui->hornp[1], 1.00, .57, .57, .57);
+
+	// base .75 + pat + .2 * .5
+	ui->hornp[2] = cairo_pattern_create_linear (-x * .5, 0, x * .5, 0);
+	cairo_pattern_add_color_stop_rgb (ui->hornp[2], 0.00, .4750, .4750, .4750);  // a=0.
+	cairo_pattern_add_color_stop_rgb (ui->hornp[2], 0.10, .3925, .3925, .3925);  // a=.3  c=.2
+	cairo_pattern_add_color_stop_rgb (ui->hornp[2], 0.66, .5125, .5125, .5125);  // a=.5  c=.9
+	cairo_pattern_add_color_stop_rgb (ui->hornp[2], 0.90, .3925, .3925, .3925);  // a=.3  c=.2
+	cairo_pattern_add_color_stop_rgb (ui->hornp[2], 1.00, .4750, .4750, .4750);  // a=0.
+
+	// base g30
+	ui->hornp[3] = cairo_pattern_create_linear (-x * .5, 0, x * .5, 0);
+	cairo_pattern_add_color_stop_rgb (ui->hornp[3], 0.00, .30, .30, .30);  // a=0.
+	cairo_pattern_add_color_stop_rgb (ui->hornp[3], 0.10, .27, .27, .27);  // a=.3  c=.2
+	cairo_pattern_add_color_stop_rgb (ui->hornp[3], 0.66, .60, .60, .60);  // a=.5  c=.9
+	cairo_pattern_add_color_stop_rgb (ui->hornp[3], 0.90, .27, .27, .27);  // a=.3  c=.2
+	cairo_pattern_add_color_stop_rgb (ui->hornp[3], 1.00, .30, .30, .30);  // a=0.
 }
 
 static bool horn_expose_event (RobWidget* rw, cairo_t* cr, cairo_rectangle_t *ev) {
@@ -745,28 +764,20 @@ static bool horn_expose_event (RobWidget* rw, cairo_t* cr, cairo_rectangle_t *ev
 	cairo_set_line_width (cr, bw);                                \
 	cairo_move_to (cr, 0, -y0 * .5);                              \
 	cairo_line_to (cr, 0, -y0 * 2.);                              \
-	CairoSetSouerceRGBA (c_g30);                                  \
-	cairo_stroke_preserve (cr);                                   \
-	cairo_set_source (cr, ui->hornp[1]);                          \
+	cairo_set_source (cr, ui->hornp[3]);                          \
 	cairo_stroke (cr);                                            \
 	                                                              \
 	cairo_save (cr);                                              \
 	cairo_translate (cr, 0, y0 * -1.9);                           \
 	cairo_scale (cr, 3.0, 0.6);                                   \
 	cairo_arc (cr, 0, 0, bw * .5, 0, 2 * M_PI);                   \
-	cairo_set_source_rgba (cr, .75, .75, .75, 1);                 \
-	cairo_fill_preserve (cr);                                     \
-	cairo_set_source (cr, ui->hornp[1]);                          \
-	cairo_fill_preserve (cr);                                     \
-	cairo_set_source_rgba (cr, .2, .2, .2, .5);                   \
+	cairo_set_source (cr, ui->hornp[2]);                          \
 	cairo_fill (cr);                                              \
 	                                                              \
 	cairo_arc (cr, 0, 0, bw * .5, 0, M_PI);                       \
 	cairo_arc_negative (cr, 0, -y0 * 0.8, bw * .5, M_PI, 0);      \
 	cairo_close_path (cr);                                        \
-	CairoSetSouerceRGBA (c_g30);                                  \
-	cairo_fill_preserve (cr);                                     \
-	cairo_set_source (cr, ui->hornp[1]);                          \
+	cairo_set_source (cr, ui->hornp[3]);                          \
 	cairo_fill (cr);                                              \
 	cairo_restore (cr); \
 
@@ -776,32 +787,30 @@ static bool horn_expose_event (RobWidget* rw, cairo_t* cr, cairo_rectangle_t *ev
 	cairo_line_to (cr, XX x - rd * xs, y0 + YY y);                \
 	cairo_line_to (cr, XX x + rd * xs, y0 + YY y);                \
 	cairo_close_path (cr);                                        \
-	CairoSetSouerceRGBA (CLR);                                    \
+	CairoSetSouerceRGBA (CLR ? c_g60 : c_g30);                    \
 	cairo_fill (cr);                                              \
-								      \
+	                                                              \
 	BASE;                                                         \
-								      \
+	                                                              \
+	cairo_matrix_init_identity (&matrix);                         \
+	cairo_pattern_set_matrix (ui->hornp[CLR], &matrix);           \
 	cairo_move_to (cr, XX bx,  r0 - y0);                          \
 	cairo_line_to (cr, XX bx, -r0 - y0);                          \
 	cairo_line_to (cr, XX x, y0 + YY y - rd);                     \
 	cairo_line_to (cr, XX x, y0 + YY y + rd);                     \
 	cairo_close_path (cr);                                        \
-	CairoSetSouerceRGBA (CLR);                                    \
-	cairo_fill_preserve (cr);                                     \
-	cairo_set_source (cr, ui->hornp[0]);                          \
+	cairo_set_source (cr, ui->hornp[CLR]);                        \
 	cairo_fill (cr);                                              \
-								      \
+	                                                              \
 	cairo_save (cr);                                              \
 	cairo_translate (cr, XX x, y0 + YY y);                        \
 	cairo_scale (cr, xs, 1.0);                                    \
 	cairo_arc (cr, 0, 0, rd, 0, 2. * M_PI);                       \
-	CairoSetSouerceRGBA (CLR);                                    \
-	cairo_fill_preserve (cr);                                     \
-								      \
+	                                                              \
 	cairo_matrix_init_translate (&matrix, 0,                      \
 		CMP(ang < M_PI) ? -y0 - (YY y) : y0 + (YY y) );       \
-	cairo_pattern_set_matrix (ui->hornp[0], &matrix);             \
-	cairo_set_source (cr, ui->hornp[0]);                          \
+	cairo_pattern_set_matrix (ui->hornp[CLR], &matrix);           \
+	cairo_set_source (cr, ui->hornp[CLR]);                        \
 	if (CMP(ang > .25 * M_PI && ang < 1.25 * M_PI)) {             \
 		cairo_fill_preserve (cr);                             \
 		cairo_set_source (cr, hornpr);                        \
@@ -819,18 +828,12 @@ static bool horn_expose_event (RobWidget* rw, cairo_t* cr, cairo_rectangle_t *ev
 
 	cairo_translate (cr, cx, cy);
 
-	cairo_matrix_init_identity (&matrix);
-	cairo_pattern_set_matrix (ui->hornp[0], &matrix);
 	if (ang < .5 * M_PI || ang > 1.5 * M_PI) {
-		DRAW_HORN(-, -,  , c_g30, );
-		cairo_matrix_init_identity (&matrix);
-		cairo_pattern_set_matrix (ui->hornp[0], &matrix);
-		DRAW_HORN(+, +, !, c_g60, DRAW_BASE);
+		DRAW_HORN(-, -,  , 0, );
+		DRAW_HORN(+, +, !, 1, DRAW_BASE);
 	} else {
-		DRAW_HORN(+, +, !, c_g60, );
-		cairo_matrix_init_identity (&matrix);
-		cairo_pattern_set_matrix (ui->hornp[0], &matrix);
-		DRAW_HORN(-, -,  , c_g30, DRAW_BASE);
+		DRAW_HORN(+, +, !, 1, );
+		DRAW_HORN(-, -,  , 0, DRAW_BASE);
 	}
 
 	cairo_pattern_destroy (hornpr);
@@ -2767,8 +2770,9 @@ static void gui_cleanup (WhirlUI* ui) {
 
 	robtk_cbtn_destroy (ui->btn_link);
 
-	if (ui->hornp[0]) { cairo_pattern_destroy (ui->hornp[0]); ui->hornp[0] = NULL; }
-	if (ui->hornp[1]) { cairo_pattern_destroy (ui->hornp[1]); ui->hornp[1] = NULL; }
+	for (int i = 0; i < 4; ++i) {
+		if (ui->hornp[i]) { cairo_pattern_destroy (ui->hornp[i]); ui->hornp[i] = NULL; }
+	}
 
 	pango_font_description_free (ui->font[0]);
 	pango_font_description_free (ui->font[1]);
