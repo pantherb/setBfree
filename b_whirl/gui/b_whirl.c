@@ -884,6 +884,7 @@ static bool drum_expose_event (RobWidget* rw, cairo_t* cr, cairo_rectangle_t *ev
 	const float yt = cy - sc * .05;
 	const float yb = cy + sc * .4;
 	const float rd = sc * .4;
+	const float yh = (yb - yt) / .2; // ellipse scaled height
 
 	/* bottom and outline */
 	cairo_save (cr);
@@ -897,9 +898,7 @@ static bool drum_expose_event (RobWidget* rw, cairo_t* cr, cairo_rectangle_t *ev
 	cairo_set_line_width (cr, 3.0);
 	cairo_stroke (cr);
 
-	cairo_translate (cr, 0, (yb - yt)/-.2);
-
-	cairo_arc (cr, 0, 0, rd, 0, 2 * M_PI);
+	cairo_arc (cr, 0, -yh, rd, 0, 2 * M_PI);
 	cairo_set_source_rgba (cr, .1, .1, .1, 1.0);
 	cairo_set_line_width (cr, 3.0);
 	cairo_stroke (cr);
@@ -915,46 +914,31 @@ static bool drum_expose_event (RobWidget* rw, cairo_t* cr, cairo_rectangle_t *ev
 #endif
 
 	const float cng = ang + M_PI;
+#define RAD(X) ((X) * 2 * M_PI / 360.)
 
 	/* backside */
 	cairo_save (cr);
 	cairo_translate (cr, cx, yt);
 	cairo_scale (cr, 1.0, 0.2);
-	cairo_arc (cr, 0, 0, rd, M_PI, 2 * M_PI);
-	cairo_translate (cr, 0, (yb - yt)/.2);
-	cairo_arc_negative (cr, 0, 0, rd, 2 * M_PI, M_PI);
-	cairo_close_path (cr);
-	cairo_clip (cr);
-
 	cairo_set_source_rgba (cr, .0, .0, .0, .8);
 
-#define RAD(X) ((X) * 2 * M_PI / 360.)
-
 	if (ang > RAD(45) && ang < RAD(225)) {
-		cairo_arc (cr, 0, 0, rd, cng - .25 * M_PI, 2 * M_PI);
-		cairo_translate (cr, 0, (yb - yt)/-.2);
+		cairo_arc (cr, 0, yh, rd, cng - .25 * M_PI, 2 * M_PI);
 		cairo_arc_negative (cr, 0, 0, rd, 2 * M_PI, cng - .25 * M_PI);
 		cairo_close_path (cr);
 		cairo_fill (cr);
-		cairo_translate (cr, 0, (yb - yt)/.2);
 	}
-
 	if (ang > RAD(135) && ang < RAD(315)) {
-		cairo_arc (cr, 0, 0, rd, M_PI, cng - 0.75 * M_PI);
-		cairo_translate (cr, 0, (yb - yt)/-.2);
+		cairo_arc (cr, 0, yh, rd, M_PI, cng - 0.75 * M_PI);
 		cairo_arc_negative (cr, 0, 0, rd, cng - .75 * M_PI, M_PI);
 		cairo_close_path (cr);
 		cairo_fill (cr);
-		cairo_translate (cr, 0, (yb - yt)/.2);
 	}
-
 	if (ang < RAD(45) || ang > RAD(315)) {
-		cairo_arc (cr, 0, 0, rd, M_PI, 2 * M_PI);
-		cairo_translate (cr, 0, (yb - yt)/-.2);
+		cairo_arc (cr, 0, yh, rd, M_PI, 2 * M_PI);
 		cairo_arc_negative (cr, 0, 0, rd, 2 * M_PI, M_PI);
 		cairo_close_path (cr);
 		cairo_fill (cr);
-		cairo_translate (cr, 0, (yb - yt)/.2);
 	}
 	cairo_restore (cr);
 
@@ -968,42 +952,7 @@ static bool drum_expose_event (RobWidget* rw, cairo_t* cr, cairo_rectangle_t *ev
 #define RXY(SIN, COS) (cx - rd * SIN), (yb + rd * COS * .2)
 #define MXY(SIN, COS) (cx - rd * SIN), (cy + rd * COS * .2)
 
-	cairo_save (cr);
 	cairo_set_line_width (cr, 2.0);
-
-
-#if 0 // TODO fill side parts
-#define SSS(SIN, COS) (- rd * SIN), (rd * COS)
-#define SST(SIN, COS) (- rd * SIN), ((yb - cy)/-.2 + rd * COS)
-	cairo_set_source_rgba (cr, .1, .1, .9, .9);
-	cairo_save (cr);
-	cairo_translate (cr, cx, yb);
-	cairo_scale (cr, 1.0, 0.2);
-	cairo_arc (cr, 0, 0, rd, 0, M_PI);
-	cairo_arc (cr, 0, (yb - yt)/-.2, rd, M_PI, 2 * M_PI);
-	cairo_close_path (cr);
-	cairo_clip (cr);
-
-	cairo_set_source_rgba (cr, .9, .1, .1, .9);
-	cairo_move_to (cr, SSS(sa1, ca1));
-	cairo_line_to (cr, SSS((sa1 + sa1 - sa2), (ca1 + ca1 - ca2)));
-	cairo_line_to (cr, SST((ca1 + ca1 + ca2), (-sa1  -sa1 - sa2)));
-	cairo_line_to (cr, SST(ca1, -sa1));
-	cairo_fill (cr);
-	cairo_restore (cr);
-
-	cairo_set_source_rgba (cr, .1, .9, .1, .9);
-
-	cairo_save (cr);
-	cairo_translate (cr, cx, yb);
-	cairo_scale (cr, 1.0, 0.2);
-	cairo_arc (cr, 0, 0, rd, ang - .25 * M_PI, ang + .25 * M_PI);
-	cairo_line_to (cr, SST(-ca2, sa2));
-	cairo_close_path (cr);
-	cairo_stroke (cr);
-	cairo_restore (cr);
-#endif
-
 	cairo_set_source_rgba (cr, .1, .1, .1, .9);
 
 	// lid
@@ -1016,108 +965,82 @@ static bool drum_expose_event (RobWidget* rw, cairo_t* cr, cairo_rectangle_t *ev
 	cairo_restore (cr);
 
 	// left tri
-	cairo_move_to (cr, MXY(ca1, -sa1));
-	cairo_line_to (cr, RXY(sa1, ca1));
-	cairo_line_to (cr, RXY(ca1, -sa1));
+	cairo_move_to (cr, MXY( ca1, -sa1));
+	cairo_line_to (cr, RXY( sa1,  ca1));
+	cairo_line_to (cr, RXY( ca1, -sa1));
 	cairo_close_path (cr);
 	cairo_fill (cr);
 
 	// right tri
 	cairo_move_to (cr, MXY(-ca2, sa2));
-	cairo_line_to (cr, RXY(sa2, ca2));
+	cairo_line_to (cr, RXY( sa2, ca2));
 	cairo_line_to (cr, RXY(-ca2, sa2));
 	cairo_close_path (cr);
 	cairo_fill (cr);
 
 	// ramp
-	cairo_move_to (cr, MXY(ca1, -sa1));
-	cairo_line_to (cr, RXY(sa1, ca1));
-	cairo_line_to (cr, RXY(sa2, ca2));
-	cairo_line_to (cr, MXY(-ca2, sa2));
+	cairo_move_to (cr, MXY( ca1, -sa1));
+	cairo_line_to (cr, RXY( sa1,  ca1));
+	cairo_line_to (cr, RXY( sa2,  ca2));
+	cairo_line_to (cr, MXY(-ca2,  sa2));
 	cairo_close_path (cr);
 	cairo_fill (cr);
 
 	// rounded backside
-	if (ang > .25 * M_PI && ang < .75 * M_PI) {
-		//cairo_set_source_rgba (cr, .1, .9, .1, .5);
+	if (ang > .25 * M_PI && ang <= 1.75 * M_PI) {
 		cairo_save (cr);
 		cairo_translate (cr, cx, yb);
 		cairo_scale (cr, 1.0, 0.2);
-		cairo_arc (cr, 0, 0, rd, 0, ang - .25 * M_PI);
-		cairo_arc_negative (cr, 0, -rd / .2, rd, ang - .25 * M_PI, 0);
-		cairo_close_path (cr);
-		cairo_fill (cr);
+		if (ang > .25 * M_PI && ang < .75 * M_PI) {
+			cairo_arc (cr, 0, 0, rd, 0, ang - .25 * M_PI);
+			cairo_arc_negative (cr, 0, -rd / .2, rd, ang - .25 * M_PI, 0);
+			cairo_close_path (cr);
+			cairo_fill (cr);
+		}
+		if (ang > 1.25 * M_PI && ang < 1.75 * M_PI) {
+			cairo_arc (cr, 0, 0, rd, M_PI, ang - .25 * M_PI);
+			cairo_arc_negative (cr, 0, -rd / .2, rd, ang - .25 * M_PI, M_PI);
+			cairo_close_path (cr);
+			cairo_fill (cr);
+		}
+		if (ang >= .75 * M_PI && ang <= 1.75 * M_PI) {
+			cairo_arc (cr, 0, 0, rd,  ang - .75 * M_PI, ang - .25 * M_PI);
+			cairo_arc_negative (cr, 0, -rd / .2, rd, ang - .25 * M_PI, ang - .75 * M_PI);
+			cairo_close_path (cr);
+			cairo_fill (cr);
+		}
 		cairo_restore (cr);
 	}
-	if (ang > 1.25 * M_PI && ang < 1.75 * M_PI) {
-		//cairo_set_source_rgba (cr, .9, .1, .1, .5);
-		cairo_save (cr);
-		cairo_translate (cr, cx, yb);
-		cairo_scale (cr, 1.0, 0.2);
-		cairo_arc (cr, 0, 0, rd, M_PI, ang - .25 * M_PI);
-		cairo_arc_negative (cr, 0, -rd / .2, rd, ang - .25 * M_PI, M_PI);
-		cairo_close_path (cr);
-		cairo_fill (cr);
-		cairo_restore (cr);
-	}
-	if (ang >= .75 * M_PI && ang <= 1.75 * M_PI) {
-		//cairo_set_source_rgba (cr, .3, .6, .9, .5);
-		cairo_save (cr);
-		cairo_translate (cr, cx, yb);
-		cairo_scale (cr, 1.0, 0.2);
-		cairo_arc (cr, 0, 0, rd,  ang - .75 * M_PI, ang - .25 * M_PI);
-		cairo_arc_negative (cr, 0, -rd / .2, rd, ang - .25 * M_PI, ang - .75 * M_PI);
-		cairo_close_path (cr);
-		cairo_fill (cr);
-		cairo_restore (cr);
-	}
-
-	cairo_restore (cr);
 
 	/* front */
 	cairo_save (cr);
 	cairo_translate (cr, cx, yt);
 	cairo_scale (cr, 1.0, 0.2);
-	cairo_arc (cr, 0, 0, rd, 0, M_PI);
-	cairo_translate (cr, 0, (yb - yt)/.2);
-	cairo_arc_negative (cr, 0, 0, rd, M_PI, 0);
-	cairo_close_path (cr);
-	cairo_clip (cr);
 	cairo_set_source_rgba (cr, .4, .4, .4, .45);
 
 	if (ang < RAD(45) || ang > RAD(225)) {
-		cairo_arc (cr, 0, 0, rd, cng - 0.25 * M_PI, M_PI);
-		cairo_translate (cr, 0, (yb - yt)/-.2);
+		cairo_arc (cr, 0, yh, rd, cng - 0.25 * M_PI, M_PI);
 		cairo_arc_negative (cr, 0, 0, rd, M_PI, cng - .25 * M_PI);
 		cairo_close_path (cr);
 		cairo_fill (cr);
-		cairo_translate (cr, 0, (yb - yt)/.2);
 	}
-
 	if (ang < RAD(135)) {
-		cairo_arc (cr, 0, 0, rd, 0, cng - 0.75 * M_PI);
-		cairo_translate (cr, 0, (yb - yt)/-.2);
+		cairo_arc (cr, 0, yh, rd, 0, cng - 0.75 * M_PI);
 		cairo_arc_negative (cr, 0, 0, rd, cng - .75 * M_PI, 0);
 		cairo_close_path (cr);
 		cairo_fill (cr);
-		cairo_translate (cr, 0, (yb - yt)/.2);
 	}
 	if (ang > RAD(315)) {
-		cairo_arc (cr, 0, 0, rd, 2 * M_PI, cng - 0.75 * M_PI);
-		cairo_translate (cr, 0, (yb - yt)/-.2);
+		cairo_arc (cr, 0, yh, rd, 2 * M_PI, cng - 0.75 * M_PI);
 		cairo_arc_negative (cr, 0, 0, rd, cng - .75 * M_PI, 2 * M_PI);
 		cairo_close_path (cr);
 		cairo_fill (cr);
-		cairo_translate (cr, 0, (yb - yt)/.2);
 	}
-
 	if (ang > RAD(135) && ang < RAD(225)) {
-		cairo_arc (cr, 0, 0, rd, 0, M_PI);
-		cairo_translate (cr, 0, (yb - yt)/-.2);
+		cairo_arc (cr, 0, yh, rd, 0, M_PI);
 		cairo_arc_negative (cr, 0, 0, rd, M_PI, 0);
 		cairo_close_path (cr);
 		cairo_fill (cr);
-		cairo_translate (cr, 0, (yb - yt)/.2);
 	}
 	cairo_restore (cr);
 
@@ -1127,8 +1050,7 @@ static bool drum_expose_event (RobWidget* rw, cairo_t* cr, cairo_rectangle_t *ev
 		cairo_translate (cr, cx, yt);
 		cairo_scale (cr, 1.0, 0.2);
 		cairo_arc (cr, 0, 0, rd, 0, M_PI);
-		cairo_translate (cr, 0, (yb - yt)/.2);
-		cairo_arc_negative (cr, 0, 0, rd, M_PI, 0);
+		cairo_arc_negative (cr, 0, yh, rd, M_PI, 0);
 		cairo_close_path (cr);
 		cairo_set_source_rgba (cr, .4, .4, .4, .3);
 		cairo_fill (cr);
@@ -1985,14 +1907,13 @@ static void draw_bg (WhirlUI *ui, const int w, const int h, struct rob_table *rt
 	cairo_scale (cr, 1.0, 0.2);
 
 	// membrane
+
+	// outline behind membrane
+	cairo_save (cr);
 	cairo_arc (cr, 0, 0, rd, 0, M_PI);
-	cairo_line_to (cr, -rs, -rd/.5);
 	cairo_arc_negative (cr, 0, -rd/.50, rs, M_PI, 0);
 	cairo_close_path (cr);
-
-	cairo_save (cr);
 	cairo_clip (cr);
-	// bottom outline behind membrane
 	cairo_arc (cr, 0, 0, rd, 0, 2 * M_PI);
 	CairoSetSouerceRGBA (c_blk);
 	cairo_stroke (cr);
@@ -2000,7 +1921,6 @@ static void draw_bg (WhirlUI *ui, const int w, const int h, struct rob_table *rt
 
 	// membrane, again
 	cairo_arc (cr, 0, 0, rd, 0, M_PI);
-	cairo_line_to (cr, -rs, -rd/.5);
 	cairo_arc_negative (cr, 0, -rd/.50, rs, M_PI, 0);
 	cairo_close_path (cr);
 	cairo_set_source_rgba (cr, .6, .6, .6, .5);
