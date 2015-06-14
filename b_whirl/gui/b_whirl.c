@@ -1176,11 +1176,10 @@ static void update_rpm (WhirlUI *ui, const int which, const float val) {
 static void update_ang (WhirlUI *ui, const int which, const float val) {
 	ui->initialized |= (which + 1);
 	if (val < 0) { return; }
-	if (ui->cur_ang[which] == val) {
+	if (rintf (240 * ui->cur_ang[which]) == rintf (240 * val)) {
 		return;
 	}
 	ui->cur_ang[which] = val;
-	//update_rpm_display (ui, which);
 	queue_draw (ui->spk_dpy[which]);
 }
 
