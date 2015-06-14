@@ -161,5 +161,5 @@ Thanks
 ------
 
 Many thanks to all who contributed ideas, bug-reports, patches and feedback. In
-Particular (in alphabetical order): Dominique Michel, Fons Adriaensen, Jeremy
-Jongepier, Julien Claasen, Jean-Luc Nest and Ken Restivo.
+Particular (in alphabetical order): Dominique Michel, Fons Adriaensen, Jean-Luc
+Nest, Jeremy Jongepier, Julien Claasen and Ken Restivo.
