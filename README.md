@@ -26,7 +26,7 @@ Screenshots
 ![screenshot](https://raw.githubusercontent.com/pantherb/setBfree/master/doc/b_synth.png "setBfree GUI")
 
 
-[Demo Video](https://player.vimeo.com/video/130633814)
+[Demo Video](https://vimeo.com/130633814)
 
 
 Usage
