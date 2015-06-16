@@ -1326,7 +1326,7 @@ static void dial_annotation (RobTkDial * d, cairo_t *cr, void *data) {
 		if (p->warp != 0) {
 			snprintf (txt, 24, p->fmt, dial_to_param (p, d->cur));
 		} else {
-			snprintf (txt, 24, p->fmt, p, d->cur);
+			snprintf (txt, 24, p->fmt, d->cur);
 		}
 	} else {
 		snprintf (txt, 24, "%+5.2f dB", d->cur);
