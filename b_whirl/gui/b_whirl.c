@@ -100,7 +100,7 @@ typedef struct {
 
 // defaults from b_whirl-configurable.ttl
 static const Parameter rpm_slow[2] = {
-	{ 10.0, 200.0, 40.32, 20, S_("%.0f RPM")}, // horn chorale
+	{  5.0, 200.0, 40.32, 40, S_("%.0f RPM")}, // horn chorale
 	{  5.0, 100.0, 36.00, 20, S_("%.0f RPM")}, // baffle chorale
 };
 

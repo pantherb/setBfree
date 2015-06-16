@@ -121,7 +121,7 @@
 		lv2:symbol "hornrpmslow" ;
 		lv2:name "Horn Speed Slow [rpm]";
 		lv2:default 40.32;
-		lv2:minimum 10.0 ;
+		lv2:minimum   5.0 ;
 		lv2:maximum 200.0 ;
 		pp:displayPriority 300 ;
 		rdfs:comment "Target RPM for slow (aka choral) horn speed" ;
