@@ -298,10 +298,11 @@ static inline float db_to_coefficient (const float d) {
 	return powf (10.0f, 0.05f * d);
 }
 
-#define FADED 32 // cycles of 64
+#define SILENT 128 // cycles of 64
+#define FADED   96 // cycles of 64
 
 static bool faded (B3W *b3w) {
-	return b3w->fade == FADED;
+	return b3w->fade >= FADED;
 }
 
 static int interpolate_filter (B3W *b3w,  Filter *flt) {
@@ -559,7 +560,7 @@ static void run (LV2_Handle instance, uint32_t n_samples) {
 
 		float g0, g1; g0 = g1 = 1.0;
 
-		if (!b3w->fade_dir && b3w->fade > 0) {
+		if (!b3w->fade_dir && b3w->fade > 0 && b3w->fade <= FADED) {
 			g0 = 1.0 - b3w->fade / (float)FADED;
 			--b3w->fade;
 			g1 = 1.0 - b3w->fade / (float)FADED;
@@ -567,15 +568,21 @@ static void run (LV2_Handle instance, uint32_t n_samples) {
 			g0 = 1.0 - b3w->fade / (float)FADED;
 			++b3w->fade;
 			g1 = 1.0 - b3w->fade / (float)FADED;
-		} else if (b3w->fade == FADED) {
-			b3w->fade_dir = false;
+		} else if (b3w->fade >= FADED) {
+			if (!b3w->fade_dir) {
+				--b3w->fade;
+			} else if (b3w->fade < SILENT) {
+				++b3w->fade;
+			} else if (!need_fade) {
+				b3w->fade_dir = false;
+			}
 			memset (outL, 0, sizeof (float) * n);
 			memset (outR, 0, sizeof (float) * n);
 		}
 
 		if (g0 != g1) {
 			uint32_t i;
-			const float d = (g1 - g0) / n;
+			const float d = (g1 - g0) / (float)n;
 			float g = g0;
 			for (i = 0; i < n; ++i) {
 				g += d;
