@@ -955,7 +955,7 @@ static void applyDefaultCrosstalk (struct b_tonegen *t, int keyOffset, int busOf
 	  LE_LEVEL_OF(nlep) =
 	    (t->defaultWiringCrosstalk * LE_LEVEL_OF(lep))
 	    /
-	    fabs(busNumber - LE_BUSNUMBER_OF(lep));
+	    abs(busNumber - LE_BUSNUMBER_OF(lep));
 	  appendListElement (&(t->keyCrosstalk[keyNumber]), nlep);
 	}
       }

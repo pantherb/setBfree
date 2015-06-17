@@ -1050,7 +1050,7 @@ void whirlProc2 (struct b_whirl *w,
 
 		if (w->hnBrakePos > 0 && w->hornTarget == 0 && w->hornIncr > 0 && w->hornIncr < hardstop) {
 			const double targetPos = fmod(1.25 - w->hnBrakePos, 1.0);
-			if (fabsf(w->hornAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
+			if (fabs(w->hornAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
 				w->hornAngleGRD = targetPos;
 				w->hornIncr = 0;
 			} else {
@@ -1087,7 +1087,7 @@ void whirlProc2 (struct b_whirl *w,
 
 		if (w->drBrakePos > 0 && w->drumTarget == 0 && w->drumIncr > 0 && w->drumIncr < hardstop) {
 			const double targetPos= fmod(w->drBrakePos + .75, 1.0);
-			if (fabsf(w->drumAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
+			if (fabs(w->drumAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
 				w->drumAngleGRD = targetPos;
 				w->drumIncr = 0;
 			} else {
@@ -1134,7 +1134,7 @@ void whirlProc2 (struct b_whirl *w,
 		const double targetPos = fmod(1.25 - w->hnBrakePos, 1.0);
 		if (!w->hornAcDc && w->hornIncr == 0 && w->hornAngleGRD != targetPos) {
 			brake_enagaged |= 1;
-			if (fabsf(w->hornAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
+			if (fabs(w->hornAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
 				/* provide a dead-zone for rounding */
 				w->hornAngleGRD = targetPos;
 			} else {
@@ -1148,7 +1148,7 @@ void whirlProc2 (struct b_whirl *w,
 		const double targetPos= fmod(w->drBrakePos + .75, 1.0);
 		if (!w->drumAcDc && w->drumIncr == 0 && w->drumAngleGRD != targetPos) {
 			brake_enagaged |= 2;
-			if (fabsf(w->drumAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
+			if (fabs(w->drumAngleGRD - targetPos) < (2.0 / WHIRL_DISPLC_SIZE)) {
 				w->drumAngleGRD = targetPos;
 			} else {
 				const float limit = 100.f /* RPM */ / (60. * w->SampleRateD);
