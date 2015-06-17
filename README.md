@@ -56,7 +56,7 @@ available as LV2 plugins.
 
 Examples:
 
-	setBfree jack.out.left="system:playback_7" jack.out.left="system:playback_8"
+	setBfree jack.out.left="system:playback_7" jack.out.right="system:playback_8"
 	setBfreeUI
 	jalv.gtk http://gareus.org/oss/lv2/b_synth # LV2 in jalv-host
 
