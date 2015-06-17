@@ -25,7 +25,7 @@
 			lv2:InputPort ;
 		lv2:index 0 ;
 		lv2:symbol "in" ;
-		lv2:name "In" ;
+		lv2:name "Input" ;
 		lv2:designation pg:center ;
 	],
 	[
@@ -33,7 +33,7 @@
 			lv2:OutputPort ;
 		lv2:index 1 ;
 		lv2:symbol "left" ;
-		lv2:name "Left output" ;
+		lv2:name "Left Output" ;
 		lv2:designation pg:left ;
 	],
 	[
@@ -41,7 +41,7 @@
 			lv2:OutputPort ;
 		lv2:index 2 ;
 		lv2:symbol "right" ;
-		lv2:name "Right output" ;
+		lv2:name "Right Output" ;
 		lv2:designation pg:right ;
 	],
 	[
@@ -49,7 +49,7 @@
 			lv2:ControlPort ;
 		lv2:index 3 ;
 		lv2:symbol "rt_speed" ;
-		lv2:name "Motors (horn, drum speed: off/slow/fast)";
+		lv2:name "Motors Ac/Dc";
 		lv2:default 4 ;
 		lv2:minimum 0 ;
 		lv2:maximum 8 ;
@@ -71,7 +71,7 @@
 			lv2:ControlPort ;
 		lv2:index 4 ;
 		lv2:symbol "hornlvl" ;
-		lv2:name "Horn Level [dB]";
+		lv2:name "Horn Level";
 		lv2:default 0.0 ;
 		lv2:minimum -20.0;
 		lv2:maximum +20.0 ;
@@ -84,7 +84,7 @@
 			lv2:ControlPort ;
 		lv2:index 5 ;
 		lv2:symbol "drumlvl" ;
-		lv2:name "Drum Level [dB]";
+		lv2:name "Drum Level";
 		lv2:default 0.0 ;
 		lv2:minimum -20.0;
 		lv2:maximum +20.0 ;
@@ -119,11 +119,12 @@
 			lv2:ControlPort ;
 		lv2:index 7 ;
 		lv2:symbol "hornrpmslow" ;
-		lv2:name "Horn Speed Slow [rpm]";
+		lv2:name "Horn Speed Slow";
 		lv2:default 40.32;
 		lv2:minimum   5.0 ;
 		lv2:maximum 200.0 ;
 		pp:displayPriority 300 ;
+		units:unit [ a units:Unit; rdfs:label "rpm"; units:symbol "rpm"; units:render "%.1f RPM"; ] ;
 		rdfs:comment "Target RPM for slow (aka choral) horn speed" ;
 	],
 	[
@@ -131,11 +132,12 @@
 			lv2:ControlPort ;
 		lv2:index 8 ;
 		lv2:symbol "hornrpmfast" ;
-		lv2:name "Horn Speed Fast [rpm]";
+		lv2:name "Horn Speed Fast";
 		lv2:default 423.36;
 		lv2:minimum 100.0;
 		lv2:maximum 1000.0 ;
 		pp:displayPriority 300 ;
+		units:unit [ a units:Unit; rdfs:label "rpm"; units:symbol "rpm"; units:render "%.1f RPM"; ] ;
 		rdfs:comment "Target RPM for fask (aka tremolo) horn speed" ;
 	],
 	[
@@ -143,10 +145,11 @@
 			lv2:ControlPort ;
 		lv2:index 9 ;
 		lv2:symbol "hornaccel" ;
-		lv2:name "Horn Acceleration [s]";
+		lv2:name "Horn Acceleration";
 		lv2:default 0.161 ;
 		lv2:minimum 0.001 ;
 		lv2:maximum 10.0 ;
+		units:unit units:s;
 		pp:displayPriority 200 ;
 		rdfs:comment "Time required to accelerate the horn (exponential time constant)" ;
 	],
@@ -155,10 +158,11 @@
 			lv2:ControlPort ;
 		lv2:index 10 ;
 		lv2:symbol "horndecel" ;
-		lv2:name "Horn Deceleration [s]";
+		lv2:name "Horn Deceleration";
 		lv2:default 0.321 ;
 		lv2:minimum 0.001 ;
 		lv2:maximum 10.0 ;
+		units:unit units:s;
 		pp:displayPriority 200 ;
 		rdfs:comment "Time required to decelerate the horn (exponential time constant)" ;
 	],
@@ -190,6 +194,7 @@
 			rdf:value 1.0 ;
 		];
 		pp:displayPriority 250 ;
+		units:unit units:degree;
 	],
 	[
 		a lv2:InputPort ,
@@ -219,12 +224,13 @@
 			lv2:ControlPort ;
 		lv2:index 13 ;
 		lv2:symbol "filtafreq" ;
-		lv2:name "Horn Filter-1 Frequency [Hz]";
+		lv2:name "Horn Filter-1 Frequency";
 		lv2:default 4500.0 ;
 		lv2:minimum 250 ;
 		lv2:maximum 8000.0 ;
 		pp:displayPriority 100 ;
 		rdfs:comment "Filter frequency";
+		units:unit units:hz;
 	],
 	[
 		a lv2:InputPort ,
@@ -243,7 +249,7 @@
 			lv2:ControlPort ;
 		lv2:index 15 ;
 		lv2:symbol "filtagain" ;
-		lv2:name "Horn Filter-1 Gain [dB]";
+		lv2:name "Horn Filter-1 Gain";
 		lv2:default -30.0 ;
 		lv2:minimum -48.0 ;
 		lv2:maximum  48.0 ;
@@ -278,12 +284,13 @@
 			lv2:ControlPort ;
 		lv2:index 17 ;
 		lv2:symbol "filtbfreq" ;
-		lv2:name "Horn Filter-2 Frequency [Hz]";
+		lv2:name "Horn Filter-2 Frequency";
 		lv2:default 300.0 ;
 		lv2:minimum 250 ;
 		lv2:maximum 8000.0 ;
 		pp:displayPriority 100 ;
 		rdfs:comment "Filter frequency";
+		units:unit units:hz;
 	],
 	[
 		a lv2:InputPort ,
@@ -302,7 +309,7 @@
 			lv2:ControlPort ;
 		lv2:index 19 ;
 		lv2:symbol "filtbgain" ;
-		lv2:name "Horn Filter-2 Gain [dB]";
+		lv2:name "Horn Filter-2 Gain";
 		lv2:default -30.0 ;
 		lv2:minimum -48.0 ;
 		lv2:maximum  48.0 ;
@@ -315,35 +322,38 @@
 			lv2:ControlPort ;
 		lv2:index 20 ;
 		lv2:symbol "drumrpmslow" ;
-		lv2:name "Drum Speed Slow [rpm]";
+		lv2:name "Drum Speed Slow";
 		lv2:default 36.0 ;
 		lv2:minimum 5.0 ;
 		lv2:maximum 100.0 ;
 		pp:displayPriority 300 ;
 		rdfs:comment "Target RPM for slow (aka choral) drum speed" ;
+		units:unit [ a units:Unit; rdfs:label "rpm"; units:symbol "rpm"; units:render "%.1f RPM"; ] ;
 	],
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
 		lv2:index 21 ;
 		lv2:symbol "drumrpmfast" ;
-		lv2:name "Drum Speed Fast [rpm]";
+		lv2:name "Drum Speed Fast";
 		lv2:default 357.3;
 		lv2:minimum 60;
 		lv2:maximum 600.0 ;
 		pp:displayPriority 300 ;
 		rdfs:comment "Target RPM for fast (aka tremolo) drum speed" ;
+		units:unit [ a units:Unit; rdfs:label "rpm"; units:symbol "rpm"; units:render "%.1f RPM"; ] ;
 	],
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
 		lv2:index 22 ;
 		lv2:symbol "drumaccel" ;
-		lv2:name "Drum Acceleration [s]";
+		lv2:name "Drum Acceleration";
 		lv2:default 4.127 ;
 		lv2:minimum 0.01 ;
 		lv2:maximum 20.0 ;
 		pp:displayPriority 200 ;
+		units:unit units:s;
 		rdfs:comment "Time required to accelerate the drum (exponential time constant)" ;
 
 	],
@@ -352,12 +362,13 @@
 			lv2:ControlPort ;
 		lv2:index 23 ;
 		lv2:symbol "drumdecel" ;
-		lv2:name "Drum Deceleration [s]";
+		lv2:name "Drum Deceleration";
 		lv2:default 1.371 ;
 		lv2:minimum 0.01 ;
 		lv2:maximum 20.0 ;
 		pp:displayPriority 200 ;
 		rdfs:comment "Time required to decelerate the drum (exponential time constant)" ;
+		units:unit units:s;
 	],
 	[
 		a lv2:InputPort ,
@@ -386,6 +397,7 @@
 			rdf:value 1.0 ;
 		];
 		pp:displayPriority 250 ;
+		units:unit units:degree;
 		rdfs:comment "Drum stop position. Clockwise position where to stop. (0: free-stop, 1.0:front-center)";
 	],
 	[
@@ -416,11 +428,12 @@
 			lv2:ControlPort ;
 		lv2:index 26;
 		lv2:symbol "filtdfreq" ;
-		lv2:name "Drum Filter Frequency [Hz]";
+		lv2:name "Drum Filter Frequency";
 		lv2:default 811.9695 ;
 		lv2:minimum 50 ;
 		lv2:maximum 8000.0 ;
 		pp:displayPriority 100 ;
+		units:unit units:hz;
 		rdfs:comment "Filter frequency";
 	],
 	[
@@ -440,7 +453,7 @@
 			lv2:ControlPort ;
 		lv2:index 28 ;
 		lv2:symbol "filtdgain" ;
-		lv2:name "Drum Filter Gain (shelf) [dB]";
+		lv2:name "Drum Filter Gain";
 		lv2:default -38.9291;
 		lv2:minimum -48.0 ;
 		lv2:maximum  48.0 ;
@@ -452,7 +465,7 @@
 			lv2:ControlPort ;
 		lv2:index 29 ;
 		lv2:symbol "hornleak" ;
-		lv2:name "Horn signal leakage";
+		lv2:name "Horn Signal Leakage";
 		lv2:default -16.47;
 		lv2:minimum -80.0 ;
 		lv2:maximum  -3.0 ;
@@ -534,37 +547,40 @@
 			lv2:ControlPort ;
 		lv2:index 35 ;
 		lv2:symbol "hornrpm" ;
-		lv2:name "Current Horn speed [RPM]";
+		lv2:name "Current Horn speed";
 		lv2:minimum 0.0 ;
 		lv2:maximum 1000.0 ;
+		units:unit [ a units:Unit; rdfs:label "rpm"; units:symbol "rpm"; units:render "%.1f RPM"; ] ;
 	],
 	[
 		a lv2:OutputPort ,
 			lv2:ControlPort ;
 		lv2:index 36 ;
 		lv2:symbol "drumrpm" ;
-		lv2:name "Current Drum speed [RPM]";
+		lv2:name "Current Drum speed";
 		lv2:minimum 0.0 ;
 		lv2:maximum 600.0 ;
-
+		units:unit [ a units:Unit; rdfs:label "rpm"; units:symbol "rpm"; units:render "%.1f RPM"; ] ;
 	],
 	[
 		a lv2:OutputPort ,
 			lv2:ControlPort ;
 		lv2:index 37 ;
 		lv2:symbol "hornang" ;
-		lv2:name "Current position (deg)";
+		lv2:name "Current Horn position";
 		lv2:minimum 0.0 ;
 		lv2:maximum 1.0 ;
+		units:unit units:degree;
 	],
 	[
 		a lv2:OutputPort ,
 			lv2:ControlPort ;
 		lv2:index 38 ;
 		lv2:symbol "drumang" ;
-		lv2:name "Current Drum position (deg)";
+		lv2:name "Current Drum position";
 		lv2:minimum  0.0 ;
 		lv2:maximum  1.0 ;
+		units:unit units:degree;
 	],
 	[
 		a lv2:InputPort ,
@@ -604,11 +620,12 @@
 			lv2:ControlPort ;
 		lv2:index 41 ;
 		lv2:symbol "micangle" ;
-		lv2:name "MicAngle";
+		lv2:name "Microphone Angle";
 		lv2:default 180.0 ;
 		lv2:minimum 0.0 ;
 		lv2:maximum 180.0 ;
 		lv2:portProperty pp:causesArtifacts;
+		units:unit units:degree;
 		pp:displayPriority 50 ;
 	],
 	[
@@ -633,5 +650,5 @@
 			rdf:value 2.0 ;
 		];
 	];
-	rdfs:comment "A rotating louspeaker emulator designed to imitate the sound and properties of the sound modification device that brought world-wide fame to the name of Don Leslie" ;
+	rdfs:comment "A rotating loudspeaker emulator designed to imitate the sound and properties of the sound modification device that brought world-wide fame to the name of Don Leslie" ;
 	.
