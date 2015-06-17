@@ -26,7 +26,7 @@ override CFLAGS += -DVERSION="\"$(VERSION)\""
 
 STRIP    ?= strip
 
-CXXFLAGS = $(OPTIMIZATIONS) -Wall
+CXXFLAGS ?= $(OPTIMIZATIONS) -Wall
 GLUICFLAGS=-I. -I.. -Wno-unused-function
 STRIPFLAGS=-s
 
