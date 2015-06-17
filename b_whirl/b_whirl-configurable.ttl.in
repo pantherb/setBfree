@@ -205,7 +205,7 @@
 		lv2:default 0;
 		lv2:minimum 0 ;
 		lv2:maximum 8 ;
-		lv2:portProperty lv2:enumeration ;
+		lv2:portProperty lv2:integer, lv2:enumeration ;
 		lv2:scalePoint [ rdfs:label "low-pass"; rdf:value 0 ] ;
 		lv2:scalePoint [ rdfs:label "high-pass"; rdf:value 1 ] ;
 		lv2:scalePoint [ rdfs:label "band-pass 0 (peak gain = Q)"; rdf:value 2 ] ;
@@ -265,7 +265,7 @@
 		lv2:default 7;
 		lv2:minimum 0 ;
 		lv2:maximum 8 ;
-		lv2:portProperty lv2:enumeration ;
+		lv2:portProperty lv2:integer, lv2:enumeration ;
 		lv2:scalePoint [ rdfs:label "low-pass"; rdf:value 0 ] ;
 		lv2:scalePoint [ rdfs:label "high-pass"; rdf:value 1 ] ;
 		lv2:scalePoint [ rdfs:label "band-pass 0 (peak gain = Q)"; rdf:value 2 ] ;
@@ -409,7 +409,7 @@
 		lv2:default 8;
 		lv2:minimum 0 ;
 		lv2:maximum 8 ;
-		lv2:portProperty lv2:enumeration ;
+		lv2:portProperty lv2:integer, lv2:enumeration ;
 		lv2:scalePoint [ rdfs:label "low-pass"; rdf:value 0 ] ;
 		lv2:scalePoint [ rdfs:label "high-pass"; rdf:value 1 ] ;
 		lv2:scalePoint [ rdfs:label "band-pass 0 (peak gain = Q)"; rdf:value 2 ] ;
