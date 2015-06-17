@@ -53,7 +53,7 @@
 		lv2:default 4 ;
 		lv2:minimum 0 ;
 		lv2:maximum 8 ;
-		lv2:portProperty lv2:enumeration ;
+		lv2:portProperty lv2:integer, lv2:enumeration ;
 		lv2:scalePoint [ rdfs:label "horn: stop, drum:stop"; rdf:value 0 ; ] ;
 		lv2:scalePoint [ rdfs:label "horn: stop, drum:slow"; rdf:value 1 ; ] ;
 		lv2:scalePoint [ rdfs:label "horn: stop, drum:fast"; rdf:value 2 ; ] ;
