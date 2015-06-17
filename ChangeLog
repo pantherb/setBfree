@@ -1,4 +1,4 @@
-2015-06-13 (unreleased)  Robin Gareus <robin@gareus.org>
+2015-06-17 (0.8.0)  Robin Gareus <robin@gareus.org>
 * major GUI overhaul (LV2/openGL)
 	- add configuration/settings
 	- add preferences
