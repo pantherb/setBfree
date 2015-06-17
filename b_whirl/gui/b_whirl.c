@@ -1442,6 +1442,8 @@ static void prepare_faceplates (WhirlUI* ui) {
 		} else if (val < 1) { \
 			snprintf (tmp, 24, "%.1f", val); \
 			memcpy (tmp, tmp + 1, strlen (tmp)); \
+		} else if (val < 3) { \
+			snprintf (tmp, 24, "%.0f", val); \
 		} else { \
 			snprintf (tmp, 24, "%.0f", 5. * rintf (val / 5)); \
 		} \
