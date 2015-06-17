@@ -11,7 +11,7 @@ LV2GUI=b_whirlUI_gl
 HAVE_RTK = no
 
 ifeq ($(LV2AVAIL), yes)
-  targets+=lv2 x42-whirl$(EXE_EXT)
+  targets+=lv2
 
   ifeq ($(wildcard $(RW)robtk.mk),)
     $(warning This plugin GUI needs https://github.com/x42/robtk)
@@ -78,13 +78,17 @@ ifeq ($(LV2AVAIL), yes)
 endif
 ifeq ($(HAVE_RTK), yes)
 	install -m755 $(LV2GUI)$(LIB_EXT) $(DESTDIR)$(lv2dir)/$(LV2NAME)
+	install -d $(DESTDIR)$(bindir)
+	install -m755 x42-whirl$(EXE_EXT) $(DESTDIR)$(bindir)
 endif
 
 uninstall:
 	rm -f $(DESTDIR)$(lv2dir)/$(LV2NAME)/*.ttl
 	rm -f $(DESTDIR)$(lv2dir)/$(LV2NAME)/$(LV2NAME)$(LIB_EXT)
 	rm -f $(DESTDIR)$(lv2dir)/$(LV2NAME)/$(LV2GUI)$(LIB_EXT)
+	rm -f $(DESTDIR)$(bindir)/x42-whirl$(EXE_EXT)
 	-rmdir $(DESTDIR)$(lv2dir)/$(LV2NAME)
+	-rmdir $(DESTDIR)$(bindir)
 
 clean:
 	rm -f *.o manifest.ttl $(LV2NAME)$(LIB_EXT) b_whirl-configurable.ttl $(LV2GUI)$(LIB_EXT) x42-whirl$(EXE_EXT)

@@ -24,8 +24,8 @@ if test "$a" != "n" -a "$a" != "N"; then
 	${EDITOR} Makefile debian/changelog ChangeLog
 fi
 
-eval `grep "VERSION=" Makefile`
-echo "   VERSION: v${VERSION}"
+eval `grep "EXPORTED_VERSION=" Makefile`
+echo "   VERSION: v${EXPORTED_VERSION}"
 
 echo -n "Is this correct? [Y/n]"
 read -n1 a
@@ -37,14 +37,14 @@ fi
 echo "re-creating man-pages and documentation with new version-number.."
 # re-create man-pages
 make clean
-make ENABLE_CONVOLUTION=yes PREFIX=/usr
+make PREFIX=/usr VERSION=${EXPORTED_VERSION}
 make doc
 make dist
 
 echo "creating git-commit of updated doc & version number"
-git commit -m "finalize changelog v${VERSION}" Makefile ChangeLog debian/changelog doc/*.1
+git commit -m "finalize changelog v${EXPORTED_VERSION}" Makefile ChangeLog debian/changelog doc/*.1
 
-git tag "v${VERSION}" || (echo -n "version tagging failed. - press Enter to continue, CTRL-C to stop."; read; ) 
+git tag "v${EXPORTED_VERSION}" || (echo -n "version tagging failed. - press Enter to continue, CTRL-C to stop."; read; ) 
 
 echo -n "git push? [Y/n]"
 read -n1 a
@@ -54,8 +54,8 @@ if test "$a" != "n" -a "$a" != "N"; then
 	for remote in $(git remote); do
 		git push $remote || exit 1
 		#git push --tags ## would push ALL existing tags,
-		git push $remote "refs/tags/v${VERSION}:refs/tags/v${VERSION}" || exit 1
+		git push $remote "refs/tags/v${EXPORTED_VERSION}:refs/tags/v${EXPORTED_VERSION}" || exit 1
 	done
 fi
 
-ls -l "setbfree-${VERSION}.tar.gz"
+ls -l "setbfree-${EXPORTED_VERSION}.tar.gz"

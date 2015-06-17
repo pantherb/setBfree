@@ -11,6 +11,14 @@ Hammond and Don Leslie.
 *   http://setbfree.org
 *   https://github.com/pantherb/setBfree
 
+Download
+--------
+
+Binaries for Intel platform, GNU/Linux, OSX and Windows are available from
+
+*   https://github.com/pantherb/setBfree/releases/latest
+
+setBfree is also available on most Linux distributions.
 
 Quick-start
 -----------

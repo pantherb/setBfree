@@ -51,8 +51,6 @@ endif
 ifeq ($(shell pkg-config --exists alsa && echo yes)$(ENABLE_ALSA), yesyes)
   override CFLAGS+=-DHAVE_ASEQ `pkg-config --cflags alsa`
   LOADLIBES+=`pkg-config --libs alsa`
-else
-  $(info "compiling w/o ALSA Sequencer - libasound is missing - JACK-midi is always on")
 endif
 
 
@@ -74,8 +72,6 @@ ifeq ($(shell pkg-config --exists sndfile \
   OBJS+=../b_conv/convolution.o
   HEADERS+=../b_conv/convolution.h
   BXCC=$(CXX)
-else
-  $(info "compiling w/o ZITA Convolution Reverb -- needs libzita-convolver3 and libsndfile")
 endif
 
 all: setBfree$(EXE_EXT)

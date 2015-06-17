@@ -50,7 +50,7 @@
 
 #ifdef XTERNAL_UI
 #undef OLD_SUIL
-#include "../ui/xternalui.h"
+#include "../robtk/gl/xternalui.h"
 #endif
 
 #ifdef __APPLE__
