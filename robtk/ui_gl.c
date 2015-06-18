@@ -359,7 +359,7 @@ static void lc_expose (GlMetersLV2UI * self) {
 	cairo_set_source_rgba(self->cr, 0, 0, 0, .15 + self->gpg_shade);
 	if (self->gpg_shade < .6) self->gpg_shade += .001;
 	cairo_fill(self->cr);
-	write_text_full(self->cr, " Unregistered Version\nhttp://x42-plugins.com",
+	write_text_full(self->cr, "Unregistered Version\nhttp://x42-plugins.com",
 			xfont, self->width * .5, self->height * .5,
 			self->width < 200 ? M_PI * -.5 : 0, 2, c_wht);
 	pango_font_description_free(xfont);
@@ -1014,7 +1014,10 @@ static void onMotion(PuglView* view, int x, int y) {
 static void onMouse(PuglView* view, int button, bool press, int x, int y) {
 	GlMetersLV2UI* self = (GlMetersLV2UI*)puglGetHandle(view);
 #ifdef WITH_SIGNATURE
-	if (!self->gpg_verified) return;
+	if (!self->gpg_verified) {
+		if (press) { rtk_open_url ("http://x42-plugins.com"); }
+		return;
+	}
 #endif
 	//fprintf(stderr, "Mouse %d %s at %d,%d\n", button, press ? "down" : "up", x, y);
 

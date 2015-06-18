@@ -1177,6 +1177,8 @@ int main (int argc, char **argv) {
 					"Cannot connect to JACK.\n"
 					"Please start the JACK Server first."
 				);
+#else
+		(void) system ("xmessage -button ok -center \"Cannot connect to JACK.\nPlease start the JACK Server first.\" &");
 #endif
 		rv |= 4;
 		goto out;

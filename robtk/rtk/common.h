@@ -177,5 +177,28 @@ static void create_text_surface2(cairo_surface_t ** sf,
 }
 
 
+#ifdef _WIN32
+#  include <windows.h>
+#  include <shellapi.h>
+#elif defined __APPLE__
+	// defined in pugl/pugl_osx.m
+	extern bool rtk_osx_open_url (const char*);
+#else
+#  include <stdlib.h>
+#endif
+
+static void rtk_open_url (const char *url) {
+	// assume URL is escaped and shorter than 1024 chars;
+#ifdef _WIN32
+	ShellExecute(NULL, "open", url, NULL, NULL, SW_SHOWNORMAL);
+#elif defined __APPLE__
+	rtk_osx_open_url (uri);
+#else
+	char tmp[1024];
+	sprintf(tmp, "xdg-open %s &", url);
+	(void) system (tmp);
+#endif
+}
+
 
 #endif

@@ -52,6 +52,7 @@ typedef struct {
 	float w_width, w_height, l_width, l_height;
 	float c_on[4];
 	float coff[4];
+	float c_ck[4];
 	pthread_mutex_t _mutex;
 } RobTkCBtn;
 
@@ -79,8 +80,8 @@ static void create_cbtn_pattern(RobTkCBtn * d) {
 
 	d->btn_enabled = cairo_pattern_create_linear (0.0, 0.0, 0.0, d->w_height);
 	if (d->show_led == GBT_LED_OFF) {
-		cairo_pattern_add_color_stop_rgb (d->btn_enabled, 0.0, .2, .5, .21);
-		cairo_pattern_add_color_stop_rgb (d->btn_enabled, 0.5, .5, .9, .51);
+		cairo_pattern_add_color_stop_rgb (d->btn_enabled, ISBRIGHT(d->c_ck) ? 0.5 : 0.0, SHADE_RGB(d->c_ck, 0.5));
+		cairo_pattern_add_color_stop_rgb (d->btn_enabled, ISBRIGHT(d->c_ck) ? 0.0 : 0.5, SHADE_RGB(d->c_ck, 1.0));
 	} else {
 		cairo_pattern_add_color_stop_rgb (d->btn_enabled, ISBRIGHT(c_bg) ? 0.5 : 0.0, SHADE_RGB(c_bg, .95));
 		cairo_pattern_add_color_stop_rgb (d->btn_enabled, ISBRIGHT(c_bg) ? 0.0 : 0.5, SHADE_RGB(c_bg, 2.4));
@@ -336,6 +337,7 @@ static RobTkCBtn * robtk_cbtn_new(const char * txt, enum GedLedMode led, bool fl
 
 	d->c_on[0] = .8; d->c_on[1] = .3; d->c_on[2] = .1; d->c_on[3] = 1.0;
 	d->coff[0] = .3; d->coff[1] = .1; d->coff[2] = .1; d->coff[3] = 1.0;
+	d->c_ck[0] = .2; d->c_ck[1] = .7; d->c_ck[2] = .22; d->c_ck[3] = 1.0;
 
 	if (led == GBT_LED_RADIO) {
 		d->radiomode = TRUE;
@@ -423,6 +425,13 @@ static void robtk_cbtn_set_color_off(RobTkCBtn *d, float r, float g, float b) {
 	d->coff[0] = r;
 	d->coff[1] = g;
 	d->coff[2] = b;
+}
+
+static void robtk_cbtn_set_color_checked(RobTkCBtn *d, float r, float g, float b) {
+	d->c_ck[0] = r;
+	d->c_ck[1] = g;
+	d->c_ck[2] = b;
+	create_cbtn_pattern (d);
 }
 
 static void robtk_cbtn_set_temporary_mode(RobTkCBtn *d, int i) {

@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-export ROBTK=`mktemp -d -t robtkgit`
+export ROBTK=`mktemp -d -t robtkgit.XXXXXX`
 trap "rm -rf ${BUNDLEDIR}" EXIT
 
 set -e
