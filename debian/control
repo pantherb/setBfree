@@ -20,7 +20,7 @@ Standards-Version: 3.9.3
 Package: setbfree
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends},
- ttf-bitstream-vera
+ ttf-bitstream-vera, x11-utils
 Description: DSP tonewheel organ
  setBfree is a MIDI-controlled, software synthesizer designed to imitate
  the sound and properties of the electromechanical organs and sound
