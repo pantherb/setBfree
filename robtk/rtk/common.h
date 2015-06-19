@@ -192,7 +192,7 @@ static void rtk_open_url (const char *url) {
 #ifdef _WIN32
 	ShellExecute(NULL, "open", url, NULL, NULL, SW_SHOWNORMAL);
 #elif defined __APPLE__
-	rtk_osx_open_url (uri);
+	rtk_osx_open_url (url);
 #else
 	char tmp[1024];
 	sprintf(tmp, "xdg-open %s &", url);
