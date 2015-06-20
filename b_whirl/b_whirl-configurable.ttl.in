@@ -18,6 +18,7 @@
 	doap:maintainer <http://gareus.org/rgareus#me> ;
 	doap:name "setBfree Whirl Speaker - Extended Version";
 	doap:license <http://usefulinc.com/doap/licenses/gpl> ;
+	@VERSION@
 	lv2:optionalFeature lv2:hardRTCapable ;
 	lv2:port
 	[

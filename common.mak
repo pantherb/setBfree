@@ -14,6 +14,8 @@ ifeq ($(VERSION),)
   $(error "-^-")
 endif
 
+LV2VERSION=$(VERSION)
+
 bindir = $(PREFIX)/bin
 sharedir = $(PREFIX)/share/setBfree
 lv2dir = $(PREFIX)/lib/lv2
@@ -59,6 +61,7 @@ ifeq ($(UNAME),Darwin)
   STRIPFLAGS=-u -r -arch all -s $(RW)lv2syms
   UI_TYPE=CocoaUI
   PUGL_SRC=../pugl/pugl_osx.m
+  EXTENDED_RE=-E
 else
   ifneq ($(XWIN),)
     IS_WIN=yes
@@ -82,6 +85,7 @@ else
     UI_TYPE=X11UI
     PUGL_SRC=../pugl/pugl_x11.c
   endif
+  EXTENDED_RE=-r
 endif
 
 GLUICFLAGS+=`pkg-config --cflags cairo pango $(PKG_GL_LIBS)`

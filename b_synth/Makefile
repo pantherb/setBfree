@@ -1,4 +1,5 @@
 include ../common.mak
+include ../git2lv2.mk
 
 LOADLIBES = -lm
 override CFLAGS+= -I../src -I../b_overdrive -I../b_reverb -I../b_whirl
@@ -39,7 +40,8 @@ ifeq ($(HAVE_UI), yes)
 endif
 
 $(LV2NAME).ttl: $(LV2NAME).ttl.in $(LV2NAME).ui.ttl.in
-	cat $(LV2NAME).ttl.in > $(LV2NAME).ttl
+	sed "s/@VERSION@/lv2:microVersion $(LV2MIC) ;lv2:minorVersion $(LV2MIN) ;/g" \
+		$(LV2NAME).ttl.in > $(LV2NAME).ttl
 ifeq ($(HAVE_UI), yes)
 	sed "s/@UI_TYPE@/$(UI_TYPE)/;s/@UI_REQ@/$(LV2UIREQ)/;" $(LV2NAME).ui.ttl.in >> $(LV2NAME).ttl
 endif

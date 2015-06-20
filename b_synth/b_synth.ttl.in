@@ -22,6 +22,7 @@
 	doap:maintainer <http://gareus.org/rgareus#me> ;
 	doap:name "setBfree DSP Tonewheel Organ";
 	doap:license <http://usefulinc.com/doap/licenses/gpl> ;
+	@VERSION@
 	lv2:optionalFeature lv2:hardRTCapable ;
 	lv2:requiredFeature urid:map , work:schedule ;
 	lv2:extensionData state:interface , work:interface ;

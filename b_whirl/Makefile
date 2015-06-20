@@ -1,4 +1,5 @@
 include ../common.mak
+include ../git2lv2.mk
 
 LOADLIBES = -lm
 override CFLAGS+=`pkg-config --cflags lv2` -fvisibility=hidden
@@ -41,9 +42,11 @@ ifeq ($(HAVE_RTK), yes)
 endif
 
 b_whirl-configurable.ttl: b_whirl-configurable.ttl.in b_whirl-configurable.ui.ttl.in
-	cat b_whirl-configurable.ttl.in > b_whirl-configurable.ttl
+	sed "s/@UI_REQ@/$(LV2UIREQ)/;s/@VERSION@/lv2:microVersion $(LV2MIC) ;lv2:minorVersion $(LV2MIN) ;/g" \
+		b_whirl-configurable.ttl.in > b_whirl-configurable.ttl
 ifeq ($(HAVE_RTK), yes)
-	sed "s/@UI_TYPE@/$(UI_TYPE)/;s/@UI_REQ@/$(LV2UIREQ)/;" b_whirl-configurable.ui.ttl.in >>  b_whirl-configurable.ttl
+	sed "s/@UI_TYPE@/$(UI_TYPE)/" \
+		b_whirl-configurable.ui.ttl.in >> b_whirl-configurable.ttl
 endif
 
 DSP_SRC = lv2.c
