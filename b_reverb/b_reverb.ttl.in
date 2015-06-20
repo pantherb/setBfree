@@ -23,7 +23,7 @@
 		lv2:index 0 ;
 		lv2:symbol "in" ;
 		lv2:name "In"
-	],	
+	],
 	[
 		a lv2:AudioPort ,
 			lv2:OutputPort ;

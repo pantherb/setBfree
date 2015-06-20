@@ -1,4 +1,5 @@
 include ../common.mak
+include ../git2lv2.mk
 
 LOADLIBES = -lm
 
@@ -36,6 +37,10 @@ lv2: manifest.ttl $(LV2NAME)$(LIB_EXT)
 manifest.ttl:
 	sed "s/@LV2NAME@/$(LV2NAME)/;s/@LIB_EXT@/$(LIB_EXT)/" manifest.ttl.in > manifest.ttl
 
+$(LV2NAME).ttl: $(LV2NAME).ttl.in Makefile
+	sed "s/@VERSION@/lv2:microVersion $(LV2MIC) ;lv2:minorVersion $(LV2MIN) ;/g" \
+		$(LV2NAME).ttl.in > $(LV2NAME).ttl
+
 $(LV2NAME)$(LIB_EXT): lv2.c overdrive.o
 	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden \
 		-o $(LV2NAME)$(LIB_EXT) lv2.c overdrive.o \
@@ -71,6 +76,6 @@ endif
 	-rmdir $(DESTDIR)$(lv2dir)/$(LV2NAME)
 
 clean:
-	rm -f *.o jboverdrive overmaker manifest.ttl $(LV2NAME)$(LIB_EXT)
+	rm -f *.o jboverdrive overmaker manifest.ttl $(LV2NAME)$(LIB_EXT) $(LV2NAME).ttl
 
 .PHONY: clean all install uninstall lv2 overdrive
