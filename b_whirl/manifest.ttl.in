@@ -1,9 +1,7 @@
 @prefix lv2:  <http://lv2plug.in/ns/lv2core#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix ui:   <http://lv2plug.in/ns/extensions/ui#> .
-@prefix pset: <http://lv2plug.in/ns/ext/presets#> .
 @prefix bwhirl:       <http://gareus.org/oss/lv2/b_whirl#> .
-@prefix bwhirlpreset: <http://gareus.org/oss/lv2/b_whirl/presets#> .
 
 bwhirl:simple
 	a lv2:Plugin ;
@@ -14,13 +12,3 @@ bwhirl:extended
 	a lv2:Plugin ;
 	lv2:binary <@LV2NAME@@LIB_EXT@>  ;
 	rdfs:seeAlso <b_whirl-configurable.ttl> .
-
-bwhirlpreset:default
-  a pset:Preset ;
-	lv2:appliesTo bwhirl:extended ;
-	rdfs:seeAlso <b_whirl-presets.ttl> .
-
-bwhirlpreset:oiled
-  a pset:Preset ;
-	lv2:appliesTo bwhirl:extended ;
-	rdfs:seeAlso <b_whirl-presets.ttl> .
