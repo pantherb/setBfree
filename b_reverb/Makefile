@@ -14,7 +14,7 @@ endif
 
 all: $(targets)
 
-lv2: manifest.ttl $(LV2NAME)$(LIB_EXT) 
+lv2: manifest.ttl $(LV2NAME)$(LIB_EXT) $(LV2NAME).ttl
 
 manifest.ttl:
 	sed "s/@LV2NAME@/$(LV2NAME)/;s/@LIB_EXT@/$(LIB_EXT)/" manifest.ttl.in > manifest.ttl
