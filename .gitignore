@@ -26,11 +26,13 @@ DWARF
 
 # generated LV2 metadata
 /b_overdrive/manifest.ttl
+/b_overdrive/b_overdrive.ttl
 /b_whirl/manifest.ttl
 /b_whirl/b_whirl-configurable.ttl
 /b_whirl/x42-whirl
 /b_whirl/x42-whirl.exe
 /b_reverb/manifest.ttl
+/b_reverb/b_reverb.ttl
 /b_synth/manifest.ttl
 /b_synth/manifest.ttl
 /b_synth/b_synth.ttl
