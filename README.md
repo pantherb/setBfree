@@ -40,6 +40,12 @@ Screenshots
 Usage
 -----
 
+setBfree is available as 3 different variants:
+
+*   standalone JACK application with graphical user interface
+*   LV2 plugin (with optional GUI)
+*   commandline application
+
 Run `setBfree -h` for a quick overview. `setBfree --help` will output a
 lengthy list of available options and properties than can be modified.
 
@@ -47,12 +53,12 @@ lengthy list of available options and properties than can be modified.
 or ALSA-sequencer) and outputs audio to JACK. The engine does not have any
 graphical user interface (GUI). It is usually started from the commandline.
 
-The GUI `setBfreeUI` is a standalone application that wraps the LV2 plugin.
+The GUI `setBfreeUI` is a standalone application that wraps the synth engine.
 It provides both visual feedback about the current synth state as well as allows
 to reconfigure and control numerous aspects of the organ.
 
-The organ itself, as well as broken out parts (leslie, reverv, overdrive) are
-available as LV2 plugins.
+The complete organ (incl. GUI), as well as individual parts (leslie, reverb,
+overdrive) are also available as LV2 plugins.
 
 Examples:
 
