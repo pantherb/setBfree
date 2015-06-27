@@ -39,7 +39,7 @@ targets=
 
 DESC=$(abspath desc.h)
 
-ifeq ($(LV2AVAIL)$(HAVE_UI), yesyes)
+ifeq ($(LV2AVAIL)$(HAVE_UI)$(HAVE_IDLE), yesyesyes)
   targets+=setBfreeUI$(EXE_EXT)
 else
   $(warning standalone JACK/GL-GUI will not be built)

@@ -36,12 +36,13 @@ STRIPFLAGS=-s
 LV2AVAIL=$(shell pkg-config --exists lv2 && echo yes)
 
 LV2UIREQ=
-# check for LV2 idle thread -- requires 'lv2', atleast_version='1.4.1
-ifeq ($(shell pkg-config --atleast-version=1.4.6 lv2 || echo no), no)
+# check for LV2 idle thread
+ifeq ($(shell pkg-config --atleast-version=1.6.0 lv2 || echo no), no)
   override CFLAGS+=-DOLD_SUIL
 else
   GLUICFLAGS+=-DHAVE_IDLE_IFACE
   LV2UIREQ=lv2:requiredFeature ui:idleInterface; lv2:extensionData ui:idleInterface;
+  HAVE_IDLE=yes
 endif
 
 # check for lv2_atom_forge_object  new in 1.8.1 deprecates lv2_atom_forge_blank
@@ -116,7 +117,7 @@ endif
 
 HAVE_UI=$(shell pkg-config --exists $(PKG_GL_LIBS) ftgl && echo $(FONT_FOUND))
 
-ifeq ($(LV2AVAIL)$(HAVE_UI), yesyes)
+ifeq ($(LV2AVAIL)$(HAVE_UI)$(HAVE_IDLE), yesyesyes)
   UICFLAGS=-I..
   UIDEPS=../pugl/pugl.h ../pugl/pugl_internal.h ../b_synth/ui_model.h
   UIDEPS+=$(TX)drawbar.c $(TX)wood.c $(TX)dial.c
