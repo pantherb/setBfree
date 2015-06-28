@@ -35,6 +35,11 @@ else
   UILIBS+=`pkg-config --libs jack`
 endif
 
+ifeq ($(shell pkg-config --exists liblo && echo yes), yes)
+  UICFLAGS+=`pkg-config $(PKG_UI_FLAGS) --cflags liblo` -DHAVE_LIBLO
+  UILIBS+=`pkg-config $(PKG_UI_FLAGS) --libs liblo`
+endif
+
 targets=
 
 DESC=$(abspath desc.h)
