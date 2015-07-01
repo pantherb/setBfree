@@ -33,7 +33,7 @@ endif
 
 all: $(targets)
 
-lv2: manifest.ttl $(LV2NAME)$(LIB_EXT) b_whirl-configurable.ttl
+lv2: manifest.ttl $(LV2NAME)$(LIB_EXT) b_whirl-configurable.ttl b_whirl.ttl
 
 manifest.ttl: manifest.ttl.in manifest.ui.ttl.in
 	sed "s/@LV2NAME@/$(LV2NAME)/;s/@LIB_EXT@/$(LIB_EXT)/" manifest.ttl.in > manifest.ttl
@@ -48,6 +48,10 @@ ifeq ($(HAVE_RTK), yes)
 	sed "s/@UI_TYPE@/$(UI_TYPE)/;s/@UI_REQ@/$(LV2UIREQ)/" \
 		b_whirl-configurable.ui.ttl.in >> b_whirl-configurable.ttl
 endif
+
+b_whirl.ttl: b_whirl.ttl.in
+	sed "s/@VERSION@/lv2:microVersion $(LV2MIC) ;lv2:minorVersion $(LV2MIN) ;/g" \
+		b_whirl.ttl.in > b_whirl.ttl
 
 DSP_SRC = lv2.c
 DSP_DEPS = whirl.o eqcomp.o whirl.h eqcomp.h ../src/cfgParser.h
