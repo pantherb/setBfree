@@ -600,19 +600,19 @@
 		lv2:index 40 ;
 		lv2:symbol "link" ;
 		lv2:name "Link Speed Control";
-		lv2:default  0.0 ;
-		lv2:minimum -1.0 ;
-		lv2:maximum  1.0 ;
+		lv2:default  0 ;
+		lv2:minimum -1 ;
+		lv2:maximum  1 ;
 		lv2:portProperty lv2:integer, lv2:enumeration;
 		lv2:scalePoint [
 			rdfs:label "Separate Drum/Horn Ctrl" ;
-			rdf:value 0.0 ;
+			rdf:value 0 ;
 		] , [
 			rdfs:label "Horn Ctrl affects Drum" ;
-			rdf:value 1.0 ;
+			rdf:value 1 ;
 		] , [
 			rdfs:label "Drum Ctrl affects Horn" ;
-			rdf:value -1.0;
+			rdf:value -1;
 		];
 		pp:displayPriority 800 ;
 	],
