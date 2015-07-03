@@ -132,12 +132,14 @@ ifeq ($(LV2AVAIL)$(HAVE_UI)$(HAVE_IDLE), yesyesyes)
     UIDEPS+=../pugl/pugl_osx.m
     UILIBS=../pugl/pugl_osx.m -framework Cocoa -framework OpenGL
     UILIBS+=`pkg-config --variable=libdir ftgl`/libftgl.a `pkg-config --variable=libdir ftgl`/libfreetype.a
+    UILIBS+=`pkg-config --libs zlib`
     UILIBS+=-lm -mmacosx-version-min=10.5
   else
     ifeq ($(IS_WIN), yes)
       UIDEPS+=../pugl/pugl_win.cpp
       UILIBS=../pugl/pugl_win.cpp
       UILIBS+=`pkg-config --variable=libdir ftgl`/libftgl.a `pkg-config --variable=libdir ftgl`/libfreetype.a
+      UILIBS+=`pkg-config --libs zlib`
       UILIBS+=-lws2_32 -lwinmm -lopengl32 -lglu32 -lgdi32 -lcomdlg32 -lpthread
     else
       UIDEPS+=../pugl/pugl_x11.c
@@ -146,6 +148,7 @@ ifeq ($(LV2AVAIL)$(HAVE_UI)$(HAVE_IDLE), yesyesyes)
       ifeq ($(STATICBUILD), yes)
         UILIBS+=`pkg-config --libs glu`
         UILIBS+=`pkg-config --variable=libdir ftgl`/libftgl.a `pkg-config --variable=libdir ftgl`/libfreetype.a
+        UILIBS+=`pkg-config --libs zlib`
       else
         UILIBS+=`pkg-config --libs glu ftgl`
       endif
