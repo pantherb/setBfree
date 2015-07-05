@@ -62,5 +62,6 @@
 		lv2:symbol "outR" ;
 		lv2:name "Right Output" ;
 		lv2:designation pg:right
-	]
+	];
+	rdfs:comment "setBfree is a MIDI-controlled, software synthesizer designed to imitate the sound and properties of the electromechanical organs and sound modification devices that brought world-wide fame to the names and products of Laurens Hammond and Don Leslie."
 	.
