@@ -227,7 +227,7 @@
 		lv2:symbol "filtafreq" ;
 		lv2:name "Horn Filter-1 Frequency";
 		lv2:default 4500.0 ;
-		lv2:minimum 250 ;
+		lv2:minimum 250.0 ;
 		lv2:maximum 8000.0 ;
 		pp:displayPriority 100 ;
 		rdfs:comment "Filter frequency";
@@ -287,7 +287,7 @@
 		lv2:symbol "filtbfreq" ;
 		lv2:name "Horn Filter-2 Frequency";
 		lv2:default 300.0 ;
-		lv2:minimum 250 ;
+		lv2:minimum 250.0 ;
 		lv2:maximum 8000.0 ;
 		pp:displayPriority 100 ;
 		rdfs:comment "Filter frequency";
@@ -338,7 +338,7 @@
 		lv2:symbol "drumrpmfast" ;
 		lv2:name "Drum Speed Fast";
 		lv2:default 357.3;
-		lv2:minimum 60;
+		lv2:minimum 60.0;
 		lv2:maximum 600.0 ;
 		pp:displayPriority 300 ;
 		rdfs:comment "Target RPM for fast (aka tremolo) drum speed" ;
@@ -431,7 +431,7 @@
 		lv2:symbol "filtdfreq" ;
 		lv2:name "Drum Filter Frequency";
 		lv2:default 811.9695 ;
-		lv2:minimum 50 ;
+		lv2:minimum 50.0 ;
 		lv2:maximum 8000.0 ;
 		pp:displayPriority 100 ;
 		units:unit units:hz;
