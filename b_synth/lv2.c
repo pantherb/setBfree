@@ -32,6 +32,10 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#include <direct.h>
+#else
+#include <sys/stat.h>
+#include <sys/types.h>
 #endif
 
 #ifdef WITH_SIGNATURE // gpg signed verified binary
@@ -528,6 +532,40 @@ static void clone_cb_mcc(int fnid, const char *key, const char *kv, unsigned cha
   }
 }
 
+#ifdef _WIN32
+#define DIRSEP_C '\\'
+#else
+#define DIRSEP_C '/'
+#endif
+
+
+static void create_containing_dir (const char *path) {
+  size_t len = strlen(path);
+  if (!path || len == 0) return;
+  if(path[len - 1] == DIRSEP_C) {
+    return;
+  }
+
+  char *tmp = strdup(path);
+  char *p = tmp + 1;
+#ifdef _WIN32
+  if (len > 3 && tmp[1] == ':' && tmp[2] == '\\') {
+    p = tmp + 3;
+  }
+#endif
+  for(; *p; ++p)
+    if(*p == DIRSEP_C) {
+      *p = 0;
+#ifdef _WIN32
+      _mkdir(tmp);
+#else
+      mkdir(tmp, 0755);
+#endif
+      *p = DIRSEP_C;
+    }
+  free (tmp);
+}
+
 /* LV2 -- worker */
 static LV2_Worker_Status
 work(LV2_Handle                  instance,
@@ -616,6 +654,7 @@ work(LV2_Handle                  instance,
       initSynth(b3s->inst_offline, SampleRateD);
       break;
     case CMD_SAVECFG:
+      create_containing_dir (w->msg);
       x = fopen(w->msg, "w");
       if (x) {
 	fprintf(x, "# setBfree config file\n# modificaions on top of default config\n");
@@ -627,6 +666,7 @@ work(LV2_Handle                  instance,
       }
       break;
     case CMD_SAVEPGM:
+      create_containing_dir (w->msg);
       x = fopen(w->msg, "w");
       if (x) {
 	fprintf(x, "# setBfree midi program file\n");
