@@ -4670,7 +4670,7 @@ instantiate(const LV2UI_Descriptor*   descriptor,
 
 #ifdef _WIN32
   char wintmp[1024] = "";
-  if (ExpandEnvironmentStrings("%localappdata%\\setBfree\\default.cfg", wintmp 1024)) {
+  if (ExpandEnvironmentStrings("%localappdata%\\setBfree\\default.cfg", wintmp, 1024)) {
     ui->defaultConfigFile = strdup (wintmp);
   }
   wintmp[0] = '\0';
