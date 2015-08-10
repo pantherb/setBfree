@@ -890,15 +890,13 @@ instantiate(const LV2_Descriptor*     descriptor,
   char * defaultProgrammeFile = NULL;
 
 #ifdef _WIN32
-  // out of luck with CSIDL_LOCAL_APPDATA
-  const char * homedrive = getenv("HOMEDRIVE");
-  const char * homepath = getenv("HOMEPATH");
-  if (homedrive && homepath && (strlen(homedrive) + strlen(homepath) + 38) < 1024) {
-    size_t hl = strlen(homedrive) + strlen(homepath);
-    defaultConfigFile=(char*) malloc(hl+38);
-    defaultProgrammeFile=(char*) malloc(hl+38);
-    sprintf(defaultConfigFile,    "%s%s\\Local Settings\\setBfree\\default.cfg", homedrive, homepath);
-    sprintf(defaultProgrammeFile, "%s%s\\Local Settings\\setBfree\\default.pgm", homedrive, homepath);
+  char wintmp[1024] = "";
+  if (ExpandEnvironmentStrings("%localappdata%\\setBfree\\default.cfg", wintmp 1024)) {
+    defaultConfigFile = strdup (wintmp);
+  }
+  wintmp[0] = '\0';
+  if (ExpandEnvironmentStrings("%localappdata%\\setBfree\\default.pgm", wintmp, 1024)) {
+    defaultProgrammeFile = strdup (wintmp);
   }
 #else // unices: prefer XDG_CONFIG_HOME
   if (getenv("XDG_CONFIG_HOME")) {
