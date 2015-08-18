@@ -1,8 +1,8 @@
 RT=$(RW)rtk/
 WD=$(RW)widgets/robtk_
-STRIP=strip
-LIBSTRIPFLAGS=-s
-APPSTRIPFLAGS=-s
+STRIP?=strip
+LIBSTRIPFLAGS?=-s
+APPSTRIPFLAGS?=-s
 WINDRES=$(XWIN)-windres
 UNAME?=$(shell uname)
 
@@ -29,6 +29,11 @@ ifeq ($(USEWEAKJACK),1)
   JACKEXTRA+=$(RW)weakjack/weak_libjack.c
 else
   JACKLIBS+=`pkg-config $(PKG_UI_FLAGS) --libs jack`
+endif
+
+ifeq ($(shell pkg-config --exists liblo && echo yes), yes)
+  JACKCFLAGS+=`pkg-config $(PKG_UI_FLAGS) --cflags liblo` -DHAVE_LIBLO
+  JACKLIBS+=`pkg-config $(PKG_UI_FLAGS) --libs liblo`
 endif
 
 
