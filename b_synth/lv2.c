@@ -1041,7 +1041,7 @@ run(LV2_Handle instance, uint32_t n_samples)
   if (!warning_printed && capacity < 4096) {
     warning_printed = true;
     fprintf(stderr, "B3LV2: LV message buffer is only %d bytes. Expect problems.\n", capacity);
-    fprintf(stderr, "B3LV2: if your LV2 host allows to configure a buffersize use at least 4kBytes.\n");
+    fprintf(stderr, "B3LV2: if your LV2 host allows one to configure a buffersize use at least 4kBytes.\n");
 
   }
   lv2_atom_forge_set_buffer(&b3s->forge, (uint8_t*)b3s->midiout, capacity);

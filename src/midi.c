@@ -1312,7 +1312,7 @@ static void dumpCCAssigment(FILE * fp, unsigned char *ctrl, midiccflags_t *flags
 
 void listCCAssignments(void *mcfg, FILE * fp) {
   struct b_midicfg * m = (struct b_midicfg *) mcfg;
-  fprintf(fp,"MIDI CC Assigments:\n");
+  fprintf(fp,"MIDI CC Assignments:\n");
   fprintf(fp,"--- Upper Manual   - Channel %2d ---\n", m->rcvChA);
   dumpCCAssigment(fp, m->ctrlUseA, m->ctrlflg[m->rcvChA]);
   fprintf(fp,"--- Lower Manual   - Channel %2d ---\n", m->rcvChB);
