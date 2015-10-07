@@ -54,7 +54,7 @@ $(LV2NAME)$(LIB_EXT): lv2.c $(LV2OBJ) uris.h ../src/cfgParser.h ../src/midi.h
 
 $(LV2GUI)$(LIB_EXT): ui.c uris.h $(UIDEPS) $(FONTFILE) $(LV2OBJ)
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(UICFLAGS) \
-		-o $(LV2GUI)$(LIB_EXT) ui.c -DCONFIGDOCONLY \
+		-o $(LV2GUI)$(LIB_EXT) ui.c -DCONFIGDOCONLY -D XKEYFOCUSGRAB \
 		../src/midi.c \
 		../src/program.c \
 		../src/vibrato.c \
