@@ -55,10 +55,9 @@ __attribute__ ((visibility ("hidden")))
                     defer:(BOOL)flag
 {
 	NSWindow* result = [super initWithContentRect:contentRect
-	                                    styleMask:(NSClosableWindowMask |
-	                                               NSTitledWindowMask |
-	                                               NSResizableWindowMask)
-	                                      backing:NSBackingStoreBuffered defer:NO];
+					    styleMask:aStyle
+					      backing:bufferingType
+						defer:NO];
 
 	[result setAcceptsMouseMovedEvents:YES];
 	return (RobTKPuglWindow *)result;
@@ -412,7 +411,17 @@ puglCreate(PuglNativeWindow parent,
 			initWithBytes:title
 			       length:strlen(title)
 			     encoding:NSUTF8StringEncoding];
-		id window = [[RobTKPuglWindow new]retain];
+		NSRect frame = NSMakeRect(0, 0, min_width, min_height);
+		NSUInteger style = NSClosableWindowMask | NSTitledWindowMask;
+		if (resizable) {
+			style |= NSResizableWindowMask;
+		}
+		id window = [[[RobTKPuglWindow alloc]
+			initWithContentRect:frame
+				  styleMask:style
+				    backing:NSBackingStoreBuffered
+				      defer:NO
+			] retain];
 		[window setPuglview:view];
 		[window setTitle:titleString];
 		[window setContentMinSize:NSMakeSize(min_width, min_height)];
@@ -429,9 +438,6 @@ puglCreate(PuglNativeWindow parent,
 		[NSApp activateIgnoringOtherApps:YES];
 		[window makeFirstResponder:impl->glview];
 		[window makeKeyAndOrderFront:window];
-		if (!resizable) {
-			[window setStyleMask:[window styleMask] & ~NSResizableWindowMask];
-		}
 	}
 	return view;
 }
@@ -546,4 +552,18 @@ puglOpenFileDialog(PuglView* view, const char *title)
 	}];
 
 	return 0;
+}
+
+bool
+rtk_osx_open_url (const char* url)
+{
+	NSString* strurl = [[NSString alloc] initWithUTF8String:url];
+	NSURL* nsurl = [[NSURL alloc] initWithString:strurl];
+
+	bool ret = [[NSWorkspace sharedWorkspace] openURL:nsurl];
+
+	[strurl release];
+	[nsurl release];
+
+	return ret;
 }

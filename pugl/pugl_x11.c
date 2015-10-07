@@ -161,6 +161,12 @@ puglCreate(PuglNativeWindow parent,
 
 	impl->ctx = glXCreateContext(impl->display, vi, 0, GL_TRUE);
 
+	if (!impl->ctx) {
+		free(view);
+		free(impl);
+		return 0;
+	}
+
 	Window xParent = parent
 		? (Window)parent
 		: RootWindow(impl->display, impl->screen);
@@ -184,6 +190,12 @@ puglCreate(PuglNativeWindow parent,
 		impl->display, xParent,
 		0, 0, view->width, view->height, 0, vi->depth, InputOutput, vi->visual,
 		CWBorderPixel | CWColormap | CWEventMask, &attr);
+
+	if (!impl->win) {
+		free(view);
+		free(impl);
+		return 0;
+	}
 
 	XSizeHints sizeHints;
 	memset(&sizeHints, 0, sizeof(sizeHints));
