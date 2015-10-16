@@ -52,7 +52,7 @@
 			lv2:OutputPort ;
 		lv2:index 2 ;
 		lv2:symbol "outL" ;
-		lv2:name "Left output" ;
+		lv2:name "Left Output" ;
 		lv2:designation pg:left ;
 	],	
 	[
