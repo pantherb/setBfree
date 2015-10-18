@@ -92,6 +92,7 @@ typedef struct {
   short update_gui_now;
   short update_pgm_now;
   short swap_instances;
+  short queue_panic;
 
   unsigned int active_keys [MAX_KEYS/32];
 
@@ -878,6 +879,7 @@ instantiate(const LV2_Descriptor*     descriptor,
   b3s->swap_instances = 0;
   b3s->update_gui_now = 0;
   b3s->update_pgm_now = 0;
+  b3s->queue_panic = 0;
 
   b3s->inst = (b_instance*) calloc(1, sizeof(struct b_instance));
   b3s->inst_offline = NULL;
@@ -1026,6 +1028,13 @@ connect_port(LV2_Handle instance,
 }
 
 static void
+activate(LV2_Handle instance)
+{
+  B3S* b3s = (B3S*)instance;
+  b3s->queue_panic = 1;
+}
+
+static void
 run(LV2_Handle instance, uint32_t n_samples)
 {
   B3S* b3s = (B3S*)instance;
@@ -1048,6 +1057,11 @@ run(LV2_Handle instance, uint32_t n_samples)
   lv2_atom_forge_sequence_head(&b3s->forge, &b3s->frame, 0);
 
   uint32_t written = 0;
+
+  if (b3s->queue_panic) {
+	  b3s->queue_panic = 0;
+	  midi_panic(b3s->inst);
+  }
 
   /* Process incoming events from GUI and handle MIDI events */
   if (b3s->midiin) {
@@ -1183,7 +1197,7 @@ static const LV2_Descriptor descriptor = {
   SB3_URI,
   instantiate,
   connect_port,
-  NULL,
+  activate,
   run,
   NULL,
   cleanup,

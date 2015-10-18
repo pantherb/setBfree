@@ -1112,6 +1112,14 @@ static unsigned char map_to_real_key(struct b_midicfg * m, const unsigned char c
   return 255;
 }
 
+void midi_panic (void *inst) {
+  struct b_instance * instp = (struct b_instance *) inst;
+  int i;
+  for (i=0; i < MAX_KEYS; ++i) {
+    oscKeyOff (instp->synth, i, i);
+  }
+}
+
 void process_midi_event(void *instp, const struct bmidi_event_t *ev) {
   struct b_instance * inst = (struct b_instance *) instp;
   struct b_midicfg * m = (struct b_midicfg *) inst->midicfg;
@@ -1176,10 +1184,7 @@ void process_midi_event(void *instp, const struct bmidi_event_t *ev) {
 
       if (ev->d.control.param == 120 || ev->d.control.param == 123) {
 	/* Midi panic: 120: all sound off, 123: all notes off*/
-	int i;
-	for (i=0; i < MAX_KEYS; ++i) {
-	  oscKeyOff (inst->synth, i, i);
-	}
+	midi_panic(instp);
 	break;
       } else
 
