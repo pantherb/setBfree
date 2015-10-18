@@ -5,6 +5,7 @@ OPTIMIZATIONS ?= -msse -msse2 -mfpmath=sse -ffast-math -fomit-frame-pointer -O3 
 ENABLE_CONVOLUTION ?= no
 FONTFILE?=/usr/share/fonts/truetype/ttf-bitstream-vera/VeraBd.ttf
 VERSION?=$(shell git describe --tags HEAD 2>/dev/null | sed 's/-g.*$$//;s/^v//' || true)
+OSXCOMPAT?=-mmacosx-version-min=10.5
 ifeq ($(VERSION),)
   VERSION=$(EXPORTED_VERSION)
 endif
@@ -133,7 +134,7 @@ ifeq ($(LV2AVAIL)$(HAVE_UI)$(HAVE_IDLE), yesyesyes)
     UILIBS=../pugl/pugl_osx.m -framework Cocoa -framework OpenGL
     UILIBS+=`pkg-config --variable=libdir ftgl`/libftgl.a `pkg-config --variable=libdir ftgl`/libfreetype.a
     UILIBS+=`pkg-config --libs zlib`
-    UILIBS+=-lm -mmacosx-version-min=10.5
+    UILIBS+=-lm $(OSXCOMPAT)
   else
     ifeq ($(IS_WIN), yes)
       UIDEPS+=../pugl/pugl_win.cpp
