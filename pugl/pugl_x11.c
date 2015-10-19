@@ -265,6 +265,7 @@ puglDestroy(PuglView* view)
 	x_fib_close(view->impl->display);
 #endif
 
+	//glXMakeCurrent(view->impl->display, None, NULL);
 	glXDestroyContext(view->impl->display, view->impl->ctx);
 	XDestroyWindow(view->impl->display, view->impl->win);
 	XCloseDisplay(view->impl->display);
@@ -293,6 +294,7 @@ puglReshape(PuglView* view, int width, int height)
 	} else {
 		puglDefaultReshape(view, width, height);
 	}
+	glXMakeCurrent(view->impl->display, None, NULL);
 
 	view->width  = width;
 	view->height = height;
@@ -316,6 +318,7 @@ puglDisplay(PuglView* view)
 	if (view->impl->doubleBuffered) {
 		glXSwapBuffers(view->impl->display, view->impl->win);
 	}
+	glXMakeCurrent(view->impl->display, None, NULL);
 }
 
 static void

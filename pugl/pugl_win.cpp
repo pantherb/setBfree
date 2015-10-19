@@ -204,6 +204,8 @@ puglReshape(PuglView* view, int width, int height)
 		puglDefaultReshape(view, width, height);
 	}
 
+	wglMakeCurrent(NULL, NULL);
+
 	view->width  = width;
 	view->height = height;
 }
@@ -224,6 +226,7 @@ puglDisplay(PuglView* view)
 
 	glFlush();
 	SwapBuffers(view->impl->hdc);
+	wglMakeCurrent(NULL, NULL);
 }
 
 static void
