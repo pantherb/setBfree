@@ -1,6 +1,7 @@
 @prefix doap: <http://usefulinc.com/ns/doap#> .
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix mod: <http://moddevices.com/ns/mod#> .
 @prefix pg: <http://lv2plug.in/ns/ext/port-groups#> .
 @prefix pp: <http://lv2plug.in/ns/ext/port-props#> .
 @prefix units: <http://lv2plug.in/ns/extensions/units#> .
@@ -651,5 +652,7 @@
 			rdf:value 2.0 ;
 		];
 	];
+	mod:brand "x42" ;
+	mod:label "Whirl Speaker XT" ;
 	rdfs:comment "A rotating loudspeaker emulator designed to imitate the sound and properties of the sound modification device that brought world-wide fame to the name of Don Leslie" ;
 	.
