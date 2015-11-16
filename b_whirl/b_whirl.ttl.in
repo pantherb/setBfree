@@ -97,16 +97,16 @@
 		lv2:minimum 0.0;
 		lv2:maximum 2.0 ;
 		pp:displayPriority 700 ;
-    lv2:scalePoint [
-      rdfs:label "Mono/Left" ;
-      rdf:value 0.0 ;
-    ] , [
-      rdfs:label "stereo" ;
-      rdf:value 1.0 ;
-    ] , [
-      rdfs:label "Mono/Right" ;
-      rdf:value 2.0 ;
-    ];
+	lv2:scalePoint [
+		rdfs:label "Mono/Left" ;
+		rdf:value 0.0 ;
+	] , [
+		rdfs:label "stereo" ;
+		rdf:value 1.0 ;
+	] , [
+		rdfs:label "Mono/Right" ;
+		rdf:value 2.0 ;
+	];
 	];
 	rdfs:comment "A rotating loudspeaker emulator designed to imitate the sound of device that brought world-wide fame to the name of Don Leslie" ;
 	.
