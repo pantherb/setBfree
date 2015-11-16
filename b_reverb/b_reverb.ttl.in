@@ -1,6 +1,7 @@
 @prefix doap: <http://usefulinc.com/ns/doap#> .
 @prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix lv2: <http://lv2plug.in/ns/lv2core#> .
+@prefix mod: <http://moddevices.com/ns/mod#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
@@ -52,5 +53,7 @@
 		lv2:minimum 0.0 ;
 		lv2:maximum 1.0 ;
 	] ;
+	mod:brand "x42" ;
+	mod:label "Organ Reverb" ;
 	rdfs:comment "A Schroeder Reverberator"
 	.
