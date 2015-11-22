@@ -37,4 +37,19 @@ typedef struct b_instance {
 	void * state;
 } b_instance;
 
+#define LOCALEGUARD_START \
+  char *oldlocale = strdup (setlocale (LC_NUMERIC, NULL)); \
+  if (strcmp(oldlocale, "C")) { \
+    setlocale (LC_NUMERIC, "C"); \
+  } else { \
+    free(oldlocale); \
+    oldlocale = NULL; \
+  }
+
+#define LOCALEGUARD_END \
+  if (oldlocale) { \
+    setlocale (LC_NUMERIC, oldlocale); \
+    free (oldlocale); \
+  }
+
 #endif

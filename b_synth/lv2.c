@@ -378,13 +378,7 @@ save(LV2_Handle                instance,
 {
   B3S* b3s = (B3S*)instance;
 
-  char *oldlocale = strdup (setlocale (LC_NUMERIC, NULL));
-  if (strcmp(oldlocale, "C")) {
-    setlocale (LC_NUMERIC, "C");
-  } else {
-    free(oldlocale);
-    oldlocale = NULL;
-  }
+  LOCALEGUARD_START;
 
   char *cfg = (char*) calloc(1, sizeof(char));
   rc_loop_state(b3s->inst->state, rcstate_cb, (void*) &cfg);
@@ -429,10 +423,7 @@ save(LV2_Handle                instance,
   cfg = (char*) realloc(cfg, strlen(cfg) + strlen(out) +1);
   strcat(cfg, out);
 
-  if (oldlocale) {
-    setlocale (LC_NUMERIC, oldlocale);
-    free (oldlocale);
-  }
+  LOCALEGUARD_END;
 
   store(handle, b3s->uris.sb3_state,
       cfg, strlen(cfg) + 1,
@@ -472,13 +463,7 @@ restore(LV2_Handle                  instance,
   const char* cfg = (const char*)value;
   const char *te, *ts = cfg;
 
-  char *oldlocale = strdup (setlocale (LC_NUMERIC, NULL));
-  if (strcmp(oldlocale, "C")) {
-    setlocale (LC_NUMERIC, "C");
-  } else {
-    free(oldlocale);
-    oldlocale = NULL;
-  }
+  LOCALEGUARD_START;
 
   /* pass1 - evaulate CFG -- before initializing synth */
   while (ts && *ts && (te=strchr(ts, '\n'))) {
@@ -527,10 +512,7 @@ restore(LV2_Handle                  instance,
     ts=te+1;
   }
 
-  if (oldlocale) {
-    setlocale (LC_NUMERIC, oldlocale);
-    free (oldlocale);
-  }
+  LOCALEGUARD_END;
 
   b3s->swap_instances = 1;
   return LV2_STATE_SUCCESS;

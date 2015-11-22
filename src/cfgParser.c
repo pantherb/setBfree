@@ -23,6 +23,10 @@
  * 14-may-2004/FK Dropped rotsim.
  */
 
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,6 +34,7 @@
 #include <ctype.h>
 #include <math.h>
 #include <unistd.h>
+#include <locale.h>
 #include <assert.h>
 
 #ifndef CFG_MAIN
@@ -367,6 +372,7 @@ void setConfigRangeInt (int * vp, ConfigContext * cfg) {
   assert (cfg != NULL);
 
   if (strchr (cfg->value, '.') != NULL) {
+    LOCALEGUARD_START;
     double d;
     if (sscanf (cfg->value, "%lf", &d) == 1) {
       *vp = (int) (32767.0 * d);
@@ -374,6 +380,7 @@ void setConfigRangeInt (int * vp, ConfigContext * cfg) {
     else {
       configDoubleUnparsable (cfg);
     }
+    LOCALEGUARD_END;
   }
   else {
     int k;
@@ -409,12 +416,14 @@ void setConfigDouble (double * vp, ConfigContext * cfg) {
   double d;
   assert (vp != NULL);
   assert (cfg != NULL);
+  LOCALEGUARD_START;
   if (sscanf (cfg->value, "%lf", &d) == 1) {
     *vp = d;
   }
   else {
     configDoubleUnparsable (cfg);
   }
+  LOCALEGUARD_END;
 }
 
 /*
@@ -443,14 +452,17 @@ int getConfigParameter_d (const char * par, ConfigContext * cfg, double * dp) {
   assert (dp  != NULL);
 
   if (strcasecmp (cfg->name, par) == 0) {
+    LOCALEGUARD_START;
     double a;
     if (sscanf (cfg->value, "%lf", &a) == 1) {
       *dp = a;
     }
     else {
       configDoubleUnparsable (cfg);
+      LOCALEGUARD_END;
       return -1;
     }
+    LOCALEGUARD_END;
     return 1;
   }
   return 0;
@@ -507,14 +519,17 @@ int getConfigParameter_f (const char * par, ConfigContext * cfg, float * fp) {
   assert (fp  != NULL);
 
   if (strcasecmp (cfg->name, par) == 0) {
+    LOCALEGUARD_START;
     float a;
     if (sscanf (cfg->value, "%f", &a) == 1) {
       *fp = a;
     }
     else {
       configDoubleUnparsable (cfg);
+      LOCALEGUARD_END;
       return -1;
     }
+    LOCALEGUARD_END;
     return 1;
   }
   return 0;
