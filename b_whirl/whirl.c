@@ -147,6 +147,14 @@ static void setIIRFilter (iir_t W[],
                           const double SR)
 {
 	double C[6];
+	if (Q <= 0.1) return;
+	if (Q >= 6.00) return;
+	if (F / SR <= 0.0002) return;
+	if (F / SR >= 0.4998) return;
+	if (G <= -48.0) return;
+	if (G >= 48.0) return;
+	if (T < EQC_LPF || T > EQC_HIGH) return;
+
 	eqCompute (T, F, Q, G, C, SR);
 	W[a1] = C[EQC_A1];
 	W[a2] = C[EQC_A2];
