@@ -29,6 +29,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <locale.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -377,6 +378,14 @@ save(LV2_Handle                instance,
 {
   B3S* b3s = (B3S*)instance;
 
+  char *oldlocale = strdup (setlocale (LC_NUMERIC, NULL));
+  if (strcmp(oldlocale, "C")) {
+    setlocale (LC_NUMERIC, "C");
+  } else {
+    free(oldlocale);
+    oldlocale = NULL;
+  }
+
   char *cfg = (char*) calloc(1, sizeof(char));
   rc_loop_state(b3s->inst->state, rcstate_cb, (void*) &cfg);
 
@@ -420,6 +429,11 @@ save(LV2_Handle                instance,
   cfg = (char*) realloc(cfg, strlen(cfg) + strlen(out) +1);
   strcat(cfg, out);
 
+  if (oldlocale) {
+    setlocale (LC_NUMERIC, oldlocale);
+    free (oldlocale);
+  }
+
   store(handle, b3s->uris.sb3_state,
       cfg, strlen(cfg) + 1,
       b3s->uris.atom_String,
@@ -457,6 +471,14 @@ restore(LV2_Handle                  instance,
 
   const char* cfg = (const char*)value;
   const char *te, *ts = cfg;
+
+  char *oldlocale = strdup (setlocale (LC_NUMERIC, NULL));
+  if (strcmp(oldlocale, "C")) {
+    setlocale (LC_NUMERIC, "C");
+  } else {
+    free(oldlocale);
+    oldlocale = NULL;
+  }
 
   /* pass1 - evaulate CFG -- before initializing synth */
   while (ts && *ts && (te=strchr(ts, '\n'))) {
@@ -503,6 +525,11 @@ restore(LV2_Handle                  instance,
       callMIDIControlFunction(b3s->inst_offline->midicfg, kv+2, atoi(val+1));
     }
     ts=te+1;
+  }
+
+  if (oldlocale) {
+    setlocale (LC_NUMERIC, oldlocale);
+    free (oldlocale);
   }
 
   b3s->swap_instances = 1;
