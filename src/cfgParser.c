@@ -292,11 +292,14 @@ int parseConfigurationFile (void *inst, const char * fname) {
     return -1;
   }
   else {
+    LOCALEGUARD_START;
 
     while (fgets (lineBuf, LINEBUFSZ, fp) != NULL) {
       lineNumber += 1;		/* Increment the linenumber. */
       parseConfigurationLine (inst, fname, lineNumber, lineBuf);
     }
+
+    LOCALEGUARD_END;
 
     fclose (fp);
   }

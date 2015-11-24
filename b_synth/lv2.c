@@ -634,6 +634,7 @@ work(LV2_Handle                  instance,
 	// fprintf(stderr, "B3LV2: adding cfg line: %s\n", w->msg);
 	b3s->inst_offline = (b_instance*) calloc(1, sizeof(struct b_instance));
 	allocSynth(b3s->inst_offline);
+	LOCALEGUARD_START;
 	// clone current state...
 	rc_loop_state(b3s->inst->state, clone_cb_cfg, b3s->inst_offline);
 	// copy program info
@@ -643,6 +644,7 @@ work(LV2_Handle                  instance,
 	initSynth(b3s->inst_offline, SampleRateD);
 	// replay CCs after synth init
 	rc_loop_state(b3s->inst->state, clone_cb_mcc, b3s->inst_offline);
+	LOCALEGUARD_END;
 	w->status = 0;
       }
       break;
@@ -660,6 +662,7 @@ work(LV2_Handle                  instance,
       fprintf(stderr, "B3LV2: loading cfg file: %s\n", w->msg);
       b3s->inst_offline = (b_instance*) calloc(1, sizeof(struct b_instance));
       allocSynth(b3s->inst_offline);
+
       w->status = parseConfigurationFile (b3s->inst_offline, w->msg);
       initSynth(b3s->inst_offline, SampleRateD);
       break;
@@ -668,7 +671,9 @@ work(LV2_Handle                  instance,
       x = fopen(w->msg, "w");
       if (x) {
 	fprintf(x, "# setBfree config file\n# modificaions on top of default config\n");
+	LOCALEGUARD_START;
 	rc_loop_state(b3s->inst->state, rcsave_cb, (void*) x);
+	LOCALEGUARD_END;
 	fclose(x);
 	w->status = 0;
       } else {
