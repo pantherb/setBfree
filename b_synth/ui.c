@@ -2185,7 +2185,6 @@ static void cfg_parse_config(B3ui * ui, const char *key, const char *value) {
 	default:
 	  {
 	  LOCALEGUARD_START;
-	  printf("DEBUG UI-2: %s\n", value);
 	  ui->cfgvar[i].cur = atof(value);
 	  LOCALEGUARD_END;
 	  }
@@ -2295,7 +2294,6 @@ static void cfg_tx_update(B3ui* ui, int ccc) {
 	  ui->cfgvar[ccc].d->name, ui->cfgvar[ccc].cur);
       break;
   }
-  printf("DEBUG UI-1:  %s\n", cfgstr);
   LOCALEGUARD_END;
 
   forge_message_str(ui, ui->uris.sb3_cfgstr, cfgstr);
