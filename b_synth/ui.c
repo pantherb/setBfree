@@ -1926,7 +1926,9 @@ static void cfg_initialize_param(B3ui * ui, const char *cfgkey, int p) {
     case CFG_INT:
       assert(ui->cfgvar[p].format == CF_DECIBEL || ui->cfgvar[p].format == CF_NUMBER || ui->cfgvar[p].format == CF_PERCENT || ui->cfgvar[p].format == CF_DEGREE || ui->cfgvar[p].format == CF_INTEGER);
       assert(ui->cfgvar[p].d->dflt);
+      LOCALEGUARD_START
       ui->cfgvar[p].dflt = atof(ui->cfgvar[p].d->dflt);
+      LOCALEGUARD_END
       break;
     case CFG_TEXT:
       if (ui->cfgvar[p].lut) {
@@ -2181,7 +2183,9 @@ static void cfg_parse_config(B3ui * ui, const char *key, const char *value) {
 	  }
 	  break;
 	default:
+	  LOCALEGUARD_START
 	  ui->cfgvar[i].cur = atof(value);
+	  LOCALEGUARD_END
 	  break;
       }
       relevant = 1;
