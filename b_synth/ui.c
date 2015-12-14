@@ -45,8 +45,12 @@
 #include <sys/stat.h>
 #include <assert.h>
 
+#include <locale.h>
+#include "global_inst.h"
+
 #include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
 #include "pugl/pugl.h"
+
 
 #ifdef XTERNAL_UI
 #undef OLD_SUIL
@@ -66,6 +70,7 @@
 
 #ifdef _WIN32
 #include <GL/glext.h>
+
 
 static int wgl_discovered = -1;
 static void (__stdcall *XWglGenerateMipmapEXT)(GLenum) = NULL;
@@ -2262,6 +2267,7 @@ static float cfg_update_parameter(B3ui* ui, int ccc, float val, int delta) {
 
 static void cfg_tx_update(B3ui* ui, int ccc) {
   char cfgstr[128];
+  LOCALEGUARD_START;
   switch(ui->cfgvar[ccc].format) {
     case CF_LISTLUT:
       snprintf(cfgstr, sizeof(cfgstr), "%s=%s",
@@ -2282,6 +2288,7 @@ static void cfg_tx_update(B3ui* ui, int ccc) {
 	  ui->cfgvar[ccc].d->name, ui->cfgvar[ccc].cur);
       break;
   }
+  LOCALEGUARD_END;
 
   forge_message_str(ui, ui->uris.sb3_cfgstr, cfgstr);
   ui->reinit = 1;
