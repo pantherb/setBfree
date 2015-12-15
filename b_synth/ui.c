@@ -1924,11 +1924,13 @@ static void cfg_initialize_param(B3ui * ui, const char *cfgkey, int p) {
     case CFG_DECIBEL:
     case CFG_FLOAT:
     case CFG_INT:
+      {
       assert(ui->cfgvar[p].format == CF_DECIBEL || ui->cfgvar[p].format == CF_NUMBER || ui->cfgvar[p].format == CF_PERCENT || ui->cfgvar[p].format == CF_DEGREE || ui->cfgvar[p].format == CF_INTEGER);
       assert(ui->cfgvar[p].d->dflt);
-      LOCALEGUARD_START
+      LOCALEGUARD_START;
       ui->cfgvar[p].dflt = atof(ui->cfgvar[p].d->dflt);
-      LOCALEGUARD_END
+      LOCALEGUARD_END;
+      }
       break;
     case CFG_TEXT:
       if (ui->cfgvar[p].lut) {
