@@ -369,8 +369,8 @@ static void initValues (struct b_tonegen *t) {
   t->keyDownCount = 0;
 #endif
 
-  t->swellPedalGain = 0.07;
-  t->outputLevelTrim = 0.05011872336272722;
+  t->swellPedalGain = 0.07; // initial level
+  t->outputLevelTrim = 0.07; // 127/127 * midi-signal
   t->tuning = 440.0;
 
   t->gearTuning = 1;
