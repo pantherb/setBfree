@@ -1,3 +1,15 @@
+2016-01-21 (0.8.1)  Robin Gareus <robin@gareus.org>
+* add localeguards (numeric values in config now always use c-locale)
+	e.g "1.0"  (previously some locales saved "1,0")
+* fix swell-pedal volume when changed by CC (was 3dB too low)
+* Clean up LV2 definitions, consistent names. enum/integer definitions
+* LV2 add mandatory version number
+* Leslie-sound: fine-tune angular IR, match measured data
+* remove old presets for leslie-lv2
+* queue panic message when re-activating the plugin
+* various small changes to the leslie-lv2 GUI (faceplates)
+* built-system tweaks (check for idle-thread, allow CXXFLAGS)
+
 2015-06-17 (0.8.0)  Robin Gareus <robin@gareus.org>
 * major GUI overhaul (LV2/openGL)
 	- add configuration/settings
