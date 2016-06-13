@@ -1,5 +1,10 @@
+MODNAME=Whirl Speaker
 include ../common.mak
 include ../git2lv2.mk
+
+ifneq ($(MOD),)
+	MODLABEL=mod:label \"$(MODNAME) XT\";
+endif
 
 LOADLIBES = -lm
 override CFLAGS+=`pkg-config --cflags lv2` -fvisibility=hidden
@@ -42,7 +47,7 @@ ifeq ($(HAVE_RTK), yes)
 endif
 
 b_whirl-configurable.ttl: b_whirl-configurable.ttl.in b_whirl-configurable.ui.ttl.in
-	sed "s/@VERSION@/lv2:microVersion $(LV2MIC) ;lv2:minorVersion $(LV2MIN) ;/g" \
+	sed "s/@VERSION@/lv2:microVersion $(LV2MIC) ;lv2:minorVersion $(LV2MIN) ;/g;s/@MODBRAND@/$(MODBRAND)/;s/@MODLABEL@/$(MODLABEL_XT)/" \
 		b_whirl-configurable.ttl.in > b_whirl-configurable.ttl
 ifeq ($(HAVE_RTK), yes)
 	sed "s/@UI_TYPE@/$(UI_TYPE)/;s/@UI_REQ@/$(LV2UIREQ)/" \
@@ -50,7 +55,7 @@ ifeq ($(HAVE_RTK), yes)
 endif
 
 b_whirl.ttl: b_whirl.ttl.in
-	sed "s/@VERSION@/lv2:microVersion $(LV2MIC) ;lv2:minorVersion $(LV2MIN) ;/g" \
+	sed "s/@VERSION@/lv2:microVersion $(LV2MIC) ;lv2:minorVersion $(LV2MIN) ;/g;s/@MODBRAND@/$(MODBRAND)/;s/@MODLABEL@/$(MODLABEL)/" \
 		b_whirl.ttl.in > b_whirl.ttl
 
 DSP_SRC = lv2.c

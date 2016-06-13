@@ -104,6 +104,14 @@ ifeq ($(ENABLE_CONVOLUTION), yes)
   CC=$(CXX)
 endif
 
+ifneq ($(MOD),)
+	MODBRAND=mod:brand \"x42\";
+	MODLABEL=mod:label \"$(MODNAME)\";
+else
+	MODBRAND=
+	MODLABEL=
+endif
+
 #LV2 / GL-GUI
 
 ifeq ($(FONTFILE),verabd.h)

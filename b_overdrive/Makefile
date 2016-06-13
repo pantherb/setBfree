@@ -1,3 +1,4 @@
+MODNAME=Organ Overdrive
 include ../common.mak
 include ../git2lv2.mk
 
@@ -38,7 +39,7 @@ manifest.ttl:
 	sed "s/@LV2NAME@/$(LV2NAME)/;s/@LIB_EXT@/$(LIB_EXT)/" manifest.ttl.in > manifest.ttl
 
 $(LV2NAME).ttl: $(LV2NAME).ttl.in Makefile
-	sed "s/@VERSION@/lv2:microVersion $(LV2MIC) ;lv2:minorVersion $(LV2MIN) ;/g" \
+	sed "s/@VERSION@/lv2:microVersion $(LV2MIC) ;lv2:minorVersion $(LV2MIN) ;/g;s/@MODBRAND@/$(MODBRAND)/;s/@MODLABEL@/$(MODLABEL)/" \
 		$(LV2NAME).ttl.in > $(LV2NAME).ttl
 
 $(LV2NAME)$(LIB_EXT): lv2.c overdrive.o
