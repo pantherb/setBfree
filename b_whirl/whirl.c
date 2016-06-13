@@ -1007,6 +1007,33 @@ int whirlConfig (struct b_whirl *w, ConfigContext * cfg) {
 	return rtn;
 }
 
+#ifdef __ARMEL__
+static inline float x_mod1 (const float f) {
+	return ((unsigned int)(f * 65536.f) & 65535) / 65536.f;
+}
+
+static inline unsigned int x_iroundf (const float f) {
+	return (unsigned int)(f + .5f);
+}
+
+static inline unsigned int x_ifloorf (const float f) {
+	return (unsigned int)f;
+}
+
+#define x_modf(A, B) x_mod1(A)
+#define x_fmodf(A, B) x_mod1(A)
+#define x_floorf x_ifloorf
+
+#else
+
+#define x_fmodf fmodf
+#define x_modf fmod
+#define x_iroundf (unsigned int)roundf
+#define x_ifloorf (unsigned int)floorf
+#define x_floorf floorf
+
+#endif
+
 void whirlProc2 (struct b_whirl *w,
                  const float * inbuffer,
                  float * outL,  float * outR,
@@ -1205,13 +1232,13 @@ void whirlProc2 (struct b_whirl *w,
 
 #define HN_MOTION(P,BUF,DSP,BW,DX,DI,ANG) {                                \
     const float h1 = (ANG) * WHIRL_DISPLC_SIZE + hornPhase[(P)];           \
-    const float hd = fmod(h1, 1.0);                                        \
-    const unsigned int hl = (unsigned int)floor(h1) & WHIRL_DISPLC_MASK;   \
+    const float hd = x_fmodf (h1, 1.f);                                    \
+    const unsigned int hl = x_ifloorf (h1) & WHIRL_DISPLC_MASK;            \
     const unsigned int hh = (hl + 1) & WHIRL_DISPLC_MASK;                  \
     const float intp = DSP[hl] * (1.f - hd) + hd * DSP[hh];                \
-    const unsigned int k = ((unsigned int) round(h1)) & WHIRL_DISPLC_MASK; \
+    const unsigned int k = x_iroundf (h1) & WHIRL_DISPLC_MASK;             \
     const float t = hornSpacing[(P)] + intp + (float) outpos;              \
-    const float r = floorf (t);                                            \
+    const float r = x_floorf (t);                                          \
     float xa;                                                              \
     xa  = BW[k].b[0] * x;                                                  \
     xa += BW[k].b[1] * DX[(DI)];                                           \
@@ -1226,12 +1253,12 @@ void whirlProc2 (struct b_whirl *w,
 
 #define DR_MOTION(P,BUF,DSP) {                                             \
     const float d1 = drumAngleGRD * WHIRL_DISPLC_SIZE + drumPhase[(P)];    \
-    const float dd = fmod(d1, 1.0);                                        \
-    const unsigned int dl = (unsigned int)floor(d1) & WHIRL_DISPLC_MASK;   \
+    const float dd = x_fmodf (d1, 1.f);                                    \
+    const unsigned int dl = x_ifloorf (d1) & WHIRL_DISPLC_MASK;            \
     const unsigned int dh = (dl + 1) & WHIRL_DISPLC_MASK;                  \
     const float intp = DSP[dl] * (1.f - dd) + dd * DSP[dh];                \
     const float t = drumSpacing[(P)] + intp + (float) outpos;              \
-    const float r = floorf (t);                                            \
+    const float r = x_floorf (t);                                          \
     const float q = x * (t - r);                                           \
     n = ((unsigned int) r) & WHIRL_BUF_MASK_SAMPLES;                       \
     BUF[n] += x - q;                                                       \
@@ -1372,8 +1399,8 @@ void whirlProc2 (struct b_whirl *w,
 
 		outpos = (outpos + 1) & WHIRL_BUF_MASK_SAMPLES;
 
-		hornAngleGRD = fmod(hornAngleGRD + hornIncr, 1.0);
-		drumAngleGRD = fmod(drumAngleGRD + drumIncr, 1.0);
+		hornAngleGRD = x_modf (hornAngleGRD + hornIncr, 1.0);
+		drumAngleGRD = x_modf (drumAngleGRD + drumIncr, 1.0);
 	}
 
 	EQ_IIR_NAN(hafw)
