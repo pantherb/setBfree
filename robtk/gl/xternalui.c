@@ -6,7 +6,7 @@ static int idle(LV2UI_Handle handle);
 static int process_gui_events(LV2UI_Handle handle);
 
 static void x_run (struct lv2_external_ui * handle) {
-	GlMetersLV2UI* self = (GlMetersLV2UI*)handle->self;
+	GLrobtkLV2UI* self = (GLrobtkLV2UI*)handle->self;
 #ifdef USE_GUI_THREAD
 	idle(self);
 #else
@@ -25,7 +25,7 @@ static void x_run (struct lv2_external_ui * handle) {
 }
 
 static void x_show (struct lv2_external_ui * handle) {
-	GlMetersLV2UI* self = (GlMetersLV2UI*)handle->self;
+	GLrobtkLV2UI* self = (GLrobtkLV2UI*)handle->self;
 #ifndef USE_GUI_THREAD
 	puglShowWindow(self->view);
 	ui_enable(self->ui);
@@ -35,7 +35,7 @@ static void x_show (struct lv2_external_ui * handle) {
 }
 
 static void x_hide (struct lv2_external_ui * handle) {
-	GlMetersLV2UI* self = (GlMetersLV2UI*)handle->self;
+	GLrobtkLV2UI* self = (GLrobtkLV2UI*)handle->self;
 #ifndef USE_GUI_THREAD
 	ui_disable(self->ui);
 	puglHideWindow(self->view);

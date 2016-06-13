@@ -22,6 +22,8 @@ ifneq ($(XWIN),)
   ifeq ($(shell test -f img/x42.ico && echo yes), yes)
     JACKEXTRA+=win_icon.rc.o
   endif
+else
+  JACKCFLAGS+=-pthread
 endif
 
 ifeq ($(USEWEAKJACK),1)

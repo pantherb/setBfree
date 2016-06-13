@@ -182,11 +182,13 @@ typedef struct _robwidget {
 	struct _robwidget* parent;
 	struct _robwidget **children;
 	unsigned int childcount;
+	float widget_scale;
 
 	bool redraw_pending; // queue_draw_*() failed (during init or top-levelresize)
 	bool resized; // full-redraw --containers after resize
 	bool hidden; // don't display, skip in layout and events
 	int  packing_opts;
+	bool block_events;
 #endif
 	float xalign, yalign; // unused in GTK
 	cairo_rectangle_t area; // allocated pos + size
@@ -212,6 +214,9 @@ static void relayout_toplevel(RobWidget *rw);
 static void queue_draw(RobWidget *);
 static void queue_draw_area(RobWidget *, int, int, int, int);
 static void queue_tiny_area(RobWidget *rw, float x, float y, float w, float h);
+
+static void robwidget_toplevel_enable_scaling (RobWidget* rw);
+static void robtk_queue_scale_change (RobWidget *rw, const float ws);
 
 static RobWidget * robwidget_new(void *);
 static void robwidget_destroy(RobWidget *rw);

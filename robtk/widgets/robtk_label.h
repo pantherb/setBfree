@@ -1,6 +1,6 @@
 /* label widget
  *
- * Copyright (C) 2013 Robin Gareus <robin@gareus.org>
+ * Copyright (C) 2013-2016 Robin Gareus <robin@gareus.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,15 +26,66 @@ typedef struct {
 	bool sensitive;
 	cairo_surface_t* sf_txt;
 	float w_width, w_height;
-	float min_width;
-	float min_height;
+	float min_width, min_width_scaled;
+	float min_height, min_height_scaled;
 	char *txt;
 	char *fontdesc;
 	float fg[4];
 	float bg[4];
 	bool  rounded;
 	pthread_mutex_t _mutex;
+	float scale;
 } RobTkLbl;
+
+static void priv_lbl_prepare_text(RobTkLbl *d, const char *txt) {
+	// _mutex must be held to call this function
+	int ww, wh;
+	PangoFontDescription *fd;
+
+	if (d->fontdesc) {
+		fd = pango_font_description_from_string(d->fontdesc);
+	} else {
+		fd = get_font_from_theme();
+	}
+
+	get_text_geometry(txt, fd, &ww, &wh);
+
+	d->w_width = ww + 4;
+	d->w_height = wh + 4;
+
+	if (d->scale != d->rw->widget_scale) {
+		d->min_width_scaled = d->min_width * d->rw->widget_scale;
+		d->min_height_scaled = d->min_height * d->rw->widget_scale;
+	}
+
+	d->w_width = ceil (d->w_width * d->rw->widget_scale);
+	d->w_height = ceil (d->w_height * d->rw->widget_scale);
+	d->scale = d->rw->widget_scale;
+
+	if (d->w_width < d->min_width_scaled) d->w_width = d->min_width_scaled;
+	if (d->w_height < d->min_height_scaled) d->w_height = d->min_height_scaled;
+
+#ifndef GTK_BACKEND // never shrink for given scale - no jitter
+	if (d->w_width > d->min_width_scaled) d->min_width_scaled = d->w_width;
+	if (d->w_height > d->min_height_scaled) d->min_height_scaled = d->w_height;
+#elif 0 // resize window|widget
+	robwidget_hide(d->rw, false);
+	robwidget_show(d->rw, true);
+#endif
+
+	create_text_surface3(&d->sf_txt,
+			d->w_width, d->w_height,
+			ceil (d->w_width / 2.0) + 1,
+			ceil (d->w_height / 2.0) + 1,
+			txt, fd, d->fg, d->rw->widget_scale);
+
+	pango_font_description_free(fd);
+
+	robwidget_set_size(d->rw, d->w_width, d->w_height);
+	// TODO trigger re-layout  resize_self()
+
+	queue_tiny_area(d->rw, 0, 0, d->w_width, d->w_height);
+}
 
 static bool robtk_lbl_expose_event(RobWidget* handle, cairo_t* cr, cairo_rectangle_t* ev) {
 	RobTkLbl* d = (RobTkLbl *)GET_HANDLE(handle);
@@ -43,9 +94,13 @@ static bool robtk_lbl_expose_event(RobWidget* handle, cairo_t* cr, cairo_rectang
 		queue_draw(d->rw);
 		return TRUE;
 	}
+	if (d->scale != d->rw->widget_scale) {
+		priv_lbl_prepare_text(d, d->txt);
+	}
 
 	cairo_rectangle (cr, ev->x, ev->y, ev->width, ev->height);
 	cairo_clip (cr);
+
 	cairo_set_source_rgba (cr, d->bg[0], d->bg[1], d->bg[2], d->bg[3]);
 	if (!d->rounded) {
 		cairo_rectangle (cr, 0, 0, d->w_width, d->w_height);
@@ -70,47 +125,6 @@ static bool robtk_lbl_expose_event(RobWidget* handle, cairo_t* cr, cairo_rectang
 	return TRUE;
 }
 
-static void priv_lbl_prepare_text(RobTkLbl *d, const char *txt) {
-	// _mutex must be held to call this function
-	int ww, wh;
-	PangoFontDescription *fd;
-
-	if (d->fontdesc) {
-		fd = pango_font_description_from_string(d->fontdesc);
-	} else {
-		fd = get_font_from_theme();
-	}
-
-	get_text_geometry(txt, fd, &ww, &wh);
-
-	d->w_width = ww + 4;
-	d->w_height = wh + 4;
-
-	if (d->w_width < d->min_width) d->w_width = d->min_width;
-	if (d->w_height < d->min_height) d->w_height = d->min_height;
-
-#ifndef GTK_BACKEND // never shrink
-	if (d->w_width > d->min_width) d->min_width = d->w_width;
-	if (d->w_height > d->min_height) d->min_height = d->w_height;
-#elif 0 // resize window|widget
-	robwidget_hide(d->rw, false);
-	robwidget_show(d->rw, true);
-#endif
-
-	create_text_surface(&d->sf_txt,
-			d->w_width, d->w_height,
-			d->w_width / 2.0 + 1,
-			d->w_height / 2.0 + 1,
-			txt, fd, d->fg);
-
-	pango_font_description_free(fd);
-
-	robwidget_set_size(d->rw, d->w_width, d->w_height);
-	// TODO trigger re-layout  resize_self()
-
-	queue_tiny_area(d->rw, 0, 0, d->w_width, d->w_height);
-}
-
 /******************************************************************************
  * RobWidget stuff
  */
@@ -118,6 +132,11 @@ static void priv_lbl_prepare_text(RobTkLbl *d, const char *txt) {
 static void
 priv_lbl_size_request(RobWidget* handle, int *w, int *h) {
 	RobTkLbl* d = (RobTkLbl*)GET_HANDLE(handle);
+	if (d->rw->widget_scale != d->scale) {
+		pthread_mutex_lock (&d->_mutex);
+		priv_lbl_prepare_text(d, d->txt);
+		pthread_mutex_unlock (&d->_mutex);
+	}
 	*w = d->w_width;
 	*h = d->w_height;
 }
@@ -130,7 +149,7 @@ static void robtk_lbl_set_text(RobTkLbl *d, const char *txt) {
 	assert(txt);
 	pthread_mutex_lock (&d->_mutex);
 	free(d->txt);
-	d->txt=strdup(txt);
+	d->txt = strdup(txt);
 	priv_lbl_prepare_text(d, d->txt);
 	pthread_mutex_unlock (&d->_mutex);
 }
@@ -140,12 +159,13 @@ static RobTkLbl * robtk_lbl_new(const char * txt) {
 	RobTkLbl *d = (RobTkLbl *) malloc(sizeof(RobTkLbl));
 
 	d->sf_txt = NULL;
-	d->min_width = d->w_width = 0;
-	d->min_height = d->w_height = 0;
+	d->min_width_scaled = d->min_width = d->w_width = 0;
+	d->min_height_scaled = d->min_height = d->w_height = 0;
 	d->txt = NULL;
 	d->fontdesc = NULL;
 	d->sensitive = TRUE;
 	d->rounded = FALSE;
+	d->scale = 1.0;
 	pthread_mutex_init (&d->_mutex, 0);
 	d->rw = robwidget_new(d);
 	ROBWIDGET_SETNAME(d->rw, "label");

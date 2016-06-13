@@ -1,6 +1,6 @@
 /* scale/slider widget
  *
- * Copyright (C) 2013 Robin Gareus <robin@gareus.org>
+ * Copyright (C) 2013-2016 Robin Gareus <robin@gareus.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -86,11 +86,11 @@ static void robtk_scale_update_value(RobTkScale * d, float val) {
 				if (d->horiz) {
 					rect.x = 1 + val;
 					rect.width = 9 + oldval - val;
-					rect.y = d->mark_space + 5;
-					rect.height = d->w_height - 9 - d->mark_space;
+					rect.y = d->rw->widget_scale * d->mark_space + 5;
+					rect.height = d->w_height - 9 - d->mark_space * d->rw->widget_scale;
 				} else {
 					rect.x = 5;
-					rect.width = d->w_width - 9 - d->mark_space;
+					rect.width = d->w_width - 9 - d->mark_space * d->rw->widget_scale;
 					rect.y = 1 + val;
 					rect.height = 9 + oldval - val;
 				}
@@ -98,11 +98,11 @@ static void robtk_scale_update_value(RobTkScale * d, float val) {
 				if (d->horiz) {
 					rect.x = 1 + oldval;
 					rect.width = 9 + val - oldval;
-					rect.y = d->mark_space + 5;
-					rect.height = d->w_height - 9 - d->mark_space;
+					rect.y = d->rw->widget_scale * d->mark_space + 5;
+					rect.height = d->w_height - 9 - d->mark_space * d->rw->widget_scale;
 				} else {
 					rect.x = 5;
-					rect.width = d->w_width - 9 - d->mark_space;
+					rect.width = d->w_width - 9 - d->mark_space * d->rw->widget_scale;
 					rect.y = 1 + oldval;
 					rect.height = 9 + val - oldval;
 				}
@@ -200,9 +200,11 @@ robtk_scale_size_request(RobWidget* handle, int *w, int *h) {
 	int rw, rh;
 	if (d->horiz) {
 		rh = GSC_GIRTH + (d->mark_cnt > 0 ? d->mark_space : 0);
+		rh *= d->rw->widget_scale;
 		rw = 250;
 	} else {
 		rw = GSC_GIRTH + (d->mark_cnt > 0 ? d->mark_space : 0);
+		rw *= d->rw->widget_scale;
 		rh = 250;
 	}
 
@@ -215,13 +217,13 @@ robtk_scale_size_allocate(RobWidget* handle, int w, int h) {
 	RobTkScale * d = (RobTkScale *)GET_HANDLE(handle);
 	if (d->horiz) {
 		d->w_width = w;
-		d->w_height = GSC_GIRTH + (d->mark_cnt > 0 ? d->mark_space : 0);
+		d->w_height = d->rw->widget_scale * (GSC_GIRTH * + (d->mark_cnt > 0 ? d->mark_space : 0));
 		if (d->w_height > h) {
 			d->w_height = h;
 		}
 	} else {
 		d->w_height = h;
-		d->w_width = GSC_GIRTH + (d->mark_cnt > 0 ? d->mark_space : 0);
+		d->w_width = d->rw->widget_scale * (GSC_GIRTH + (d->mark_cnt > 0 ? d->mark_space : 0));
 		if (d->w_width > w) {
 			d->w_width = w;
 		}
@@ -275,9 +277,9 @@ static void create_scale_pattern(RobTkScale * d) {
 	cairo_pattern_add_color_stop_rgb (d->fpat, 1.0, .1, .1, .1);
 }
 
-#define SXX_W(minus) (d->w_width  + minus - ((d->bg && !d->horiz) ? d->mark_space : 0))
-#define SXX_H(minus) (d->w_height + minus - ((d->bg &&  d->horiz) ? d->mark_space : 0))
-#define SXX_T(plus)  (plus + ((d->bg && d->horiz) ? d->mark_space : 0))
+#define SXX_W(minus) (d->w_width  + minus - d->rw->widget_scale * ((d->bg && !d->horiz) ? d->mark_space : 0))
+#define SXX_H(minus) (d->w_height + minus - d->rw->widget_scale * ((d->bg &&  d->horiz) ? d->mark_space : 0))
+#define SXX_T(plus)  (plus + d->rw->widget_scale * ((d->bg && d->horiz) ? d->mark_space : 0))
 
 static void robtk_scale_render_metrics(RobTkScale* d) {
 	if (d->bg) {
@@ -297,13 +299,19 @@ static void robtk_scale_render_metrics(RobTkScale* d) {
 		float v = 4.0 + robtk_scale_round_length(d, d->mark_val[i]);
 		if (d->horiz) {
 			if (d->mark_txt[i]) {
-				write_text_full(cr, d->mark_txt[i], d->mark_font, v, /* d->w_height - d->mark_space + 1 */ 1, -M_PI/2, 1, d->c_txt);
+				cairo_save (cr);
+				cairo_scale (cr, d->rw->widget_scale, d->rw->widget_scale);
+				write_text_full(cr, d->mark_txt[i], d->mark_font, v / d->rw->widget_scale, d->rw->widget_scale, -M_PI/2, 1, d->c_txt);
+				cairo_restore (cr);
 			}
 			cairo_move_to(cr, v+.5, SXX_T(1.5));
 			cairo_line_to(cr, v+.5, SXX_T(0) + SXX_H(-.5));
 		} else {
 			if (d->mark_txt[i]) {
-				write_text_full(cr, d->mark_txt[i], d->mark_font, d->w_width -2, v, 0, 1, d->c_txt);
+				cairo_save (cr);
+				cairo_scale (cr, d->rw->widget_scale, d->rw->widget_scale);
+				write_text_full(cr, d->mark_txt[i], d->mark_font, (d->w_width -2) / d->rw->widget_scale, v / d->rw->widget_scale, 0, 1, d->c_txt);
+				cairo_restore (cr);
 			}
 			cairo_move_to(cr, 1.5, v+.5);
 			cairo_line_to(cr, SXX_W(-.5) , v+.5);

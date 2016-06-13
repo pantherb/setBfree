@@ -26,8 +26,8 @@
 #include "gui/rtk_lever.h"
 #include "eqcomp.c"
 
-#define MTR_URI "http://gareus.org/oss/lv2/b_whirl#"
-#define MTR_GUI "ui"
+#define RTK_URI "http://gareus.org/oss/lv2/b_whirl#"
+#define RTK_GUI "ui"
 
 // port map; see b_whirl/lv2.c
 typedef enum {
@@ -1558,7 +1558,7 @@ static void prepare_faceplates (WhirlUI* ui) {
 /*** layout background ***/
 
 static void bg_size_allocate (RobWidget* rw, int w, int h) {
-	WhirlUI *ui = (WhirlUI*)((GlMetersLV2UI*)rw->top)->ui;
+	WhirlUI *ui = (WhirlUI*)((GLrobtkLV2UI*)rw->top)->ui;
 	rtable_size_allocate (rw, w, h);
 	reexpose_bg (ui);
 #if 0
@@ -2034,7 +2034,7 @@ static void draw_bg (WhirlUI *ui, const int w, const int h, struct rob_table *rt
 // main expose function
 static bool bg_expose_event (RobWidget* rw, cairo_t* cr, cairo_rectangle_t *ev)
 {
-	WhirlUI *ui = (WhirlUI*)((GlMetersLV2UI*)rw->top)->ui;
+	WhirlUI *ui = (WhirlUI*)((GLrobtkLV2UI*)rw->top)->ui;
 
 	if (!ui->gui_bg) {
 		draw_bg (ui, rw->area.width, rw->area.height, (struct rob_table*)rw->self);
@@ -2735,7 +2735,7 @@ instantiate (
 		RobWidget**               widget,
 		const LV2_Feature* const* features)
 {
-	if (strcmp (plugin_uri, MTR_URI "extended")) {
+	if (strcmp (plugin_uri, RTK_URI "extended")) {
 		return NULL;
 	}
 

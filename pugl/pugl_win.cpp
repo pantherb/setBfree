@@ -512,3 +512,19 @@ puglOpenFileDialog(PuglView* view, const char *title)
 	}
 	return 0;
 }
+
+int
+puglUpdateGeometryConstraints(PuglView* view, int min_width, int min_height, bool aspect)
+{
+	view->min_width = min_width;
+	view->min_height = min_height;
+	if (view->width < min_width || view->height < min_height) {
+		if (!view->resize) {
+			if (view->width < min_width) view->width = min_width;
+			if (view->height < min_height) view->height = min_height;
+			view->resize = true;
+			// TODO: trigger resize
+			// (not always needed since this fn is usually called in response to a resize)
+		}
+	}
+}

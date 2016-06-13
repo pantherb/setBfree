@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export ROBTK=`mktemp -d -t robtkgit.XXXXXX`
-trap "rm -rf ${BUNDLEDIR}" EXIT
+trap "rm -rf ${ROBTK}" EXIT
 
 set -e
 pushd $ROBTK
@@ -15,6 +15,7 @@ popd
 mkdir -p robtk
 rsync -va \
 	$ROBTK/robtk/ui_gl.c $ROBTK/robtk/robtk.mk $ROBTK/robtk/widgets $ROBTK/robtk/gl \
+	$ROBTK/robtk/gpg_check.c $ROBTK/robtk/gpg_init.c \
 	$ROBTK/robtk/lv2uisyms $ROBTK/robtk/lv2syms $ROBTK/robtk/robtk.h $ROBTK/robtk/rtk \
 	$ROBTK/robtk/jackwrap.c $ROBTK/robtk/jackwrap.mm $ROBTK/robtk/weakjack $ROBTK/robtk/win_icon.rc \
 	robtk/

@@ -424,7 +424,7 @@ puglCreate(PuglNativeWindow parent,
 			] retain];
 		[window setPuglview:view];
 		[window setTitle:titleString];
-		[window setContentMinSize:NSMakeSize(min_width, min_height)];
+		puglUpdateGeometryConstraints(view, min_width, min_height, min_width != width);
 		if (ontop) {
 			[window setLevel: NSStatusWindowLevel];
 		}
@@ -566,4 +566,13 @@ rtk_osx_open_url (const char* url)
 	[nsurl release];
 
 	return ret;
+}
+
+int
+puglUpdateGeometryConstraints(PuglView* view, int min_width, int min_height, bool aspect)
+{
+		[view->impl->window setContentMinSize:NSMakeSize(min_width, min_height)];
+		if (aspect) {
+			[view->impl->window setContentAspectRatio:NSMakeSize(min_width, min_height)];
+		}
 }

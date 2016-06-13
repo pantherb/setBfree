@@ -178,6 +178,7 @@ static void rcontainer_clear_bg(RobWidget* rw, cairo_t* cr, cairo_rectangle_t *e
 
 static RobWidget* rcontainer_mousedown(RobWidget* handle, RobTkBtnEvent *ev) {
 	RobWidget * rw = (RobWidget*)handle;
+	if (rw->block_events ) return NULL;
 	RobWidget * c = robwidget_child_at(rw, ev->x, ev->y);
 	if (!c || !c->mousedown) return NULL;
 	if (c->hidden) return NULL;
@@ -187,6 +188,7 @@ static RobWidget* rcontainer_mousedown(RobWidget* handle, RobTkBtnEvent *ev) {
 
 static RobWidget* rcontainer_mouseup(RobWidget* handle, RobTkBtnEvent *ev) {
 	RobWidget * rw = (RobWidget*)handle;
+	if (rw->block_events ) return NULL;
 	RobWidget * c = robwidget_child_at(rw, ev->x, ev->y);
 	if (!c || !c->mouseup) return NULL;
 	if (c->hidden) return NULL;
@@ -196,6 +198,7 @@ static RobWidget* rcontainer_mouseup(RobWidget* handle, RobTkBtnEvent *ev) {
 
 static RobWidget* rcontainer_mousemove(RobWidget* handle, RobTkBtnEvent *ev) {
 	RobWidget * rw = (RobWidget*)handle;
+	if (rw->block_events ) return NULL;
 	RobWidget * c = robwidget_child_at(rw, ev->x, ev->y);
 	if (!c || !c->mousemove) return NULL;
 	if (c->hidden) return NULL;
@@ -205,6 +208,7 @@ static RobWidget* rcontainer_mousemove(RobWidget* handle, RobTkBtnEvent *ev) {
 
 static RobWidget* rcontainer_mousescroll(RobWidget* handle, RobTkBtnEvent *ev) {
 	RobWidget * rw = (RobWidget*)handle;
+	if (rw->block_events ) return NULL;
 	RobWidget * c = robwidget_child_at(rw, ev->x, ev->y);
 	if (!c || !c->mousescroll) return NULL;
 	if (c->hidden) return NULL;
@@ -1068,4 +1072,14 @@ rtoplevel_cache(RobWidget* rw, bool valid) {
 	}
 	robwidget_position_cache(rw);
 	rw->cached_position = valid;
+}
+
+/* recursive ui-scale update */
+static void
+rtoplevel_scale(RobWidget* rw, const float ws) {
+	for (unsigned int i=0; i < rw->childcount; ++i) {
+		RobWidget * c = (RobWidget *) rw->children[i];
+		rtoplevel_scale (c, ws);
+	}
+	rw->widget_scale = ws;
 }

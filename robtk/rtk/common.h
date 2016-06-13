@@ -73,15 +73,15 @@ static void write_text_full(
 	if (ang != 0) { cairo_rotate (cr, ang); }
 	switch(abs(align)) {
 		case 1:
-			cairo_translate (cr, -tw, floor(th/-2.0));
+			cairo_translate (cr, -tw, ceil(th/-2.0));
 			pango_layout_set_alignment (pl, PANGO_ALIGN_RIGHT);
 			break;
 		case 2:
-			cairo_translate (cr, floor(tw/-2.0), floor(th/-2.0));
+			cairo_translate (cr, ceil(tw/-2.0), ceil(th/-2.0));
 			pango_layout_set_alignment (pl, PANGO_ALIGN_CENTER);
 			break;
 		case 3:
-			cairo_translate (cr, 0, floor(th/-2.0));
+			cairo_translate (cr, 0, ceil(th/-2.0));
 			pango_layout_set_alignment (pl, PANGO_ALIGN_LEFT);
 			break;
 		case 4:
@@ -89,7 +89,7 @@ static void write_text_full(
 			pango_layout_set_alignment (pl, PANGO_ALIGN_RIGHT);
 			break;
 		case 5:
-			cairo_translate (cr, floor(tw/-2.0), -th);
+			cairo_translate (cr, ceil(tw/-2.0), -th);
 			pango_layout_set_alignment (pl, PANGO_ALIGN_CENTER);
 			break;
 		case 6:
@@ -101,7 +101,7 @@ static void write_text_full(
 			pango_layout_set_alignment (pl, PANGO_ALIGN_RIGHT);
 			break;
 		case 8:
-			cairo_translate (cr, floor(tw/-2.0), 0);
+			cairo_translate (cr, ceil(tw/-2.0), 0);
 			pango_layout_set_alignment (pl, PANGO_ALIGN_CENTER);
 			break;
 		case 9:
@@ -129,11 +129,11 @@ static void write_text_full(
 	cairo_new_path (cr);
 }
 
-static void create_text_surface(cairo_surface_t ** sf,
+static void create_text_surface3(cairo_surface_t ** sf,
 		const float w, const float h,
 		const float x, const float y,
 		const char * txt, PangoFontDescription *font,
-		const float * const c_col) {
+		const float * const c_col, const float scale) {
 	assert(sf);
 
 	if (*sf) {
@@ -147,10 +147,20 @@ static void create_text_surface(cairo_surface_t ** sf,
 	cairo_fill (cr);
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 
-	write_text_full(cr, txt, font, ceil(x), ceil(y), 0, 2, c_col);
+	cairo_scale (cr, scale, scale);
+	write_text_full(cr, txt, font, ceil(x / scale), ceil(y / scale), 0, 2, c_col);
 	cairo_surface_flush(*sf);
 	cairo_destroy (cr);
 }
+
+static void create_text_surface(cairo_surface_t ** sf,
+		const float w, const float h,
+		const float x, const float y,
+		const char * txt, PangoFontDescription *font,
+		const float * const c_col) {
+	return create_text_surface3 (sf, w, h, x, y, txt, font, c_col, 1.0);
+}
+
 
 static void create_text_surface2(cairo_surface_t ** sf,
 		const float w, const float h,

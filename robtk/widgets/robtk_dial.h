@@ -1,6 +1,6 @@
 /* dial widget
  *
- * Copyright (C) 2013 Robin Gareus <robin@gareus.org>
+ * Copyright (C) 2013-2016 Robin Gareus <robin@gareus.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -69,6 +69,7 @@ typedef struct _RobTkDial {
 
 	cairo_pattern_t* dpat;
 	cairo_surface_t* bg;
+	float bg_scale;
 
 	float w_width, w_height;
 	float w_cx, w_cy;
@@ -84,6 +85,7 @@ static bool robtk_dial_expose_event (RobWidget* handle, cairo_t* cr, cairo_recta
 	RobTkDial * d = (RobTkDial *)GET_HANDLE(handle);
 	cairo_rectangle (cr, ev->x, ev->y, ev->width, ev->height);
 	cairo_clip (cr);
+	cairo_scale (cr, d->rw->widget_scale, d->rw->widget_scale);
 
 	float c[4];
 	get_color_from_theme(1, c);
@@ -101,8 +103,11 @@ static bool robtk_dial_expose_event (RobWidget* handle, cairo_t* cr, cairo_recta
 		} else {
 			cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 		}
+		cairo_save (cr);
+		cairo_scale (cr, 1.0 / d->bg_scale, 1.0 / d->bg_scale);
 		cairo_set_source_surface(cr, d->bg, 0, 0);
 		cairo_paint (cr);
+		cairo_restore (cr);
 		cairo_set_source_rgb (cr, c[0], c[1], c[2]);
 	}
 
@@ -484,8 +489,8 @@ static void create_dial_pattern(RobTkDial * d) {
 static void
 robtk_dial_size_request(RobWidget* handle, int *w, int *h) {
 	RobTkDial * d = (RobTkDial *)GET_HANDLE(handle);
-	*w = d->w_width;
-	*h = d->w_height;
+	*w = d->w_width * d->rw->widget_scale;
+	*h = d->w_height * d->rw->widget_scale;
 }
 
 
@@ -554,6 +559,7 @@ static RobTkDial * robtk_dial_new_with_size(float min, float max, float step,
 	d->scroll_accel_thresh = 0;
 	rtk_clock_gettime(&d->scroll_accel_timeout);
 	d->bg  = NULL;
+	d->bg_scale = 1.0;
 	create_dial_pattern(d);
 	d->scol = (float*) malloc(3 * 4 * sizeof(float));
 	d->scol[0*4] = 1.0; d->scol[0*4+1] = 0.0; d->scol[0*4+2] = 0.0; d->scol[0*4+3] = 0.2;
@@ -687,8 +693,14 @@ static void robtk_dial_set_constained(RobTkDial *d, bool v) {
 	d->constrain_to_accuracy = v;
 }
 
+static void robtk_dial_set_scaled_surface_scale(RobTkDial* d, cairo_surface_t* b, const float s) {
+	d->bg = b;
+	d->bg_scale = s;
+}
+
 static void robtk_dial_set_surface(RobTkDial *d, cairo_surface_t *s) {
 	d->bg = s;
+	d->bg_scale = 1.0;
 }
 
 static bool robtk_dial_update_range (RobTkDial *d, float min, float max, float step) {

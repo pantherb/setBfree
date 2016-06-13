@@ -197,23 +197,7 @@ puglCreate(PuglNativeWindow parent,
 		return 0;
 	}
 
-	XSizeHints sizeHints;
-	memset(&sizeHints, 0, sizeof(sizeHints));
-	if (view->set_window_hints) {
-		sizeHints.flags      = PMinSize|PMaxSize;
-		sizeHints.min_width  = min_width;
-		sizeHints.min_height = min_height;
-		sizeHints.max_width  = resizable ? 2048 : width;
-		sizeHints.max_height = resizable ? 2048 : height;
-		if (min_width != width) {
-			sizeHints.flags |= PAspect;
-			sizeHints.min_aspect.x=min_width;
-			sizeHints.min_aspect.y=min_height;
-			sizeHints.max_aspect.x=min_width;
-			sizeHints.max_aspect.y=min_height;
-		}
-		XSetNormalHints(impl->display, impl->win, &sizeHints);
-	}
+	puglUpdateGeometryConstraints(view, min_width, min_height, min_width != width);
 	XResizeWindow(view->impl->display, view->impl->win, width, height);
 
 	if (title) {
@@ -601,4 +585,28 @@ puglOpenFileDialog(PuglView* view, const char *title)
 #else
 	return -1;
 #endif
+}
+
+int
+puglUpdateGeometryConstraints(PuglView* view, int min_width, int min_height, bool aspect)
+{
+	if (!view->set_window_hints) {
+		return -1;
+	}
+	XSizeHints sizeHints;
+	memset(&sizeHints, 0, sizeof(sizeHints));
+	sizeHints.flags      = PMinSize|PMaxSize;
+	sizeHints.min_width  = min_width;
+	sizeHints.min_height = min_height;
+	sizeHints.max_width  = view->user_resizable ? 2048 : min_width;
+	sizeHints.max_height = view->user_resizable ? 2048 : min_height;
+	if (aspect) {
+		sizeHints.flags |= PAspect;
+		sizeHints.min_aspect.x=min_width;
+		sizeHints.min_aspect.y=min_height;
+		sizeHints.max_aspect.x=min_width;
+		sizeHints.max_aspect.y=min_height;
+	}
+	XSetNormalHints(view->impl->display, view->impl->win, &sizeHints);
+	return 0;
 }

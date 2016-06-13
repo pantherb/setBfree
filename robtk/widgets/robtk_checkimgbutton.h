@@ -1,6 +1,6 @@
 /* radio button widget
  *
- * Copyright (C) 2013 Robin Gareus <robin@gareus.org>
+ * Copyright (C) 2013-2016 Robin Gareus <robin@gareus.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,6 +78,7 @@ static bool robtk_ibtn_expose_event(RobWidget* handle, cairo_t* cr, cairo_rectan
 	float c[4];
 	get_color_from_theme(1, c);
 
+	cairo_scale (cr, d->rw->widget_scale, d->rw->widget_scale);
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 
 	if (d->enabled) {
@@ -177,19 +178,19 @@ static void robtk_ibtn_leave_notify(RobWidget *handle) {
 static void
 priv_ibtn_size_request(RobWidget* handle, int *w, int *h) {
 	RobTkIBtn* d = (RobTkIBtn*)GET_HANDLE(handle);
-	*w = d->i_width + 9;
-	*h = d->i_height + 9;
+	*w = (d->i_width + 9) * d->rw->widget_scale;
+	*h = (d->i_height + 9) * d->rw->widget_scale;
 }
 
 static void
 priv_ibtn_size_allocate(RobWidget* handle, int w, int h) {
 	RobTkIBtn* d = (RobTkIBtn*)GET_HANDLE(handle);
 	bool recreate_patterns = FALSE;
-	if (h != d->w_height) recreate_patterns = TRUE;
-	d->w_width = w;
-	d->w_height = h;
+	if (h != d->w_height * d->rw->widget_scale) recreate_patterns = TRUE;
+	d->w_width = w / d->rw->widget_scale;
+	d->w_height = h / d->rw->widget_scale;
 	if (recreate_patterns) create_ibtn_pattern(d);
-	robwidget_set_size(handle, d->w_width, d->w_height);
+	robwidget_set_size(handle, w, h);
 }
 
 

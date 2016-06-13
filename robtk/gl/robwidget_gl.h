@@ -100,6 +100,8 @@ static RobWidget * robwidget_new(void *handle) {
 	rw->xalign = .5;
 	rw->yalign = .5;
 	rw->hidden = FALSE;
+	rw->block_events = FALSE;
+	rw->widget_scale = 1.0;
 	return rw;
 }
 

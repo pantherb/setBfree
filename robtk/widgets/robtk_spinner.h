@@ -47,7 +47,11 @@ typedef struct {
 static bool robtk_spin_render(RobTkSpin *d){
 	pthread_mutex_lock (&d->_mutex);
 	char buf[32];
+#ifdef _WIN32
+	sprintf(buf, d->prec_fmt, robtk_dial_get_value(d->dial));
+#else
 	snprintf(buf, 32, d->prec_fmt, robtk_dial_get_value(d->dial));
+#endif
 	buf[31] = '\0';
 	if (d->lbl & 1) robtk_lbl_set_text(d->lbl_l, buf);
 	if (d->lbl & 2) robtk_lbl_set_text(d->lbl_r, buf);
@@ -138,10 +142,6 @@ static void robtk_spin_set_alignment(RobTkSpin *d, float x, float y) {
 }
 
 static void robtk_spin_label_width(RobTkSpin *d, float left, float right) {
-#if 0
-	robtk_lbl_set_min_geometry(d->lbl_l, (float) left, 0);
-	robtk_lbl_set_min_geometry(d->lbl_r, (float) right, 0);
-#else
 	if (left < 0) {
 		robwidget_hide(robtk_lbl_widget(d->lbl_l), false);
 	} else {
@@ -154,7 +154,6 @@ static void robtk_spin_label_width(RobTkSpin *d, float left, float right) {
 		robtk_lbl_set_min_geometry(d->lbl_r, (float) right, 0);
 		robwidget_show(robtk_lbl_widget(d->lbl_r), false);
 	}
-#endif
 	robtk_spin_render(d);
 }
 

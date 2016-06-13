@@ -1,6 +1,6 @@
 /* push button widget
  *
- * Copyright (C) 2013 Robin Gareus <robin@gareus.org>
+ * Copyright (C) 2013-2016 Robin Gareus <robin@gareus.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,6 +37,8 @@ typedef struct {
 	cairo_pattern_t* btn_active;
 	cairo_pattern_t* btn_inactive;
 	cairo_surface_t* sf_txt;
+	char *txt;
+	float scale;
 
 	float w_width, w_height, l_width, l_height;
 	float fg[4];
@@ -44,9 +46,27 @@ typedef struct {
 	pthread_mutex_t _mutex;
 } RobTkPBtn;
 
+
+static void create_pbtn_text_surface (RobTkPBtn* d) {
+	PangoFontDescription *font = get_font_from_theme();
+	pthread_mutex_lock (&d->_mutex);
+	d->scale = d->rw->widget_scale;
+	create_text_surface3 (&d->sf_txt,
+			ceil (d->w_width * d->rw->widget_scale),
+			ceil (d->w_height * d->rw->widget_scale),
+			floor (d->rw->widget_scale * (d->w_width / 2.0)) + 1,
+			floor (d->rw->widget_scale * (d->w_height / 2.0)) + 1,
+			d->txt, font, d->fg, d->rw->widget_scale);
+	pthread_mutex_unlock (&d->_mutex);
+	pango_font_description_free(font);
+}
+
 static bool robtk_pbtn_expose_event(RobWidget* handle, cairo_t* cr, cairo_rectangle_t* ev) {
 	RobTkPBtn * d = (RobTkPBtn *)GET_HANDLE(handle);
 
+	if (d->scale != d->rw->widget_scale) {
+		create_pbtn_text_surface (d);
+	}
 	if (pthread_mutex_trylock (&d->_mutex)) {
 		queue_draw(d->rw);
 		return TRUE;
@@ -55,6 +75,7 @@ static bool robtk_pbtn_expose_event(RobWidget* handle, cairo_t* cr, cairo_rectan
 	cairo_rectangle (cr, ev->x, ev->y, ev->width, ev->height);
 	cairo_clip (cr);
 
+	cairo_scale (cr, d->rw->widget_scale, d->rw->widget_scale);
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 
 	if (!d->sensitive) {
@@ -78,8 +99,11 @@ static bool robtk_pbtn_expose_event(RobWidget* handle, cairo_t* cr, cairo_rectan
 	}
 	const float xalign = rint((d->w_width - d->l_width) * d->rw->xalign);
 	const float yalign = rint((d->w_height - d->l_height) * d->rw->yalign);
+	cairo_save (cr);
+	cairo_scale (cr, 1.0 / d->rw->widget_scale, 1.0 / d->rw->widget_scale);
 	cairo_set_source_surface(cr, d->sf_txt, xalign, yalign);
 	cairo_paint (cr);
+	cairo_restore (cr);
 
 	if (d->sensitive && d->prelight) {
 		cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
@@ -154,30 +178,6 @@ static void create_pbtn_pattern(RobTkPBtn * d) {
 	pthread_mutex_unlock (&d->_mutex);
 }
 
-static void create_pbtn_text_surface(RobTkPBtn * d, const char * txt, PangoFontDescription *font) {
-	pthread_mutex_lock (&d->_mutex);
-	if (d->sf_txt) {
-		cairo_surface_destroy(d->sf_txt);
-	}
-	d->sf_txt = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, d->w_width, d->w_height);
-	cairo_t *cr = cairo_create (d->sf_txt);
-	cairo_set_operator (cr, CAIRO_OPERATOR_CLEAR);
-	cairo_paint (cr);
-	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
-
-	if (!font) {
-		font = get_font_from_theme();
-	}
-
-	write_text_full(cr, txt, font,
-			d->w_width / 2.0 + 1,
-			d->w_height / 2.0 + 1, 0, 2, d->fg);
-	cairo_destroy (cr);
-	pthread_mutex_unlock (&d->_mutex);
-
-	pango_font_description_free(font);
-}
-
 /******************************************************************************
  * RobWidget stuff
  */
@@ -185,19 +185,19 @@ static void create_pbtn_text_surface(RobTkPBtn * d, const char * txt, PangoFontD
 static void
 priv_pbtn_size_request(RobWidget* handle, int *w, int *h) {
 	RobTkPBtn * d = (RobTkPBtn *)GET_HANDLE(handle);
-	*w = d->l_width;
-	*h = d->l_height;
+	*w = d->l_width * d->rw->widget_scale;
+	*h = d->l_height * d->rw->widget_scale;
 }
 
 static void
 priv_pbtn_size_allocate(RobWidget* handle, int w, int h) {
 	RobTkPBtn * d = (RobTkPBtn *)GET_HANDLE(handle);
 	bool recreate_patterns = FALSE;
-	if (h != d->w_height) recreate_patterns = TRUE;
-	d->w_width = w;
-	d->w_height = h;
+	if (h != d->w_height * d->rw->widget_scale) recreate_patterns = TRUE;
+	d->w_width = w / d->rw->widget_scale;
+	d->w_height = h / d->rw->widget_scale;
 	if (recreate_patterns) create_pbtn_pattern(d);
-	robwidget_set_size(handle, d->w_width, d->w_height);
+	robwidget_set_size(handle, w, h);
 }
 
 /******************************************************************************
@@ -223,22 +223,25 @@ static RobTkPBtn * robtk_pbtn_new_with_colors(const char * txt, const float bg[4
 	d->btn_active = NULL;
 	d->btn_inactive = NULL;
 	d->sf_txt = NULL;
+	d->txt = strdup(txt);
+	d->scale = 1.0;
 
 	memcpy(d->bg, bg, 4 * sizeof(float));
 	memcpy(d->fg, fg, 4 * sizeof(float));
 
 	int ww, wh;
 	PangoFontDescription *fd = get_font_from_theme();
-
 	get_text_geometry(txt, fd, &ww, &wh);
+	pango_font_description_free(fd);
+
 	d->w_width = ww + 14;
 	d->w_height = wh + 8;
 	d->l_width = d->w_width;
 	d->l_height = d->w_height;
 
-	create_pbtn_text_surface(d, txt, fd); // free's fd.
-
 	d->rw = robwidget_new(d);
+	create_pbtn_text_surface(d);
+
 	ROBWIDGET_SETNAME(d->rw, "pbtn");
 	robwidget_set_alignment(d->rw, 0, .5);
 
@@ -268,6 +271,7 @@ static void robtk_pbtn_destroy(RobTkPBtn *d) {
 	cairo_pattern_destroy(d->btn_inactive);
 	cairo_surface_destroy(d->sf_txt);
 	pthread_mutex_destroy(&d->_mutex);
+	free(d->txt);
 	free(d);
 }
 
@@ -302,8 +306,10 @@ static void robtk_pbtn_set_sensitive(RobTkPBtn *d, bool s) {
 }
 
 static void robtk_pbtn_set_text(RobTkPBtn *d, const char *txt) {
-	create_pbtn_text_surface (d, txt, NULL);
-	queue_draw(d->rw);
+	free (d->txt);
+	d->txt = strdup (txt);
+	create_pbtn_text_surface (d);
+	queue_draw (d->rw);
 }
 
 static void robtk_pbtn_set_bg(RobTkPBtn *d, float r, float g, float b, float a) {

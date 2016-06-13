@@ -333,6 +333,9 @@ puglSetReshapeFunc(PuglView* view, PuglReshapeFunc reshapeFunc);
 PUGL_API void
 puglSetFileSelectedFunc(PuglView* view, PuglFileSelectedFunc fileSelectedFunc);
 
+PUGL_API int
+puglUpdateGeometryConstraints(PuglView* view, int min_width, int min_height, bool aspect);
+
 /**
    Open a file dialog window.
  */

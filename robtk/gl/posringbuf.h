@@ -1,4 +1,4 @@
-/* meters.lv2 LV2 GUI
+/* robtk LV2 GUI
  *
  * Copyright 2013 Robin Gareus <robin@gareus.org>
  *

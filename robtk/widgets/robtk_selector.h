@@ -1,6 +1,6 @@
 /* combobox-like widget - select one of N texts
  *
- * Copyright (C) 2013 Robin Gareus <robin@gareus.org>
+ * Copyright (C) 2013-2016 Robin Gareus <robin@gareus.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,6 +48,7 @@ typedef struct {
 	pthread_mutex_t _mutex;
 	float w_width, w_height;
 	float t_width, t_height;
+	float scale;
 } RobTkSelect;
 
 /******************************************************************************
@@ -68,6 +69,7 @@ static bool robtk_select_expose_event(RobWidget* handle, cairo_t* cr, cairo_rect
 
 	cairo_rectangle (cr, ev->x, ev->y, ev->width, ev->height);
 	cairo_clip (cr);
+	cairo_scale (cr, d->rw->widget_scale, d->rw->widget_scale);
 
 	rounded_rectangle(cr, 2.5, 2.5, d->w_width - 4, d->w_height -4, C_RAD);
 	cairo_clip(cr);
@@ -128,11 +130,12 @@ static bool robtk_select_expose_event(RobWidget* handle, cairo_t* cr, cairo_rect
 	}
 
 	cairo_save(cr);
-	const float off = floor(16 + (d->w_width - 36 - d->items[d->active_item].width) / 2.0);
-	cairo_translate(cr, off, 3);
+	const float off = 16 + (d->w_width - 36 - d->items[d->active_item].width) / 2.0;
+	cairo_scale (cr, 1.0 / d->rw->widget_scale, 1.0 / d->rw->widget_scale);
+	cairo_translate(cr, floor (off * d->rw->widget_scale), floor(3. * d->rw->widget_scale));
 	cairo_rectangle_t a;
-	a.x=0; a.width = d->items[d->active_item].width;
-	a.y=0; a.height = d->t_height;
+	a.x=0; a.width = ceil (d->items[d->active_item].width * d->rw->widget_scale);
+	a.y=0; a.height = ceil (d->t_height * d->rw->widget_scale);
 	robtk_lbl_expose_event(d->items[d->active_item].lbl->rw, cr, &a);
 	cairo_restore(cr);
 
@@ -169,13 +172,13 @@ static RobWidget* robtk_select_mouseup(RobWidget* handle, RobTkBtnEvent *ev) {
 	}
 
 	int active_item = d->active_item;
-	if (ev->x <= 18) {
+	if (ev->x <= 18 * d->rw->widget_scale) {
 		if (d->wraparound) {
 			active_item = (d->active_item + d->item_count - 1) % d->item_count;
 		} else {
 				active_item--;
 		}
-	} else if (ev->x >= d->w_width - 18) {
+	} else if (ev->x >= (d->w_width - 18) * d->rw->widget_scale) {
 		if (d->wraparound) {
 			active_item = (d->active_item + 1) % d->item_count;
 		} else {
@@ -191,9 +194,9 @@ static RobWidget* robtk_select_mousemove(RobWidget* handle, RobTkBtnEvent *ev) {
 	RobTkSelect * d = (RobTkSelect *)GET_HANDLE(handle);
 	if (!d->sensitive) { return NULL; }
 	int pla = 0;
-	if (ev->x <= 18) {
+	if (ev->x <= 18 * d->rw->widget_scale) {
 		if (d->wraparound || d->active_item != 0) pla = -1;
-	} else if (ev->x >= d->w_width - 18) {
+	} else if (ev->x >= (d->w_width - 18) * d->rw->widget_scale) {
 		if (d->wraparound || d->active_item != d->item_count -1) pla = 1;
 	}
 	if (pla != d->lightarr) {
@@ -252,16 +255,23 @@ static void robtk_select_leave_notify(RobWidget *handle) {
 static void
 robtk_select_size_request(RobWidget* handle, int *w, int *h) {
 	RobTkSelect * d = (RobTkSelect *)GET_HANDLE(handle);
-	d->w_height = MAX(16, 6 + d->t_height);
-	*w = 36 + d->t_width;
-	*h = d->w_height;
+	if (d->scale != d->rw->widget_scale) {
+		d->scale = d->rw->widget_scale;
+		for (int i = 0; i < d->item_count; ++i) {
+			d->items[i].lbl->rw->widget_scale = d->scale;
+		}
+	}
+	// currently assumes  text widgets are instantiated with scale 1.0
+	*w = d->rw->widget_scale * (d->t_width + 36);
+	*h = d->rw->widget_scale * MAX(16, 6 + d->t_height);
 }
 
 static void
 robtk_select_size_allocate(RobWidget* handle, int w, int h) {
 	RobTkSelect * d = (RobTkSelect *)GET_HANDLE(handle);
-	d->w_width = w;
-	robwidget_set_size(handle, d->w_width, d->w_height);
+	d->w_width = w / d->rw->widget_scale;
+	d->w_height = MAX(16, 6 + d->t_height);
+	robwidget_set_size(handle, w, h);
 }
 
 
@@ -277,6 +287,7 @@ static RobTkSelect * robtk_select_new() {
 	d->lightarr = 0;
 	d->cb = NULL;
 	d->handle = NULL;
+	d->scale = 1.0;
 	pthread_mutex_init (&d->_mutex, 0);
 
 	d->wraparound = FALSE;
@@ -320,6 +331,7 @@ static void robtk_select_add_item(RobTkSelect *d, float val, const char *txt) {
 	d->items[d->item_count].lbl = robtk_lbl_new(txt);
 	int w, h;
 	priv_lbl_size_request(d->items[d->item_count].lbl->rw, &w, &h);
+	assert (d->rw->widget_scale  == 1.0); // XXX
 	d->t_width = MAX(d->t_width, w);
 	d->t_height = MAX(d->t_height, h);
 	d->items[d->item_count].width = w;
