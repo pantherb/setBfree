@@ -1496,7 +1496,7 @@ static const ConfigDoc doc[] = {
   {"whirl.drum.filter.q",      CFG_DOUBLE,  "1.6016",   "Filter Quality, bandwidth", "", 0.1, 6.0, .1},
   {"whirl.drum.filter.hz",     CFG_DOUBLE,  "811.9695", "Filter frequency.", "Hz", 20.0, 8000.0, 5.0},
   {"whirl.drum.filter.gain",   CFG_DOUBLE,  "-38.9291", "Filter gain", "dB", -48.0, 48.0, 1.0},
-  {"whirl.horn.filter.a.type", CFG_INT,     "0",        "This is the first of two filters to shape the signal to be sent to the horn-speaker; by default a low-pass filter with negative gain to cut off high freqencies. Filter type: 0-8. see \"Filter types\" below.", "", 0, 8, 1},
+  {"whirl.horn.filter.a.type", CFG_INT,     "0",        "This is the first of two filters to shape the signal to be sent to the horn-speaker; by default a low-pass filter with negative gain to cut off high frequencies. Filter type: 0-8. see \"Filter types\" below.", "", 0, 8, 1},
   {"whirl.horn.filter.a.hz",   CFG_DOUBLE,  "4500",     "Filter frequency", "Hz", 20.0, 8000, 5.0},
   {"whirl.horn.filter.a.q",    CFG_DOUBLE,  "2.7456",   "Filter quality, bandwidth", "", 0.1, 6.0, 0.1},
   {"whirl.horn.filter.a.gain", CFG_DOUBLE,  "-30.0",    "Filter gain", "dB", -48.0, 48.0, 1.0},

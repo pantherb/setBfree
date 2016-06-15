@@ -3615,7 +3615,7 @@ struct b_tonegen *allocTonegen() {
 static const ConfigDoc doc[] = {
   {"osc.tuning",                       CFG_DOUBLE,  "440.0", "Base tuning of the organ.", "Hz", 220.0, 880.0, .5},
   {"osc.temperament",                  CFG_TEXT,    "\"gear60\"", "Tuning temperament, gear-ratios/motor-speed. One of: \"equal\", \"gear60\", \"gear50\"", "", 0, 2, 1},
-  {"osc.x-precision",                  CFG_DOUBLE,  "0.001", "Wave precision. Maximum allowed error when calulating wave buffer-length for a given frequency (ideal #of samples - discrete #of samples)", INCOMPLETE_DOC},
+  {"osc.x-precision",                  CFG_DOUBLE,  "0.001", "Wave precision. Maximum allowed error when calculating wave buffer-length for a given frequency (ideal #of samples - discrete #of samples)", INCOMPLETE_DOC},
   {"osc.perc.fast",                    CFG_DOUBLE,  "1.0", "Fast percussion decay time", "s", 0, 10.0, 0.1},
   {"osc.perc.slow",                    CFG_DOUBLE,  "4.0", "Slow percussion decay time", "s", 0, 10.0, 0.1},
   {"osc.perc.normal",                  CFG_DECIBEL, "1.0", "Percussion starting gain of the envelope for normal volume.", "dB", 0, 1, 2.0},
