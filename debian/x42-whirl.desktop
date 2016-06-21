@@ -2,7 +2,9 @@
 Type=Application
 Name=x42-whirl
 GenericName=setBfree Whirl Speaker
+GenericName[fr]=Haut parleur rotatif setBfree
 Comment=Leslie speaker emulation as JACK client
+Comment[fr]=Émulation de haut parleur Leslie en tant que client JACK
 Icon=x42-whirl
 Exec=x42-whirl
 Terminal=false
