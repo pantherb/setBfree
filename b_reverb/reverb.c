@@ -150,7 +150,8 @@ void freeReverb(struct b_reverb *r) {
 /* used during initialization, set array end pointers */
 static void setReverbPointers (struct b_reverb *r, int i) {
   if ((0 <= i) && (i < RV_NZ)) {
-    const int e = (r->end[i] * r->SampleRateD / 22050.0);
+    int e = (r->end[i] * r->SampleRateD / 22050.0);
+    e = e | 1;
     r->delays[i] = (float *) realloc((void *)r->delays[i], (e + 2) * sizeof(float));
     if (!r->delays[i]) {
       fprintf (stderr, "FATAL: memory allocation failed for reverb.\n");
