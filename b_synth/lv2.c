@@ -1053,6 +1053,7 @@ run(LV2_Handle instance, uint32_t n_samples)
 {
   B3S* b3s = (B3S*)instance;
   float* audio[2];
+  bool dirty = false;
 
   audio[0] = b3s->outL;
   audio[1] = b3s->outR;
@@ -1103,12 +1104,14 @@ run(LV2_Handle instance, uint32_t n_samples)
 	  lv2_atom_object_get(obj, b3s->uris.sb3_cckey, &flags, b3s->uris.sb3_ccval, &cmd, 0);
 	  if (cmd && flags) {
 	    midi_uiassign_cc(b3s->inst->midicfg, (const char*)LV2_ATOM_BODY(cmd), ((LV2_Atom_Int*)flags)->body);
+	    dirty = true;
 	  }
 	} else if (obj->body.otype == b3s->uris.sb3_midipgm) {
 	  const LV2_Atom* key = NULL;
 	  lv2_atom_object_get(obj, b3s->uris.sb3_cckey, &key, 0);
 	  if (key) {
 	    installProgram(b3s->inst, ((LV2_Atom_Int*)key)->body);
+	    dirty = true;
 	  }
 	} else if (obj->body.otype == b3s->uris.sb3_midisavepgm) {
 	  const LV2_Atom* pgm = NULL;
@@ -1129,6 +1132,7 @@ run(LV2_Handle instance, uint32_t n_samples)
 	} else if (obj->body.otype == b3s->uris.sb3_cfgstr) {
 	  if (!b3s->inst_offline) {
 	    advanced_config_set(b3s, obj);
+	    dirty = true;
 	  }
 	} else if (obj->body.otype == b3s->uris.sb3_control) {
 	  b3s->suspend_ui_msg = 1;
@@ -1139,6 +1143,7 @@ run(LV2_Handle instance, uint32_t n_samples)
 	    fprintf(stderr, "B3LV2: callMIDIControlFunction(..,\"%s\", %d);\n", k, v);
 #endif
 	    callMIDIControlFunction(b3s->inst->midicfg, k, v);
+	    dirty = true;
 	  }
 	  b3s->suspend_ui_msg = 0;
 	}
@@ -1158,6 +1163,14 @@ run(LV2_Handle instance, uint32_t n_samples)
     }
     b3s->active_keys[i] = b3s->inst->synth->_activeKeys[i];
   }
+
+  if (dirty) {
+    LV2_Atom_Forge_Frame frame;
+    lv2_atom_forge_frame_time(&b3s->forge, 0);
+    x_forge_object(&b3s->forge, &frame, 1, b3s->uris.state_Dirty);
+    lv2_atom_forge_pop(&b3s->forge, &frame);
+  }
+
   if (keychanged) {
     LV2_Atom_Forge_Frame frame;
     lv2_atom_forge_frame_time(&b3s->forge, 0);

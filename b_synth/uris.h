@@ -95,6 +95,7 @@ typedef struct {
 	LV2_URID sb3_keyarrary;
 	LV2_URID sb3_cfgstr;
 	LV2_URID sb3_cfgkv;
+	LV2_URID state_Dirty;
 
 	LV2_URID midi_MidiEvent;
 	LV2_URID atom_Sequence;
@@ -132,6 +133,7 @@ map_setbfree_uris(LV2_URID_Map* map, setBfreeURIs* uris)
 	uris->sb3_keyarrary      = map->map(map->handle, SB3__karray);
 	uris->sb3_cfgstr         = map->map(map->handle, SB3__cfgstr);
 	uris->sb3_cfgkv          = map->map(map->handle, SB3__cfgkv);
+	uris->state_Dirty        = map->map(map->handle, "http://ardour.org/lv2/state#Dirty");
 }
 
 static inline void
