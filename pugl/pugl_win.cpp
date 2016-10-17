@@ -527,4 +527,5 @@ puglUpdateGeometryConstraints(PuglView* view, int min_width, int min_height, boo
 			// (not always needed since this fn is usually called in response to a resize)
 		}
 	}
+	return 0;
 }

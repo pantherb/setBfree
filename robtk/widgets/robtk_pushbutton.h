@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #ifndef _ROB_TK_PBTN_H_
@@ -52,10 +52,10 @@ static void create_pbtn_text_surface (RobTkPBtn* d) {
 	pthread_mutex_lock (&d->_mutex);
 	d->scale = d->rw->widget_scale;
 	create_text_surface3 (&d->sf_txt,
-			ceil (d->w_width * d->rw->widget_scale),
-			ceil (d->w_height * d->rw->widget_scale),
-			floor (d->rw->widget_scale * (d->w_width / 2.0)) + 1,
-			floor (d->rw->widget_scale * (d->w_height / 2.0)) + 1,
+			ceil (d->l_width * d->rw->widget_scale),
+			ceil (d->l_height * d->rw->widget_scale),
+			floor (d->rw->widget_scale * (d->l_width / 2.0)) + 1,
+			floor (d->rw->widget_scale * (d->l_height / 2.0)) + 1,
 			d->txt, font, d->fg, d->rw->widget_scale);
 	pthread_mutex_unlock (&d->_mutex);
 	pango_font_description_free(font);
@@ -97,8 +97,8 @@ static bool robtk_pbtn_expose_event(RobWidget* handle, cairo_t* cr, cairo_rectan
 	} else {
 		cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	}
-	const float xalign = rint((d->w_width - d->l_width) * d->rw->xalign);
-	const float yalign = rint((d->w_height - d->l_height) * d->rw->yalign);
+	const float xalign = rint((d->w_width - d->l_width) * d->rw->xalign * d->scale);
+	const float yalign = rint((d->w_height - d->l_height) * d->rw->yalign * d->scale);
 	cairo_save (cr);
 	cairo_scale (cr, 1.0 / d->rw->widget_scale, 1.0 / d->rw->widget_scale);
 	cairo_set_source_surface(cr, d->sf_txt, xalign, yalign);
@@ -130,7 +130,7 @@ static RobWidget* robtk_pbtn_mousedown(RobWidget *handle, RobTkBtnEvent *event) 
 	d->enabled = TRUE;
 	if (d->cb_down) d->cb_down(d->rw, d->handle_down);
 	queue_draw(d->rw);
-	return handle;
+	return NULL;
 }
 
 static RobWidget* robtk_pbtn_mouseup(RobWidget *handle, RobTkBtnEvent *event) {
@@ -157,7 +157,11 @@ static void robtk_pbtn_enter_notify(RobWidget *handle) {
 
 static void robtk_pbtn_leave_notify(RobWidget *handle) {
 	RobTkPBtn * d = (RobTkPBtn *)GET_HANDLE(handle);
-	if (d->prelight) {
+	if (d->prelight || d->enabled) {
+		if (d->prelight && d->enabled) {
+			if (d->cb) d->cb(d->rw, d->handle);
+		}
+		d->enabled = FALSE;
 		d->prelight = FALSE;
 		queue_draw(d->rw);
 	}
@@ -194,9 +198,13 @@ priv_pbtn_size_allocate(RobWidget* handle, int w, int h) {
 	RobTkPBtn * d = (RobTkPBtn *)GET_HANDLE(handle);
 	bool recreate_patterns = FALSE;
 	if (h != d->w_height * d->rw->widget_scale) recreate_patterns = TRUE;
+	if (w != d->w_width * d->rw->widget_scale) d->scale = 0; // re-layout
 	d->w_width = w / d->rw->widget_scale;
 	d->w_height = h / d->rw->widget_scale;
-	if (recreate_patterns) create_pbtn_pattern(d);
+	if (recreate_patterns) {
+		d->scale = 0;
+		create_pbtn_pattern(d);
+	}
 	robwidget_set_size(handle, w, h);
 }
 
@@ -243,7 +251,7 @@ static RobTkPBtn * robtk_pbtn_new_with_colors(const char * txt, const float bg[4
 	create_pbtn_text_surface(d);
 
 	ROBWIDGET_SETNAME(d->rw, "pbtn");
-	robwidget_set_alignment(d->rw, 0, .5);
+	robwidget_set_alignment(d->rw, .5, .5);
 
 	robwidget_set_size_request(d->rw, priv_pbtn_size_request);
 	robwidget_set_size_allocate(d->rw, priv_pbtn_size_allocate);

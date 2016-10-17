@@ -62,6 +62,7 @@ extern void rtk_osx_api_err(const char *msg);
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 #include <math.h>
 #include <time.h>
 #include <getopt.h>
@@ -108,6 +109,10 @@ extern void rtk_osx_api_err(const char *msg);
 #define LV2_EXTERNAL_UI_HIDE(ptr) (ptr)->hide(ptr)
 
 #define nan NAN
+
+#ifndef UINT32_MAX
+# define UINT32_MAX		(4294967295U)
+#endif
 
 static const LV2_Descriptor* plugin_dsp;
 static const LV2UI_Descriptor *plugin_gui;
@@ -238,6 +243,7 @@ typedef struct _RtkLv2Description {
 	const uint32_t nports_ctrl_out;
 	const uint32_t min_atom_bufsiz;
 	const bool     send_time_info;
+	const uint32_t latency_ctrl_port;
 } RtkLv2Description;
 
 static RtkLv2Description const *inst;
@@ -257,7 +263,7 @@ static LV2_Atom_Forge lv2_forge;
 static uint32_t *portmap_a_in;
 static uint32_t *portmap_a_out;
 static uint32_t *portmap_rctl;
-static int      *portmap_ctrl;
+static uint32_t *portmap_ctrl;
 static uint32_t  portmap_atom_to_ui = -1;
 static uint32_t  portmap_atom_from_ui = -1;
 
@@ -550,12 +556,12 @@ static int process (jack_nframes_t nframes, void *arg) {
 			if (inst->ports[portmap_rctl[p]].porttype != CONTROL_OUT) continue;
 
 			if (plugin_ports_pre[p] != plugin_ports_post[p]) {
-#if 0 // TODO regardless of UI.. use a dedicated port-ID
-				if (TODO this port reportsLatency) {
+				if (inst->latency_ctrl_port != UINT32_MAX
+						&& p == portmap_ctrl[inst->latency_ctrl_port]) {
 					plugin_latency = rintf(plugin_ports_pre[p]);
-					jack_recompute_total_latencies(j_client);
+					// TODO handle case if there's no GUI thread to call
+					// jack_recompute_total_latencies()
 				}
-#endif
 				if (jack_ringbuffer_write_space(rb_ctrl_to_ui) >= sizeof(uint32_t) + sizeof(float)) {
 					jack_ringbuffer_write(rb_ctrl_to_ui, (char *) &portmap_rctl[p], sizeof(uint32_t));
 					jack_ringbuffer_write(rb_ctrl_to_ui, (char *) &plugin_ports_pre[p], sizeof(float));
@@ -796,14 +802,14 @@ static void jack_portconnect(int which) {
 static uint32_t uri_to_id(LV2_URI_Map_Callback_Data callback_data, const char* uri) {
 	for (uint32_t i=0; i < urimap_len; ++i) {
 		if (!strcmp(urimap[i], uri)) {
-			//printf("Found mapped URI '%s' -> %d\n", uri, i);
-			return i;
+			//printf("Found mapped URI '%s' -> %d\n", uri, i + 1);
+			return i + 1;
 		}
 	}
-	//printf("map URI '%s' -> %d\n", uri, urimap_len);
+	//printf("map URI '%s' -> %d\n", uri, urimap_len + 1);
 	urimap = (char**) realloc(urimap, (urimap_len + 1) * sizeof(char*));
 	urimap[urimap_len] = strdup(uri);
-	return urimap_len++;
+	return ++urimap_len;
 }
 
 static void free_uri_map() {
@@ -838,7 +844,7 @@ static void write_function(
 		fprintf(stderr, "LV2Host: write_function() invalid port\n");
 		return;
 	}
-	if (portmap_ctrl[port_index] < 0) {
+	if (portmap_ctrl[port_index] == UINT32_MAX) {
 		fprintf(stderr, "LV2Host: write_function() unmapped port\n");
 		return;
 	}
@@ -1167,6 +1173,10 @@ static void run_one(LV2_Atom_Sequence *data) {
 		jack_ringbuffer_read(rb_ctrl_to_ui, (char*) &idx, sizeof(uint32_t));
 		jack_ringbuffer_read(rb_ctrl_to_ui, (char*) &val, sizeof(float));
 		plugin_gui->port_event(gui_instance, idx, sizeof(float), 0, &val);
+		if (idx == inst->latency_ctrl_port) {
+			// jack client calls cannot be done in the DSP thread with jack1
+			jack_recompute_total_latencies(j_client);
+		}
 	}
 
 	while (jack_ringbuffer_read_space(rb_atom_to_ui) > sizeof(LV2_Atom)) {
@@ -1288,16 +1298,18 @@ static void print_usage (void) {
 			);
 
 	printf ("\nOptions:\n"
-" -h, --help                Display this help and exit.\n"
+" -h, --help                Display this help and exit\n"
+" -j, --jack-name <name>    Set the JACK client name\n"
+"                           (defaults to plugin-name)\n"
 #ifdef X42_MULTIPLUGIN
-" -l, --list                Print list of available plugins and exit.\n"
+" -l, --list                Print list of available plugins and exit\n"
 #endif
-" -O <port>, --osc <port>   Listen for OSC messages on the given UDP port.\n"
+" -O <port>, --osc <port>   Listen for OSC messages on the given UDP port\n"
 " -p <idx>:<val>, --port <idx>:<val>\n"
-"                           Set initial value for given control port.\n"
-" -P, --portlist            Print control port list on startup.\n"
-" --osc-doc                 Print available OSC commands and exit.\n"
-" -V, --version             Print version information and exit.\n"
+"                           Set initial value for given control port\n"
+" -P, --portlist            Print control port list on startup\n"
+" --osc-doc                 Print available OSC commands and exit\n"
+" -V, --version             Print version information and exit\n"
 			);
 
 #ifdef X42_MULTIPLUGIN_URI
@@ -1351,9 +1363,11 @@ int main (int argc, char **argv) {
 	uint32_t c_ctrl = 0;
 	uint32_t n_pval = 0;
 	struct PValue *pval  = NULL;
+	char* jack_client_name = NULL;
 
 	const struct option long_options[] = {
 		{ "help",       no_argument,       0, 'h' },
+		{ "jack-name",  required_argument, 0, 'j' },
 		{ "list",       no_argument,       0, 'l' },
 		{ "osc",        required_argument, 0, 'O' },
 		{ "osc-doc",    no_argument,       0,  0x100 },
@@ -1362,7 +1376,7 @@ int main (int argc, char **argv) {
 		{ "version",    no_argument,       0, 'V' },
 	};
 
-	const char *optstring = "hlO:p:PV1";
+	const char *optstring = "hj:lO:p:PV1";
 
 	if (optind < argc && !strncmp (argv[optind], "-psn_0", 6)) {++optind;}
 
@@ -1372,6 +1386,9 @@ int main (int argc, char **argv) {
 			case 'h':
 				print_usage();
 				return 0;
+				break;
+			case 'j':
+				jack_client_name = optarg;
 				break;
 			case '1': // catch -1, backward compat
 			case 'l':
@@ -1488,13 +1505,12 @@ int main (int argc, char **argv) {
 	gobject_init_ctor();
 #endif
 
+	LV2_URID_Map uri_map               = { NULL, &uri_to_id };
+	const LV2_Feature map_feature      = { LV2_URID__map, &uri_map};
+	const LV2_Feature unmap_feature    = { LV2_URID__unmap, NULL };
 
-	LV2_URID_Map uri_map            = { NULL, &uri_to_id };
-	const LV2_Feature map_feature   = { LV2_URID__map, &uri_map};
-	const LV2_Feature unmap_feature = { LV2_URID__unmap, NULL };
-
-	LV2_Worker_Schedule schedule = { NULL, lv2_worker_schedule };
-	LV2_Feature schedule_feature  = { LV2_WORKER__schedule, &schedule };
+	LV2_Worker_Schedule schedule       = { NULL, lv2_worker_schedule };
+	const LV2_Feature schedule_feature = { LV2_WORKER__schedule, &schedule };
 
 	const LV2_Feature* features[] = {
 		&map_feature, &unmap_feature, &schedule_feature, NULL
@@ -1525,7 +1541,7 @@ int main (int argc, char **argv) {
 	portmap_a_in  = (uint32_t*) malloc(inst->nports_audio_in * sizeof(uint32_t));
 	portmap_a_out = (uint32_t*) malloc(inst->nports_audio_out * sizeof(uint32_t));
 	portmap_rctl  = (uint32_t*) malloc(inst->nports_ctrl  * sizeof(uint32_t));
-	portmap_ctrl  = (int*)      malloc(inst->nports_total * sizeof(int));
+	portmap_ctrl  = (uint32_t*) malloc(inst->nports_total * sizeof(uint32_t));
 
 	plugin_ports_pre  = (float*) calloc(inst->nports_ctrl, sizeof(float));
 	plugin_ports_post = (float*) calloc(inst->nports_ctrl, sizeof(float));
@@ -1553,7 +1569,7 @@ int main (int argc, char **argv) {
 		goto out;
 	}
 	/* jack-open -> samlerate */
-	if (init_jack(extui_host.plugin_human_id)) {
+	if (init_jack(jack_client_name ? jack_client_name : extui_host.plugin_human_id)) {
 		fprintf (stderr, "cannot connect to JACK.\n");
 #ifdef _WIN32
 		MessageBox (NULL, TEXT(
@@ -1582,7 +1598,7 @@ int main (int argc, char **argv) {
 
 	/* connect ports */
 	for (uint32_t p=0; p < inst->nports_total; ++p) {
-		portmap_ctrl[p] = -1;
+		portmap_ctrl[p] = UINT32_MAX;
 		switch (inst->ports[p].porttype) {
 			case CONTROL_IN:
 				plugin_ports_pre[c_ctrl] = inst->ports[p].val_default;

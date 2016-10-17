@@ -14,13 +14,13 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #ifndef _ROB_TK_LBL_H_
 #define _ROB_TK_LBL_H_
 
-typedef struct {
+typedef struct _RobTkLbl {
 	RobWidget *rw;
 
 	bool sensitive;
@@ -35,6 +35,10 @@ typedef struct {
 	bool  rounded;
 	pthread_mutex_t _mutex;
 	float scale;
+
+	void (*ttip) (struct _RobTkLbl* d, bool on, void* handle);
+	void* ttip_handle;
+
 } RobTkLbl;
 
 static void priv_lbl_prepare_text(RobTkLbl *d, const char *txt) {
@@ -166,6 +170,8 @@ static RobTkLbl * robtk_lbl_new(const char * txt) {
 	d->sensitive = TRUE;
 	d->rounded = FALSE;
 	d->scale = 1.0;
+	d->ttip = NULL;
+	d->ttip_handle = NULL;
 	pthread_mutex_init (&d->_mutex, 0);
 	d->rw = robwidget_new(d);
 	ROBWIDGET_SETNAME(d->rw, "label");
@@ -208,6 +214,32 @@ static void robtk_lbl_set_sensitive(RobTkLbl *d, bool s) {
 	if (d->sensitive != s) {
 		d->sensitive = s;
 		queue_draw(d->rw);
+	}
+}
+
+static void robtk_lbl_ttip_show (RobWidget *handle) {
+	RobTkLbl* d = (RobTkLbl *)GET_HANDLE(handle);
+	if (d->ttip) {
+		d->ttip (d, true, d->ttip_handle);
+	}
+}
+
+static void robtk_lbl_ttip_hide (RobWidget *handle) {
+	RobTkLbl* d = (RobTkLbl *)GET_HANDLE(handle);
+	if (d->ttip) {
+		d->ttip (d, false, d->ttip_handle);
+	}
+}
+
+static void robtk_lbl_annotation_callback(RobTkLbl *d, void (*cb) (RobTkLbl* d, bool, void* handle), void* handle) {
+	d->ttip = cb;
+	d->ttip_handle = handle;
+	if (d->ttip) {
+		robwidget_set_enter_notify(d->rw, robtk_lbl_ttip_show);
+		robwidget_set_leave_notify(d->rw, robtk_lbl_ttip_hide);
+	} else {
+		robwidget_set_enter_notify(d->rw, NULL);
+		robwidget_set_leave_notify(d->rw, NULL);
 	}
 }
 

@@ -399,6 +399,8 @@ puglCreate(PuglNativeWindow parent,
 	impl->glview = [RobTKPuglOpenGLView new];
 	impl->glview->puglview = view;
 
+	[impl->glview setFrameSize:NSMakeSize(view->width, view->height)];
+
 	if (parent) {
 		NSView* pview = (NSView*) parent;
 		[pview addSubview:impl->glview];
@@ -478,7 +480,11 @@ puglResize(PuglView* view)
 
 	[[view->impl->glview openGLContext] makeCurrentContext];
 	view->resizeFunc(view, &view->width, &view->height, &set_hints);
-	[view->impl->window setContentSize:NSMakeSize(view->width, view->height) ];
+	if (view->impl->window) {
+		[view->impl->window setContentSize:NSMakeSize(view->width, view->height) ];
+	} else {
+		[view->impl->glview setFrameSize:NSMakeSize(view->width, view->height)];
+	}
 	[view->impl->glview reshape];
 	[NSOpenGLContext clearCurrentContext];
 }
@@ -575,4 +581,5 @@ puglUpdateGeometryConstraints(PuglView* view, int min_width, int min_height, boo
 		if (aspect) {
 			[view->impl->window setContentAspectRatio:NSMakeSize(min_width, min_height)];
 		}
+		return 0;
 }

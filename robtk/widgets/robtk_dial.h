@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #ifndef _ROB_TK_DIAL_H_
@@ -53,6 +53,7 @@ typedef struct _RobTkDial {
 #define ACCEL_THRESH 10
 	struct timespec scroll_accel_timeout;
 	int scroll_accel_thresh;
+	bool with_scroll_accel;
 
 	float drag_x, drag_y, drag_c;
 	bool dragging;
@@ -378,21 +379,26 @@ static RobWidget* robtk_dial_scroll(RobWidget* handle, RobTkBtnEvent *ev) {
 	if (!d->sensitive) { return NULL; }
 	if (d->dragging) { d->dragging = FALSE; }
 
-	struct timespec now;
-	rtk_clock_gettime(&now);
-	int64_t ts0 =  now.tv_sec * 1000 + now.tv_nsec / 1000000;
-	int64_t ts1 =  d->scroll_accel_timeout.tv_sec * 1000 + d->scroll_accel_timeout.tv_nsec / 1000000;
-	if (ts0 - ts1 < 100) {
-		if (abs(d->scroll_accel_thresh) > ACCEL_THRESH && d->scroll_accel < 4) {
-			d->scroll_accel += .025;
+	if (d->with_scroll_accel) {
+		struct timespec now;
+		rtk_clock_gettime(&now);
+		int64_t ts0 =  now.tv_sec * 1000 + now.tv_nsec / 1000000;
+		int64_t ts1 =  d->scroll_accel_timeout.tv_sec * 1000 + d->scroll_accel_timeout.tv_nsec / 1000000;
+		if (ts0 - ts1 < 100) {
+			if (abs(d->scroll_accel_thresh) > ACCEL_THRESH && d->scroll_accel < 4) {
+				d->scroll_accel += .025;
+			}
+		} else {
+			d->scroll_accel_thresh = 0;
+			d->scroll_accel = 1.0;
 		}
+
+		d->scroll_accel_timeout.tv_sec = now.tv_sec;
+		d->scroll_accel_timeout.tv_nsec = now.tv_nsec;
 	} else {
 		d->scroll_accel_thresh = 0;
 		d->scroll_accel = 1.0;
 	}
-
-	d->scroll_accel_timeout.tv_sec = now.tv_sec;
-	d->scroll_accel_timeout.tv_nsec = now.tv_nsec;
 
 	const float delta = (ev->state & ROBTK_MOD_CTRL) ? d->acc : d->scroll_mult * d->acc;
 
@@ -425,8 +431,11 @@ static RobWidget* robtk_dial_scroll(RobWidget* handle, RobTkBtnEvent *ev) {
 	return NULL;
 }
 
-static void create_dial_pattern(RobTkDial * d) {
-	float c_bg[4]; get_color_from_theme(1, c_bg);
+static void create_dial_pattern(RobTkDial * d, const float c_bg[4]) {
+	if (d->dpat) {
+		cairo_pattern_destroy(d->dpat);
+	}
+
 	cairo_pattern_t* pat = cairo_pattern_create_linear (0.0, 0.0, 0.0, d->w_height);
 
 	const float pat_left   = (d->w_cx - d->w_radius) / (float) d->w_width;
@@ -557,10 +566,15 @@ static RobTkDial * robtk_dial_new_with_size(float min, float max, float step,
 	d->base_mult *= 0.004; // 250px
 	d->scroll_mult = 1.0;
 	d->scroll_accel_thresh = 0;
+	d->with_scroll_accel = true;
 	rtk_clock_gettime(&d->scroll_accel_timeout);
 	d->bg  = NULL;
+	d->dpat = NULL;
 	d->bg_scale = 1.0;
-	create_dial_pattern(d);
+
+	float c_bg[4]; get_color_from_theme(1, c_bg);
+	create_dial_pattern(d, c_bg);
+
 	d->scol = (float*) malloc(3 * 4 * sizeof(float));
 	d->scol[0*4] = 1.0; d->scol[0*4+1] = 0.0; d->scol[0*4+2] = 0.0; d->scol[0*4+3] = 0.2;
 	d->scol[1*4] = 0.0; d->scol[1*4+1] = 1.0; d->scol[1*4+2] = 0.0; d->scol[1*4+3] = 0.2;

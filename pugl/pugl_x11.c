@@ -422,6 +422,11 @@ puglProcessEvents(PuglView* view)
 		}
 
 		switch (event.type) {
+		case UnmapNotify:
+			if (view->motionFunc) {
+				view->motionFunc(view, -1, -1);
+			}
+			break;
 		case MapNotify:
 			puglReshape(view, view->width, view->height);
 			break;

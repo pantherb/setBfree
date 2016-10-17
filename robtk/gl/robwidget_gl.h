@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #define GET_HANDLE(HDL) (((RobWidget*)HDL)->self)
@@ -77,6 +77,7 @@ static RobWidget* decend_into_widget_tree(RobWidget *rw, int x, int y) {
 	for (unsigned int i=0; i < rw->childcount; ++i) {
 		RobWidget * c = (RobWidget *) rw->children[i];
 		if (c->hidden) continue;
+		if (c->block_events) continue;
 		if (x >= c->area.x && y >= c->area.y
 				&& x <= c->area.x + c->area.width
 				&& y <= c->area.y + c->area.height

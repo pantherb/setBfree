@@ -14,7 +14,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software Foundation,
- * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
 #ifndef _ROB_TK_CBTN_H_
@@ -75,6 +75,7 @@ static void create_cbtn_pattern(RobTkCBtn * d) {
 
 	if (d->btn_inactive) cairo_pattern_destroy(d->btn_inactive);
 	if (d->btn_enabled) cairo_pattern_destroy(d->btn_enabled);
+	if (d->btn_led) cairo_pattern_destroy(d->btn_led);
 
 	d->btn_inactive = cairo_pattern_create_linear (0.0, 0.0, 0.0, d->w_height);
 	cairo_pattern_add_color_stop_rgb (d->btn_inactive, ISBRIGHT(c_bg) ? 0.5 : 0.0, SHADE_RGB(c_bg, 1.95));
@@ -102,19 +103,19 @@ static void create_cbtn_text_surface (RobTkCBtn* d) {
 	d->scale = d->rw->widget_scale;
 
 	create_text_surface3 (&d->sf_txt_normal,
-			ceil(d->w_width * d->rw->widget_scale),
-			ceil(d->w_height * d->rw->widget_scale),
-			1 + floor (d->rw->widget_scale * ((d->w_width - (d->show_led ? GBT_LED_RADIUS + 6 : 0)) / 2.0 + (d->show_led < 0 ? GBT_LED_RADIUS + 6 : 0))),
-			1 + floor (d->rw->widget_scale * d->w_height / 2.0),
+			ceil(d->l_width * d->rw->widget_scale),
+			ceil(d->l_height * d->rw->widget_scale),
+			floor (d->rw->widget_scale * (d->l_width / 2.0)) + 1,
+			floor (d->rw->widget_scale * (d->l_height / 2.0)) + 1,
 			d->txt, font, c_col, d->rw->widget_scale);
 
 	get_color_from_theme(2, c_col);
 
 	create_text_surface3 (&d->sf_txt_enabled,
-			ceil (d->rw->widget_scale * d->w_width),
-			ceil (d->rw->widget_scale * d->w_height),
-			1 + floor (d->rw->widget_scale * ((d->w_width - (d->show_led ? GBT_LED_RADIUS + 6 : 0)) / 2.0 + (d->show_led < 0 ? GBT_LED_RADIUS + 6 : 0))),
-			1 + floor (d->rw->widget_scale * d->w_height / 2.0),
+			ceil(d->l_width * d->rw->widget_scale),
+			ceil(d->l_height * d->rw->widget_scale),
+			floor (d->rw->widget_scale * (d->l_width / 2.0)) + 1,
+			floor (d->rw->widget_scale * (d->l_height / 2.0)) + 1,
 			d->txt, font, c_col, d->rw->widget_scale);
 	pango_font_description_free(font);
 	pthread_mutex_unlock (&d->_mutex);
@@ -190,10 +191,13 @@ static bool robtk_cbtn_expose_event(RobWidget* handle, cairo_t* cr, cairo_rectan
 		cairo_fill(cr);
 	}
 
-	const float xalign = rint((d->w_width - d->l_width) * d->rw->xalign);
-	const float yalign = rint((d->w_height - d->l_height) * d->rw->yalign);
+	const float lspace = d->w_width - d->l_width - (d->show_led ? GBT_LED_RADIUS + 6 : 0);
+	const float lhpad   = d->show_led < 0 ? GBT_LED_RADIUS + 6 : 0;
+	const float xalign = rint((lhpad + lspace * d->rw->xalign) * d->scale);
+	const float yalign = rint((d->w_height - d->l_height) * d->rw->yalign * d->scale);
 
 	cairo_save (cr);
+
 	cairo_scale (cr, 1.0 / d->rw->widget_scale, 1.0 / d->rw->widget_scale);
 	if (d->flat_button && !d->sensitive) {
 		//cairo_set_operator (cr, CAIRO_OPERATOR_XOR); // check
@@ -316,9 +320,13 @@ priv_cbtn_size_allocate(RobWidget* handle, int w, int h) {
 	RobTkCBtn* d = (RobTkCBtn*)GET_HANDLE(handle);
 	bool recreate_patterns = FALSE;
 	if (h != d->w_height * d->rw->widget_scale) recreate_patterns = TRUE;
+	if (w != d->w_width * d->rw->widget_scale) d->scale = 0; // re-layout
 	d->w_width = w / d->rw->widget_scale;
 	d->w_height = h / d->rw->widget_scale;
-	if (recreate_patterns) create_cbtn_pattern(d);
+	if (recreate_patterns) {
+		d->scale = 0;
+		create_cbtn_pattern(d);
+	}
 	robwidget_set_size(handle, w, h);
 }
 
@@ -329,16 +337,12 @@ priv_cbtn_size_allocate(RobWidget* handle, int w, int h) {
 
 static RobTkCBtn * robtk_cbtn_new(const char* txt, enum GedLedMode led, bool flat) {
 	assert(txt);
-	RobTkCBtn *d = (RobTkCBtn *) malloc(sizeof(RobTkCBtn));
+	RobTkCBtn *d = (RobTkCBtn *) calloc(1, sizeof(RobTkCBtn));
 
 	d->flat_button = flat;
 	d->show_led = led;
 	d->cb = NULL;
 	d->handle = NULL;
-	d->sf_txt_normal = NULL;
-	d->sf_txt_enabled = NULL;
-	d->btn_enabled = NULL;
-	d->btn_inactive = NULL;
 	d->sensitive = TRUE;
 	d->radiomode = FALSE;
 	d->temporary_mode = 0;
@@ -371,7 +375,7 @@ static RobTkCBtn * robtk_cbtn_new(const char* txt, enum GedLedMode led, bool fla
 
 	create_cbtn_text_surface(d);
 
-	robwidget_set_alignment(d->rw, 0, .5);
+	robwidget_set_alignment(d->rw, .5, .5);
 	ROBWIDGET_SETNAME(d->rw, "cbtn");
 
 	robwidget_set_size_request(d->rw, priv_cbtn_size_request);
