@@ -14,7 +14,7 @@ static const RtkLv2Description _plugin = {
 	{
 		{ "control", MIDI_IN, nan, nan, nan, "MIDI In"},
 		{ "notify", MIDI_OUT, nan, nan, nan, "MIDI Out"},
-		{ "outL", AUDIO_OUT, nan, nan, nan, "Left output"},
+		{ "outL", AUDIO_OUT, nan, nan, nan, "Left Output"},
 		{ "outR", AUDIO_OUT, nan, nan, nan, "Right Output"},
 	}
 	, 4 // uint32_t nports_total
@@ -29,4 +29,5 @@ static const RtkLv2Description _plugin = {
 	, 0 // uint32_t nports_ctrl_out
 	, 65536 // uint32_t min_atom_bufsiz
 	, false // bool send_time_info
+	, UINT32_MAX // uint32_t latency_ctrl_port
 };
