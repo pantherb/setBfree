@@ -1167,7 +1167,7 @@ run(LV2_Handle instance, uint32_t n_samples)
   if (dirty) {
     LV2_Atom_Forge_Frame frame;
     lv2_atom_forge_frame_time(&b3s->forge, 0);
-    x_forge_object(&b3s->forge, &frame, 1, b3s->uris.state_Dirty);
+    x_forge_object(&b3s->forge, &frame, 1, b3s->uris.state_Changed);
     lv2_atom_forge_pop(&b3s->forge, &frame);
   }
 
