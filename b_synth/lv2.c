@@ -61,6 +61,7 @@
 #include "cfgParser.h"
 #include "pgmParser.h"
 #include "program.h"
+#include "midnam_lv2.h"
 
 typedef enum {
   B3S_MIDIIN = 0,
@@ -73,6 +74,7 @@ typedef struct {
   LV2_Atom_Forge forge;
   LV2_Atom_Forge_Frame frame;
   LV2_Worker_Schedule* schedule;
+  LV2_Midnam*          midnam;
 
   const LV2_Atom_Sequence* midiin;
   LV2_Atom_Sequence* midiout;
@@ -285,6 +287,9 @@ static void mctl_cb(int fnid, const char *fn, unsigned char val, midiCCmap *mm, 
   }
   if (b3s->midiout && fn && !b3s->suspend_ui_msg) {
     forge_kvcontrolmessage(&b3s->forge, &b3s->uris, fn, (int32_t) val);
+  }
+  if (b3s->midnam && fn && !strcmp (fn, "special.midimap")) {
+    b3s->midnam->update (b3s->midnam->handle);
   }
 }
 
@@ -816,6 +821,9 @@ postrun (B3S* b3s)
     b3s->schedule->schedule_work(b3s->schedule->handle, sizeof(struct worknfo), &w);
     b3s->update_gui_now = 1;
     b3s->swap_instances = 0;
+    if (b3s->midnam) {
+      b3s->midnam->update (b3s->midnam->handle);
+    }
   }
 }
 
@@ -874,6 +882,8 @@ instantiate(const LV2_Descriptor*     descriptor,
       b3s->map = (LV2_URID_Map*)features[i]->data;
     } else if (!strcmp(features[i]->URI, LV2_WORKER__schedule)) {
       b3s->schedule = (LV2_Worker_Schedule*)features[i]->data;
+    } else if (!strcmp (features[i]->URI, LV2_MIDNAM__update)) {
+      b3s->midnam = (LV2_Midnam*)features[i]->data;
     }
   }
 
@@ -1120,6 +1130,9 @@ run(LV2_Handle instance, uint32_t n_samples)
 	  if (pgm && name) {
 	    saveProgramm(b3s->inst, (int) ((LV2_Atom_Int*)pgm)->body, (char*) LV2_ATOM_BODY(name), 0);
 	    b3s->update_pgm_now = 1;
+	    if (b3s->midnam) {
+	      b3s->midnam->update (b3s->midnam->handle);
+	    }
 	  }
 	} else if (obj->body.otype == b3s->uris.sb3_loadpgm) {
 	  iowork(b3s, obj, CMD_LOADPGM);
@@ -1206,16 +1219,51 @@ cleanup(LV2_Handle instance)
   free(instance);
 }
 
+static char*
+mn_file (LV2_Handle instance)
+{
+  B3S* b3s = (B3S*)instance;
+  char model[16];
+  snprintf (model, 16, "sbf-%p", b3s);
+  model[15] = 0;
+  char* buf = NULL;
+  size_t siz = 0;
+  FILE* f = open_memstream (&buf, &siz);
+  save_midname (b3s->inst, f, model);
+  fclose (f);
+  return buf;
+}
+
+static char*
+mn_model (LV2_Handle instance)
+{
+  B3S* b3s = (B3S*)instance;
+  char* rv = malloc (15 * sizeof (char));
+  snprintf (rv, 16, "sbf-%p", b3s);
+  rv[15] = 0;
+  return rv;
+}
+
+static void
+mn_free (char* v)
+{
+  free (v);
+}
+
 const void*
 extension_data(const char* uri)
 {
   static const LV2_Worker_Interface worker = { work, work_response, NULL };
   static const LV2_State_Interface  state  = { save, restore };
+  static const LV2_Midnam_Interface midnam = { mn_file, mn_model, mn_free };
   if (!strcmp(uri, LV2_WORKER__interface)) {
     return &worker;
   }
   else if (!strcmp(uri, LV2_STATE__interface)) {
     return &state;
+  }
+  else if (!strcmp (uri, LV2_MIDNAM__interface)) {
+    return &midnam;
   }
   return NULL;
 }

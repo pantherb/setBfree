@@ -178,6 +178,7 @@ LV2OBJ= \
   ../src/tonegen.c \
   ../src/pgmParser.c \
   ../src/memstream.c \
+  ../src/midnam.c \
   ../b_whirl/eqcomp.c \
   ../b_whirl/whirl.c \
   ../b_overdrive/overdrive.c \

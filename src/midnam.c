@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include "global_inst.h"
 
-static void midnam_header(FILE *f) {
+static void midnam_header(FILE *f, char* model) {
 	fprintf(f,
 "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
 "<!DOCTYPE MIDINameDocument PUBLIC \"-//MIDI Manufacturers Association//DTD MIDINameDocument 1.0//EN\" \"http://www.midi.org/dtds/MIDINameDocument10.dtd\">\n"
@@ -13,8 +13,7 @@ static void midnam_header(FILE *f) {
 "  <Author>setBfree -- Robin Gareus</Author>\n"
 "  <MasterDeviceNames>\n"
 "    <Manufacturer>Pather B Music</Manufacturer>\n"
-"    <Model>setBfree</Model>\n"
-			);
+"    <Model>%s</Model>\n", model);
 }
 
 static void midnam_footer(FILE *f) {
@@ -82,9 +81,9 @@ static void midnam_channe_set(FILE *f, const char *name, const char *ctrl, int c
 			);
 }
 
-void save_midname(void *instp, FILE *f) {
+void save_midname(void *instp, FILE *f, char* model) {
 	b_instance *inst = (b_instance *) instp;
-	midnam_header(f);
+	midnam_header(f, model);
 	int u,l,p;
 	midi_channels(inst->midicfg, &u, &l, &p);
 

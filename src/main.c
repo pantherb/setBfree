@@ -847,7 +847,7 @@ int main (int argc, char * argv []) {
   if (midnam) {
     FILE *fp = fopen(midnam, "w");
     if (fp) {
-      save_midname(&inst, fp);
+      save_midname(&inst, fp, "setBfree");
       fclose(fp);
     } else {
       fprintf(stderr, "failed to write midnam to '%s'\n", midnam);
