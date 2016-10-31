@@ -1212,7 +1212,6 @@ run(LV2_Handle instance, uint32_t n_samples)
   }
 }
 
-#ifndef _WIN32
 static void
 cleanup(LV2_Handle instance)
 {
@@ -1222,6 +1221,7 @@ cleanup(LV2_Handle instance)
   free(instance);
 }
 
+#ifndef _WIN32
 static char*
 mn_file (LV2_Handle instance)
 {
