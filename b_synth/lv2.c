@@ -882,8 +882,10 @@ instantiate(const LV2_Descriptor*     descriptor,
       b3s->map = (LV2_URID_Map*)features[i]->data;
     } else if (!strcmp(features[i]->URI, LV2_WORKER__schedule)) {
       b3s->schedule = (LV2_Worker_Schedule*)features[i]->data;
+#ifndef _WIN32
     } else if (!strcmp (features[i]->URI, LV2_MIDNAM__update)) {
       b3s->midnam = (LV2_Midnam*)features[i]->data;
+#endif
     }
   }
 
@@ -1210,6 +1212,7 @@ run(LV2_Handle instance, uint32_t n_samples)
   }
 }
 
+#ifndef _WIN32
 static void
 cleanup(LV2_Handle instance)
 {
@@ -1249,22 +1252,27 @@ mn_free (char* v)
 {
   free (v);
 }
+#endif
 
 const void*
 extension_data(const char* uri)
 {
   static const LV2_Worker_Interface worker = { work, work_response, NULL };
   static const LV2_State_Interface  state  = { save, restore };
+#ifndef _WIN32
   static const LV2_Midnam_Interface midnam = { mn_file, mn_model, mn_free };
+#endif
   if (!strcmp(uri, LV2_WORKER__interface)) {
     return &worker;
   }
   else if (!strcmp(uri, LV2_STATE__interface)) {
     return &state;
   }
+#ifndef _WIN32
   else if (!strcmp (uri, LV2_MIDNAM__interface)) {
     return &midnam;
   }
+#endif
   return NULL;
 }
 
