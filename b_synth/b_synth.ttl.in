@@ -54,6 +54,7 @@
 		lv2:index 2 ;
 		lv2:symbol "outL" ;
 		lv2:name "Left Output" ;
+		pg:group pg:StereoGroup;
 		lv2:designation pg:left ;
 	],	
 	[
@@ -62,6 +63,7 @@
 		lv2:index 3 ;
 		lv2:symbol "outR" ;
 		lv2:name "Right Output" ;
+		pg:group pg:StereoGroup;
 		lv2:designation pg:right
 	];
 	@MODBRAND@
