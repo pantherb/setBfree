@@ -1252,7 +1252,7 @@ mn_file (LV2_Handle instance)
   fseek (f , 0 , SEEK_END);
   long int rsize = ftell (f);
   rewind(f);
-  out = (char*) malloc(rsize);
+  buf = (char*) malloc(rsize);
   fread(buf, sizeof(char), rsize, f);
   fclose(f);
   unlink(filename);
