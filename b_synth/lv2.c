@@ -882,10 +882,8 @@ instantiate(const LV2_Descriptor*     descriptor,
       b3s->map = (LV2_URID_Map*)features[i]->data;
     } else if (!strcmp(features[i]->URI, LV2_WORKER__schedule)) {
       b3s->schedule = (LV2_Worker_Schedule*)features[i]->data;
-#ifndef _WIN32
     } else if (!strcmp (features[i]->URI, LV2_MIDNAM__update)) {
       b3s->midnam = (LV2_Midnam*)features[i]->data;
-#endif
     }
   }
 
@@ -1221,7 +1219,6 @@ cleanup(LV2_Handle instance)
   free(instance);
 }
 
-#ifndef _WIN32
 static char*
 mn_file (LV2_Handle instance)
 {
@@ -1231,9 +1228,37 @@ mn_file (LV2_Handle instance)
   model[15] = 0;
   char* buf = NULL;
   size_t siz = 0;
+  LOCALEGUARD_START;
+
+#ifdef _WIN32
+  char temppath[MAX_PATH - 13];
+  char filename[MAX_PATH + 1];
+  if (0 == GetTempPath(sizeof(temppath), temppath))
+    return NULL;
+  if (0 == GetTempFileName(temppath, "sbfmidnam", 0, filename))
+    return NULL;
+  FILE *f = fopen(filename, "wb");
+#else
   FILE* f = open_memstream (&buf, &siz);
+#endif
+  if (!f) {
+    return NULL;
+  }
   save_midname (b3s->inst, f, model);
   fclose (f);
+
+#ifdef _WIN32
+  f = fopen(filename, "rb");
+  fseek (f , 0 , SEEK_END);
+  long int rsize = ftell (f);
+  rewind(f);
+  out = (char*) malloc(rsize);
+  fread(buf, sizeof(char), rsize, f);
+  fclose(f);
+  unlink(filename);
+#endif
+  LOCALEGUARD_END;
+
   return buf;
 }
 
@@ -1252,27 +1277,22 @@ mn_free (char* v)
 {
   free (v);
 }
-#endif
 
 const void*
 extension_data(const char* uri)
 {
   static const LV2_Worker_Interface worker = { work, work_response, NULL };
   static const LV2_State_Interface  state  = { save, restore };
-#ifndef _WIN32
   static const LV2_Midnam_Interface midnam = { mn_file, mn_model, mn_free };
-#endif
   if (!strcmp(uri, LV2_WORKER__interface)) {
     return &worker;
   }
   else if (!strcmp(uri, LV2_STATE__interface)) {
     return &state;
   }
-#ifndef _WIN32
   else if (!strcmp (uri, LV2_MIDNAM__interface)) {
     return &midnam;
   }
-#endif
   return NULL;
 }
 
