@@ -82,12 +82,12 @@ setBfree$(EXE_EXT): $(HEADERS) $(OBJS)
 		$(LDFLAGS) $(LOADLIBES)
 
 programd: program.c pgmParser.c program.h pgmParser.h main.h
-	$(CC) $(CPPFLAGS) $(CFLAGS) -Wall \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -Wall \
 		-DPRG_MAIN \
 		-o $(@) program.c pgmParser.c
 
 configd: cfgParser.c main.h
-	$(CC) $(CPPFLAGS) $(CFLAGS) -Wall \
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(LDFLAGS) -Wall \
 		-DCFG_MAIN \
 		-o $(@) cfgParser.c
 

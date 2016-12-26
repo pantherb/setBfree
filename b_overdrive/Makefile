@@ -51,7 +51,7 @@ overdrive.o: overdrive.c overdrive.h ../src/cfgParser.h ../src/midi.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o overdrive.o overdrive.c
 
 overmaker:$(OVMSRC) overmakerdefs.h
-	$(CC) -o $(@) $(OVMSRC) -lm
+	$(CC) $(LDFLAGS) -o $(@) $(OVMSRC) -lm
 
 overdrive: overmaker
 	./overmaker > overdrive.c
