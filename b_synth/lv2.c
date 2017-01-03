@@ -1266,7 +1266,7 @@ static char*
 mn_model (LV2_Handle instance)
 {
   B3S* b3s = (B3S*)instance;
-  char* rv = (char*) malloc (15 * sizeof (char));
+  char* rv = (char*) malloc (16 * sizeof (char));
   snprintf (rv, 16, "sbf-%p", b3s);
   rv[15] = 0;
   return rv;
