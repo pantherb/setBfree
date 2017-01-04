@@ -1,3 +1,6 @@
+2017-01-04 (0.8.4)  Robin Gareus <robin@gareus.org>
+* fix possible buffer overflow in LV midnam interface
+
 2016-12-30 (0.8.3)  Robin Gareus <robin@gareus.org>
 * support LV2 state#Dirty (inform host about changed internal settings)
 * add LV2 MidName interface (inform host about CCs)
