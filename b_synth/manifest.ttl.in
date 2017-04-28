@@ -5,4 +5,4 @@
 <http://gareus.org/oss/lv2/@LV2NAME@>
 	a lv2:Plugin ;
 	lv2:binary <@LV2NAME@@LIB_EXT@>  ;
-	rdfs:seeAlso <@LV2NAME@.ttl> .
+	rdfs:seeAlso <@LV2NAME@.ttl> @MODGUITTL@ .

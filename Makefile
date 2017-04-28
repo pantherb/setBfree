@@ -14,7 +14,11 @@ RW=$(abspath $(ROBTK))/
 export RW
 endif
 
-SUBDIRS = b_overdrive b_whirl b_reverb b_conv src b_synth ui
+ifneq ($(MOD),)
+  SUBDIRS = b_whirl b_synth
+else
+  SUBDIRS = b_overdrive b_whirl b_reverb b_conv src b_synth ui
+endif
 
 default: all
 

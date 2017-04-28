@@ -32,6 +32,7 @@
 
 #define B3W_URI "http://gareus.org/oss/lv2/b_whirl#simple"
 #define B3W_URI_EXT "http://gareus.org/oss/lv2/b_whirl#extended"
+#define B3W_URI_MOD "http://gareus.org/oss/lv2/b_whirl#mod"
 
 typedef enum {
 	B3W_INPUT = 0,
@@ -499,6 +500,29 @@ static void process (B3W* b3w, uint32_t n_samples, float const * const in, float
 	}
 }
 
+static void set_speed (B3W* b3w)
+{
+	if (b3w->o_rev_select == *b3w->rev_select) {
+		return;
+	}
+
+	if (b3w->flt[0].type && !b3w->horn_radius) {
+		// MOD version
+		const int v = (int) floorf (*b3w->rev_select);
+		useRevOption (b3w->whirl, v * 3 + v);
+	} else {
+		const float l = b3w->p_link_speed ? (*b3w->p_link_speed) : 0;
+		const int v = (int) floorf (*b3w->rev_select);
+		int h = v / 3; // 0: stop, 1: slow, 2: fast
+		int d = v % 3; // 0: stop, 1: slow, 2: fast
+		if (l <= -.5) { h = d; }
+		if (l >= 0.5) { d = h; }
+		useRevOption (b3w->whirl, h * 3 + d);
+	}
+
+	b3w->o_rev_select = *b3w->rev_select;
+}
+
 #define SETVALUE(VAR, NAME, PROC, FN) \
   if (b3w->NAME) { \
     if (b3w->o_##NAME != *(b3w->NAME)) { \
@@ -524,16 +548,7 @@ static void run (LV2_Handle instance, uint32_t n_samples) {
 	SETVALUE(drumAcc, drum_accel, , );
 	SETVALUE(drumDec, drum_decel, , );
 
-	if (b3w->o_rev_select != *b3w->rev_select) {
-		const float l = b3w->p_link_speed ? (*b3w->p_link_speed) : 0;
-		const int v = (int) floorf (*b3w->rev_select);
-		int h = v / 3; // 0: stop, 1: slow, 2: fast
-		int d = v % 3; // 0: stop, 1: slow, 2: fast
-		if (l <= -.5) { h = d; }
-		if (l >= 0.5) { d = h; }
-		useRevOption (b3w->whirl,h * 3 + d);
-		b3w->o_rev_select = *b3w->rev_select;
-	}
+	set_speed (b3w);
 
 	float* input = b3w->input;
 	float* outL = b3w->outL;
@@ -545,10 +560,12 @@ static void run (LV2_Handle instance, uint32_t n_samples) {
 
 		int need_fade = 0;
 
-		if (b3w->flt[0].type) { // extended version only
+		if (b3w->flt[0].type) { // extended and MOD variant
 			need_fade |= interpolate_filter (b3w, &b3w->flt[0]);
 			need_fade |= interpolate_filter (b3w, &b3w->flt[1]);
 			need_fade |= interpolate_filter (b3w, &b3w->flt[2]);
+		}
+		if (b3w->horn_radius) { // extended version only
 			need_fade |= reconfigure (b3w);
 		}
 
@@ -660,6 +677,17 @@ static const LV2_Descriptor descriptorExt = {
 	extension_data
 };
 
+static const LV2_Descriptor descriptorMOD = {
+	B3W_URI_MOD,
+	instantiate,
+	connect_port,
+	NULL,
+	run,
+	NULL,
+	cleanup,
+	extension_data
+};
+
 // fix for -fvisibility=hidden
 #undef LV2_SYMBOL_EXPORT
 #ifdef _WIN32
@@ -676,6 +704,8 @@ lv2_descriptor (uint32_t index)
 			return &descriptor;
 		case 1:
 			return &descriptorExt;
+		case 2:
+			return &descriptorMOD;
 		default:
 			return NULL;
 	}

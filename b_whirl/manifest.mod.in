@@ -1,0 +1,30 @@
+@prefix lv2:  <http://lv2plug.in/ns/lv2core#> .
+@prefix modgui: <http://moddevices.com/ns/modgui#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+<http://gareus.org/oss/lv2/b_whirl#mod>
+	a lv2:Plugin ;
+	lv2:binary <@LV2NAME@@LIB_EXT@>  ;
+	rdfs:seeAlso <@LV2NAME@-mod.ttl> ;
+	modgui:gui [
+		modgui:resourcesDirectory <modgui> ;
+		modgui:iconTemplate <modgui/icon-setbfree-whirl.html> ;
+		modgui:stylesheet <modgui/stylesheet-setbfree-whirl.css> ;
+		modgui:screenshot <modgui/screenshot-setbfree-whirl.png> ;
+		modgui:thumbnail <modgui/thumbnail-setbfree-whirl.png> ;
+		modgui:brand "x42" ;
+		modgui:label "setBfree Whirl" ;
+		modgui:port [
+			lv2:index 0 ;
+			lv2:symbol "rt_speed" ;
+			lv2:name "Motor Ac/Dc" ;
+		] , [
+			lv2:index 1 ;
+			lv2:symbol "hornlvl" ;
+			lv2:name "Horn Level" ;
+		] , [
+			lv2:index 2 ;
+			lv2:symbol "drumlvl" ;
+			lv2:name "Drum Level" ;
+		] ;
+	] .

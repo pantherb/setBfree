@@ -107,9 +107,11 @@ endif
 ifneq ($(MOD),)
 	MODBRAND=mod:brand \"x42\";
 	MODLABEL=mod:label \"$(MODNAME)\";
+	MODGUITTL=, <modgui.ttl>
 else
 	MODBRAND=
 	MODLABEL=
+	MODGUITTL=
 endif
 
 #LV2 / GL-GUI
@@ -124,7 +126,11 @@ else
   endif
 endif
 
-HAVE_UI=$(shell pkg-config --exists $(PKG_GL_LIBS) ftgl && echo $(FONT_FOUND))
+ifeq ($(MOD),)
+  HAVE_UI=$(shell pkg-config --exists $(PKG_GL_LIBS) ftgl && echo $(FONT_FOUND))
+else
+  HAVE_UI=no
+endif
 
 ifeq ($(LV2AVAIL)$(HAVE_UI)$(HAVE_IDLE), yesyesyes)
   UICFLAGS=-I..

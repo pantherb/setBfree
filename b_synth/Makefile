@@ -35,7 +35,7 @@ all: $(targets)
 lv2: manifest.ttl $(LV2NAME)$(LIB_EXT) $(LV2NAME).ttl
 
 manifest.ttl: manifest.ttl.in manifest.ui.ttl.in
-	sed "s/@LV2NAME@/$(LV2NAME)/;s/@LIB_EXT@/$(LIB_EXT)/" manifest.ttl.in > manifest.ttl
+	sed "s/@LV2NAME@/$(LV2NAME)/;s/@LIB_EXT@/$(LIB_EXT)/;s/@MODGUITTL@/$(MODGUITTL)/" manifest.ttl.in > manifest.ttl
 ifeq ($(HAVE_UI), yes)
 	sed "s/@LV2NAME@/$(LV2NAME)/;s/@LV2GUI@/$(LV2GUI)/;s/@LIB_EXT@/$(LIB_EXT)/;s/@UI_TYPE@/$(UI_TYPE)/" manifest.ui.ttl.in >> manifest.ttl
 endif
@@ -74,7 +74,12 @@ ifeq ($(LV2AVAIL), yes)
 	install -m755 $(LV2NAME)$(LIB_EXT) $(DESTDIR)$(lv2dir)/$(LV2NAME)
 	install -m644 manifest.ttl $(LV2NAME).ttl $(DESTDIR)$(lv2dir)/$(LV2NAME)
   ifeq ($(HAVE_UI), yes)
-	install -m755 $(LV2GUI)$(LIB_EXT) $(DESTDIR)$(lv2dir)/$(LV2NAME)
+	  install -m755 $(LV2GUI)$(LIB_EXT) $(DESTDIR)$(lv2dir)/$(LV2NAME)
+  endif
+  ifneq ($(MOD),)
+	  install -m644 modgui.ttl $(DESTDIR)$(lv2dir)/$(LV2NAME)
+	  install -d $(DESTDIR)$(lv2dir)/$(LV2NAME)/modgui
+	  install -t $(DESTDIR)$(lv2dir)/$(LV2NAME)/modgui modgui/*
   endif
 endif
 
@@ -82,6 +87,7 @@ uninstall:
 	rm -f $(DESTDIR)$(lv2dir)/$(LV2NAME)/*.ttl
 	rm -f $(DESTDIR)$(lv2dir)/$(LV2NAME)/$(LV2NAME)$(LIB_EXT)
 	rm -f $(DESTDIR)$(lv2dir)/$(LV2NAME)/$(LV2GUI)$(LIB_EXT)
+	rm -rf $(DESTDIR)$(lv2dir)/$(LV2NAME)/modgui
 	-rmdir $(DESTDIR)$(lv2dir)/$(LV2NAME)
 
 clean:

@@ -1,0 +1,192 @@
+/* STYLES FOR THE BOXY PEDAL */
+
+@import url(/fonts/nexa/stylesheet.css);
+@import url(/fonts/questrial/stylesheet.css);
+
+
+/* = CONTAINER
+================================================ */
+.mod-pedal-boxy{{{cns}}} {
+    background-position:center center;
+    background-repeat:no-repeat;
+    background-size:230px 431px;
+    height:431px;
+    position:absolute;
+    width:230px;
+    border-radius: 21px;
+}
+
+/* = PLUGIN'S AUTHOR
+================================================ */
+.mod-pedal-boxy{{{cns}}} .mod-plugin-brand {
+    right: 0;
+    left: 0;
+    position:absolute;
+    text-align:center;
+    top: 190px;
+    cursor:default;
+}
+
+.mod-pedal-boxy{{{cns}}} .mod-plugin-brand h1 {
+    font-family:"Nexa";
+    font-size:28px;
+    padding:0;
+    margin:0;
+}
+
+/* = PLUGIN'S NAME
+================================================ */
+.mod-pedal-boxy{{{cns}}} .mod-plugin-name {
+    left:30px;
+    overflow:hidden;
+    position:absolute;
+    right:30px;
+    text-align:center;
+    top:340px;
+}
+
+.mod-pedal-boxy{{{cns}}} .mod-plugin-name h1 {
+    font-family:"Questrial";
+    font-size:21px;
+    line-height:1;
+}
+
+/* = Label burn in
+================================================ */
+
+.mod-pedal-boxy{{{cns}}} .mod-plugin-brand h1,
+.mod-pedal-boxy{{{cns}}} .mod-plugin-name h1,
+.mod-pedal-boxy{{{cns}}} .mod-control-group span.mod-knob-title,
+.mod-pedal-boxy{{{cns}}} .mod-control-group span.mod-lever-labels,
+.mod-pedal-boxy{{{cns}}} .mod-control-group span.mod-lever-title
+{
+    color:#222 !important;
+    text-shadow: 0px -1px 1px #654321;
+}
+
+/* = LIGHT ON/OFF
+================================================ */
+.mod-pedal-boxy{{{cns}}} .mod-light {
+    background-position:center center;
+    background-repeat:no-repeat;
+    height:32px;
+    left:10px;
+    position:absolute;
+    right:10px;
+    top:235px;
+}
+
+
+/* = FOOTSWITCH
+================================================ */
+.mod-pedal-boxy{{{cns}}} .mod-footswitch {
+    background-image:url(/resources/footswitch.png{{{ns}}});
+    background-position:top center;
+    background-repeat:no-repeat;
+    background-size:auto 132px;
+    bottom: 95px;
+    left: 13px;
+    right: 13px;
+    cursor:pointer;
+    height:66px;
+    width: 66px;
+    margin: auto;
+    position:absolute !important;
+}
+.mod-pedal-boxy{{{cns}}} .mod-footswitch.on {
+    background-position: bottom center;
+}
+
+/* = KNOBS
+================================================ */
+.mod-pedal-boxy{{{cns}}} .mod-control-group {
+    margin:5px 20px !important;
+    position:relative;
+    text-align:center;
+    z-index:30;
+}
+
+.mod-pedal-boxy{{{cns}}} .mod-control-group .mod-lever,
+.mod-pedal-boxy{{{cns}}} .mod-control-group .mod-knob {
+    overflow:hidden;
+    position:relative;
+}
+
+.mod-pedal-boxy{{{cns}}} .mod-control-group .mod-lever > span.mod-lever-labels,
+.mod-pedal-boxy{{{cns}}} .mod-control-group .mod-lever > span.mod-lever-title,
+.mod-pedal-boxy{{{cns}}} .mod-control-group .mod-knob > span.mod-knob-title {
+    display:block;
+    left:0;
+    line-height:1;
+    margin:0;
+    overflow:hidden;
+    padding:0;
+    position:absolute;
+    right:0;
+    text-transform:uppercase;
+}
+
+.mod-pedal-boxy{{{cns}}} .mod-control-group .mod-lever > span.mod-lever-labels {
+    font-size:10px;
+    height:12px;
+    bottom:0px;
+}
+
+.mod-pedal-boxy{{{cns}}} .mod-control-group .mod-lever > span.mod-lever-title {
+    height:12px;
+    font-size:11px;
+    top:0px;
+    font-weight:bold;
+}
+
+.mod-pedal-boxy{{{cns}}} .mod-control-group .mod-knob > span.mod-knob-title {
+    height:24px;
+    font-size:11px;
+    bottom:0px;
+    font-weight:bold;
+}
+
+.mod-pedal-boxy{{{cns}}}.setbfree-whirl .mod-control-group .mod-lever .mod-lever-image {
+    background-image:url(/resources/leslieknob.png{{{ns}}});
+    background-repeat:no-repeat;
+    background-size:auto 23px;
+    height:23px;
+    width:106px;
+    margin:12px auto 0;
+}
+
+.mod-pedal-boxy{{{cns}}}.setbfree-whirl .mod-control-group .mod-knob .mod-knob-image {
+    background-image:url(/resources/gold.png{{{ns}}});
+    background-repeat:no-repeat;
+    background-size:auto 60px;
+    height:60px;
+    width:60px;
+    margin:0 auto;
+}
+
+.mod-pedal-boxy{{{cns}}}.setbfree-whirl .mod-control-group .mod-lever {
+    height:52px;
+    margin: 0 10px;
+}
+
+.mod-pedal-boxy{{{cns}}}.setbfree-whirl .mod-control-group .mod-knob {
+    display:inline-block;
+    height:88px;
+    margin: 0 10px;
+}
+
+/* = ENUMERATED LIST
+================================================ */
+.mod-pedal-boxy{{{cns}}} .mod-lever-group {
+    height:62px;
+    margin:20px auto 5px !important;
+    position:relative;
+    width:185px;
+    z-index:35;
+}
+
+/* = BACKGROUND IMAGES - Color of the pedal
+================================================ */
+.mod-pedal-boxy{{{cns}}}.setbfree-whirl {
+    background-image:url(/resources/wood1.png{{{ns}}});
+}

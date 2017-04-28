@@ -109,7 +109,5 @@
 		rdf:value 2.0 ;
 	];
 	];
-	@MODBRAND@
-	@MODLABEL@
 	rdfs:comment "A rotating loudspeaker emulator designed to imitate the sound of device that brought world-wide fame to the name of Don Leslie" ;
 	.

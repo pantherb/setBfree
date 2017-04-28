@@ -1,0 +1,124 @@
+@import url(/fonts/nexa/stylesheet.css);
+@import url(/fonts/questrial/stylesheet.css);
+
+.mod-pedal-boxy{{{cns}}} {
+    background-position:center center;
+    background-repeat:no-repeat;
+    background-size:230px 431px;
+    height:431px;
+    position:absolute;
+    width:230px;
+    border-radius: 21px;
+}
+
+.mod-pedal-boxy{{{cns}}}.mod-boxy50 {
+    background-size:301px 315px;
+    height:315px;
+    width:301px;
+}
+
+.mod-pedal-boxy{{{cns}}}.mod-boxy50 .mod-pedal-input,
+.mod-pedal-boxy{{{cns}}}.mod-boxy50 .mod-pedal-output {
+    top: 66px;
+}
+
+.mod-pedal-boxy{{{cns}}} .mod-plugin-brand {
+    left:0;
+    position:absolute;
+    right:0;
+    text-align:center;
+    top:160px;
+}
+
+.mod-pedal-boxy{{{cns}}} .mod-plugin-brand h1 {
+    border-color:#000;
+    border-radius:12px;
+    border-style:solid;
+    border-width:4px;
+    display:inline-block;
+    font-family:"Nexa";
+    font-size:32px;
+    padding:3px 9px 0;
+}
+
+.mod-pedal-boxy{{{cns}}}.mod-boxy50 .mod-plugin-brand {
+  top:16px;
+}
+
+.mod-pedal-boxy{{{cns}}} .mod-plugin-name {
+    left:30px;
+    overflow:hidden;
+    position:absolute;
+    right:30px;
+    text-align:center;
+    top:340px;
+}
+
+.mod-pedal-boxy{{{cns}}} .mod-plugin-name h1 {
+    font-family:"Questrial";
+    font-size:21px;
+    line-height:1;
+}
+
+.mod-pedal-boxy{{{cns}}}.mod-boxy50 .mod-plugin-name {
+  top:230px;
+}
+
+.mod-pedal-boxy{{{cns}}} .mod-light {
+    background-position:center center;
+    background-repeat:no-repeat;
+    height:32px;
+    left:10px;
+    position:absolute;
+    right:10px;
+    top:235px;
+}
+
+.mod-pedal-boxy{{{cns}}}.mod-boxy50 .mod-light {
+  top:105px;
+}
+
+.mod-pedal-boxy{{{cns}}}.mod-one-footswitch-presets .mod-light {
+  top:120px;
+}
+
+.mod-pedal-boxy{{{cns}}} .mod-footswitch {
+    background-image:url(/resources/footswitch.png{{{ns}}});
+    background-position:top center;
+    background-repeat:no-repeat;
+    background-size:auto 132px;
+    bottom: 95px;
+    left: 13px;
+    right: 13px;
+    cursor:pointer;
+    height:66px;
+    width: 66px;
+    margin: auto;
+    position:absolute !important;
+}
+
+.mod-pedal-boxy{{{cns}}} .mod-footswitch.on {
+    background-position: bottom center !important;
+}
+
+.mod-pedal-boxy{{{cns}}}.mod-boxy50 .mod-footswitch {
+    top:140px;
+}
+
+.mod-pedal-boxy{{{cns}}} .top {
+    margin-top:0px !important;
+}
+
+.mod-pedal-boxy{{{cns}}}.mod-boxy50.mod-wood3 {
+    background-image:url(/resources/wood3.png{{{ns}}});
+}
+
+.mod-pedal-boxy{{{cns}}}.mod-wood3 h1
+{
+    color:white;
+}
+
+.mod-pedal-boxy{{{cns}}}.mod-wood3 h1
+{
+    border-color:white;
+}

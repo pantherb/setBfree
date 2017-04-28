@@ -1,0 +1,13 @@
+@prefix modgui: <http://moddevices.com/ns/modgui#> .
+@prefix lv2:    <http://lv2plug.in/ns/lv2core#> .
+
+<http://gareus.org/oss/lv2/b_synth>
+    modgui:gui [
+        modgui:resourcesDirectory <modgui> ;
+        modgui:iconTemplate <modgui/icon-setbfree-dsp-tonewheel-organ.html> ;
+        modgui:stylesheet <modgui/stylesheet-setbfree-dsp-tonewheel-organ.css> ;
+        modgui:screenshot <modgui/screenshot-setbfree-dsp-tonewheel-organ.png> ;
+        modgui:thumbnail <modgui/thumbnail-setbfree-dsp-tonewheel-organ.png> ;
+        modgui:brand "x42" ;
+        modgui:label "setBfree" ;
+    ] .
