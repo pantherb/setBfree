@@ -133,7 +133,7 @@ map_setbfree_uris(LV2_URID_Map* map, setBfreeURIs* uris)
 	uris->sb3_keyarrary      = map->map(map->handle, SB3__karray);
 	uris->sb3_cfgstr         = map->map(map->handle, SB3__cfgstr);
 	uris->sb3_cfgkv          = map->map(map->handle, SB3__cfgkv);
-	uris->state_Changed      = map->map(map->handle, "http://lv2plug.in/ns/ext/state/#StateChanged");
+	uris->state_Changed      = map->map(map->handle, "http://lv2plug.in/ns/ext/state#StateChanged");
 }
 
 static inline void
