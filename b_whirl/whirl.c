@@ -470,11 +470,6 @@ static void zeroBuffers (struct b_whirl *w) {
 	memset(w->adx0, 0, sizeof(float) * AGBUF);
 	memset(w->adx1, 0, sizeof(float) * AGBUF);
 	memset(w->adx2, 0, sizeof(float) * AGBUF);
-
-	memset(w->HLbuf, 0, WHIRL_BUF_SIZE_SAMPLES);
-	memset(w->HRbuf, 0, WHIRL_BUF_SIZE_SAMPLES);
-	memset(w->DLbuf, 0, WHIRL_BUF_SIZE_SAMPLES);
-	memset(w->DRbuf, 0, WHIRL_BUF_SIZE_SAMPLES);
 }
 
 void computeOffsets (struct b_whirl *w) {
