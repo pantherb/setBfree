@@ -523,11 +523,11 @@ int bindToProgram (void * pp,
 
   case pr_OverdriveSelect:
     if (isNegatory (val)) {
-      PGM->overdriveSelect = TRUE;
+      PGM->overdriveSelect = FALSE;
       PGM->flags[0] |= (FL_INUSE|FL_OVRSEL);
     }
     else if (isAffirmative (val)) {
-      PGM->overdriveSelect = FALSE;
+      PGM->overdriveSelect = TRUE;
       PGM->flags[0] |= (FL_INUSE|FL_OVRSEL);
     }
     else {
@@ -805,8 +805,8 @@ void installProgram (void *instance, unsigned char uc) {
       }
 
       if (flags0 & FL_OVRSEL) {
-	//setClean (inst->preamp, PGM->overdriveSelect);
-	callMIDIControlFunction(inst->midicfg, "overdrive.enable", PGM->overdriveSelect ? 0 : 127);
+	//setClean (inst->preamp, PGM->overdriveSelect == TRUE ? 0 : 1);
+	callMIDIControlFunction(inst->midicfg, "overdrive.enable", PGM->overdriveSelect ? 127 : 0);
       }
 
       if (flags0 & FL_ROTENA) {
@@ -1038,7 +1038,7 @@ int formatProgram(Programme *p, char *out, int maxlen) {
     len += snprintf(out+len, maxlen-len, "\n");
   }
   if (p->flags[0] & FL_OVRSEL) {
-    len += snprintf(out+len, maxlen-len, "overdrive: %s\n", p->overdriveSelect ? "bypass" : "on");
+    len += snprintf(out+len, maxlen-len, "overdrive: %s\n", p->overdriveSelect ? "on" : "off");
   }
   if (p->flags[0] & FL_ROTSPS) {
     len += snprintf(out+len, maxlen-len, "leslie: ");
@@ -1098,7 +1098,7 @@ static void save_pgm_state_cb(int fnid, const char *key, const char *kv, unsigne
   else if (!strcmp(key, "percussion.volume"   )) {PGM->percussionVolume = val/127.0; PGM->flags[0] |= FL_PRCVOL;}
   else if (!strcmp(key, "percussion.decay"    )) {PGM->percussionSpeed = val > 63 ? TRUE : FALSE; PGM->flags[0] |= FL_PRCSPD;}
   else if (!strcmp(key, "percussion.harmonic" )) {PGM->percussionHarmonic = val > 63 ? TRUE : FALSE; PGM->flags[0] |= FL_PRCHRM;}
-  else if (!strcmp(key, "overdrive.enable"    )) {PGM->overdriveSelect = val > 63 ? FALSE : TRUE; PGM->flags[0] |= FL_OVRSEL;}
+  else if (!strcmp(key, "overdrive.enable"    )) {PGM->overdriveSelect = val > 63 ? TRUE : FALSE; PGM->flags[0] |= FL_OVRSEL;}
   else if (!strcmp(key, "reverb.mix"          )) {PGM->reverbMix = val/127.0; PGM->flags[0] |= FL_RVBMIX;}
   else if (!strcmp(key, "rotary.speed-select" )) {
     const int hr = (val / 45) % 3; // horn 0:off, 1:chorale  2:tremolo
@@ -1188,7 +1188,7 @@ void writeProgramm(int pgmNr, Programme *p, const char *sep, FILE * fp) {
   if (p->flags[0] & FL_PRCVOL) { fprintf(fp, "%s, percvol=%s", sep, p->percussionVolume ? "soft" : "normal"); }
   if (p->flags[0] & FL_PRCSPD) { fprintf(fp, "%s, percspeed=%s", sep, p->percussionSpeed ? "fast" : "slow"); }
   if (p->flags[0] & FL_PRCHRM) { fprintf(fp, "%s, percharm=%s", sep, p->percussionHarmonic ? "2nd" : "3rd"); }
-  if (p->flags[0] & FL_OVRSEL) { fprintf(fp, "%s, overdrive=%s", sep, p->overdriveSelect ? "off" : "on"); }
+  if (p->flags[0] & FL_OVRSEL) { fprintf(fp, "%s, overdrive=%s", sep, p->overdriveSelect ? "on" : "off"); }
   if (p->flags[0] & FL_RVBMIX) { LOCALEGUARD_START; fprintf(fp, "%s, reverbmix=%f", sep, p->reverbMix); LOCALEGUARD_END;}
   if (p->flags[0] & FL_ROTSPS) {
     fprintf(fp, "%s, rotaryspeed=", sep);
