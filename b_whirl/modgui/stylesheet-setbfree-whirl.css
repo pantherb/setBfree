@@ -81,7 +81,7 @@
 ================================================ */
 .mod-pedal-boxy{{{cns}}} .mod-footswitch {
     background-image:url(/resources/footswitch.png{{{ns}}});
-    background-position:top center;
+    background-position:bottom center;
     background-repeat:no-repeat;
     background-size:auto 132px;
     bottom: 95px;
@@ -94,7 +94,7 @@
     position:absolute !important;
 }
 .mod-pedal-boxy{{{cns}}} .mod-footswitch.on {
-    background-position: bottom center;
+    background-position: top center;
 }
 
 /* = KNOBS
