@@ -1004,7 +1004,7 @@ int whirlConfig (struct b_whirl *w, ConfigContext * cfg) {
 
 #ifdef __ARMEL__
 static inline float x_mod1 (const float f) {
-	return ((unsigned int)(f * 65536.f) & 65535) / 65536.f;
+	return ((unsigned int)(f * 8388608.f) & 8388607) / 8388608.f; // 2^23
 }
 
 static inline unsigned int x_iroundf (const float f) {
