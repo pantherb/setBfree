@@ -562,7 +562,7 @@ static int remove_CC_map (void *mcfg, int chn, unsigned char cc) {
     ctrlUse = m->ctrlUseA;
     ccChn = m->rcvChA;
   } else if (chn == m->rcvChB) {
-    ctrlUse = m->ctrlUseA;
+    ctrlUse = m->ctrlUseB;
     ccChn = m->rcvChB;
   } else if (chn == m->rcvChC) {
     ctrlUse = m->ctrlUseC;
