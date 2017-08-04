@@ -1,3 +1,9 @@
+2017-08-04 (0.8.5)  Robin Gareus <robin@gareus.org>
+* add MOD UIs for organ and leslie
+* fix ARM optimization (chorale speed may become be stuck)
+* fix MIDI config CC (lower manual assignments cleared upper manual)
+* fix LV2 StateChanged URI
+
 2017-01-04 (0.8.4)  Robin Gareus <robin@gareus.org>
 * fix possible buffer overflow in LV midnam interface
 
