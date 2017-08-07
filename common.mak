@@ -83,6 +83,7 @@ else
     LV2LDFLAGS=-Wl,-Bstatic -Wl,-Bdynamic
     LIB_EXT=.so
     PKG_GL_LIBS=glu gl
+    GLUICFLAGS+=-pthread
     GLUILIBS=-lX11
     UI_TYPE=X11UI
     PUGL_SRC=../pugl/pugl_x11.c
