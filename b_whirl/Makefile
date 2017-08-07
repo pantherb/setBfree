@@ -119,6 +119,6 @@ uninstall:
 	-rmdir $(DESTDIR)$(bindir)
 
 clean:
-	rm -f *.o manifest.ttl $(LV2NAME)$(LIB_EXT) b_whirl-configurable.ttl $(LV2GUI)$(LIB_EXT) x42-whirl$(EXE_EXT)
+	rm -f *.o manifest.ttl b_whirl.ttl b_whirl-mod.ttl $(LV2NAME)$(LIB_EXT) b_whirl-configurable.ttl $(LV2GUI)$(LIB_EXT) x42-whirl$(EXE_EXT)
 
 .PHONY: clean all install uninstall
