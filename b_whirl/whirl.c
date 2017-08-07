@@ -207,13 +207,13 @@ static void revControlAll (void *d, unsigned char u) {
 
 static void revControl (void *d, unsigned char u) {
 	struct b_whirl *w = (struct b_whirl *) d;
-	setRevSelect (w, (int) (u / 32)); // 3 modes only - stop, slow, fast, stop
+	setRevSelect (w, (int) (u / 43)); // 3 modes only - fast, stop, slow
 }
 
 void setWhirlSustainPedal (void *d, unsigned char u) {
 	struct b_whirl *w = (struct b_whirl *) d;
 	if (u) {
-		setRevSelect (w, (w->revSelect == 1) ? 2 : 1);
+		setRevSelect (w, (w->revSelect == 0) ? 2 : 0);
 	}
 }
 
@@ -243,10 +243,9 @@ void computeRotationSpeeds (struct b_whirl *w) {
 	setRevOption (w, 1, hstop, dslow);
 	setRevOption (w, 0, hstop, dstop);
 
-	w->revselects[0] = 0; /* stop */
-	w->revselects[1] = 4; /* both slow */
+	w->revselects[0] = 4; /* both slow */
+	w->revselects[1] = 0; /* stop */
 	w->revselects[2] = 8; /* both fast */
-	w->revselects[3] = 4; /* both slow */
 	setRevSelect(w, w->revSelect);
 }
 

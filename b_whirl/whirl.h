@@ -107,7 +107,7 @@ struct b_whirl {
   float drumAcc;
   float drumDec;
 
-#define revSelectEnd (4)
+#define revSelectEnd (3)
   RevControl revoptions[9];
   int revselects[revSelectEnd];
   int revSelect;
