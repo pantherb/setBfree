@@ -1,0 +1,3 @@
+debian/*.desktop usr/share/applications/
+doc/setBfree.png usr/share/pixmaps/
+doc/x42-whirl.png usr/share/pixmaps/
