@@ -5,6 +5,7 @@ GenericName=DSP tonewheel organ
 GenericName[fr]=Orgue à roues phoniques
 Comment=MIDI-controlled, software synthesizer for JACK and LV2
 Comment[fr]=Synthétiseur logiciel contrôlé par MIDI, pour JACK et LV2
+Keywords=audio;sound;jackd;midi;synth;
 Icon=setBfree
 Exec=setBfreeUI
 Terminal=false
