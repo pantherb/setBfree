@@ -48,7 +48,7 @@ $(LV2NAME)$(LIB_EXT): lv2.c overdrive.o
 	  -shared $(LV2LDFLAGS) $(LDFLAGS)
 
 overdrive.o: overdrive.c overdrive.h ../src/cfgParser.h ../src/midi.h
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c -o overdrive.o overdrive.c
+	$(CC) $(CPPFLAGS) $(CFLAGS) -fvisibility=hidden -c -o overdrive.o overdrive.c
 
 overmaker:$(OVMSRC) overmakerdefs.h
 	$(CC) $(LDFLAGS) -o $(@) $(OVMSRC) -lm
