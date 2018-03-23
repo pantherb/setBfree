@@ -79,6 +79,12 @@ An excellent tutorial to get started with JACK can be found on the
 [libremusicproduction](http://libremusicproduction.com/articles/demystifying-jack-%E2%80%93-beginners-guide-getting-started-jack)
 website.
 
+Detailed documentation
+----------------------
+
+For a detailed documentation, run:
+
+	setBfree -H
 
 Internal Signal Flow
 --------------------
