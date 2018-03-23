@@ -21,7 +21,7 @@
 #define _GNU_SOURCE
 #endif
 
-#define ANIMSTEPS (35)
+#define ANIMSTEPS (2)
 
 #ifdef ANIMSTEPS
 #define ANDNOANIM && ui->openanim == 0
