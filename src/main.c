@@ -123,12 +123,14 @@ static int synth_ready = 0;
 
 b_instance inst;
 
-void mixdown (float **inout, const float **in2, int nchannels, int nsamples) {
+#ifdef HAVE_ZITACONVOLVE
+static void mixdown (float **inout, const float **in2, int nchannels, int nsamples) {
   int c,i;
   for (c=0; c < nchannels; c++)
     for (i=0; i < nsamples; i++)
       inout[c][i] += in2[c][i];
 }
+#endif
 
 void cleanup() {
   if (j_client) {
