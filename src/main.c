@@ -112,6 +112,7 @@ int    SampleRateI = 48000;
 static jack_client_t *j_client = NULL;
 static jack_port_t **j_output_port;
 static jack_port_t  *jack_midi_port = NULL;
+static jack_port_t  *jack_midi_output = NULL;
 static jack_default_audio_sample_t **j_output_bufferptrs;
 static jack_default_audio_sample_t bufJ [2][BUFFER_SIZE_SAMPLES];
 #ifdef HAVE_ZITACONVOLVE
@@ -130,6 +131,36 @@ static void mixdown (float **inout, const float **in2, int nchannels, int nsampl
       inout[c][i] += in2[c][i];
 }
 #endif
+
+
+#define JACK_MIDI_QUEUE_SIZE (256)
+
+typedef struct my_midi_event {
+    size_t size;
+    jack_midi_data_t buffer[3];
+} my_midi_event_t;
+
+static my_midi_event_t event_queue[JACK_MIDI_QUEUE_SIZE];
+static int queued_events_start = 0;
+static int queued_events_end = 0;
+
+static void mctl_cb (int fnid, const char *fn, unsigned char val, midiCCmap *mm, void *arg) {
+  while (mm) {
+
+    // printf("MIDI FEEDBACK chn:%d param:%d val:%d\n", mm->channel, mm->param, val);
+
+    if (((queued_events_start + 1) % JACK_MIDI_QUEUE_SIZE) == queued_events_end) {
+      return;
+    }
+    event_queue[queued_events_start].size = 3;
+    event_queue[queued_events_start].buffer[0] = 0xb0 | (mm->channel & 0x0f);
+    event_queue[queued_events_start].buffer[1] = (mm->param & 0x7f);
+    event_queue[queued_events_start].buffer[2] = (val & 0x7f);
+    queued_events_start = (queued_events_start + 1) % JACK_MIDI_QUEUE_SIZE;
+
+    mm = mm->next;
+  }
+}
 
 void cleanup() {
   if (j_client) {
@@ -161,8 +192,14 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
   int i;
 
   void *jack_midi_inbuf = NULL;
+  void *jack_midi_outbuf = NULL;
   int midi_events = 0;
   jack_nframes_t midi_tme_proc = 0;
+
+  if (jack_midi_output) {
+    jack_midi_outbuf = jack_port_get_buffer(jack_midi_output, nframes);
+    jack_midi_clear_buffer(jack_midi_outbuf);
+  }
 
   if (!synth_ready) {
     for (i=0;i<AUDIO_CHANNELS;i++) {
@@ -243,6 +280,17 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
     }
   }
 
+  if (jack_midi_output && nframes > 0) {
+    while (queued_events_end != queued_events_start) {
+      jack_midi_event_write(jack_midi_outbuf,
+	  nframes - 1,
+	  event_queue[queued_events_end].buffer,
+	  event_queue[queued_events_end].size
+	  );
+      queued_events_end = (queued_events_end + 1) % JACK_MIDI_QUEUE_SIZE;
+    }
+  }
+
   return(0);
 }
 
@@ -284,8 +332,12 @@ int open_jack(void) {
 	jack_client_close (j_client);
 	return(1);
     }
+    jack_midi_output = jack_port_register(j_client, "midi_out", JACK_DEFAULT_MIDI_TYPE, JackPortIsOutput, 0);
   }
 
+  if (jack_midi_output) {
+    setControlFunctionCallback (inst.midicfg, mctl_cb, NULL);
+  }
 
   jack_srate_callback(jack_get_sample_rate(j_client),NULL); // force geting samplerate
 
