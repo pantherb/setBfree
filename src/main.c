@@ -100,7 +100,6 @@ static const char *portnames[AUDIO_CHANNELS] = {
   "out_left", "out_right"
 };
 
-static const char *midiport = "midi_in";
 static const char *jack_client_name = "setBfree";
 
 static float bufA [BUFFER_SIZE_SAMPLES];
@@ -112,7 +111,7 @@ int    SampleRateI = 48000;
 
 static jack_client_t *j_client = NULL;
 static jack_port_t **j_output_port;
-static jack_port_t  *jack_midi_port;
+static jack_port_t  *jack_midi_port = NULL;
 static jack_default_audio_sample_t **j_output_bufferptrs;
 static jack_default_audio_sample_t bufJ [2][BUFFER_SIZE_SAMPLES];
 #ifdef HAVE_ZITACONVOLVE
@@ -161,7 +160,7 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
   jack_default_audio_sample_t **out = j_output_bufferptrs;
   int i;
 
-  void *jack_midi_buf = NULL;
+  void *jack_midi_inbuf = NULL;
   int midi_events = 0;
   jack_nframes_t midi_tme_proc = 0;
 
@@ -174,8 +173,8 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
   }
 
   if (use_jack_midi) {
-    jack_midi_buf = jack_port_get_buffer(jack_midi_port, nframes);
-    midi_events = jack_midi_get_event_count(jack_midi_buf);
+    jack_midi_inbuf = jack_port_get_buffer(jack_midi_port, nframes);
+    midi_events = jack_midi_get_event_count(jack_midi_inbuf);
   }
 
   for (i=0;i<AUDIO_CHANNELS;i++) {
@@ -193,7 +192,7 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
       if (use_jack_midi) {
 	for (i=0; i<midi_events; i++) {
 	  jack_midi_event_t ev;
-	  jack_midi_event_get(&ev, jack_midi_buf, i);
+	  jack_midi_event_get(&ev, jack_midi_inbuf, i);
 	  if (ev.time >= written && ev.time < (written + BUFFER_SIZE_SAMPLES))
 	    parse_raw_midi_data(arg, ev.buffer, ev.size);
 	}
@@ -238,7 +237,7 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
      */
     for (i=0; i<midi_events; i++) {
       jack_midi_event_t ev;
-      jack_midi_event_get(&ev, jack_midi_buf, i);
+      jack_midi_event_get(&ev, jack_midi_inbuf, i);
       if (ev.time >= midi_tme_proc)
 	parse_raw_midi_data(arg, ev.buffer, ev.size);
     }
@@ -279,7 +278,7 @@ int open_jack(void) {
   }
 
   if (use_jack_midi) { // use JACK-midi
-    jack_midi_port = jack_port_register(j_client, midiport, JACK_DEFAULT_MIDI_TYPE, JackPortIsInput , 0);
+    jack_midi_port = jack_port_register(j_client, "midi_in", JACK_DEFAULT_MIDI_TYPE, JackPortIsInput, 0);
     if (jack_midi_port == NULL) {
       fprintf(stderr, "can't register jack-midi-port\n");
 	jack_client_close (j_client);
