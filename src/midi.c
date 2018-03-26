@@ -375,6 +375,11 @@ static void assignMIDIControllerFunction (ctrl_function *vec,
   }
 }
 
+unsigned int getCtrlFlag (void *mcfg, uint8_t channel, uint8_t param) {
+  struct b_midicfg * m = (struct b_midicfg *) mcfg;
+  return m->ctrlflg[channel][param];
+}
+
 /*
  * 26-sep-2004/FK This is the entry point for modules that wish to register
  * functions that accept MIDI controller data. Functions entered through this
@@ -1310,7 +1315,7 @@ static void dumpCCAssigment(FILE * fp, unsigned char *ctrl, midiccflags_t *flags
   fprintf(fp,"  Controller | Function \n");
   for (i=0;i<127;++i) {
     if (ctrl[i] != 255) {
-      fprintf(fp,"     %03d     | %s %s\n", ctrl[i], ccFuncNames[i], (flags[i]&1)?"-":"");
+      fprintf(fp,"     %03d     | %s %s\n", ctrl[i], ccFuncNames[i], (flags[ctrl[i]] & MFLAG_INV)?"-":"");
     }
   }
 }

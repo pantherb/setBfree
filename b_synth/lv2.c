@@ -276,13 +276,17 @@ static void mctl_cb(int fnid, const char *fn, unsigned char val, midiCCmap *mm, 
 #endif
   if (b3s->midiout && mm) {
     while (mm) {
+      unsigned char v = val & 0x7f;
+      if (getCtrlFlag (b3s->inst->midicfg, mm->channel, mm->param) & MFLAG_INV) {
+	v = 127 - v;
+      }
 #ifdef DEBUGPRINT
-      fprintf(stderr, "MIDI FEEDBACK %d %d %d\n", mm->channel, mm->param, val);
+      fprintf(stderr, "MIDI FEEDBACK %d %d %d\n", mm->channel, mm->param, v);
 #endif
       uint8_t msg[3];
       msg[0] = 0xb0 | (mm->channel&0x0f); // Control Change
       msg[1] = mm->param;
-      msg[2] = val;
+      msg[2] = v;
       forge_midimessage(&b3s->forge, &b3s->uris, msg, 3);
       mm = mm->next;
     }

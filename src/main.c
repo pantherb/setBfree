@@ -147,7 +147,12 @@ static int queued_events_end = 0;
 static void mctl_cb (int fnid, const char *fn, unsigned char val, midiCCmap *mm, void *arg) {
   while (mm) {
 
-    // printf("MIDI FEEDBACK chn:%d param:%d val:%d\n", mm->channel, mm->param, val);
+    unsigned char v = val & 0x7f;
+    if (getCtrlFlag (inst.midicfg, mm->channel, mm->param) & MFLAG_INV) {
+      v = 127 - v;
+    }
+
+    // printf("MIDI FEEDBACK chn:%d param:%d val:%d\n", mm->channel, mm->param, v);
 
     if (((queued_events_start + 1) % JACK_MIDI_QUEUE_SIZE) == queued_events_end) {
       return;
@@ -155,7 +160,7 @@ static void mctl_cb (int fnid, const char *fn, unsigned char val, midiCCmap *mm,
     event_queue[queued_events_start].size = 3;
     event_queue[queued_events_start].buffer[0] = 0xb0 | (mm->channel & 0x0f);
     event_queue[queued_events_start].buffer[1] = (mm->param & 0x7f);
-    event_queue[queued_events_start].buffer[2] = (val & 0x7f);
+    event_queue[queued_events_start].buffer[2] = v;
     queued_events_start = (queued_events_start + 1) % JACK_MIDI_QUEUE_SIZE;
 
     mm = mm->next;

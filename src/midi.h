@@ -32,6 +32,8 @@ enum { // 1,2,4,8,.. - adjust ctrlflg once >8 to uint16_t
   MFLAG_INV = 1,
 };
 
+unsigned int getCtrlFlag (void *mcfg, uint8_t channel, uint8_t param);
+
 void useMIDIControlFunction (void *m, const char * cfname, void (* f) (void *, unsigned char), void *d);
 void callMIDIControlFunction (void *m, const char * cfname, unsigned char val);
 void notifyControlChangeByName (void *mcfg, const char * cfname, unsigned char val);
