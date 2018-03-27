@@ -108,8 +108,8 @@ static const char * ccFuncNames[] = {
   "vibrato.upper",		/* off/on */
   "vibrato.lower",		/* off/on */
 
-  "swellpedal1",		/* Volume, for primary ctrlr (mod wheel) */
-  "swellpedal2",		/* Volume, for secondary ctrlr (expression) */
+  "swellpedal1",		/* Volume, for primary controller */
+  "swellpedal2",		/* Volume, for secondary controller */
 
   "rotary.speed-preset",	/* stop, slow, fast, stop */
   "rotary.speed-toggle",	/* sustain pedal */
@@ -832,35 +832,15 @@ static void loadCCMap (struct b_midicfg * m,
  * default. Maintaining a static default in source becomes much to odious
  * when things move around.
  * What we do is that we load the tables ctrlUseA, ctrlUseB and ctrlUseC
+ *
+ * see also
+ * http://wiki.keyboardpartner.de/index.php?title=Using_HX3_with_MIDI_controllers
  */
 void midiPrimeControllerMapping (void *mcfg) {
   struct b_midicfg * m = (struct b_midicfg *) mcfg;
 
-  loadCCMap (m, "swellpedal1",  1, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);
-  loadCCMap (m, "swellpedal2", 11, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);
-
-  loadCCMap (m, "xov.ctl_biased",      3, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "xov.ctl_biased_fb",   9, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "xov.ctl_biased_fb2", 14, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "xov.ctl_biased_gfb", 15, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "xov.ctl_sagtobias",  20, m->ctrlUseA, NULL, NULL);
-
-  loadCCMap (m, "overdrive.inputgain",      21, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "overdrive.outputgain",     22, m->ctrlUseA, NULL, NULL);
-
-  loadCCMap (m, "whirl.drum.filter.type", 23, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "whirl.drum.filter.hz",   24, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "whirl.drum.filter.q",    25, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "whirl.drum.filter.gain", 26, m->ctrlUseA, NULL, NULL);
-
-  loadCCMap (m, "whirl.horn.filter.a.type", 27, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "whirl.horn.filter.a.hz",   28, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "whirl.horn.filter.a.q",    29, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "whirl.horn.filter.a.gain", 30, m->ctrlUseA, NULL, NULL);
-
-  /* 32-63 are least significant bits of controller 0-31 */
-
-  loadCCMap (m, "rotary.speed-toggle", 64, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);
+  loadCCMap (m, "swellpedal1",       7, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);
+  loadCCMap (m, "swellpedal2",      11, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);
 
   loadCCMap (m, "upper.drawbar16",  70, m->ctrlUseA, NULL, NULL);
   loadCCMap (m, "upper.drawbar513", 71, m->ctrlUseA, NULL, NULL);
@@ -892,31 +872,31 @@ void midiPrimeControllerMapping (void *mcfg) {
   loadCCMap (m, "pedal.drawbar113", 77, NULL, NULL, m->ctrlUseC);
   loadCCMap (m, "pedal.drawbar1",   78, NULL, NULL, m->ctrlUseC);
 
+  loadCCMap (m, "rotary.speed-preset",  1, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);
+  loadCCMap (m, "rotary.speed-toggle", 64, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);
+
+  loadCCMap (m, "reverb.mix",          91, m->ctrlUseA, NULL, NULL);
+
+  loadCCMap (m, "percussion.enable",   66, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);
   loadCCMap (m, "percussion.enable",   80, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "percussion.decay",    81, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "percussion.harmonic", 82, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "percussion.volume",   81, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "percussion.decay",    82, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "percussion.harmonic", 83, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap (m, "vibrato.knob",    83, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "vibrato.routing", 92, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "vibrato.routing",     95, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "vibrato.knob",        92, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "vibrato.lower",       30, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "vibrato.upper",       31, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap (m, "whirl.horn.filter.b.type", 85, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "whirl.horn.filter.b.hz",   86, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "whirl.horn.filter.b.q",    87, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "whirl.horn.filter.b.gain", 88, m->ctrlUseA, NULL, NULL);
 
-#ifdef HORN_COMB_FILTER // disabled in b_whirl/whirl.c
-  loadCCMap (m, "whirl.horn.comb.a.feedback", 89, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "whirl.horn.comb.a.delay",    90, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "overdrive.enable",    65, m->ctrlUseA, m->ctrlUseB, m->ctrlUseC);
+  loadCCMap (m, "overdrive.character", 93, m->ctrlUseA, NULL, NULL);
 
-  loadCCMap (m, "whirl.horn.comb.b.feedback", 102, m->ctrlUseA, NULL, NULL);
-  loadCCMap (m, "whirl.horn.comb.b.delay",    103, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "convolution.mix",     94, m->ctrlUseA, NULL, NULL);
+#if 0
+  loadCCMap (m, "overdrive.inputgain", 21, m->ctrlUseA, NULL, NULL);
+  loadCCMap (m, "overdrive.outputgain",22, m->ctrlUseA, NULL, NULL);
 #endif
-
-  loadCCMap (m, "rotary.speed-preset",   91, m->ctrlUseA, NULL, NULL);
-
-  loadCCMap (m, "overdrive.character",   93, m->ctrlUseA, NULL, NULL);
-
-  loadCCMap (m, "convolution.mix", 94, m->ctrlUseA, NULL, NULL);
 }
 
 /*
