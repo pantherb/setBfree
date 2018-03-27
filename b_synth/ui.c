@@ -631,6 +631,7 @@ static void notifyPlugin(PuglView* view, int elem) {
   if (elem == 24 || elem == 25) {
     // two in one
     val = ((ui->ctrls[24].cur ? 1 : 0) | (ui->ctrls[25].cur ? 2 : 0) ) << 5;
+    b3_forge_message(ui, "vibrato.routing", val);
   } else if (elem == 31 || elem == 32) {
     // map: tremolo/fast 2 << off:1 >> chorale/slow:0  ->  off:0, slow:1, fast:2
     int hr = rint(ui->ctrls[32].cur);
@@ -639,12 +640,13 @@ static void notifyPlugin(PuglView* view, int elem) {
     if (bf != 2) bf = (bf == 1) ? 0 : 1;
     val = bf * 15 + hr * 45;
     elem = 31; //  force to use  2^3 rotary.speed-select
+    b3_forge_message(ui, obj_control[elem], val);
   } else {
     // default MIDI-CC range 0..127
     val = vmap_val_to_midi(view, elem);
+    b3_forge_message(ui, obj_control[elem], val);
   }
 
-  b3_forge_message(ui, obj_control[elem], val);
 }
 
 static void forge_message_kv(B3ui* ui, LV2_URID uri, int key, const char *val) {
