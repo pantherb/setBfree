@@ -487,19 +487,15 @@ void callMIDIControlFunction (void *mcfg, const char * cfname, unsigned char val
   }
 }
 
-void notifyControlChangeByName (void *mcfg, const char * cfname, unsigned char val) {
-  struct b_midicfg * m = (struct b_midicfg *) mcfg;
-  int x = getCCFunctionId (cfname);
-  if (x >= 0 && m->ctrlvecF[x].fn) {
-    controlFunctionHook(m, &m->ctrlvecF[x], val);
-  }
-}
-
 void notifyControlChangeById (void *mcfg, int id, unsigned char val) {
   struct b_midicfg * m = (struct b_midicfg *) mcfg;
   if (id >= 0 && id < 128 && m->ctrlvecF[id].fn) {
     controlFunctionHook(m, &m->ctrlvecF[id], val);
   }
+}
+
+void notifyControlChangeByName (void *mcfg, const char * cfname, unsigned char val) {
+  notifyControlChangeById (mcfg, getCCFunctionId (cfname), val);
 }
 
 static void resetRegisteredControlFunctions (void *mcfg) {
