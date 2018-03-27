@@ -231,8 +231,6 @@ unsigned char keyTableC[128]; /**< MIDI note to key transl. tbl */
 
 unsigned char * keyTable[16]; /**< Tables per MIDI channel */
 
-uint8_t pitchbendcc; /** CC paramater mapped to pitch-bend */
-
 unsigned char ctrlUseA[CTRL_USE_MAX];
 unsigned char ctrlUseB[CTRL_USE_MAX];
 unsigned char ctrlUseC[CTRL_USE_MAX];
@@ -551,7 +549,6 @@ static void clearControllerMapping (void *mcfg) {
     } while (t1);
     m->ctrlvecF[i].mm = NULL;
   }
-  m->pitchbendcc = 91; // rotary.speed-preset // TODO cfg
 }
 
 static int remove_CC_map (void *mcfg, int chn, unsigned char cc) {
@@ -1256,25 +1253,7 @@ void parse_raw_midi_data(void *inst, uint8_t *buffer, size_t size) {
       bev.d.control.value=buffer[2]&0x7f;
       break;
     case 0xE0: // pitch-bend
-#if 1 // NOT READY FOR PRODUCTION
       return;
-#else // quick/dirty hacks
-      bev.type=CONTROL_CHANGE;
-#if 0 // map full range
-      bev.d.control.value=buffer[2]&0x7f; // MSB; TODO shift zero?
-#else  // map lower-half range (default leslie: fast)
-      int val = (buffer[2]&0x7f) * 1.3;
-      bev.d.control.value=val > 90 ? 90 : val;
-#endif
-      {
-	struct b_instance * instp = (struct b_instance *) inst;
-	struct b_midicfg * m = (struct b_midicfg *) instp->midicfg;
-	if (m->pitchbendcc > 0x7f) {
-	  return;
-	}
-	bev.d.control.param= m->pitchbendcc;
-      }
-#endif
       break;
     case 0xC0:
       bev.type=PROGRAM_CHANGE;
