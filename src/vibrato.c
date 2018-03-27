@@ -173,16 +173,21 @@ static void setVibratoRoutingFromMIDI (void *t, unsigned char uc) {
     setVibratoLower (inst_synth, TRUE);
     break;
   }
+  int vr = getVibratoRouting (inst_synth);
+  notifyControlChangeByName (inst_synth->midi_cfg_ptr, "vibrato.upper", (vr & 2) ? 127 : 0);
+  notifyControlChangeByName (inst_synth->midi_cfg_ptr, "vibrato.lower", (vr & 1) ? 127 : 0);
 }
 
 static void setVibratoUpperFromMIDI (void *t, unsigned char uc) {
   struct b_tonegen * inst_synth = (struct b_tonegen *) t;
   setVibratoUpper (inst_synth, uc < 64 ? FALSE : TRUE);
+  notifyControlChangeByName (inst_synth->midi_cfg_ptr, "vibrato.routing", getVibratoRouting (t) << 5);
 }
 
 static void setVibratoLowerFromMIDI (void *t, unsigned char uc) {
   struct b_tonegen * inst_synth = (struct b_tonegen *) t;
   setVibratoLower (inst_synth, uc < 64 ? FALSE : TRUE);
+  notifyControlChangeByName (inst_synth->midi_cfg_ptr, "vibrato.routing", getVibratoRouting (t) << 5);
 }
 
 /*
