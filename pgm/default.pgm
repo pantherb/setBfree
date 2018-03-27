@@ -14,6 +14,11 @@
 #
 # Static properties of the instrument are set in *.cfg-files.
 #
+# Beware that the program number in the file have an offset of 1 with the actual
+# value sent by a CC MIDI message (program number 1: "Jazz 1 all" is loaded with
+# CC value 0). This can be changed setting pgm.controller.offset=0 in configuration
+# file.
+#
 # Look at the end of this file for a description of syntax and parameters.
 # ------------------------------------------------------------------------
 # This first entry is mostly an example to show that it is possible to have
