@@ -28,7 +28,7 @@
    vibrato=c3,
    vibratoupper=on,
    overdrive=on,
-   rotary=chorale}
+   rotaryspeed=chorale}
 2 {name="Jazz 2", drawbars="668 0000 008"}
 3 {name="Jazz 3", drawbars="638 8000 000"}
 
