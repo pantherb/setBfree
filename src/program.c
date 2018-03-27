@@ -815,7 +815,7 @@ void installProgram (void *instance, unsigned char uc) {
 
       if (flags0 & FL_ROTSPS) {
 	// setRevSelect (inst->whirl, (int) (PGM->rotarySpeedSelect));
-	callMIDIControlFunction(inst->midicfg, "rotary.speed-preset", PGM->rotarySpeedSelect * 32);
+	callMIDIControlFunction(inst->midicfg, "rotary.speed-preset", ceilf (PGM->rotarySpeedSelect * 63.5f)); // use 0, 64, 127
       }
 
       if (flags0 & FL_RVBMIX) {

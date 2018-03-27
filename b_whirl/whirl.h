@@ -233,9 +233,10 @@ extern void whirlProc3 (struct b_whirl *w,
 		        float * tmpL, float * tmpR,
 		        size_t bufferLengthSamples);
 
+/* match revselects[] */
 #define WHIRL_FAST 2
-#define WHIRL_SLOW 1
-#define WHIRL_STOP 0
+#define WHIRL_SLOW 0
+#define WHIRL_STOP 1
 
 extern void setRevSelect (struct b_whirl *w, int n);
 extern void useRevOption (struct b_whirl *w, int n);
