@@ -638,7 +638,7 @@ static void notifyPlugin(PuglView* view, int elem) {
     int bf = rint(ui->ctrls[31].cur);
     if (hr != 2) hr = (hr == 1) ? 0 : 1;
     if (bf != 2) bf = (bf == 1) ? 0 : 1;
-    val = bf * 15 + hr * 45;
+    val = ceilf (bf * 15.875f + hr * 47.625f);
     elem = 31; //  force to use  2^3 rotary.speed-select
     b3_forge_message(ui, obj_control[elem], val);
   } else {

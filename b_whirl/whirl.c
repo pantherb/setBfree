@@ -183,7 +183,7 @@ void useRevOption (struct b_whirl *w, int n, int signals) {
 	}
 
 	if (signals & 1) {
-		notifyControlChangeByName(w->midi_cfg_ptr, "rotary.speed-select", n * 15);
+		notifyControlChangeByName(w->midi_cfg_ptr, "rotary.speed-select", ceilf (n * 15.875f));
 	}
 	if (signals & 2) {
 
