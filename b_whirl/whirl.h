@@ -239,7 +239,7 @@ extern void whirlProc3 (struct b_whirl *w,
 #define WHIRL_STOP 1
 
 extern void setRevSelect (struct b_whirl *w, int n);
-extern void useRevOption (struct b_whirl *w, int n);
+extern void useRevOption (struct b_whirl *w, int n, int signals);
 extern void isetHornFilterAType (struct b_whirl *w, int v);
 extern void fsetHornFilterAFrequency (struct b_whirl *w, float v);
 extern void fsetHornFilterAQ (struct b_whirl *w, float v);

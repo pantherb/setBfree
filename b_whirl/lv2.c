@@ -509,7 +509,7 @@ static void set_speed (B3W* b3w)
 	if (b3w->flt[0].type && !b3w->horn_radius) {
 		// MOD version
 		const int v = (int) floorf (*b3w->rev_select);
-		useRevOption (b3w->whirl, v * 3 + v);
+		useRevOption (b3w->whirl, v * 3 + v, 0);
 	} else {
 		const float l = b3w->p_link_speed ? (*b3w->p_link_speed) : 0;
 		const int v = (int) floorf (*b3w->rev_select);
@@ -517,7 +517,7 @@ static void set_speed (B3W* b3w)
 		int d = v % 3; // 0: stop, 1: slow, 2: fast
 		if (l <= -.5) { h = d; }
 		if (l >= 0.5) { d = h; }
-		useRevOption (b3w->whirl, h * 3 + d);
+		useRevOption (b3w->whirl, h * 3 + d, 0);
 	}
 
 	b3w->o_rev_select = *b3w->rev_select;

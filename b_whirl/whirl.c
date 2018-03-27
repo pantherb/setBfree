@@ -163,18 +163,7 @@ static void setIIRFilter (iir_t W[],
 	W[b2] = C[EQC_B2];
 }
 
-/*
- * Sets the revolution selection.
- */
-void setRevSelect (struct b_whirl *w, int n) {
-	int i;
-
-	w->revSelect = n % revSelectEnd;
-	i = w->revselects[w->revSelect];
-	useRevOption(w, i);
-}
-
-void useRevOption (struct b_whirl *w, int n) {
+void useRevOption (struct b_whirl *w, int n, int signals) {
 	int i = n % 9;
 
 	w->hornTarget = w->revoptions[i].hornTarget;
@@ -193,27 +182,54 @@ void useRevOption (struct b_whirl *w, int n) {
 		w->drumAcDc = -1;
 	}
 
-	notifyControlChangeByName(w->midi_cfg_ptr, "rotary.speed-select", n * 15);
+	if (signals & 1) {
+		notifyControlChangeByName(w->midi_cfg_ptr, "rotary.speed-select", n * 15);
+	}
+	if (signals & 2) {
+
+		const int hr = (n / 3) % 3; // horn 0:off, 1:chorale  2:tremolo
+		switch (hr) {
+			case 2:
+				w->revSelect = WHIRL_FAST;
+				break;
+			case 1:
+				w->revSelect = WHIRL_SLOW;
+				break;
+			default:
+				w->revSelect = WHIRL_STOP;
+				break;
+		}
+		notifyControlChangeByName(w->midi_cfg_ptr, "rotary.speed-preset", ceilf (w->revSelect * 63.5f));
+	}
 }
 
-void advanceRevSelect (struct b_whirl *w) {
-	setRevSelect (w, w->revSelect + 1);
+void setRevSelect (struct b_whirl *w, int n) {
+	int i;
+
+	w->revSelect = n % revSelectEnd;
+	i = w->revselects[w->revSelect];
+	useRevOption(w, i, 1);
 }
 
+
+/* used by rotary.speed-select */
 static void revControlAll (void *d, unsigned char u) {
 	struct b_whirl *w = (struct b_whirl *) d;
-	useRevOption (w, (int) (u / 15)); // 0..8
+	useRevOption (w, (int) (u / 15), 2); // 0..8
 }
 
+/* used by rotary.speed-preset */
 static void revControl (void *d, unsigned char u) {
 	struct b_whirl *w = (struct b_whirl *) d;
+	/* 0, 127 -> slow, fast */
 	setRevSelect (w, (int) (u / 43)); // 3 modes only - fast, stop, slow
 }
 
+/* used by rotary.speed-toggle */
 void setWhirlSustainPedal (void *d, unsigned char u) {
 	struct b_whirl *w = (struct b_whirl *) d;
-	if (u) {
-		setRevSelect (w, (w->revSelect == 0) ? 2 : 0);
+	if (u > 63 /* press */) {
+		useRevOption (w, (w->revSelect == WHIRL_SLOW) ? w->revselects[WHIRL_FAST] : w->revselects[WHIRL_SLOW], 3);
 	}
 }
 
