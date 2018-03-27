@@ -1,5 +1,3 @@
-# 28-nov-2004/FK Version 0.4.1
-#
 # The default programme (this file) contains instrument controls and some
 # standard presets.
 #
@@ -8,6 +6,7 @@
 # is always loaded first (when present). To supply your own programmes you may:
 #   * edit this file, or
 #   * use the -p <file> commandline switch
+#
 # In general, later programme definitions completely replace earlier
 # ones. However, a sequence of two or more programme definitions all
 # referring to the the same programme number will merge.
@@ -15,6 +14,12 @@
 # Static properties of the instrument are set in *.cfg-files.
 #
 # Look at the end of this file for a description of syntax and parameters.
+#
+# Note that by default the program-number is in the range 1..128.
+# The first program (display-number: "1") is loaded by sending a
+# MIDI patch-change to activate program "0". This can be changed by setting
+# pgm.controller.offset=0 in the configuration.
+
 # ------------------------------------------------------------------------
 # This first entry is mostly an example to show that it is possible to have
 # multiple parameters in the same programme.
