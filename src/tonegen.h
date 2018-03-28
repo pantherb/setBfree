@@ -120,6 +120,8 @@ typedef struct _coreins {
 } CoreIns;
 
 
+#define LONG_ENVELOPES
+
 /**
  * There is one oscillator struct for each frequency.
  * The wave pointer points to a 16-bit PCM loop which contains the fundamental
@@ -137,6 +139,10 @@ struct _oscillator {
   int     aclPos;		/**< Position in active list */
   unsigned short rflags;	/**< Rendering flags */
 
+#ifdef LONG_ENVELOPES
+	float* env;
+	float* envEnd;
+#endif /* LONG_ENVELOPES */
 };
 
 
@@ -247,8 +253,9 @@ CoreIns * coreReader;
 
 /* Attack and release buffer envelopes for 9 buses. */
 
-float attackEnv[9][BUFFER_SIZE_SAMPLES]; /**< Attack envelope buffer for 9 buses */
-float releaseEnv[9][BUFFER_SIZE_SAMPLES];/**< Release envelope buffer for 9 buses */
+#define ENVELOPE_LENGTH 1024
+float attackEnv[9][ENVELOPE_LENGTH]; /**< Attack envelope buffer for 9 buses */
+float releaseEnv[9][ENVELOPE_LENGTH];/**< Release envelope buffer for 9 buses */
 
 
 int envAttackModel;
