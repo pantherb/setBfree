@@ -28,43 +28,46 @@
 
 #define SB3_URI "http://gareus.org/oss/lv2/b_synth"
 
-// fix for -fvisibility=hidden
+/* clang-format off */
+
 #undef LV2_SYMBOL_EXPORT
 #ifdef JACK_DESCRIPT
-#    define LV2_SYMBOL_EXPORT
+# define LV2_SYMBOL_EXPORT
 #else
-#    ifdef _WIN32
-#        define LV2_SYMBOL_EXPORT __declspec(dllexport)
-#    else
-#        define LV2_SYMBOL_EXPORT  __attribute__ ((visibility ("default")))
-#    endif
+# ifdef _WIN32
+#  define LV2_SYMBOL_EXPORT __declspec(dllexport)
+# else
+#  define LV2_SYMBOL_EXPORT  __attribute__ ((visibility ("default")))
+# endif
 #endif
 
 #ifdef HAVE_LV2_1_8
-#define x_forge_object lv2_atom_forge_object
+# define x_forge_object lv2_atom_forge_object
 #else
-#define x_forge_object lv2_atom_forge_blank
+# define x_forge_object lv2_atom_forge_blank
 #endif
 
-#define SB3__state   SB3_URI "#state"
-#define SB3__uiinit  SB3_URI "#uiinit"
-#define SB3__uimccq  SB3_URI "#uimccquery"
-#define SB3__uimccs  SB3_URI "#uimccset"
-#define SB3__midipgm SB3_URI "#midipgm"
+#define SB3__state    SB3_URI "#state"
+#define SB3__uiinit   SB3_URI "#uiinit"
+#define SB3__uimccq   SB3_URI "#uimccquery"
+#define SB3__uimccs   SB3_URI "#uimccset"
+#define SB3__midipgm  SB3_URI "#midipgm"
 #define SB3__storepgm SB3_URI "#midisave"
-#define SB3__control SB3_URI "#controlmsg"
-#define SB3__cckey   SB3_URI "#controlkey"
-#define SB3__ccval   SB3_URI "#controlval"
-#define SB3__ccdsc   SB3_URI "#controldsc"
-#define SB3__loadpgm SB3_URI "#loadpgm"
-#define SB3__savepgm SB3_URI "#savepgm"
-#define SB3__loadcfg SB3_URI "#loadcfg"
-#define SB3__savecfg SB3_URI "#savecfg"
-#define SB3__uimsg   SB3_URI "#uimessage"
-#define SB3__kactive SB3_URI "#activekeys"
-#define SB3__karray  SB3_URI "#keyarray"
-#define SB3__cfgstr  SB3_URI "#cfgstr"
-#define SB3__cfgkv   SB3_URI "#cfgkv"
+#define SB3__control  SB3_URI "#controlmsg"
+#define SB3__cckey    SB3_URI "#controlkey"
+#define SB3__ccval    SB3_URI "#controlval"
+#define SB3__ccdsc    SB3_URI "#controldsc"
+#define SB3__loadpgm  SB3_URI "#loadpgm"
+#define SB3__savepgm  SB3_URI "#savepgm"
+#define SB3__loadcfg  SB3_URI "#loadcfg"
+#define SB3__savecfg  SB3_URI "#savecfg"
+#define SB3__uimsg    SB3_URI "#uimessage"
+#define SB3__kactive  SB3_URI "#activekeys"
+#define SB3__karray   SB3_URI "#keyarray"
+#define SB3__cfgstr   SB3_URI "#cfgstr"
+#define SB3__cfgkv    SB3_URI "#cfgkv"
+
+/* clang-format on */
 
 typedef struct {
 	LV2_URID atom_Blank;
@@ -287,5 +290,4 @@ get_pgm_midi_mapping(
 
 	return 0;
 }
-
 #endif

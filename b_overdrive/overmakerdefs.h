@@ -18,8 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* overmakerdefs.h */
-//#include "eqcomp.h"		/* Filter type symbols */
+/* clang-format off */
 
 /*
  * List of strings for system include-files in the output souce code.
@@ -270,7 +269,7 @@
 #define SAG_ZGB_HI 0.05
 #endif /* SAG_EMULATION */
 
-#define ADWS_NO_LINEAR		/* Use curve with no linear segment */
+#define ADWS_NO_LINEAR /* Use curve with no linear segment */
 #ifdef ADWS_NO_LINEAR
 #define ADWS_V_LO  0.0
 #define ADWS_V_HI  1.0
@@ -282,7 +281,7 @@
 #define ADWS_FB2_MAX 0.999
 #endif /* ADWS_POST_DIFF */
 
-#define ADWS_GFB		/* Global feedback */
+#define ADWS_GFB /* Global feedback */
 #ifdef ADWS_GFB
 #define ADWS_GFB_MAX -0.999
 #endif /* ADWS_GFB */
@@ -302,10 +301,10 @@
 #define PRE_FILTER_HERTZ     800.0 /* Initial cutoff */
 #define PRE_FILTER_HERTZ_LO   32.0 /* Minimum cutoff */
 #define PRE_FILTER_HERTZ_HI 8000.0 /* Maximum cutoff */
-#define PRE_FILTER_Q    1.0
-#define PRE_FILTER_Q_LO 0.01
-#define PRE_FILTER_Q_HI 6.0
-#define PRE_FILTER_G    0.0
+#define PRE_FILTER_Q      1.0
+#define PRE_FILTER_Q_LO   0.01
+#define PRE_FILTER_Q_HI   6.0
+#define PRE_FILTER_G      0.0
 #define PRE_FILTER_G_LO -12.0
 #define PRE_FILTER_G_HI  12.0
 
@@ -338,7 +337,7 @@
 #ifdef INPUT_COMPRESS
 
 #define IPC_THRESHOLD    1.0
-#define IPC_THR_LO       0.001	/* Must not be zero */
+#define IPC_THR_LO       0.001 /* Must not be zero */
 #define IPC_THR_HI       2.0
 
 #define IPC_GAIN_REDUCE  0.98

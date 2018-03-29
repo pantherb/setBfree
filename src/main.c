@@ -113,25 +113,17 @@ static jack_client_t *j_client = NULL;
 static jack_port_t **j_output_port;
 static jack_port_t  *jack_midi_port = NULL;
 static jack_port_t  *jack_midi_output = NULL;
+
 static jack_default_audio_sample_t **j_output_bufferptrs;
 static jack_default_audio_sample_t bufJ [2][BUFFER_SIZE_SAMPLES];
 #ifdef HAVE_ZITACONVOLVE
 static jack_default_audio_sample_t bufH [2][BUFFER_SIZE_SAMPLES];
 static jack_default_audio_sample_t bufD [2][BUFFER_SIZE_SAMPLES];
 #endif
+
 static int synth_ready = 0;
 
 b_instance inst;
-
-#ifdef HAVE_ZITACONVOLVE
-static void mixdown (float **inout, const float **in2, int nchannels, int nsamples) {
-  int c,i;
-  for (c=0; c < nchannels; c++)
-    for (i=0; i < nsamples; i++)
-      inout[c][i] += in2[c][i];
-}
-#endif
-
 
 #define JACK_MIDI_QUEUE_SIZE (256)
 
@@ -167,7 +159,17 @@ static void mctl_cb (int fnid, const char *fn, unsigned char val, midiCCmap *mm,
   }
 }
 
-void cleanup() {
+#ifdef HAVE_ZITACONVOLVE
+static void mixdown (float **inout, const float **in2, int nchannels, int nsamples) {
+  int c,i;
+  for (c=0; c < nchannels; c++)
+    for (i=0; i < nsamples; i++)
+      inout[c][i] += in2[c][i];
+}
+#endif
+
+
+static void cleanup() {
   if (j_client) {
     jack_deactivate(j_client);
     jack_client_close (j_client);
@@ -176,13 +178,13 @@ void cleanup() {
 }
 
 /* when jack shuts down... */
-void jack_shutdown_callback(void *arg) {
+static void jack_shutdown_callback(void *arg) {
   fprintf(stderr,"jack server shut us down.\n");
   j_client=NULL;
   //cleanup();
 }
 
-int jack_srate_callback(jack_nframes_t nframes, void *arg) {
+static int jack_srate_callback(jack_nframes_t nframes, void *arg) {
   SampleRateI = nframes;
   SampleRateD = (double) SampleRateI;
   return(0);
@@ -192,7 +194,7 @@ int jack_srate_callback(jack_nframes_t nframes, void *arg) {
 #define MIN(A,B) (((A)<(B))?(A):(B))
 #endif
 
-int jack_audio_callback (jack_nframes_t nframes, void *arg) {
+static int jack_audio_callback (jack_nframes_t nframes, void *arg) {
   jack_default_audio_sample_t **out = j_output_bufferptrs;
   int i;
 
@@ -299,7 +301,7 @@ int jack_audio_callback (jack_nframes_t nframes, void *arg) {
   return(0);
 }
 
-int open_jack(void) {
+static int open_jack(void) {
   int i;
   j_client = jack_client_open (jack_client_name, JackNullOption, NULL);
 
@@ -596,6 +598,7 @@ static void Usage (int configdoc) {
   "Website and manual: <http://setbfree.org>\n"
   );
 }
+
 static void PrintVersion () {
   const char *name ="setBfree";
   printf ("%s %s\n\n", name, VERSION);
@@ -655,7 +658,7 @@ int mainConfig (ConfigContext * cfg) {
   return ack;
 }
 
-void catchsig (int sig) {
+static void catchsig (int sig) {
 #ifndef _WIN32
   signal(SIGHUP, catchsig); /* reset signal */
 #endif

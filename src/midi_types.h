@@ -27,14 +27,16 @@
 #define MIDI_UTIL_GREAT 1
 #define MIDI_UTIL_PEDAL 2
 
-#define MIDI_NOTEOFF		0x80
-#define MIDI_NOTEON		0x90
-#define MIDI_KEY_PRESSURE	0xA0
-#define MIDI_CTL_CHANGE		0xB0
-#define MIDI_PGM_CHANGE		0xC0
-#define MIDI_CHN_PRESSURE	0xD0
-#define MIDI_PITCH_BEND		0xE0
-#define MIDI_SYSTEM_PREFIX	0xF0
+/* clang-format on */
+#define MIDI_NOTEOFF       0x80
+#define MIDI_NOTEON        0x90
+#define MIDI_KEY_PRESSURE  0xA0
+#define MIDI_CTL_CHANGE    0xB0
+#define MIDI_PGM_CHANGE    0xC0
+#define MIDI_CHN_PRESSURE  0xD0
+#define MIDI_PITCH_BEND    0xE0
+#define MIDI_SYSTEM_PREFIX 0xF0
+/* clang-format off */
 
 enum BMIDI_EV_TYPE {
   INVALID=0,

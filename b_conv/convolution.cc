@@ -50,7 +50,7 @@ static float ir_gain[AUDIO_CHANNELS] = { 0.5, 0.5 };
 
 static int sched_priority, sched_policy;
 
-static float wet = 0.0; // Note, values <0 disable the effect completely and irreversibly
+static float wet = 0.0; /* Note, values <0 disable the effect completely and irreversibly */
 static float dry = 1.0;
 
 /** read an audio-file completely into memory
@@ -94,7 +94,7 @@ int audiofile_read (const char *fn, float **buf, unsigned int *n_ch, unsigned in
  * @param g  0.0 Dry ... 1.0 wet
  */
 void fsetConvolutionMix (float g) {
-  if (wet < 0 ) return; // conv is disabled
+  if (wet < 0 ) return; /* conv is disabled */
   if (g < 0 || g >1 ) return;
   wet = g;
   dry = 1.0 - wet;
@@ -104,9 +104,6 @@ void setConvolutionMix (void *d, unsigned char u) {
   fsetConvolutionMix(u/127.0);
 }
 
-/*
- *
- */
 int convolutionConfig (ConfigContext * cfg) {
   double d;
   int n;
@@ -151,9 +148,6 @@ const ConfigDoc *convolutionDoc () {
 
 static Convproc *convproc = 0;
 
-/*
- *
- */
 void initConvolution (
     void *clv, void *m,
     const unsigned int channels,
@@ -176,7 +170,7 @@ void initConvolution (
   convproc->set_density (dens);
 
   if (convproc->configure (
-	/*in*/channels,
+	/*in*/ channels,
 	/*out*/ channels,
 	size,
 	/*fragm*/buffersize,
@@ -208,7 +202,7 @@ void initConvolution (
 
   if (access(ir_fn, R_OK) != 0) {
     fprintf(stderr, "\nConvolution: cannot stat IR: %s\n", ir_fn);
-    wet = -1; // disable
+    wet = -1; /* disable */
     return;
   }
 
@@ -229,7 +223,6 @@ void initConvolution (
   }
 
   for (c=0; c < AUDIO_CHANNELS; c++) {
-
     if (ir_chan[c] > nchan || ir_chan[c] < 1) {
       fprintf(stderr, "\nConvolution: invalid channel in IR file. required: 1 <= %d <= %d\n", ir_chan[c], nchan);
       exit (1);
@@ -238,15 +231,16 @@ void initConvolution (
       fprintf(stderr, "\nConvolution: invalid delay. required: 0 <= %d\n", ir_delay[c]);
       exit (1);
     }
-
-    for (i=0; i < nfram; ++i) gb[i] = p[i*nchan + ir_chan[c]-1] * ir_gain[c];
+		for (i=0; i < nfram; ++i) {
+			gb[i] = p[i*nchan + ir_chan[c]-1] * ir_gain[c];
+		}
     convproc->impdata_create (c, c, 1, gb, ir_delay[c], ir_delay[c] + nfram);
   }
 
   free(gb);
   free(p);
 
-#if 1 // INFO
+#if 1 /* INFO */
   fprintf(stderr, "\n");
   convproc->print (stderr);
 #endif
@@ -273,9 +267,6 @@ void copy_input_to_output(const float ** inbuf, float ** outbuf, size_t n_channe
     memcpy(outbuf[c], inbuf[c], n_samples * sizeof(float));
 }
 
-/*
- *
- */
 void convolve (const float ** inbuf, float ** outbuf, size_t n_channels, size_t n_samples) {
   unsigned int i,c;
 
@@ -286,7 +277,7 @@ void convolve (const float ** inbuf, float ** outbuf, size_t n_channels, size_t 
     static int bpn = 1;
     if (bpn > 0) { bpn--; fprintf(stderr, "Convolution: requested too many channels.\n"); }
 #endif
-    wet = -1; // disable irreversibly
+    wet = -1; /* disable irreversibly */
   }
 
   if (wet <= 0) {
@@ -297,7 +288,7 @@ void convolve (const float ** inbuf, float ** outbuf, size_t n_channels, size_t 
   if (convproc->state () != Convproc::ST_PROC) {
 #ifdef PRINT_WARNINGS
     static int bpn = 5;
-    if (bpn > 0) { bpn--; fprintf(stderr, "Convolution: failed - state != processing .\n"); } // XXX RT
+    if (bpn > 0) { bpn--; fprintf(stderr, "Convolution: failed - state != processing .\n"); }
 #endif
     copy_input_to_output(inbuf, outbuf, n_channels, n_samples);
     return;
@@ -305,8 +296,8 @@ void convolve (const float ** inbuf, float ** outbuf, size_t n_channels, size_t 
 
   for (c = 0; c < n_channels; ++c)
 #if 0
-    memcpy (convproc->inpdata (c), inbuf[c], n_samples * sizeof (float));
-#else // prevent denormals
+		memcpy (convproc->inpdata (c), inbuf[c], n_samples * sizeof (float));
+#else /* prevent denormals */
   {
     float *id = convproc->inpdata(c);
     for (i=0;i<n_samples;++i) {
@@ -319,11 +310,11 @@ void convolve (const float ** inbuf, float ** outbuf, size_t n_channels, size_t 
 
   if (f /*&Convproc::FL_LOAD)*/ ) {
 #ifdef PRINT_WARNINGS
-    /* Convproc::FL_LATE = 0x0000FFFF,
-     * Convproc::FL_LOAD = 0x01000000
-     */
+		/* Convproc::FL_LATE = 0x0000FFFF,
+		 * Convproc::FL_LOAD = 0x01000000
+		 */
     static int bpn = 20;
-    if (bpn > 0) { bpn--; fprintf(stderr, "Convolution: failed (flags: %08x).\n", f); } // XXX RT
+    if (bpn > 0) { bpn--; fprintf(stderr, "Convolution: failed (flags: %08x).\n", f); }
 #endif
     copy_input_to_output(inbuf, outbuf, n_channels, n_samples);
     return;
@@ -332,7 +323,7 @@ void convolve (const float ** inbuf, float ** outbuf, size_t n_channels, size_t 
   for (c = 0; c < n_channels; ++c)
     memcpy (outbuf[c], convproc->outdata (c), n_samples * sizeof (float));
 
-#if 1 // dry/wet fade
+#if 1 /* dry/wet fade */
   if (wet != 1.0) {
     for (c=0; c < n_channels; c++)
       for (i=0;i<n_samples;++i) {

@@ -120,13 +120,15 @@ activate(LV2_Handle instance)
 {
 }
 
-#define SETPARAM(FN, NAME) \
-  if (b3o->NAME) { \
-    if (b3o->o_##NAME != *(b3o->NAME)) { \
-      FN (b3o->pa, *(b3o->NAME)); \
-      b3o->o_##NAME = *(b3o->NAME); \
-    } \
-  }
+/* clang-format off */
+#define SETPARAM(FN, NAME)                            \
+        if (b3o->NAME) {                              \
+                if (b3o->o_##NAME != *(b3o->NAME)) {  \
+                        FN (b3o->pa, *(b3o->NAME));   \
+                        b3o->o_##NAME = *(b3o->NAME); \
+                }                                     \
+        }
+/* clang-format on */
 
 static void
 run(LV2_Handle instance, uint32_t n_samples)

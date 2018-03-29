@@ -1006,9 +1006,14 @@ instantiate(const LV2_Descriptor*     descriptor,
 	  char data[8192];
 	  char *tmp=NULL;
 	  uint32_t len = gp3_get_text(data, sizeof(data));
-	  if (len == sizeof(data)) data[sizeof(data)-1] = '\0';
-	  else data[len] = '\0';
-	  if ((tmp = strchr(data, '\n'))) *tmp = 0;
+	  if (len == sizeof(data)) {
+			data[sizeof(data)-1] = '\0';
+		} else {
+			data[len] = '\0';
+		}
+	  if ((tmp = strchr(data, '\n'))) {
+			*tmp = 0;
+		}
 	  b3s->lv2nfo[sizeof(b3s->lv2nfo) - 1] = 0;
 	  if (tmp++ && *tmp) {
 	    if ((tmp = strstr(tmp, SB3_URI))) {
@@ -1154,8 +1159,8 @@ run(LV2_Handle instance, uint32_t n_samples)
 	    b3s->dirty = true;
 	  }
 	} else if (obj->body.otype == b3s->uris.sb3_control) {
-	  b3s->suspend_ui_msg = 1;
 	  const LV2_Atom_Object* obj = (LV2_Atom_Object*)&ev->body;
+	  b3s->suspend_ui_msg = 1;
 	  char *k; int v;
 	  if (!get_cc_key_value(&b3s->uris, obj, &k, &v)) {
 #ifdef DEBUGPRINT

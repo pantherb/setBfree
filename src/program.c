@@ -18,17 +18,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- * program.c
- * 17-sep-2004/FK Upgraded to pedal/lower/upper splitpoints.
- * 22-aug-2004/FK Added MIDIControllerPgmOffset parameter and config.
- * 21-aug-2004/FK Replaced include of preamp.h with overdrive.h.
- * 14-may-2004/FK Replacing rotsim module with whirl.
- * 10-may-2003/FK New syntax and parser in a separate file.
- * 2001-12-28/FK
- *
- * Manager for program change.
- */
 #ifndef CONFIGDOCONLY
 
 #ifndef _GNU_SOURCE
@@ -52,27 +41,28 @@
 #include "global_inst.h"
 #include "program.h"
 
-#define SET_TRUE 1
-#define SET_NONE 0
+/* clang-format off */
+
+#define SET_TRUE   1
+#define SET_NONE   0
 #define SET_FALSE -1
 
 #define MESSAGEBUFFERSIZE 256
 
 #define FILE_BUFFER_SIZE 2048
 
-
 #define ANY_TRSP (FL_TRA_PL | FL_TRA_LM | FL_TRA_UM | FL_TRANSP | \
                   FL_TRCH_A | FL_TRCH_B | FL_TRCH_C)
 
 /* Indices to the transpose array in struct _programme. */
 
-#define TR_TRANSP 0		/* Global transpose value */
-#define TR_CHNL_A 1		/* Channel A transpose */
-#define TR_CHNL_B 2		/* Channel B transpose */
-#define TR_CHNL_C 3		/* Channel C transpose */
-#define TR_CHA_UM 4		/* Channel A upper split region */
-#define TR_CHA_LM 5		/* Channel A lower split region */
-#define TR_CHA_PD 6		/* Channel A pedal split region */
+#define TR_TRANSP 0 /* Global transpose value */
+#define TR_CHNL_A 1 /* Channel A transpose */
+#define TR_CHNL_B 2 /* Channel B transpose */
+#define TR_CHNL_C 3 /* Channel C transpose */
+#define TR_CHA_UM 4 /* Channel A upper split region */
+#define TR_CHA_LM 5 /* Channel A lower split region */
+#define TR_CHA_PD 6 /* Channel A pedal split region */
 
 /*
  * The   short scanner   field has the following bit assignments:
@@ -96,85 +86,84 @@
 #endif
 
 /* Property codes; used internally to identity the parameter controlled. */
-
 enum propertyId {
-  pr_Name,
-  pr_Drawbars,
-  pr_LowerDrawbars,
-  pr_PedalDrawbars,
-  pr_KeyAttackEnvelope,
-  pr_KeyAttackClickLevel,
-  pr_KeyAttackClickDuration,
-  pr_KeyReleaseEnvelope,
-  pr_KeyReleaseClickLevel,
-  pr_KeyReleaseClickDuration,
-  pr_Scanner,
-  pr_VibratoUpper,
-  pr_VibratoLower,
-  pr_PercussionEnabled,
-  pr_PercussionVolume,
-  pr_PercussionSpeed,
-  pr_PercussionHarmonic,
-  pr_OverdriveSelect,
-  pr_RotaryEnabled,
-  pr_RotarySpeedSelect,
-  pr_ReverbMix,
-  pr_KeyboardSplitLower,
-  pr_KeyboardSplitPedals,
-  pr_TransposeSplitPedals,
-  pr_TransposeSplitLower,
-  pr_TransposeSplitUpper,
-  pr_Transpose,
-  pr_TransposeUpper,
-  pr_TransposeLower,
-  pr_TransposePedals,
-  pr_void
+	pr_Name,
+	pr_Drawbars,
+	pr_LowerDrawbars,
+	pr_PedalDrawbars,
+	pr_KeyAttackEnvelope,
+	pr_KeyAttackClickLevel,
+	pr_KeyAttackClickDuration,
+	pr_KeyReleaseEnvelope,
+	pr_KeyReleaseClickLevel,
+	pr_KeyReleaseClickDuration,
+	pr_Scanner,
+	pr_VibratoUpper,
+	pr_VibratoLower,
+	pr_PercussionEnabled,
+	pr_PercussionVolume,
+	pr_PercussionSpeed,
+	pr_PercussionHarmonic,
+	pr_OverdriveSelect,
+	pr_RotaryEnabled,
+	pr_RotarySpeedSelect,
+	pr_ReverbMix,
+	pr_KeyboardSplitLower,
+	pr_KeyboardSplitPedals,
+	pr_TransposeSplitPedals,
+	pr_TransposeSplitLower,
+	pr_TransposeSplitUpper,
+	pr_Transpose,
+	pr_TransposeUpper,
+	pr_TransposeLower,
+	pr_TransposePedals,
+	pr_void
 };
 
 typedef struct _symbolmap {
-  const char * propertyName;
-  int property;
+	const char * propertyName;
+	int property;
 } SymbolMap;
 
-/*
+/**
  * This table maps from the string keywords used in the .prg file
  * to the internal property symbols.
  */
-
-static const SymbolMap propertySymbols [] = {
-  {"name",           pr_Name},
-  {"drawbars",       pr_Drawbars},
-  {"drawbarsupper",  pr_Drawbars},
-  {"drawbarslower",  pr_LowerDrawbars},
-  {"drawbarspedals", pr_PedalDrawbars},
-  {"attackenv",      pr_KeyAttackEnvelope},
-  {"attacklvl",      pr_KeyAttackClickLevel},
-  {"attackdur",      pr_KeyAttackClickDuration},
-  {"vibrato",        pr_Scanner},
-  {"vibratoknob",    pr_Scanner},
-  {"vibratoupper",   pr_VibratoUpper},
-  {"vibratolower",   pr_VibratoLower},
-  {"perc",           pr_PercussionEnabled},
-  {"percvol",        pr_PercussionVolume},
-  {"percspeed",      pr_PercussionSpeed},
-  {"percharm",       pr_PercussionHarmonic},
-  {"overdrive",      pr_OverdriveSelect},
-  {"rotary",         pr_RotaryEnabled},
-  {"rotaryspeed",    pr_RotarySpeedSelect},
-  {"reverbmix",      pr_ReverbMix},
-  {"keysplitlower",  pr_KeyboardSplitLower},
-  {"keysplitpedals", pr_KeyboardSplitPedals},
-  {"trssplitpedals", pr_TransposeSplitPedals},
-  {"trssplitlower",  pr_TransposeSplitLower},
-  {"trssplitupper",  pr_TransposeSplitUpper},
-  {"transpose",      pr_Transpose},
-  {"transposeupper", pr_TransposeUpper},
-  {"transposelower", pr_TransposeLower},
-  {"transposepedals",pr_TransposePedals},
-  {NULL, pr_void}
+static const SymbolMap propertySymbols[] = {
+	{"name",           pr_Name},
+	{"drawbars",       pr_Drawbars},
+	{"drawbarsupper",  pr_Drawbars},
+	{"drawbarslower",  pr_LowerDrawbars},
+	{"drawbarspedals", pr_PedalDrawbars},
+	{"attackenv",      pr_KeyAttackEnvelope},
+	{"attacklvl",      pr_KeyAttackClickLevel},
+	{"attackdur",      pr_KeyAttackClickDuration},
+	{"vibrato",        pr_Scanner},
+	{"vibratoknob",    pr_Scanner},
+	{"vibratoupper",   pr_VibratoUpper},
+	{"vibratolower",   pr_VibratoLower},
+	{"perc",           pr_PercussionEnabled},
+	{"percvol",        pr_PercussionVolume},
+	{"percspeed",      pr_PercussionSpeed},
+	{"percharm",       pr_PercussionHarmonic},
+	{"overdrive",      pr_OverdriveSelect},
+	{"rotary",         pr_RotaryEnabled},
+	{"rotaryspeed",    pr_RotarySpeedSelect},
+	{"reverbmix",      pr_ReverbMix},
+	{"keysplitlower",  pr_KeyboardSplitLower},
+	{"keysplitpedals", pr_KeyboardSplitPedals},
+	{"trssplitpedals", pr_TransposeSplitPedals},
+	{"trssplitlower",  pr_TransposeSplitLower},
+	{"trssplitupper",  pr_TransposeSplitUpper},
+	{"transpose",      pr_Transpose},
+	{"transposeupper", pr_TransposeUpper},
+	{"transposelower", pr_TransposeLower},
+	{"transposepedals",pr_TransposePedals},
+	{NULL, pr_void}
 };
 
-/* ---------------------------------------------------------------- */
+/* clang-format on */
+/* ******************************************************************/
 
 /**
  * Look up the property string and return the internal property value.
@@ -188,8 +177,6 @@ static int getPropertyIndex (const char * sym) {
   }
   return -1;
 }
-
-/* ======================================================================== */
 
 /**
  * Prints a message followed by the given filename and linenumber.

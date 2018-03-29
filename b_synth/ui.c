@@ -143,6 +143,7 @@ extern const ConfigDoc *scannerDoc ();
 /* ui-model scale -- on screen we use [-1..+1] orthogonal projection */
 #define SCALE (0.04f)
 
+/* clang-format off */
 #define BTNLOC_OK   -.05, .05, .55, .70
 #define BTNLOC_NO   -.75,-.65, .55, .70
 #define BTNLOC_YES   .65, .75, .55, .70
@@ -154,18 +155,6 @@ extern const ConfigDoc *scannerDoc ();
 #define BTNLOC_CANC3 .68, .96, .78, .93
 #define SCROLLBAR    -.8, .8, .625, .70
 
-enum {
-  HOVER_OK = 1,
-  HOVER_NO = 2,
-  HOVER_YES = 4,
-  HOVER_SAVE = 8,
-  HOVER_CANC = 16,
-  HOVER_CANC2 = 32,
-  HOVER_CANC3 = 64,
-  HOVER_SCROLLBAR = 128,
-  HOVER_DFLT = 256,
-  HOVER_RSRC = 512
-};
 
 #define GPX(x) ((x) / 480.0)
 #define GPY(y) ((y) / 160.0)
@@ -184,6 +173,75 @@ enum {
 
 #define MENU_CANC  .8, .98, .82, .95
 
+#define NOSCROLL -1000
+#define SIGNUM(a) (a < 0 ? -1 : 1)
+
+#define CTRLWIDTH2(ctrl)  (SCALE * (ctrl).w / 2.0)
+#define CTRLHEIGHT2(ctrl) (SCALE * (ctrl).h / 2.0)
+
+#define MOUSEOVER(ctrl, mousex, mousey) \
+  (   (mousex) >= (ctrl).x * SCALE - CTRLWIDTH2(ctrl) \
+   && (mousex) <= (ctrl).x * SCALE + CTRLWIDTH2(ctrl) \
+   && (mousey) >= (ctrl).y * SCALE - CTRLHEIGHT2(ctrl) \
+   && (mousey) <= (ctrl).y * SCALE + CTRLHEIGHT2(ctrl) )
+
+#define IS_FILEBROWSER(UI) \
+  (UI->displaymode == 4 || UI->displaymode == 5 || UI->displaymode == 6)
+
+#define SCOORD(X,Y) (X)/SCALE, (Y) * invaspect / SCALE, 0.5
+
+#define SKD(mode) if (ui->displaymode != mode) break;
+
+#define KEYADJ(ELEM, DELTA)                     \
+{                                               \
+	ui->dndval = ui->ctrls[(ELEM)].cur + (DELTA); \
+	processMotion (view, (ELEM), 0, 0);           \
+}
+
+#define KEYADJ2(UPPER, LOWER, DELTA) \
+  if (ui->keyboard_control == 3)     \
+    KEYADJ (LOWER, DELTA)            \
+  if (ui->keyboard_control == 1)     \
+  KEYADJ (UPPER, DELTA)
+
+#define KEYSWITCH(ELEM)                               \
+{                                                     \
+  assert (ui->ctrls[(ELEM)].type == OBJ_SWITCH);      \
+  if (ui->ctrls[(ELEM)].cur == ui->ctrls[(ELEM)].max) \
+    ui->ctrls[(ELEM)].cur = ui->ctrls[(ELEM)].min;    \
+  else                                                \
+    ui->ctrls[(ELEM)].cur = ui->ctrls[(ELEM)].max;    \
+  puglPostRedisplay (view);                           \
+  notifyPlugin (view, (ELEM));                        \
+}
+
+static inline int MOUSEIN (
+		const float X0, const float X1,
+		const float Y0, const float Y1,
+		const float mousex, const float mousey) {
+	return (
+			   (mousex) >= (X0)
+			&& (mousex) <= (X1)
+			&& (mousey) >= (Y0)
+			&& (mousey) <= (Y1)
+		);
+}
+
+/* clang-format on */
+
+enum {
+  HOVER_OK = 1,
+  HOVER_NO = 2,
+  HOVER_YES = 4,
+  HOVER_SAVE = 8,
+  HOVER_CANC = 16,
+  HOVER_CANC2 = 32,
+  HOVER_CANC3 = 64,
+  HOVER_SCROLLBAR = 128,
+  HOVER_DFLT = 256,
+  HOVER_RSRC = 512
+};
+
 enum {
   HOVER_MLOAD = 1,
   HOVER_MSAVEC = 2,
@@ -193,18 +251,6 @@ enum {
   HOVER_MACFG = 32,
   HOVER_MCANC = 64,
 };
-
-#define NOSCROLL -1000
-#define SIGNUM(a) (a < 0 ? -1 : 1)
-#define CTRLWIDTH2(ctrl) (SCALE * (ctrl).w / 2.0)
-#define CTRLHEIGHT2(ctrl) (SCALE * (ctrl).h / 2.0)
-
-#define MOUSEOVER(ctrl, mousex, mousey) \
-  (   (mousex) >= (ctrl).x * SCALE - CTRLWIDTH2(ctrl) \
-   && (mousex) <= (ctrl).x * SCALE + CTRLWIDTH2(ctrl) \
-   && (mousey) >= (ctrl).y * SCALE - CTRLHEIGHT2(ctrl) \
-   && (mousey) <= (ctrl).y * SCALE + CTRLHEIGHT2(ctrl) )
-
 
 typedef enum {
   TA_LEFT_TOP,
@@ -222,18 +268,6 @@ typedef enum {
   FS_MEDIUM,
   FS_SMALL
 } B3FontSize;
-
-static inline int MOUSEIN(
-    const float X0, const float X1,
-    const float Y0, const float Y1,
-    const float mousex, const float mousey) {
-  return (
-      (mousex) >= (X0)
-   && (mousex) <= (X1)
-   && (mousey) >= (Y0)
-   && (mousey) <= (Y1)
-   );
-}
 
 /* total number of interactive objects */
 #define TOTAL_OBJ (33)
@@ -428,8 +462,6 @@ typedef struct {
 #endif
 } B3ui;
 
-
-#define IS_FILEBROWSER(UI) (UI->displaymode == 4 || UI->displaymode == 5 || UI->displaymode == 6)
 
 
 static int show_message(PuglView* view, const char *msg) {
@@ -1047,25 +1079,26 @@ static void drawMesh(PuglView* view, unsigned int index, int apply_transformatio
 #include "textures/uim_tube2.c"
 #include "textures/uim_transformer.c"
 
-#define CIMAGE(ID, VARNAME) \
-  glGenTextures(1, &ui->texID[ID]); \
-  glBindTexture(GL_TEXTURE_2D, ui->texID[ID]); \
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE); \
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE); \
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE); \
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); \
+/* clang-format off */
+#define CIMAGE(ID, VARNAME)                                                       \
+  glGenTextures(1, &ui->texID[ID]);                                               \
+  glBindTexture(GL_TEXTURE_2D, ui->texID[ID]);                                    \
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);            \
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);            \
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);            \
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);               \
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR); \
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, VARNAME.width, VARNAME.height, 0, \
-      (VARNAME.bytes_per_pixel == 3 ? GL_RGB : GL_RGBA), \
-      GL_UNSIGNED_BYTE, VARNAME.pixel_data); \
-  if (atihack) { \
-    glEnable(GL_TEXTURE_2D); \
-    glGenerateMipmapEXT(GL_TEXTURE_2D); \
-    glDisable(GL_TEXTURE_2D); \
-  } else { \
-    glGenerateMipmapEXT(GL_TEXTURE_2D); \
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, VARNAME.width, VARNAME.height, 0,       \
+      (VARNAME.bytes_per_pixel == 3 ? GL_RGB : GL_RGBA),                          \
+      GL_UNSIGNED_BYTE, VARNAME.pixel_data);                                      \
+  if (atihack) {                                                                  \
+    glEnable(GL_TEXTURE_2D);                                                      \
+    glGenerateMipmapEXT(GL_TEXTURE_2D);                                           \
+    glDisable(GL_TEXTURE_2D);                                                     \
+  } else {                                                                        \
+    glGenerateMipmapEXT(GL_TEXTURE_2D);                                           \
   }
-
+/* clang-format on */
 
 static void initTextures(PuglView* view) {
   B3ui* ui = (B3ui*)puglGetHandle(view);
@@ -1955,13 +1988,6 @@ static void cfg_initialize_param(B3ui * ui, const char *cfgkey, int p) {
   }
 }
 
-#define CFGP(ID, TITLE, FORMAT, LUT)  \
-  ui->cfgvar[p].title   = TITLE;      \
-  ui->cfgvar[p].format  = FORMAT;     \
-  ui->cfgvar[p].lut     = LUT;        \
-  cfg_initialize_param(ui, ID, p);    \
-  ++p;
-
 static const b3scalepoint x_temperament[] = {
   {0, "gear60"},
   {1, "gear50"},
@@ -1990,21 +2016,23 @@ static const b3scalepoint x_filtertype[] = {
   {0, NULL}
 };
 
+/* clang-format off */
 static const b3scalepoint x_brakepos[] = {
-  {0,    "Free, no brake."},
-  {0.25, "Left (90deg)"},
-  {0.50, "Back (180deg)"},
-  {0.75, "Right (-90deg)"},
-  {1.0,  "Front (center)"},
-  {0, NULL}
+	{ 0   , "Free, no brake."},
+	{ 0.25, "Left (90deg)"},
+	{ 0.50, "Back (180deg)"},
+	{ 0.75, "Right (-90deg)"},
+	{ 1.0 , "Front (center)"},
+	{ 0   , NULL}
 };
 
 static const b3scalepoint x_micwidth[] = {
-  {-1, "mono (left)"},
-  { 0, "stereo"},
-  { 1, "mono (right)"},
-  {0, NULL}
+	{-1, "mono (left)"},
+	{ 0, "stereo"},
+	{ 1, "mono (right)"},
+	{ 0, NULL}
 };
+/* clang-format on */
 
 static const b3scalepoint x_bypass[] = {
   {0, "off (effect is active)"},
@@ -2016,6 +2044,14 @@ static const b3scalepoint x_zerooff[] = { {0, "off"}, {0, NULL} };
 static const b3scalepoint x_zeronone[] = { {0, "none"}, {0, NULL} };
 //static const b3scalepoint x_zerodisabled[] = { {0, "disabled"}, {0, NULL} };
 
+/* clang-format off */
+#define CFGP(ID, TITLE, FORMAT, LUT)  \
+  ui->cfgvar[p].title   = TITLE;      \
+  ui->cfgvar[p].format  = FORMAT;     \
+  ui->cfgvar[p].lut     = LUT;        \
+  cfg_initialize_param(ui, ID, p);    \
+  ++p;
+/* clang-format on */
 
 static void cfg_initialize(B3ui * ui) {
   memset(ui->cfgvar, 0, sizeof(ui->cfgvar)); // XXX
@@ -2565,8 +2601,6 @@ advanced_config_screen(PuglView* view)
 	0.5,  mouseover == 23 ? mat_b : mat_w, TA_CENTER_MIDDLE);
   }
 }
-
-#define SCOORD(X,Y) (X)/SCALE, (Y) * invaspect / SCALE, 0.5
 
 static void helpscreentext(PuglView* view)
 {
@@ -3339,7 +3373,6 @@ onDisplay(PuglView* view)
   }
 }
 
-#define SKD(mode) if (ui->displaymode != mode) break;
 
 static void
 onKeyboard(PuglView* view, bool press, uint32_t key)
@@ -3380,13 +3413,6 @@ onKeyboard(PuglView* view, bool press, uint32_t key)
 	ui->keyboard_control = 5;
 	queue_reshape = 1;
 	break;
-
-#define KEYADJ(ELEM, DELTA) { ui->dndval = ui->ctrls[(ELEM)].cur + (DELTA); processMotion(view, (ELEM), 0, 0); }
-#define KEYADJ2(UPPER, LOWER, DELTA) \
-	if (ui->keyboard_control == 3) KEYADJ(LOWER, DELTA) \
-	if (ui->keyboard_control == 1) KEYADJ(UPPER, DELTA)
-
-#define KEYSWITCH(ELEM) { assert(ui->ctrls[(ELEM)].type == OBJ_SWITCH); if (ui->ctrls[(ELEM)].cur == ui->ctrls[(ELEM)].max) ui->ctrls[(ELEM)].cur = ui->ctrls[(ELEM)].min; else ui->ctrls[(ELEM)].cur = ui->ctrls[(ELEM)].max; puglPostRedisplay(view); notifyPlugin(view, (ELEM)); }
 
       case 'q':
 	if (ui->keyboard_control == 5) KEYADJ(18, 1);
@@ -4555,18 +4581,20 @@ static int sb3_gui_setup(B3ui* ui, const LV2_Feature* const* features) {
 
   /** add control elements **/
 
+	/* clang-format off */
 #define CTRLELEM(ID, TYPE, VMIN, VMAX, VCUR, PX, PY, W, H, TEXID) \
-  {\
-    ui->ctrls[ID].type = TYPE; \
-    ui->ctrls[ID].min = VMIN; \
-    ui->ctrls[ID].max = VMAX; \
-    ui->ctrls[ID].cur = VCUR; \
-    ui->ctrls[ID].x = PX; \
-    ui->ctrls[ID].y = PY; \
-    ui->ctrls[ID].w = W; \
-    ui->ctrls[ID].h = H; \
-    ui->ctrls[ID].texID = TEXID; \
-  }
+{                                                                 \
+  ui->ctrls[ID].type = TYPE;                                      \
+  ui->ctrls[ID].min = VMIN;                                       \
+  ui->ctrls[ID].max = VMAX;                                       \
+  ui->ctrls[ID].cur = VCUR;                                       \
+  ui->ctrls[ID].x = PX;                                           \
+  ui->ctrls[ID].y = PY;                                           \
+  ui->ctrls[ID].w = W;                                            \
+  ui->ctrls[ID].h = H;                                            \
+  ui->ctrls[ID].texID = TEXID;                                    \
+}
+	/* clang-format on */
 
   /* drawbars */
   for (i = 0; i < 9; ++i)

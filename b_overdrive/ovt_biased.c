@@ -22,6 +22,7 @@
 /* 27-mar-2004/FK The negative feedback appears positive. We are subtracting
  *                a negative value. Check that and make it positive if needed.
  */
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -110,8 +111,8 @@ void cfg_biased () {
   codeln ("pp->bias = pp->biasBase;");
   codeln ("pp->norm = 1.0 - (1.0 / (1.0 + (pp->bias * pp->bias)));");
 #if 0
-  codeln ("printf (\"\\rBIAS=%10.4fNORM=%10.4f\", bias, norm);");
-  codeln ("fflush (stdout);");
+	codeln ("printf (\"\\rBIAS=%10.4fNORM=%10.4f\", bias, norm);");
+	codeln ("fflush (stdout);");
 #endif
   popIndent ();
   codeln ("}");
@@ -240,9 +241,6 @@ void ctl_biased () {
 #endif /* ADWS_FAT_CTRL */
 }
 
-/*
- *
- */
 void configSection (int i, void * pa) {
   sprintf (buf,
 	   "if (getConfigParameter_fr (\"%s\", cfg, &pp->adwFb, %g, %g));",
@@ -354,9 +352,6 @@ void xfr_biased (char * xs, char * ys) {
 #endif /* ADWS_GFB */
 }
 
-/*
- *
- */
 void bindCallbacks () {
   bindCallback (MOD_CONFIG, configSection, NULL);
   bindCallback (MOD_DOC, configDoc, NULL);

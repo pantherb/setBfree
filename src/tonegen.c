@@ -18,202 +18,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* tonegen.c
- *
- * 13-oct-2004/FK Tentatively added HIPASS_PERCUSSION at the end of the file.
- *                It is a simple integrator that takes the low end out of the
- *                percussion signal. Adjust osc.perc.gain to 10-12 to fit.
- *                Re-read today the A100 manual and found the two magic words
- *                'highpass filtered' in the treatment of the percussion.
- *
- * 30-sep-2004/FK Added transformer crosstalk.
- *
- * 22-sep-2004/FK Added osc.contribution-min parameter.
- *
- * 22-aug-2004/FK (Re)introduced muted percussion triggering bus.
- *
- * 21-aug-2004/FK Changed the signature of setDrawBars() to enable
- *                programme control of lower and pedal drawbars.
- *
- * 19-aug-2004/FK Fixed unwanted clicking. Envelopes converted to float.
- *                Core instructions extended and generalised. Added to
- *                comments for oscGenerateFragment().
- *
- * 15-aug-2004/FK Added call to float vibrato FX.
- *
- * 19-jul-2004/FK Version 0.4.1
- *
- * 23-jun-2004/FK tonegen_new.c
- *
- * 13-jun-2004/FK Added 50 Hz gears.
- *
- * 11-jun-2004/FK Added tuning by gear ratios as an alternative to equal
- *                temperament. Gear ratios were obtained from
- *                http://www.bikexprt.com/tunings/tunings2.htm
- *
- * 04-apr-2004/FK Added MIDI controllers for the drawbars.
- *
- * 23-sep-2003/FK Version 0.3.1 to experiment with stuff.
- *                Upped the precision by a magnitude to get rid of looping
- *                noise in the higher frequencies.
- *
- * 22-sep-2003/FK Fixed a small bug in the click envelope initializer.
- *                Fixed a small bug in the initialization routine.
- *                Added routine dumpOscToText() as a debugging aid.
- *
- * 20-Aug-2003/FK Added additional harmonics to wavetable loading, for
- *                experimental purposes. However, the residual harmonics
- *                in the real instruments are likely to be way low, possibly
- *                below the threshold. Aged capacitors, however, is another
- *                matter.
- *
- * 30-May-2003/FK Removed fixed-point percussion code. Cleanup, commenting.
- *
- * 25-May-2003/FK Redid percussion with a float multiplier that decays expo-
- *                nentially, like it should (or so I think). The quantization
- *                noise disappeared, at last.
- *
- * 07-may-2003/FK Added a single bit to the acx field in the Connection struct
- *                to distinguish between the added and active lists. That
- *                would appear to take care of the crashing bug, although I
- *                did suffer a hung note while testing it. Strange, but not
- *                conclusive.
- *
- * 06-may-2003/FK New way of writing dates. And I've begun looking for a way
- *                to fix another crashing bug: when the same connection is
- *                first closed and then opened in the same call to generate-
- *                Fragment(), the open code thinks the connection is active
- *                and trashes the active connection list, because the con-
- *                nection is still on the added list. This rare condition
- *                (open and close in the same call) happens more often than
- *                you would assume; rapid playing triggers it 5 percent of
- *                the time because fingers bounce off keys that just bounces
- *                down and the up again.
- *
- * 2002-11-26/FK Reinstated the key compression with a fix for the release
- *               click and compensated for mixing at unity. Seems to work
- *               better. Percussion is still noisy (egde noise from steps).
- *
- * 2002-11-23/FK Radical update of the oscillator structure and fragment
- *               generator. In the previous scheme we modelled for each
- *               oscillator the buses it was connected to. In the current
- *               scheme we keep track of the connections and see which
- *               are active. The hung note bug is fixed. The routine
- *               oscGenerateFragment() became simpler and more efficient.
- *               New initialization routines for tapering has been added.
- *               Routine dumpKey() added to dump keyOsc and the connections
- *               it references to text files.
- *
- * 2002-11-15/FK Changed the name from osctest.c to tonegen.c.
- *               Began to change to a single connection event queue.
- *               Removed code conditioned on ENV_COMPUTED.
- *               Made code dependent on ENV_SHAPED unconditioned and removed
- *               the symbol definition.
- *               Removed dead code in COMMENT ifdefs.
- *               Commented out old keyclick code. Setting function remains
- *               but is currently void.
- *
- * 2002-07-02/FK Found the source of the key release click. It was the
- *               key compression feature that was no longer compatible
- *               with the rewritten fragment generator. The reason for
- *               that was in turn that the when a release buffer
- *               is rendered, the key down count is too low, which gives
- *               it the wrong amplification. Percussion was also subject
- *               to the same kind of timing problem. because it was being
- *               reset prior to rendering the release fragment.
- *
- * 2002-06-29/FK Crash bugs found and fixed. Still a bit of gritty sound.
- *               Percussion sounds weird on key release.
- *
- * 2002-06-27/FK First version compiled. Crashed.
- *
- * 2002-06-25/FK Began work on a major rewrite of the fragment generator.
- *
- * 2002-02-23/FK Modified the on-key click to give 9 distinct clicks
- *               rather than one. Slightly better, although I wonder
- *               if one should simulate contact bounce too.
- *
- * 2002-01-21/FK Major rewrite of the wave buffer compiler. The code now
- *               performs a constrained search for the best number of waves
- *               to compile for each frequency in the given tuning. This
- *               pushes the loop artefacts down both in frequency and
- *               amplitude and it sounds better without them.
- *
- *               Also rewired the generator/key contact grid model to
- *               support three different variants of tonegenerator.
- *
- * 2002-01-19/FK Minor adjustments and adding comments.
- *
- * 2002-01-18/FK Fixed a bug in the tone generator initialization. Higher
- *               notes copied the lowest note buffers after they had been
- *               attenuated. As a result, the higher notes had buffers that
- *               were attenuated twice.
- *
- * 2002-01-14/FK Further adjustments to key compression. It must now help
- *               to balance the normalisation of the output value in the
- *               tone generator.
- *
- * 2002-01-06/FK Changed the keycompression to count the number of depressed
- *               keys, rather than just look at the count of active
- *               oscillators. Truly, I do not know what causes this
- *               effect, but my best guess is a decreased signal level as
- *               more and more contacts close with the busbars. The assumption
- *               is of course that just as the line from the TG provides the
- *               bus with signal, its connection with earth also drops the
- *               voltage in the bus slightly, and many parallell connections
- *               only makes the situation worse.
- *
- * 2002-01-05/FK Fixed a bug in the osc-key assignment. 16' and 8' gave the
- *               the same generators.
- *
- *               Added KEYCOMPRESSION as a conditional compilation option.
- *               This simulates a volume drop when several keys on the
- *               manual are depressed simultaneously. Currently it is
- *               dependent on the number of oscillators which probably is
- *               not correct, since the effect very likely is a consequence of
- *               the number of connections to the buses.
- *
- * 2002-01-04/FK Tone generator upgraded to hold individual wave buffers.
- *               We do this in order to support varying volumes in the
- *               different generators. In the process we learned something
- *               interesting. Version 1 of the tonegenerator had 12 sample
- *               buffers, one for each note. Higher octave oscillators reused
- *               those buffers, but had position increments of 2, 4, 8 etc,
- *               thus playing it back at a higher rate. However, since the
- *               samples were the same all oscillators had the same volume.
- *               In order to compensate for this and give each oscillator
- *               its own output level, version 2 modified the oscillator
- *               setup code to give each oscillator its own buffer of three
- *               cycles, scaled in amplitude. This turned out to sound bad,
- *               because of looping clicks that gave rise to odd harmonics.
- *               To get rid of the unwanted artefacts version 3 made sure
- *               that each buffer had at least 512 samples. However, this
- *               only resulted in a click noise that had the same frequency
- *               in the oscillators were it occurred. Version 4, finally,
- *               went back to the version 1 solution, but rather than reusing
- *               the actual buffers in the lowest octave, version 4 made
- *               copies of them and scaled the amplitude of the copy. The
- *               clicks disappeared (almost).
- *
- *               Now, it may appear wasteful to cross a buffer at twice
- *               the original playback speed, because half or more of the
- *               samples will not be ever used. But, that is only true if
- *               the buffer length is even. If the buffer length is odd,
- *               the playback point will start on samples:
- *                               0, 1, 2, ... n-1, 0, 1, ...
- *               where n is the position increment (1, 2, 4, 8, ...).
- *               Thus, all oscillators with odd length buffers make full
- *               use of their buffers at all increments.
- *
- *               It is of course natural to consider ways in which ALL
- *               buffers could be utilized in this way. One way would be
- *               to force all buffers to be odd, but that is not good
- *               for certain frequencies.
- *
- *
- * 2001-11-30/FK Oscillator test using a sample buffer for the basic
- *               sinusoid and 9 individually updated read positions.
- */
 #ifndef CONFIGDOCONLY
 
 #define _XOPEN_SOURCE 700
@@ -253,7 +57,6 @@
  * LE_BLOCKSIZE is the number ListElements we allocate in each call to
  * malloc.
  */
-
 #define LE_BLOCKSIZE 200
 
 /**
@@ -264,7 +67,8 @@
  */
 #ifndef NOF_BUSES
 #define NOF_BUSES 27		/* Should be in tonegen.h */
-#endif /* NOF_BUSES */
+#endif
+
 #define UPPER_BUS_LO 0
 #define UPPER_BUS_END 9
 #define LOWER_BUS_LO 9
@@ -272,47 +76,45 @@
 #define PEDAL_BUS_LO 18
 #define PEDAL_BUS_END 27
 
-/*
- * The message layout is:
+/* ****************************************************************/
+/* clang-format off */
+
+/* The message layout is:
  *
  * 15 14 13 12  11 10  9  8  7  6  5  4  3  2  1  0
  * [ Message  ] [             Parameter           ]
  * [0  0  0  0] [            Key number           ]    Key off
  * [0  0  0  1] [            Key number           ]    Key on
- *
  */
 
 /* Message field access macros */
 #define MSG_MMASK 0xf000
 #define MSG_PMASK 0x0fff
 /* Retrive message part from a message */
-#define MSG_GET_MSG(M) ((M) & MSG_MMASK)
+#define MSG_GET_MSG(M) ((M)&MSG_MMASK)
 /* Retrieve parameter part from a message */
-#define MSG_GET_PRM(M) ((M) & MSG_PMASK)
+#define MSG_GET_PRM(M) ((M)&MSG_PMASK)
 /* Messages */
 #define MSG_MKEYOFF 0x0000
 #define MSG_MKEYON  0x1000
 /* Key released message, arg is keynumber */
-#define MSG_KEY_OFF(K) (MSG_MKEYOFF | ((K) & MSG_PMASK))
+#define MSG_KEY_OFF(K) (MSG_MKEYOFF | ((K)&MSG_PMASK))
 /* Key depressed message, arg is keynumber */
-#define MSG_KEY_ON(K)  (MSG_MKEYON  | ((K) & MSG_PMASK))
-
+#define MSG_KEY_ON(K) (MSG_MKEYON | ((K)&MSG_PMASK))
 
 /* Core instruction codes (opr field in struct _coreins). */
-
-#define CR_CPY    0		/* Copy instruction */
-#define CR_ADD    1		/* Add instruction */
-#define CR_CPYENV 2		/* Copy via envelope instruction */
-#define CR_ADDENV 3		/* Add via envelope instruction */
+#define CR_CPY    0 /* Copy instruction */
+#define CR_ADD    1 /* Add instruction */
+#define CR_CPYENV 2 /* Copy via envelope instruction */
+#define CR_ADDENV 3 /* Add via envelope instruction */
 
 /* Rendering flag bits */
 #define ORF_MODIFIED 0x0004
 #define ORF_ADDED    0x0002
 #define ORF_REMOVED  0x0001
 /* Composite flag bits */
-#define OR_ADD 0x0006
-#define OR_REM 0x0005
-
+#define OR_ADD       0x0006
+#define OR_REM       0x0005
 
 #define RT_PERC2ND 0x08
 #define RT_PERC3RD 0x04
@@ -321,21 +123,115 @@
 #define RT_LOWRVIB 0x01
 #define RT_VIB     0x03
 
-/*
- * Equalisation macro selection.
- */
+/* Equalisation macro selection. */
 #define EQ_SPLINE 0
-#define EQ_PEAK24 1		/* Legacy */
-#define EQ_PEAK46 2		/* Legacy */
+#define EQ_PEAK24 1 /* Legacy */
+#define EQ_PEAK46 2 /* Legacy */
 
 /* These units are in dB */
-
 #define taperMinusThree -10.0
 #define taperMinusTwo    -7.0
 #define taperMinusOne    -3.5
 #define taperReference    0.0
 #define taperPlusOne      3.5
 #define taperPlusTwo      7.0
+
+/* ****************************************************************/
+
+/**
+ * Gear ratios for a 60 Hertz organ.
+ */
+static double const gears60ratios[12][2] = {
+	{85, 104}, /* c  */
+	{71,  82}, /* c# */
+	{67,  73}, /* d  */
+	{35,  36}, /* d# */
+	{69,  67}, /* e  */
+	{12,  11}, /* f  */
+	{37,  32}, /* f# */
+	{49,  40}, /* g  */
+	{48,  37}, /* g# */
+	{11,   8}, /* a  */
+	{67,  46}, /* a# */
+	{54,  35}  /* h  */
+};
+
+/**
+ * Gear ratios for a 50 Hertz organ (estimated).
+ */
+static double const gears50ratios[12][2] = {
+	{17, 26}, /* c  */
+	{57, 82}, /* c# */
+	{11, 15}, /* d  */
+	{49, 63}, /* d# */
+	{33, 40}, /* e  */
+	{55, 63}, /* f  */
+	{49, 53}, /* f# */
+	{49, 50}, /* g  */
+	{55, 53}, /* g# */
+	{11, 10}, /* a  */
+	{ 7,  6}, /* a# */
+	{90, 73}  /* h  */
+};
+
+/**
+ * This table is indexed by frequency number, i.e. the tone generator number
+ * on the 91 oscillator generator. The first frequency/generator is numbered 1.
+ */
+static short const wheelPairs[92] = {
+	0,                                                /* 0: not used */
+	49, 50, 51, 52,  53, 54, 55, 56,  57, 58, 59, 60, /* 1-12 */
+	61, 62, 63, 64,  65, 66, 67, 68,  69, 70, 71, 72, /* 13-24 */
+	73, 74, 75, 76,  77, 78, 79, 80,  81, 82, 83, 84, /* 25-36 */
+	0,  0,  0,  0,   0,  85, 86, 87,  88, 89, 90, 91, /* 37-48 */
+	1,  2,  3,  4,   5,  6,  7,  8,   9,  10, 11, 12, /* 49-60 */
+	13, 14, 15, 16,  17, 18, 19, 20,  21, 22, 23, 24, /* 61-72 */
+	25, 26, 27, 28,  29, 30, 31, 32,  33, 34, 35, 36, /* 73-84 */
+	42, 43, 44, 45,  46, 47, 48                       /* 85-91 */
+};
+
+/*
+ * These two arrays describes two rows of transformers mounted on top of
+ * the tonegenerator. The concepts of north and south are simply used
+ * to avoid confusion with upper and lower (manuals).
+ */
+
+/**
+ * description of rows of transformers mounted on top of
+ * the tonegenerator for the upper (north) manual
+ */
+static short const northTransformers[] = {
+	85, 66, 90, 71, 47, 64, 86, 69, 45, 62, 86, 67, 91, 72, 48, 65, 89, 70,
+	46, 63, 87, 68, 44, 61,
+	0
+};
+
+/**
+ * description of rows of transformers mounted on top of
+ * the tonegenerator for the lower (south) manual
+ */
+static short const southTransformers[] = {
+	78, 54, 83, 59, 76, 52, 81, 57, 74, 50, 79, 55, 84, 60, 77, 53, 82, 58,
+	75, 51, 80, 56, 73, 49,
+	0
+};
+
+/**
+ * This array describes how oscillators are arranged on the terminal
+ * soldering strip.
+ */
+static short const terminalStrip[] = {
+	85, 42, 30, 76, 66, 18,  6, 54, 90, 35, 83, 71, 23, 11, 59, 47, 40,
+	28, 76, 64, 16,  4, 52, 88, 33, 81, 69, 21,  9, 57, 45, 34, 26, 74,
+	62, 14,  2, 50, 86, 43, 31, 79, 67, 19,  7, 55, 91, 36, 84, 72, 24,
+	12, 60, 48, 41, 29, 77, 65, 17,  5, 53, 89, 34, 82, 70, 22, 10, 58,
+	46, 39, 27, 75, 63, 15,  3, 51, 87, 32, 80, 68, 20,  8, 56, 44, 37,
+	25, 73, 61, 13,  1, 49,
+	0
+};
+
+/* clang-format on */
+/* ****************************************************************/
 
 
 static void initValues (struct b_tonegen *t) {
@@ -353,8 +249,8 @@ static void initValues (struct b_tonegen *t) {
   t->envReleaseClickLevel = 0.25;
 
   /* these are set later in initToneGenerator() */
-  t->envAtkClkMinLength = -1; //  8 @ 22050
-  t->envAtkClkMaxLength = -1; // 40 @ 22050
+  t->envAtkClkMinLength = -1; /*  8 @ 22050 */
+  t->envAtkClkMaxLength = -1; /* 40 @ 22050 */
 
   t->newRouting = 0;
   t->oldRouting = 0;
@@ -369,8 +265,8 @@ static void initValues (struct b_tonegen *t) {
   t->keyDownCount = 0;
 #endif
 
-  t->swellPedalGain = 0.07; // initial level
-  t->outputLevelTrim = 0.07; // 127/127 * midi-signal
+  t->swellPedalGain = 0.07; /* initial level */
+  t->outputLevelTrim = 0.07; /* 127/127 * midi-signal */
   t->tuning = 440.0;
 
   t->gearTuning = 1;
@@ -432,103 +328,6 @@ static void initValues (struct b_tonegen *t) {
   t->keyCompLevel = KEYCOMP_ZERO_LEVEL;
 #endif
 }
-
-/**
- * Gear ratios for a 60 Hertz organ.
- */
-static double const gears60ratios [12][2] = {
-  {85, 104},			/* c  */
-  {71,  82},			/* c# */
-  {67,  73},			/* d  */
-  {35,  36},			/* d# */
-  {69,  67},			/* e  */
-  {12,  11},			/* f  */
-  {37,  32},			/* f# */
-  {49,  40},			/* g  */
-  {48,  37},			/* g# */
-  {11,   8},			/* a  */
-  {67,  46},			/* a# */
-  {54,  35}			/* h  */
-};
-
-/**
- * Gear ratios for a 50 Hertz organ (estimated).
- */
-static double const gears50ratios [12][2] = {
-  {17, 26},			/* c  */
-  {57, 82},			/* c# */
-  {11, 15},			/* d  */
-  {49, 63},			/* d# */
-  {33, 40},			/* e  */
-  {55, 63},			/* f  */
-  {49, 53},			/* f# */
-  {49, 50},			/* g  */
-  {55, 53},			/* g# */
-  {11, 10},			/* a  */
-  { 7,  6},			/* a# */
-  {90, 73}			/* h  */
-};
-
-/**
- * This table is indexed by frequency number, i.e. the tone generator number
- * on the 91 oscillator generator. The first frequency/generator is numbered 1.
- */
-static short const wheelPairs [92] = {
-  0,				/* 0: not used */
-  49, 50, 51, 52,  53, 54, 55, 56,  57, 58, 59, 60, /* 1-12 */
-  61, 62, 63, 64,  65, 66, 67, 68,  69, 70, 71, 72, /* 13-24 */
-  73, 74, 75, 76,  77, 78, 79, 80,  81, 82, 83, 84, /* 25-36 */
-  0,  0,  0,  0,   0,  85, 86, 87,  88, 89, 90, 91, /* 37-48 */
-  1,  2,  3,  4,   5,  6,  7,  8,   9,  10, 11, 12, /* 49-60 */
-  13, 14, 15, 16,  17, 18, 19, 20,  21, 22, 23, 24, /* 61-72 */
-  25, 26, 27, 28,  29, 30, 31, 32,  33, 34, 35, 36, /* 73-84 */
-  42, 43, 44, 45,  46, 47, 48	/* 85-91 */
-};
-
-/*
- * These two arrays describes two rows of transformers mounted on top of
- * the tonegenerator. The concepts of north and south are simply used
- * to avoid confusion with upper and lower (manuals).
- */
-
-/**
- * description of rows of transformers mounted on top of
- * the tonegenerator for the upper (north) manual
- */
-static short const northTransformers [] = {
-  85, 66, 90, 71, 47, 64, 86, 69, 45, 62, 86, 67, 91, 72, 48, 65, 89, 70,
-  46, 63, 87, 68, 44, 61,
-  0
-};
-
-/**
- * description of rows of transformers mounted on top of
- * the tonegenerator for the lower (south) manual
- */
-static short const southTransformers [] = {
-  78, 54, 83, 59, 76, 52, 81, 57, 74, 50, 79, 55, 84, 60, 77, 53, 82, 58,
-  75, 51, 80, 56, 73, 49,
-  0
-};
-
-
-/**
- * This array describes how oscillators are arranged on the terminal
- * soldering strip.
- */
-static short const terminalStrip [] = {
-  85, 42, 30, 76, 66, 18,  6, 54, 90, 35, 83, 71, 23, 11, 59, 47, 40,
-  28, 76, 64, 16,  4, 52, 88, 33, 81, 69, 21,  9, 57, 45, 34, 26, 74,
-  62, 14,  2, 50, 86, 43, 31, 79, 67, 19,  7, 55, 91, 36, 84, 72, 24,
-  12, 60, 48, 41, 29, 77, 65, 17,  5, 53, 89, 34, 82, 70, 22, 10, 58,
-  46, 39, 27, 75, 63, 15,  3, 51, 87, 32, 80, 68, 20,  8, 56, 44, 37,
-  25, 73, 61, 13,  1, 49,
-  0
-};
-
-/*
- * ================================================================
- */
 
 /**
  * This function converts from a dB value to a fraction of unit gain.
@@ -1588,13 +1387,13 @@ static void initOscillators (struct b_tonegen *t, int variant, double precision)
     tun = (double) (i - tuningOsc);
 
     if (t->gearTuning) {
-      /* Frequency number minus one. The frequency number is the number of
-	 the oscillator on the tone generator with 91 oscillators. This
-	 means that the frequency number here always is 0 for c@37 Hz.
-         The first tonegenerator is always numbered one, but depending
-         on the organ model generator number 1 may be c@37 Hz (91 osc) or
-         a@55 Hz (86 osc).
-      */
+			/* Frequency number minus one. The frequency number is the number of
+			 * the oscillator on the tone generator with 91 oscillators. This
+			 * means that the frequency number here always is 0 for c@37 Hz.
+			 * The first tonegenerator is always numbered one, but depending
+			 * on the organ model generator number 1 may be c@37 Hz (91 osc) or
+			 * a@55 Hz (86 osc).
+			 */
       int freqNr = i + 9 - tuningOsc;
       int note = freqNr % 12;	/* 0=c, 11=h */
       int octave = freqNr / 12;	/* 0, 1, 2, ... */
@@ -2177,8 +1976,7 @@ static void dumpRuntimeData (struct b_tonegen *t, char * fname) {
   }
 }
 
-/* ================================================================
- * 22-sep-2003/FK
+/**
  * Dump the oscillator array for diagnostics.
  */
 static int dumpOscToText (struct b_tonegen *t, char * fname) {
@@ -2576,8 +2374,7 @@ static void initEnvelopes (struct b_tonegen *t) {
       for (; i < (start + burst); i++) {
 	t->attackEnv[b][i] = 1.0 - (t->envAttackClickLevel * drnd ());
       }
-      /* From the end of the burst to the end of the envelope the
-	 amplification is unity. */
+      /* From the end of the burst to the end of the envelope the amplification is unity. */
       for (; i < bss; i++) t->attackEnv[b][i] = 1.0;
 
 #if 1
@@ -3052,7 +2849,7 @@ void oscKeyOn (struct b_tonegen *t, unsigned char keyNumber, unsigned char realK
     t->msgQueueWriter = t->msgQueue;
   }
 
-  /*  printf ("\rON :%3d", keyNumber); fflush (stdout); */
+  // printf ("\rON :%3d", keyNumber); fflush (stdout);
 
 }
 
@@ -3138,9 +2935,9 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
   /* Reset the core program */
   t->coreWriter = t->coreReader = t->corePgm;
 
-  /* ================================================================
-		     M E S S S A G E   Q U E U E
-     ================================================================ */
+	/* ****************************************************************
+	 *     M E S S S A G E   Q U E U E
+	 * ****************************************************************/
 
   while (t->msgQueueReader != t->msgQueueWriter) {
 
@@ -3204,9 +3001,9 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
     }
   } /* while message queue reader */
 
-  /* ================================================================
-		     A C T I V A T E D   L I S T
-     ================================================================ */
+	/* ****************************************************************
+	 *     A C T I V A T E D   L I S T
+	 * ****************************************************************/
 
   if ((recomputeRouting = (t->oldRouting != t->newRouting))) {
     t->oldRouting = t->newRouting;
@@ -3417,9 +3214,9 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
 
   t->drawBarChange = 0;
 
-  /* ================================================================
-		       R E M O V A L   L I S T
-     ================================================================ */
+	/* ****************************************************************
+	 *       R E M O V A L   L I S T
+	 * ****************************************************************/
 
   /*
    * Core instructions are now written.
@@ -3442,9 +3239,9 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
     }
   }
 
-  /* ================================================================
-		   C O R E   I N T E R P R E T E R
-     ================================================================ */
+	/* ****************************************************************
+	 *   C O R E   I N T E R P R E T E R
+	 * ****************************************************************/
 
   /*
    * Special case: silence. If the vibrato scanner is used we must run zeros
@@ -3524,9 +3321,9 @@ void oscGenerateFragment (struct b_tonegen *t, float * buf, size_t lengthSamples
     }
   } /* while there are core instructions */
 
-  /* ================================================================
-			    M I X D O W N
-     ================================================================ */
+	/* ****************************************************************
+	 *      M I X D O W N
+	 * ****************************************************************/
 
   /*
    * The percussion, sweel and scanner buffers are now written.
@@ -3617,7 +3414,7 @@ struct b_tonegen *allocTonegen() {
 #else
 # include "cfgParser.h"
 # include "tonegen.h"
-#endif // CONFIGDOCONLY
+#endif /* END CONFIGDOCONLY */
 
 #define STRINGEXPAND(x) #x
 #define STRINGIFY(x) STRINGEXPAND(x)
@@ -3629,7 +3426,7 @@ static const ConfigDoc doc[] = {
   {"osc.perc.fast",                    CFG_DOUBLE,  "1.0", "Fast percussion decay time", "s", 0, 10.0, 0.1},
   {"osc.perc.slow",                    CFG_DOUBLE,  "4.0", "Slow percussion decay time", "s", 0, 10.0, 0.1},
   {"osc.perc.normal",                  CFG_DECIBEL, "1.0", "Percussion starting gain of the envelope for normal volume.", "dB", 0, 1, 2.0},
-  {"osc.perc.soft",                    CFG_DECIBEL, "0.5012", "Percussion starting gain of the envelope for soft volume.", "dB", 0, .89125, 2.0}, // range [0..1[ (less than 1.0)
+  {"osc.perc.soft",                    CFG_DECIBEL, "0.5012", "Percussion starting gain of the envelope for soft volume.", "dB", 0, .89125, 2.0}, /* range [0..1[ (less than 1.0) */
 #ifdef HIPASS_PERCUSSION
   {"osc.perc.gain",                    CFG_DOUBLE,  "11.0", "Basic volume of the percussion signal, applies to both normal and soft", "", 0, 22.0, .5},
 #else
@@ -3650,12 +3447,12 @@ static const ConfigDoc doc[] = {
   {"osc.terminal.t<t>.w<w>",           CFG_DOUBLE,  "-", "t,w: wheel-number [0..91]", INCOMPLETE_DOC},
   {"osc.taper.k<key>.b<bus>.t<wheel>", CFG_DOUBLE,  "-", "customize tapering model. Specify level of [key, drawbar, tonewheel].", INCOMPLETE_DOC},
   {"osc.crosstalk.k<key>",             CFG_TEXT,    "-", "value colon-separated: \"<int:bus>:<int:wheel>:<double:level>\"", INCOMPLETE_DOC},
-  {"osc.compartment-crosstalk",        CFG_DECIBEL, "0.01", "Crosstalk between tonewheels in the same compartment. The value refers to the amount of rogue signal picked up.", "dB", 0, 0.5, 2.0}, // actual range 0..1
-  {"osc.transformer-crosstalk",        CFG_DECIBEL, "0",    "Crosstalk between transformers on the top of the tg.", "dB", 0, 0.5, 2.0}, // actual range 0..1
-  {"osc.terminalstrip-crosstalk",      CFG_DECIBEL, "0.01", "Crosstalk between connection on the terminal strip.", "dB", 0, 0.5, 2.0}, // actual range 0..1
-  {"osc.wiring-crosstalk",             CFG_DECIBEL, "0.01", "Throttle on the crosstalk distribution model for wiring", "dB", 0, 0.5, 2.0}, // actual range 0..1
-  {"osc.contribution-floor",           CFG_DECIBEL, "0.0000158", "Signals weaker than this are not put on the contribution list", "dB", 0, .001, 2.00}, // actual range 0..1
-  {"osc.contribution-min",             CFG_DECIBEL, "0", "If non-zero, contributing signals have at least this level", "dB", 0, .001, 2.0}, // actual range 0..1
+  {"osc.compartment-crosstalk",        CFG_DECIBEL, "0.01", "Crosstalk between tonewheels in the same compartment. The value refers to the amount of rogue signal picked up.", "dB", 0, 0.5, 2.0}, /* actual range 0..1 */
+  {"osc.transformer-crosstalk",        CFG_DECIBEL, "0",    "Crosstalk between transformers on the top of the tg.", "dB", 0, 0.5, 2.0}, /* actual range 0..1 */
+  {"osc.terminalstrip-crosstalk",      CFG_DECIBEL, "0.01", "Crosstalk between connection on the terminal strip.", "dB", 0, 0.5, 2.0}, /* actual range 0..1 */
+  {"osc.wiring-crosstalk",             CFG_DECIBEL, "0.01", "Throttle on the crosstalk distribution model for wiring", "dB", 0, 0.5, 2.0}, /* actual range 0..1 */
+  {"osc.contribution-floor",           CFG_DECIBEL, "0.0000158", "Signals weaker than this are not put on the contribution list", "dB", 0, .001, 2.00}, /* actual range 0..1 */
+  {"osc.contribution-min",             CFG_DECIBEL, "0", "If non-zero, contributing signals have at least this level", "dB", 0, .001, 2.0}, /* actual range 0..1 */
   {"osc.attack.click.level",           CFG_DOUBLE,  "0.5", "Amount of random attenuation applied to a closing bus-oscillator connection.", "%", 0, 1, .02},
   {"osc.attack.click.maxlength",       CFG_DOUBLE,  "0.6250", "The maximum length of a key-click noise burst, 100% corresponds to " STRINGIFY(BUFFER_SIZE_SAMPLES) " audio-samples", "%", 0, 1, 0.025},
   {"osc.attack.click.minlength",       CFG_DOUBLE,  "0.1250", "The minimum length of a key-click noise burst, 100% corresponds to " STRINGIFY(BUFFER_SIZE_SAMPLES) " audio-samples", "%", 0, 1, 0.025},

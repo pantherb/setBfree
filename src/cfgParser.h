@@ -26,6 +26,11 @@
 
 #include <stdio.h>
 
+/* clang-format off */
+#define INCOMPLETE_DOC "", 0, 0, 0
+#define DOC_SENTINEL {NULL, CFG_TEXT, "", "", "", 0, 0, 0}
+/* clang-format on */
+
 /* some filters - in particular butterworth shelfing -
  * end up producing denormal-values when fed with zeros */
 #define DENORMAL_HACK (1e-14)
@@ -41,18 +46,16 @@ typedef struct _configContext {
 enum conftype {
   CFG_TEXT = 0,
   CFG_DOUBLE,
-  CFG_DECIBEL, // equivalent to double; only relevant for GUI-formatting and ui_step
+  CFG_DECIBEL, /**< double; only relevant for GUI-formatting and ui_step */
   CFG_FLOAT,
   CFG_INT,
   CFG_LAST
 };
 
-#define INCOMPLETE_DOC "", 0, 0, 0
-#define DOC_SENTINEL {NULL, CFG_TEXT, "", "", "", 0, 0, 0}
 
 typedef struct _configDoc {
   const char * name; /**< parameter name */
-  enum conftype type;
+  enum conftype type;/**< parameter type */
   char const * dflt; /**< default value as text */
   char const * desc; /**< descition */
   char const * unit; /**< unit */

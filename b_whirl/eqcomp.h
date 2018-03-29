@@ -21,16 +21,19 @@
 
 #ifndef EQCOMP_H
 #define EQCOMP_H
+
+/* clang-format off */
+
 /* Filter type selection values */
-#define EQC_LPF 0	/* lowpass filter */
-#define EQC_HPF 1	/* highpass filter */
-#define EQC_BPF0 2	/* Bandpass filter with constant skirt gain */
-#define EQC_BPF1 3	/* Bandpass filter with 0 db peak gain  */
-#define EQC_NOTCH 4	/* Notch filter */
-#define EQC_APF 5	/* Allpass filter */
-#define EQC_PEQ 6	/* Peaking eq filter */
-#define EQC_LOW 7	/* Low shelf filter */
-#define EQC_HIGH 8	/* High shelf filter */
+#define EQC_LPF   0 /* lowpass filter */
+#define EQC_HPF   1 /* highpass filter */
+#define EQC_BPF0  2 /* Bandpass filter with constant skirt gain */
+#define EQC_BPF1  3 /* Bandpass filter with 0 db peak gain  */
+#define EQC_NOTCH 4 /* Notch filter */
+#define EQC_APF   5 /* Allpass filter */
+#define EQC_PEQ   6 /* Peaking eq filter */
+#define EQC_LOW   7 /* Low shelf filter */
+#define EQC_HIGH  8 /* High shelf filter */
 
 /* Coefficient access symbols */
 #define EQC_B0 0
@@ -39,6 +42,8 @@
 #define EQC_A0 3
 #define EQC_A1 4
 #define EQC_A2 5
+
+/* clang-format on */
 
 /* Function prototypes */
 extern const char * eqGetTypeString (int t);

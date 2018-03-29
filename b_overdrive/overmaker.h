@@ -18,27 +18,28 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* overmaker.h */
 #ifndef OVERMAKER_H
 #define OVERMAKER_H
 
 #define BUFSZ 512
 
-#define INTWRAP(FN) \
-  vspace (1); \
-  codeln ("void f"FN" (void *d, float f) {"); \
-  pushIndent (); \
-  codeln (FN" (d, (unsigned char)(f*127.0));"); \
-  popIndent (); \
-  codeln ("}");
+/* clang-format off */
+#define INTWRAP(FN)                                    \
+        vspace (1);                                    \
+        codeln ("void f" FN " (void *d, float f) {");  \
+        pushIndent ();                                 \
+        codeln (FN " (d, (unsigned char)(f*127.0));"); \
+        popIndent ();                                  \
+        codeln ("}");
 
-#define FLOATWRAP(FN) \
-  vspace (1); \
-  codeln ("void "FN" (void *d, unsigned char uc) {"); \
-  pushIndent (); \
-  codeln ("f"FN" (d, uc/127.0);"); \
-  popIndent (); \
-  codeln ("}");
+#define FLOATWRAP(FN)                                         \
+        vspace (1);                                           \
+        codeln ("void " FN " (void *d, unsigned char uc) {"); \
+        pushIndent ();                                        \
+        codeln ("f" FN " (d, uc/127.0);");                    \
+        popIndent ();                                         \
+        codeln ("}");
+/* clang-format on */
 
 typedef struct mod_call_struct {
   void (*fn)(int, void *);

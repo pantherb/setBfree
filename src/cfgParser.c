@@ -59,19 +59,15 @@
  * is idempotent. The most recent call defines the parameter's value.
  */
 static int distributeParameter (b_instance* inst, ConfigContext * cfg) {
-
   int n = 0;
 
 #ifdef CFG_MAIN
-
   printf ("%s:%d:[%s]=[%s]\n",
 	  cfg->fname,
 	  cfg->linenr,
 	  cfg->name,
  	  cfg->value);
-
 #else
-
   n += mainConfig (cfg);
   n += midiConfig (inst->midicfg, cfg);
   n += pgmConfig (inst->progs, cfg);
@@ -93,15 +89,11 @@ static int distributeParameter (b_instance* inst, ConfigContext * cfg) {
   } else {
     rc_add_cfg(inst->state, cfg);
   }
-
 #endif /* CFG_MAIN */
 
   return n;
 }
 
-/*
- *
- */
 void parseConfigurationLine (void *inst, const char * fname, int lineNumber, char * oneLine) {
   char delim[] = "=\n";
   char * s = oneLine;
@@ -168,12 +160,9 @@ int evaluateConfigKeyValue(void *inst, const char *key, const char *value) {
 
 #ifndef CFG_MAIN
 /* text representation of enum conftype */
-const char *conftypenames[CFG_LAST] = { "S", "D", "D", "F", "I" };
 
-/*
- *
- */
 static void formatDoc (const char *modulename, const ConfigDoc *d) {
+  const char *conftypenames[CFG_LAST] = { "S", "D", "D", "F", "I" };
   printf("Parameters for '%s':\n", modulename);
   while (d && d->name) {
     if (strlen(d->name) >= 40) {
@@ -192,10 +181,8 @@ static void formatDoc (const char *modulename, const ConfigDoc *d) {
   printf("\n");
 }
 
-extern const char * filterTypeNames [10]; //defined in b3_whirl/eqcomp.c
-/*
- *
- */
+extern const char* filterTypeNames[10]; // defined in b_whirl/eqcomp.c
+
 void dumpConfigDoc () {
   printf(
       "Instrument Properties:\n"
@@ -279,9 +266,6 @@ void dumpConfigDoc () {
 }
 #endif
 
-/*
- *
- */
 int parseConfigurationFile (void *inst, const char * fname) {
   int lineNumber = 0;
   char lineBuf [LINEBUFSZ];
@@ -307,11 +291,7 @@ int parseConfigurationFile (void *inst, const char * fname) {
   return 0;
 }
 
-/*
- *
- */
 void showConfigfileContext (ConfigContext * cfg, const char * msg) {
-
   assert (cfg != NULL);
   assert (msg != NULL);
 
@@ -324,25 +304,16 @@ void showConfigfileContext (ConfigContext * cfg, const char * msg) {
 	   msg);
 }
 
-/*
- *
- */
 void configIntUnparsable (ConfigContext * cfg) {
   assert (cfg != NULL);
   showConfigfileContext (cfg, "value is not an integer");
 }
 
-/*
- *
- */
 void configDoubleUnparsable (ConfigContext * cfg) {
   assert (cfg != NULL);
   showConfigfileContext (cfg, "value is not a real");
 }
 
-/*
- *
- */
 void configDoubleOutOfRange (ConfigContext * cfg,
 			     double lowest,
 			     double highest) {
@@ -352,9 +323,6 @@ void configDoubleOutOfRange (ConfigContext * cfg,
   showConfigfileContext (cfg, buf);
 }
 
-/*
- *
- */
 void configIntOutOfRange (ConfigContext * cfg, int lowest, int highest) {
   char buf[256];
   assert (cfg != NULL);
@@ -516,7 +484,6 @@ int getConfigParameter_i (const char * par, ConfigContext * cfg, int * ip) {
  *             -1 if the name matched but no assignment was made.
  */
 int getConfigParameter_f (const char * par, ConfigContext * cfg, float * fp) {
-
   assert (par != NULL);
   assert (cfg != NULL);
   assert (fp  != NULL);

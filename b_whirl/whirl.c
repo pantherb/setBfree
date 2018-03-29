@@ -71,17 +71,19 @@ void initValues (struct b_whirl *w) {
 
 	w->hornAcDc = w->drumAcDc = 0;
 
+	/* clang-format off */
+
 	/* The current angle of rotating elements */
 	w->hornAngleGRD = 0; /* 0..1 */
 	w->drumAngleGRD = 0;
-	w->micAngle = 0;
+	w->micAngle     = 0;
 
-	/* angular speed  grad / sample */
-	w->hornIncr     = 0; /* horn's current angular speed */
-	w->drumIncr     = 0; /* drum's current angular speed */
+	/* angular speed: deg / sample */
+	w->hornIncr      = 0; /* horn's current angular speed */
+	w->drumIncr      = 0; /* drum's current angular speed */
 
-	w->hornTarget   = 0; /* target angular speed */
-	w->drumTarget   = 0; /* target angular speed */
+	w->hornTarget    = 0; /* target angular speed */
+	w->drumTarget    = 0; /* target angular speed */
 
 	w->airSpeed      = 340.0; /* Meters per second */
 	w->micDistCm     =  42.0; /* From mic to origin */
@@ -97,13 +99,14 @@ void initValues (struct b_whirl *w) {
 
 	w->haT = EQC_LPF;
 	w->haF = 4500;
-	w->haQ = 2.7456;
-	w->haG = -30.0;
+	w->haQ =    2.7456;
+	w->haG =  -30.0;
 
 	w->hbT = EQC_LOW;
 	w->hbF = 300.0;
 	w->hbQ =   1.0;
 	w->hbG = -30.0;
+/* clang-format on */
 
 	w->hornMicWidth = w->drumMicWidth = 0;
 	w->hornMic_hll = w->drumMic_dll = 1.0;
@@ -187,7 +190,7 @@ void useRevOption (struct b_whirl *w, int n, int signals) {
 	}
 	if (signals & 2) {
 
-		const int hr = (n / 3) % 3; // horn 0:off, 1:chorale  2:tremolo
+		const int hr = (n / 3) % 3; /* horn 0:off, 1:chorale  2:tremolo */
 		switch (hr) {
 			case 2:
 				w->revSelect = WHIRL_FAST;
@@ -215,14 +218,14 @@ void setRevSelect (struct b_whirl *w, int n) {
 /* used by rotary.speed-select */
 static void revControlAll (void *d, unsigned char u) {
 	struct b_whirl *w = (struct b_whirl *) d;
-	useRevOption (w, (int) (u / 15), 2); // 0..8
+	useRevOption (w, (int) (u / 15), 2); /* 0..8 */
 }
 
 /* used by rotary.speed-preset */
 static void revControl (void *d, unsigned char u) {
 	struct b_whirl *w = (struct b_whirl *) d;
 	/* 0, 127 -> slow, fast */
-	setRevSelect (w, (int) (u / 43)); // 3 modes only - fast, stop, slow
+	setRevSelect (w, (int) (u / 43)); /* 3 modes only - fast, stop, slow */
 }
 
 /* used by rotary.speed-toggle */
@@ -300,8 +303,14 @@ static void _ipoldraw (struct b_whirl *sw,
 	*ipy = level;
 }
 
-#define ipolmark(degrees, level) { ipx = degrees; ipy = level; }
-#define ipoldraw(degrees, level, partial) _ipoldraw(w, degrees, level, partial, &ipx, &ipy)
+/* clang-format off */
+#define ipolmark(degrees, level) \
+{                                \
+        ipx = degrees;           \
+        ipy = level;             \
+}
+#define ipoldraw(degrees, level, partial) _ipoldraw (w, degrees, level, partial, &ipx, &ipy)
+/* clang-format on */
 
 static void initTables (struct b_whirl *w) {
   unsigned int i, j;
@@ -310,148 +319,153 @@ static void initTables (struct b_whirl *w) {
   double sum;
   ipx = ipy = 0.0;
 
-  /* Horn angle-dependent impulse response coefficents. */
-  /* These were derived from 'Doppler simulation and the leslie',
-   * Julius Smith, Stefania Serafin, Jonathan Abel, David Berners,
-   * Proc. of the 5th Conference on Digital Audio Effects (DAFx-02),
-   * Hamburg, Germany, September 26-28, 2002.
-   * In this article figure 8 depicts the 'First 5 principal components
-   * weighted by their corresponding singular values'. I have been unable
-   * to clearly understand what this means, but anyway ploughed ahead
-   * interpreted the components as impulse response coefficients. The
-   * figure plots the five components as horizontal wavy lines, where
-   * the x axis is the angle and the y axis is relative to each component.
-   * So, the following code consists of 'drawing' instructions that simply
-   * 'paints' a copy of each line as interpreted from the figure, from
-   * left (-180 degrees) to right (180 degrees). The points between the
-   * given coordinates are linearly interpolated and inserted into the
-   * bfw matrix. Then (below) we normalise the lot to unit gain.
-   */
-  ipolmark (-180.0, 1.052);
-  ipoldraw (-166.4,  .881, 0);
-  ipoldraw (-150.5,  .881, 0);
-  ipoldraw (-135.3,  .881, 0);
-  ipoldraw (-122.4,  .792, 0);
-  ipoldraw (-106.5,  .792, 0);
-  ipoldraw ( -91.2,  .836, 0);
-  ipoldraw ( -75.8,  .881, 0);
-  ipoldraw ( -59.4,  .851, 0);
-  ipoldraw ( -44.7,  .941, 0);
-  ipoldraw ( -30.0, 1.298, 0);
-  ipoldraw ( -14.7, 2.119, 0);
-  ipoldraw (   0.0, 2.820, 0);
-  ipoldraw (  15.6, 2.313, 0);
-  ipoldraw (  30.0, 1.492, 0);
-  ipoldraw (  44.7,  .926, 0);
-  ipoldraw (  60.0,  .836, 0);
-  ipoldraw (  74.7,  .866, 0);
-  ipoldraw (  90.6,  .792, 0);
-  ipoldraw ( 100.0,  .777, 0);
-  ipoldraw ( 105.0,  .777, 0);
-  ipoldraw ( 120.0,  .836, 0);
-  ipoldraw ( 135.3,  .836, 0);
-  ipoldraw ( 150.0,  .881, 0);
-  ipoldraw ( 164.5,  .874, 0);
-  ipoldraw ( 180.0, 1.052, 0);
+	/* clang-format off */
 
-  ipolmark (-180.0, -0.07);
-  ipoldraw (-150.0,  0.10, 1);
-  ipoldraw (-135.0, -0.10, 1);
-  ipoldraw (-122.2,  0.16, 1);
-  ipoldraw (-105.0,  0.15, 1);
-  ipoldraw ( -91.2,  0.37, 1);
-  ipoldraw ( -75.3,  0.32, 1);
-  ipoldraw ( -60.1,  0.39, 1);
-  ipoldraw ( -44.5,  0.70, 1);
-  ipoldraw ( -30.0,  0.53, 1);
-  ipoldraw ( -12.0, -0.40, 1);
-  ipoldraw (   0.0, -0.81, 1);
-  ipoldraw (   2.7, -0.77, 1);
-  ipoldraw (  15.0, -0.52, 1);
-  ipoldraw (  33.1,  0.38, 1);
-  ipoldraw (  43.7,  0.68, 1);
-  ipoldraw (  57.7,  0.49, 1);
-  ipoldraw (  74.1,  0.19, 1);
-  ipoldraw (  89.4,  0.33, 1);
-  ipoldraw ( 105.0,  0.03, 1);
-  ipoldraw ( 120.0,  0.12, 1);
-  ipoldraw ( 134.0, -0.13, 1);
-  ipoldraw ( 153.3,  0.08, 1);
-  ipoldraw ( 180.0, -0.07, 1);
+	/* Horn angle-dependent impulse response coefficents.
+	 *
+	 * These were derived from 'Doppler simulation and the leslie',
+	 * Julius Smith, Stefania Serafin, Jonathan Abel, David Berners,
+	 * Proc. of the 5th Conference on Digital Audio Effects (DAFx-02),
+	 * Hamburg, Germany, September 26-28, 2002.
+	 * In this article figure 8 depicts the 'First 5 principal components
+	 * weighted by their corresponding singular values'. I have been unable
+	 * to clearly understand what this means, but anyway ploughed ahead
+	 * interpreted the components as impulse response coefficients. The
+	 * figure plots the five components as horizontal wavy lines, where
+	 * the x axis is the angle and the y axis is relative to each component.
+	 * So, the following code consists of 'drawing' instructions that simply
+	 * 'paints' a copy of each line as interpreted from the figure, from
+	 * left (-180 degrees) to right (180 degrees). The points between the
+	 * given coordinates are linearly interpolated and inserted into the
+	 * bfw matrix. Then (below) we normalise the lot to unit gain.
+	 */
+	ipolmark (-180.0, 1.052);
+	ipoldraw (-166.4,  .881, 0);
+	ipoldraw (-150.5,  .881, 0);
+	ipoldraw (-135.3,  .881, 0);
+	ipoldraw (-122.4,  .792, 0);
+	ipoldraw (-106.5,  .792, 0);
+	ipoldraw ( -91.2,  .836, 0);
+	ipoldraw ( -75.8,  .881, 0);
+	ipoldraw ( -59.4,  .851, 0);
+	ipoldraw ( -44.7,  .941, 0);
+	ipoldraw ( -30.0, 1.298, 0);
+	ipoldraw ( -14.7, 2.119, 0);
+	ipoldraw (   0.0, 2.820, 0);
+	ipoldraw (  15.6, 2.313, 0);
+	ipoldraw (  30.0, 1.492, 0);
+	ipoldraw (  44.7,  .926, 0);
+	ipoldraw (  60.0,  .836, 0);
+	ipoldraw (  74.7,  .866, 0);
+	ipoldraw (  90.6,  .792, 0);
+	ipoldraw ( 100.0,  .777, 0);
+	ipoldraw ( 105.0,  .777, 0);
+	ipoldraw ( 120.0,  .836, 0);
+	ipoldraw ( 135.3,  .836, 0);
+	ipoldraw ( 150.0,  .881, 0);
+	ipoldraw ( 164.5,  .874, 0);
+	ipoldraw ( 180.0, 1.052, 0);
 
-  ipolmark (-180.0,  0.40);
-  ipoldraw (-165.0,  0.20, 2);
-  ipoldraw (-150.0,  0.48, 2);
-  ipoldraw (-135.0,  0.27, 2);
-  ipoldraw (-121.2,  0.22, 2);
-  ipoldraw ( -89.2,  0.30, 2);
-  ipoldraw ( -69.2,  0.22, 2);
-  ipoldraw ( -58.0,  0.11, 2);
-  ipoldraw ( -40.2, -0.43, 2);
-  ipoldraw ( -29.0, -0.53, 2);
-  ipoldraw ( -15.6, -0.43, 2);
-  ipoldraw (   0.0,  0.00, 2);
-  ipoldraw (  14.3, -0.44, 2);
-  ipoldraw (  30.3, -0.60, 2);
-  ipoldraw (  60.3,  0.11, 2);
-  ipoldraw (  74.9,  0.32, 2);
-  ipoldraw (  91.5,  0.23, 2);
-  ipoldraw ( 104.9,  0.32, 2);
-  ipoldraw ( 121.7,  0.19, 2);
-  ipoldraw ( 135.0,  0.27, 2);
-  ipoldraw ( 150.0,  0.45, 2);
-  ipoldraw ( 165.0,  0.20, 2);
-  ipoldraw ( 180.0,  0.40, 2);
+	ipolmark (-180.0, -0.07);
+	ipoldraw (-150.0,  0.10, 1);
+	ipoldraw (-135.0, -0.10, 1);
+	ipoldraw (-122.2,  0.16, 1);
+	ipoldraw (-105.0,  0.15, 1);
+	ipoldraw ( -91.2,  0.37, 1);
+	ipoldraw ( -75.3,  0.32, 1);
+	ipoldraw ( -60.1,  0.39, 1);
+	ipoldraw ( -44.5,  0.70, 1);
+	ipoldraw ( -30.0,  0.53, 1);
+	ipoldraw ( -12.0, -0.40, 1);
+	ipoldraw (   0.0, -0.81, 1);
+	ipoldraw (   2.7, -0.77, 1);
+	ipoldraw (  15.0, -0.52, 1);
+	ipoldraw (  33.1,  0.38, 1);
+	ipoldraw (  43.7,  0.68, 1);
+	ipoldraw (  57.7,  0.49, 1);
+	ipoldraw (  74.1,  0.19, 1);
+	ipoldraw (  89.4,  0.33, 1);
+	ipoldraw ( 105.0,  0.03, 1);
+	ipoldraw ( 120.0,  0.12, 1);
+	ipoldraw ( 134.0, -0.13, 1);
+	ipoldraw ( 153.3,  0.08, 1);
+	ipoldraw ( 180.0, -0.07, 1);
 
-  ipolmark (-180.0, -0.08);
-  ipoldraw (-165.2, -0.19, 3);
-  ipoldraw (-150.0,  0.00, 3);
-  ipoldraw (-133.9, -0.20, 3);
-  ipoldraw (-120.0, -0.15, 3);
-  ipoldraw (-106.0,  0.09, 3);
-  ipoldraw ( -89.3, -0.15, 3);
-  ipoldraw ( -76.3,  0.00, 3);
-  ipoldraw ( -60.3,  0.29, 3);
-  ipoldraw ( -44.6, -0.02, 3);
-  ipoldraw ( -15.6, -0.22, 3);
-  ipoldraw (   0.0,  0.24, 3);
-  ipoldraw (  14.5,  0.11, 3);
-  ipoldraw (  30.1, -0.10, 3);
-  ipoldraw (  44.6,  0.17, 3);
-  ipoldraw (  60.4,  0.22, 3);
-  ipoldraw (  75.9,  0.16, 3);
-  ipoldraw (  90.4, -0.05, 3);
-  ipoldraw ( 104.9,  0.07, 3);
-  ipoldraw ( 122.8, -0.07, 3);
-  ipoldraw ( 136.2, -0.07, 3);
-  ipoldraw ( 150.0,  0.08, 3);
-  ipoldraw ( 165.0, -0.19, 3);
-  ipoldraw ( 180.0, -0.08, 3);
+	ipolmark (-180.0,  0.40);
+	ipoldraw (-165.0,  0.20, 2);
+	ipoldraw (-150.0,  0.48, 2);
+	ipoldraw (-135.0,  0.27, 2);
+	ipoldraw (-121.2,  0.22, 2);
+	ipoldraw ( -89.2,  0.30, 2);
+	ipoldraw ( -69.2,  0.22, 2);
+	ipoldraw ( -58.0,  0.11, 2);
+	ipoldraw ( -40.2, -0.43, 2);
+	ipoldraw ( -29.0, -0.53, 2);
+	ipoldraw ( -15.6, -0.43, 2);
+	ipoldraw (   0.0,  0.00, 2);
+	ipoldraw (  14.3, -0.44, 2);
+	ipoldraw (  30.3, -0.60, 2);
+	ipoldraw (  60.3,  0.11, 2);
+	ipoldraw (  74.9,  0.32, 2);
+	ipoldraw (  91.5,  0.23, 2);
+	ipoldraw ( 104.9,  0.32, 2);
+	ipoldraw ( 121.7,  0.19, 2);
+	ipoldraw ( 135.0,  0.27, 2);
+	ipoldraw ( 150.0,  0.45, 2);
+	ipoldraw ( 165.0,  0.20, 2);
+	ipoldraw ( 180.0,  0.40, 2);
 
-  ipolmark (-180.0,  0.13);
-  ipoldraw (-165.2,  0.00, 4);
-  ipoldraw (-150.0,  0.17, 4);
-  ipoldraw (-135.2, -0.20, 4);
-  ipoldraw (-120.5,  0.00, 4);
-  ipoldraw (-105.0,  0.00, 4);
-  ipoldraw ( -90.0,  0.04, 4);
-  ipoldraw ( -75.0, -0.09, 4);
-  ipoldraw ( -60.3, -0.14, 4);
-  ipoldraw ( -45.0,  0.16, 4);
-  ipoldraw ( -15.6,  0.00, 4);
-  ipoldraw (   0.0,  0.22, 4);
-  ipoldraw (  15.6, -0.21, 4);
-  ipoldraw (  30.1, -0.09, 4);
-  ipoldraw (  45.0,  0.10, 4);
-  ipoldraw (  60.3, -0.07, 4);
-  ipoldraw (  74.8, -0.15, 4);
-  ipoldraw (  90.4, -0.03, 4);
-  ipoldraw ( 104.9, -0.14, 4);
-  ipoldraw ( 120.5,  0.00, 4);
-  ipoldraw ( 135.2, -0.26, 4);
-  ipoldraw ( 150.0,  0.16, 4);
-  ipoldraw ( 165.0, -0.02, 4);
-  ipoldraw ( 180.0,  0.13, 4);
+	ipolmark (-180.0, -0.08);
+	ipoldraw (-165.2, -0.19, 3);
+	ipoldraw (-150.0,  0.00, 3);
+	ipoldraw (-133.9, -0.20, 3);
+	ipoldraw (-120.0, -0.15, 3);
+	ipoldraw (-106.0,  0.09, 3);
+	ipoldraw ( -89.3, -0.15, 3);
+	ipoldraw ( -76.3,  0.00, 3);
+	ipoldraw ( -60.3,  0.29, 3);
+	ipoldraw ( -44.6, -0.02, 3);
+	ipoldraw ( -15.6, -0.22, 3);
+	ipoldraw (   0.0,  0.24, 3);
+	ipoldraw (  14.5,  0.11, 3);
+	ipoldraw (  30.1, -0.10, 3);
+	ipoldraw (  44.6,  0.17, 3);
+	ipoldraw (  60.4,  0.22, 3);
+	ipoldraw (  75.9,  0.16, 3);
+	ipoldraw (  90.4, -0.05, 3);
+	ipoldraw ( 104.9,  0.07, 3);
+	ipoldraw ( 122.8, -0.07, 3);
+	ipoldraw ( 136.2, -0.07, 3);
+	ipoldraw ( 150.0,  0.08, 3);
+	ipoldraw ( 165.0, -0.19, 3);
+	ipoldraw ( 180.0, -0.08, 3);
+
+	ipolmark (-180.0,  0.13);
+	ipoldraw (-165.2,  0.00, 4);
+	ipoldraw (-150.0,  0.17, 4);
+	ipoldraw (-135.2, -0.20, 4);
+	ipoldraw (-120.5,  0.00, 4);
+	ipoldraw (-105.0,  0.00, 4);
+	ipoldraw ( -90.0,  0.04, 4);
+	ipoldraw ( -75.0, -0.09, 4);
+	ipoldraw ( -60.3, -0.14, 4);
+	ipoldraw ( -45.0,  0.16, 4);
+	ipoldraw ( -15.6,  0.00, 4);
+	ipoldraw (   0.0,  0.22, 4);
+	ipoldraw (  15.6, -0.21, 4);
+	ipoldraw (  30.1, -0.09, 4);
+	ipoldraw (  45.0,  0.10, 4);
+	ipoldraw (  60.3, -0.07, 4);
+	ipoldraw (  74.8, -0.15, 4);
+	ipoldraw (  90.4, -0.03, 4);
+	ipoldraw ( 104.9, -0.14, 4);
+	ipoldraw ( 120.5,  0.00, 4);
+	ipoldraw ( 135.2, -0.26, 4);
+	ipoldraw ( 150.0,  0.16, 4);
+	ipoldraw ( 165.0, -0.02, 4);
+	ipoldraw ( 180.0,  0.13, 4);
+
+	/* clang-format on */
 
   sum = 0.0;
   /* Compute the normalisation factor */
@@ -492,23 +506,25 @@ void computeOffsets (struct b_whirl *w) {
 
 	zeroBuffers (w);
 
+	/* clang-format off */
 	/* Spacing between reflections in samples, normalized for 22.1k.
 	 * The first can't be zero, since we must allow for the swing of
 	 * the extent to wander close to the reader.
 	 */
-	w->hornSpacing[0] = 12.0;  //  18.4cm  1842Hz -- Primary L
-	w->hornSpacing[1] = 18.0;  //  27.7cm  1227Hz -- Primary R
-	w->hornSpacing[2] = 53.0;  //  81.5cm   417Hz -- First reflection (backwards)
-	w->hornSpacing[3] = 50.0;  //  76.9cm   442Hz
-	w->hornSpacing[4] = 106.0; // 163.0cm   208Hz -- Secondary reflection
-	w->hornSpacing[5] = 116.0; // 178.5cm   190Hz
+	w->hornSpacing[0] =  12.0; /*  18.4cm  1842Hz -- Primary L */
+	w->hornSpacing[1] =  18.0; /*  27.7cm  1227Hz -- Primary R */
+	w->hornSpacing[2] =  53.0; /*  81.5cm   417Hz -- First reflection (backwards) */
+	w->hornSpacing[3] =  50.0; /*  76.9cm   442Hz */
+	w->hornSpacing[4] = 106.0; /* 163.0cm   208Hz -- Secondary reflection */
+	w->hornSpacing[5] = 116.0; /* 178.5cm   190Hz */
 
-	w->drumSpacing[0] = 36.0;  //  55.3cm   614Hz
-	w->drumSpacing[1] = 39.0;  //  60.0cm   567Hz
-	w->drumSpacing[2] = 79.0;  // 121.5cm   280Hz
-	w->drumSpacing[3] = 86.0;  // 132.3cm   257Hz
-	w->drumSpacing[4] = 123.0; // 189.2cm   179Hz
-	w->drumSpacing[5] = 116.0; // 178.5cm   190Hz
+	w->drumSpacing[0] =  36.0; /*  55.3cm   614Hz */
+	w->drumSpacing[1] =  39.0; /*  60.0cm   567Hz */
+	w->drumSpacing[2] =  79.0; /* 121.5cm   280Hz */
+	w->drumSpacing[3] =  86.0; /* 132.3cm   257Hz */
+	w->drumSpacing[4] = 123.0; /* 189.2cm   179Hz */
+	w->drumSpacing[5] = 116.0; /* 178.5cm   190Hz */
+	/* clang-format on */
 
 	const double hornRadiusSamples = (w->hornRadiusCm * w->SampleRateD/100.0) / w->airSpeed;
 	const double drumRadiusSamples = (w->drumRadiusCm * w->SampleRateD/100.0) / w->airSpeed;
@@ -611,28 +627,33 @@ static void initialize (struct b_whirl *w) {
  * Displays the settings of a filter.
  */
 static void displayFilter (const char * id, int T, float F, float Q, float G) {
-#if 1 // not in RT callback
+#if 0 // not in RT callback
   const char * type = eqGetTypeString (T);
   printf ("\n%s:T=%3.3s:F=%10.4f:Q=%10.4f:G=%10.4f", id, type, F, Q, G);
   fflush (stdout);
 #endif
 }
 
-#define UPDATE_A_FILTER { \
-  setIIRFilter (w->hafw, w->haT, w->haF, w->haQ, w->haG, w->SampleRateD); \
-  displayFilter ("Horn A", w->haT, w->haF, w->haQ, w->haG); \
+/* clang-format off */
+#define UPDATE_A_FILTER                                                         \
+{                                                                               \
+        setIIRFilter (w->hafw, w->haT, w->haF, w->haQ, w->haG, w->SampleRateD); \
+        displayFilter ("Horn A", w->haT, w->haF, w->haQ, w->haG);               \
 }
 
-#define UPDATE_B_FILTER { \
-  setIIRFilter (w->hbfw, w->hbT, w->hbF, w->hbQ, w->hbG, w->SampleRateD); \
-  displayFilter ("Horn B", w->hbT, w->hbF, w->hbQ, w->hbG); \
+#define UPDATE_B_FILTER                                                         \
+{                                                                               \
+        setIIRFilter (w->hbfw, w->hbT, w->hbF, w->hbQ, w->hbG, w->SampleRateD); \
+        displayFilter ("Horn B", w->hbT, w->hbF, w->hbQ, w->hbG);               \
 }
 
-#define UPDATE_D_FILTER { \
-  setIIRFilter (w->drfL, w->lpT, w->lpF, w->lpQ, w->lpG, w->SampleRateD); \
-  setIIRFilter (w->drfR, w->lpT, w->lpF, w->lpQ, w->lpG, w->SampleRateD); \
-  displayFilter ("Drum", w->lpT, w->lpF, w->lpQ, w->lpG); \
+#define UPDATE_D_FILTER                                                         \
+{                                                                               \
+        setIIRFilter (w->drfL, w->lpT, w->lpF, w->lpQ, w->lpG, w->SampleRateD); \
+        setIIRFilter (w->drfR, w->lpT, w->lpF, w->lpQ, w->lpG, w->SampleRateD); \
+        displayFilter ("Drum", w->lpT, w->lpF, w->lpQ, w->lpG);                 \
 }
+/* clang-format on */
 
 
 /*
@@ -855,7 +876,7 @@ void fsetHornMicWidth (void *d, const float hw) {
 void initWhirl (struct b_whirl *w, void *m, double rate) {
 
 	w->SampleRateD = rate;
-	w->midi_cfg_ptr = m; // used for notify -- translate "rotary.speed-*"
+	w->midi_cfg_ptr = m; /* used for notify -- translate "rotary.speed-*" */
 
 	useMIDIControlFunction (m, "rotary.speed-toggle",    setWhirlSustainPedal, (void*)w);
 	useMIDIControlFunction (m, "rotary.speed-preset",    revControl, (void*)w);
@@ -1003,7 +1024,7 @@ int whirlConfig (struct b_whirl *w, ConfigContext * cfg) {
 	else if (getConfigParameter_dr ("whirl.drum.brakepos", cfg, &d, 0, 1.0) == 1) {
 		w->drBrakePos = (double) d;
 	}
-#if 1 // backwards compat typo
+#if 1 /* backwards compat typo */
 	else if (getConfigParameter_dr ("whirl.horn.breakpos", cfg, &d, 0, 1.0) == 1) {
 		w->hnBrakePos = (double) d;
 	}
@@ -1019,7 +1040,7 @@ int whirlConfig (struct b_whirl *w, ConfigContext * cfg) {
 
 #ifdef __ARMEL__
 static inline float x_mod1 (const float f) {
-	return ((unsigned int)(f * 8388608.f) & 8388607) / 8388608.f; // 2^23
+	return ((unsigned int)(f * 8388608.f) & 8388607) / 8388608.f; /* 2^23 */
 }
 
 static inline unsigned int x_iroundf (const float f) {
@@ -1072,8 +1093,9 @@ void whirlProc2 (struct b_whirl *w,
 
 	if (w->hornAcDc) {
 		/* brake position notch - see comment on brake below */
-		int flywheel = 0; // disable deceleration to smoothly reach desired stop position
-		const float hardstop = 10.f  / (60.f * w->SampleRateD); // limit deceleration 10 to 0. RPM
+		int flywheel = 0; /* disable deceleration to smoothly reach desired stop position */
+
+		const float hardstop = 10.f  / (60.f * w->SampleRateD); /* limit deceleration 10 to 0. RPM */
 
 		if (w->hnBrakePos > 0 && w->hornTarget == 0 && w->hornIncr > 0 && w->hornIncr < hardstop) {
 			const double targetPos = fmod(1.25 - w->hnBrakePos, 1.0);
@@ -1081,7 +1103,7 @@ void whirlProc2 (struct b_whirl *w,
 				w->hornAngleGRD = targetPos;
 				w->hornIncr = 0;
 			} else {
-				// keep going. at most: speed needed to reach brake-pos, at least 3RPM.
+				/* keep going. at most: speed needed to reach brake-pos, at least 3RPM. */
 				const float minspeed = 3.f / (60.f * w->SampleRateD);
 				const float diffinc  = fmod(1. + targetPos - w->hornAngleGRD, 1.0) / (float) bufferLengthSamples;
 				if (w->hornIncr > diffinc) {
@@ -1109,8 +1131,9 @@ void whirlProc2 (struct b_whirl *w,
 	}
 
 	if (w->drumAcDc) {
-		int flywheel = 0; // disable deceleration to smoothly reach desired stop position
-		const float hardstop = 8.f  / (60.f * w->SampleRateD); // limit deceleration
+		int flywheel = 0; /* disable deceleration to smoothly reach desired stop position */
+
+		const float hardstop = 8.f  / (60.f * w->SampleRateD); /* limit deceleration */
 
 		if (w->drBrakePos > 0 && w->drumTarget == 0 && w->drumIncr > 0 && w->drumIncr < hardstop) {
 			const double targetPos= fmod(w->drBrakePos + .75, 1.0);
@@ -1118,7 +1141,7 @@ void whirlProc2 (struct b_whirl *w,
 				w->drumAngleGRD = targetPos;
 				w->drumIncr = 0;
 			} else {
-				// keep going. at most: speed needed to reach brake-pos, at least 3RPM.
+				/* keep going; at most: speed needed to reach brake-pos, at least 3RPM. */
 				const float minspeed = 3.f / (60.f * w->SampleRateD);
 				const float diffinc  = fmod(1. + targetPos - w->drumAngleGRD, 1.0) / (float) bufferLengthSamples;
 				if (w->drumIncr > diffinc) {
@@ -1236,70 +1259,90 @@ void whirlProc2 (struct b_whirl *w,
 	}
 #endif
 
-#define ADDHIST(DX,DI,XS) {      \
-    DI = (DI + AGMASK) & AGMASK; \
-    DX[DI] = XS;}
+  /* clang-format off */
+#define ADDHIST(DX, DI, XS)              \
+{                                        \
+        DI     = (DI + AGMASK) & AGMASK; \
+        DX[DI] = XS;                     \
+}
 
-#define HN_MOTION(P,BUF,DSP,BW,DX,DI,ANG) {                                \
-    const float h1 = (ANG) * WHIRL_DISPLC_SIZE + hornPhase[(P)];           \
-    const float hd = x_fmodf (h1, 1.f);                                    \
-    const unsigned int hl = x_ifloorf (h1) & WHIRL_DISPLC_MASK;            \
-    const unsigned int hh = (hl + 1) & WHIRL_DISPLC_MASK;                  \
-    const float intp = DSP[hl] * (1.f - hd) + hd * DSP[hh];                \
-    const unsigned int k = x_iroundf (h1) & WHIRL_DISPLC_MASK;             \
-    const float t = hornSpacing[(P)] + intp + (float) outpos;              \
-    const float r = x_floorf (t);                                          \
-    float xa;                                                              \
-    xa  = BW[k].b[0] * x;                                                  \
-    xa += BW[k].b[1] * DX[(DI)];                                           \
-    xa += BW[k].b[2] * DX[((DI)+1) & AGMASK];                              \
-    xa += BW[k].b[3] * DX[((DI)+2) & AGMASK];                              \
-    xa += BW[k].b[4] * DX[((DI)+3) & AGMASK];                              \
-    const float q = xa * (t - r);                                          \
-    n = ((unsigned int) r) & WHIRL_BUF_MASK_SAMPLES;                       \
-    BUF[n] += xa - q;                                                      \
-    n = (n + 1) & WHIRL_BUF_MASK_SAMPLES;                                  \
-    BUF[n] += q;}
+#define HN_MOTION(P, BUF, DSP, BW, DX, DI, ANG)                             \
+{                                                                           \
+        const float        h1   = (ANG)*WHIRL_DISPLC_SIZE + hornPhase[(P)]; \
+        const float        hd   = x_fmodf (h1, 1.f);                        \
+        const unsigned int hl   = x_ifloorf (h1) & WHIRL_DISPLC_MASK;       \
+        const unsigned int hh   = (hl + 1) & WHIRL_DISPLC_MASK;             \
+        const float        intp = DSP[hl] * (1.f - hd) + hd * DSP[hh];      \
+        const unsigned int k    = x_iroundf (h1) & WHIRL_DISPLC_MASK;       \
+        const float        t    = hornSpacing[(P)] + intp + (float)outpos;  \
+        const float        r    = x_floorf (t);                             \
+        float              xa;                                              \
+        xa = BW[k].b[0] * x;                                                \
+        xa += BW[k].b[1] * DX[(DI)];                                        \
+        xa += BW[k].b[2] * DX[((DI) + 1) & AGMASK];                         \
+        xa += BW[k].b[3] * DX[((DI) + 2) & AGMASK];                         \
+        xa += BW[k].b[4] * DX[((DI) + 3) & AGMASK];                         \
+        const float q = xa * (t - r);                                       \
+        n             = ((unsigned int)r) & WHIRL_BUF_MASK_SAMPLES;         \
+        BUF[n] += xa - q;                                                   \
+        n = (n + 1) & WHIRL_BUF_MASK_SAMPLES;                               \
+        BUF[n] += q;                                                        \
+}
 
-#define DR_MOTION(P,BUF,DSP) {                                             \
-    const float d1 = drumAngleGRD * WHIRL_DISPLC_SIZE + drumPhase[(P)];    \
-    const float dd = x_fmodf (d1, 1.f);                                    \
-    const unsigned int dl = x_ifloorf (d1) & WHIRL_DISPLC_MASK;            \
-    const unsigned int dh = (dl + 1) & WHIRL_DISPLC_MASK;                  \
-    const float intp = DSP[dl] * (1.f - dd) + dd * DSP[dh];                \
-    const float t = drumSpacing[(P)] + intp + (float) outpos;              \
-    const float r = x_floorf (t);                                          \
-    const float q = x * (t - r);                                           \
-    n = ((unsigned int) r) & WHIRL_BUF_MASK_SAMPLES;                       \
-    BUF[n] += x - q;                                                       \
-    n = (n + 1) & WHIRL_BUF_MASK_SAMPLES;                                  \
-    BUF[n] += q;}
+#define DR_MOTION(P, BUF, DSP)                                                       \
+{                                                                                    \
+        const float        d1   = drumAngleGRD * WHIRL_DISPLC_SIZE + drumPhase[(P)]; \
+        const float        dd   = x_fmodf (d1, 1.f);                                 \
+        const unsigned int dl   = x_ifloorf (d1) & WHIRL_DISPLC_MASK;                \
+        const unsigned int dh   = (dl + 1) & WHIRL_DISPLC_MASK;                      \
+        const float        intp = DSP[dl] * (1.f - dd) + dd * DSP[dh];               \
+        const float        t    = drumSpacing[(P)] + intp + (float)outpos;           \
+        const float        r    = x_floorf (t);                                      \
+        const float        q    = x * (t - r);                                       \
+        n                       = ((unsigned int)r) & WHIRL_BUF_MASK_SAMPLES;        \
+        BUF[n] += x - q;                                                             \
+        n = (n + 1) & WHIRL_BUF_MASK_SAMPLES;                                        \
+        BUF[n] += q;                                                                 \
+}
 
-    /* This is just a bum filter to take some high-end off. */
-#define FILTER_C(W0,W1,I) {                                                \
-    float temp = x;                                                        \
-    x = ((W0) * x) + ((W1) * z[(I)]);                                      \
-    z[(I)] = temp; }
+/* This is just a bum filter to take some high-end off. */
+#define FILTER_C(W0, W1, I)                    \
+{                                              \
+        float temp = x;                        \
+        x          = ((W0)*x) + ((W1)*z[(I)]); \
+        z[(I)]     = temp;                     \
+}
 
-#define EQ_IIR(W,X,Y) {                                                    \
-    float temp = (X) - (W[a1] * W[z0]) - (W[a2] * W[z1]);                  \
-    Y = (temp * W[b0]) + (W[b1] * W[z0]) + (W[b2] * W[z1]);                \
-    W[z1] = W[z0]; \
-    W[z0] = temp;}
+#define EQ_IIR(W, X, Y)                                                  \
+{                                                                        \
+        float temp = (X) - (W[a1] * W[z0]) - (W[a2] * W[z1]);            \
+        Y          = (temp * W[b0]) + (W[b1] * W[z0]) + (W[b2] * W[z1]); \
+        W[z1]      = W[z0];                                              \
+        W[z0]      = temp;                                               \
+}
 
-#define EQ_IIR_NAN(W) {                                                    \
-    if (isnan(W[z0])) W[z0] = 0;                                           \
-    if (isnan(W[z1])) W[z1] = 0;}
+#define EQ_IIR_NAN(W)      \
+{                          \
+        if (isnan (W[z0])) \
+                W[z0] = 0; \
+        if (isnan (W[z1])) \
+                W[z1] = 0; \
+}
 
 #ifdef HORN_COMB_FILTER
 
-#define COMB(WP,RP,BP,ES,FB,X) {                                           \
-    X += ((*(RP)++) * (FB));                                               \
-    *(WP)++ = X;                                                           \
-    if ((RP) == (ES)) RP = BP;                                             \
-    if ((WP) == (ES)) WP = BP;}
+#define COMB(WP, RP, BP, ES, FB, X) \
+{                                   \
+        X += ((*(RP)++) * (FB));    \
+        *(WP)++ = X;                \
+        if ((RP) == (ES))           \
+                RP = BP;            \
+        if ((WP) == (ES))           \
+                WP = BP;            \
+}
 
 #endif
+	/* clang-format off */
 
 	/* process each sample */
 	for (i = 0; i < bufferLengthSamples; i++) {
@@ -1358,7 +1401,7 @@ void whirlProc2 (struct b_whirl *w,
 		 * output: DLbuf, DRbuf
 		 */
 
-		x = xx; // use original input signal ('x' was modified by horn filters)
+		x = xx; /* use original input signal ('x' was modified by horn filters) */
 
 		/* --- DRUM --- */
 		DR_MOTION(0, DLbuf, drFwdDispl);

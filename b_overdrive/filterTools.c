@@ -27,7 +27,7 @@
 
 #include "filterTools.h"
 
-/* ========================================================================
+/* ************************************************************************
  * Windowing functions. These functions return a scale factor between 0-1.
  * It is applied to an array of signals so that they may be scaled
  * according to their position in the array.
@@ -76,7 +76,7 @@ double wdw_Hanning (int i, int m) {
   return (0.5 - (0.5 * cos ((2.0*M_PI*(double)i)/(double)(m-1))));
 }
 
-/* ========================================================================
+/* ************************************************************************
  *
  * Creates a low-pass filter and applies the requested window function.
  *

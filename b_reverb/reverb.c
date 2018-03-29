@@ -43,28 +43,28 @@
  * The end result has a schematic like this:
  *
  *   +-----[ D0 ]-------+
- *   | 	 	       	|
+ *   |                  |
  *   +-----[ D1 ]-------+
- *   | 		       (+)---[AP4]---[AP5]---[AP6]-----+
- *   +-----[ D2 ]-------+			       |
- *   | 	 	      	|			       |
- *   +-----[ D3 ]-------+			       |
- *   | 	 	      				       |
+ *   |                 (+)---[AP4]---[AP5]---[AP6]-----+
+ *   +-----[ D2 ]-------+                              |
+ *   |                  |                              |
+ *   +-----[ D3 ]-------+                              |
+ *   |                                                 |
  *  (+)-----------------------------------<feedback]---+
- *   |		       	       	       	       	       |
- *  /\						     [LPF]
- *  inputGain					       |
- *  --						      ---
- *   |						      wet
- *   |						      \/
- *   |						       |
+ *   |                                                 |
+ *  /\                                               [LPF]
+ *  inputGain                                          |
+ *  --                                                ---
+ *   |                                                wet
+ *   |                                                \/
+ *   |                                                 |
  *   +-----------------------------------[dry>--------(+)
- *   |						       |
- *  /\						      ---
- *  inputNormalization				outputScaling
- *  --						      \/
- *   |						       |
- *   x						       y
+ *   |                                                 |
+ *  /\                                                ---
+ *  inputNormalization                          outputScaling
+ *  --                                                \/
+ *   |                                                 |
+ *   x                                                 y
  *
  * The delays (D0, D1, D2, D3) are structured thus:
  *
@@ -96,13 +96,14 @@
 #include "../src/midi.h" // useMIDIControlFunction
 
 struct b_reverb *allocReverb() {
-  int i;
   struct b_reverb *r = (struct b_reverb*) calloc(1, sizeof(struct b_reverb));
+
   if (!r) {
     return NULL;
     fprintf (stderr, "FATAL: memory allocation failed for reverb.\n");
     exit(1);
   }
+
   r->inputGain = 0.1;	/* Input gain value */
   r->fbk = -0.015;	/* Feedback gain */
   r->wet = 0.1;		/* Output dry gain */
@@ -129,6 +130,7 @@ struct b_reverb *allocReverb() {
   r->end[5] = 337;
   r->end[6] = 113;
 
+  int i;
   for (i=0; i< RV_NZ; ++i) {
     r->delays[i]= NULL;
   }
@@ -164,16 +166,10 @@ static void setReverbPointers (struct b_reverb *r, int i) {
   }
 }
 
-/*
- *
- */
 void setReverbInputGain (struct b_reverb *r, float g) {
   r->inputGain = g;
 }
 
-/*
- *
- */
 void setReverbOutputGain (struct b_reverb *r, float g) {
   float u = r->wet + r->dry;
   r->wet = g * (r->wet / u);
@@ -194,54 +190,6 @@ void setReverbMixFromMIDI (void *rev, unsigned char v) {
   setReverbMix(r, (float)v/127.0);
 }
 
-
-#if 0 // unused
-/*
- *
- */
-void setReverbFeedbackGainInDelay (struct b_reverb *r, int i, float g) {
-  if ((0 <= i) && (i < RV_NZ)) {
-    r->gain[i] = g;
-  }
-}
-
-/*
- *
- */
-void setReverbSamplesInDelay (struct b_reverb *r, int i, int s) {
-  if ((0 <= i) && (i < RV_NZ)) {
-    if (0 <= s) {
-      r->end[i] = s;
-      setReverbPointers (r, i);
-    }
-  }
-}
-
-/*
- *
- */
-void setReverbFeedbackGain (struct b_reverb *r, float g) {
-  r->fbk = g;
-}
-
-/*
- *
- */
-void setReverbDry (struct b_reverb *r, float g) {
-  r->dry = g;
-}
-
-/*
- *
- */
-void setReverbWet (struct b_reverb *r, float g) {
-  r->wet = g;
-}
-#endif
-
-/*
- *
- */
 int reverbConfig (struct b_reverb *r, ConfigContext * cfg) {
   int ack = 1;
   double d;
@@ -267,9 +215,6 @@ int reverbConfig (struct b_reverb *r, ConfigContext * cfg) {
 }
 
 
-/*
- *
- */
 void initReverb (struct b_reverb *r, void *m, double rate) {
   int i;
   r->SampleRateD = rate;
@@ -280,9 +225,6 @@ void initReverb (struct b_reverb *r, void *m, double rate) {
   useMIDIControlFunction (m, "reverb.mix", setReverbMixFromMIDI, r);
 }
 
-/*
- *
- */
 float * reverb (struct b_reverb *r,
 		const float * inbuf,
 		float * outbuf,
@@ -310,8 +252,9 @@ float * reverb (struct b_reverb *r,
     const float xo = (*xp++);
     const float x = y_1 + (inputGain * xo);
     float xa = 0.0;
-    /* First we do four feedback comb filters (ie parallel delay lines,
-       each with a single tap at the end that feeds back at the start) */
+
+		/* First we do four feedback comb filters (ie parallel delay lines,
+		 * each with a single tap at the end that feeds back at the start) */
 
     for (j = 0; j < 4; j++) {
       y = (*idxp[j]);

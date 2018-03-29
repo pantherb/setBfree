@@ -122,7 +122,7 @@ static float aaldef [AAL_LEN] = AAL_FIR;
 #endif /* AAL_FC */
 
 /* XOVER_RATE expands a small integer: 1, 2, 3 ... which is the
-   oversampling rate */
+ * oversampling rate */
 
 static int R = XOVER_RATE;
 
@@ -130,10 +130,8 @@ static int R = XOVER_RATE;
 
 /* XZB_SIZE expands to the nof samples in the input history buffer */
 
-/*
- * YZB_SIZE expands to the nof samples in the transfer-function output
- * history buffer.
- */
+/* YZB_SIZE expands to the nof samples in the transfer-function output
+ * history buffer. */
 
 /* Interpolation filter descriptors for compilation */
 
@@ -164,11 +162,8 @@ static int generatePostFilter = 1;
 static int generatePostFilter = 0;
 #endif /* POST_FILTER_TYPE */
 
-/* ---------------------------------------------------------------- */
+/* ***************************************************************************/
 
-/*
- *
- */
 void installFloats (double d[], float f[], size_t len) {
   int i;
   for (i = 0; i < len; i++) {
@@ -176,9 +171,6 @@ void installFloats (double d[], float f[], size_t len) {
   }
 }
 
-/*
- *
- */
 void computeIpolFilter (double fc, int wdw) {
   double D[IPOL_LEN];
 
@@ -188,9 +180,6 @@ void computeIpolFilter (double fc, int wdw) {
   installFloats (D, ipwdef, IPOL_LEN);
 }
 
-/*
- *
- */
 void computeAalFilter (double fc, int wdw) {
   double D[AAL_LEN];
 
@@ -200,9 +189,6 @@ void computeAalFilter (double fc, int wdw) {
   installFloats (D, aaldef, AAL_LEN);
 }
 
-/*
- *
- */
 void computeIpolWeights () {
   int row;
   /* For each overclocked sample there is one row of FIR weights. */
@@ -274,27 +260,18 @@ void popIndent () {
   indent -= 2;
 }
 
-/*
- *
- */
 void includeSystem (char * headerFile) {
   code ("#include <");
   code (headerFile);
   codeln (">");
 }
 
-/*
- *
- */
 void includeLocal (char * headerFile) {
   code ("#include \"");
   code (headerFile);
   codeln ("\"");
 }
 
-/*
- *
- */
 void moduleHeader () {
   int i;
   char buf[BUFSZ];
@@ -338,7 +315,7 @@ void moduleHeader () {
   vspace (1);
 
   /* The number of weights applied from each implementation filter
-     varies between rows. The wiLen vector gives the number. */
+   * varies between rows. The wiLen vector gives the number. */
 
   vspace (1);
 
@@ -402,12 +379,12 @@ void moduleHeader () {
   codeln (buf);
 
   /* If the xzp pointer is far enough from the start of the input history
-     we can index it by negatives. Far enough depends on how many weights
-     we need to use. The longest we need to go is this: if the filter has
-     M points, and R is our oversampling rate (1, 2, 3, ... etc), then
-     the integer result of M/R is the farthest input sample. For example,
-     assume M = 33 and R = 8, then M div R = 4, ie xz[-4], which means
-     that if xzp < xz[4] we need wrap treatment.  */
+   * we can index it by negatives. Far enough depends on how many weights
+   * we need to use. The longest we need to go is this: if the filter has
+   * M points, and R is our oversampling rate (1, 2, 3, ... etc), then
+   * the integer result of M/R is the farthest input sample. For example,
+   * assume M = 33 and R = 8, then M div R = 4, ie xz[-4], which means
+   * that if xzp < xz[4] we need wrap treatment.  */
 
   vspace (1);
 
@@ -626,7 +603,6 @@ void moduleHeader () {
   vspace (2);
 
 #endif
-	////
 
   vspace (2);
   codeln ("struct b_preamp {");
@@ -658,7 +634,7 @@ void moduleHeader () {
   sprintf (buf, "float ipolZeros[%d];", IPOL_LEN);
   codeln (buf);
 
-	// skipped //
+	/* skipped */
 
   commentln ("Sample-specific runtime interpolation FIRs");
   sprintf (buf, "float wi[%d][%d];", R, DFQ+1);
@@ -685,8 +661,8 @@ void moduleHeader () {
   commentln ("Clean/overdrive switch");
   codeln ("int isClean;");
 
-	// skipped generatePreFilter
-	// skipped generatePostFilter
+	/* skipped generatePreFilter */
+	/* skipped generatePostFilter */
 
 #ifdef OUTPUT_GAIN
   codeln ("float outputGain;");
@@ -735,8 +711,7 @@ void moduleHeader () {
   vspace (2);
 }
 
-/*
- * This function outputs a routine which will mix and normalize
+/* This function outputs a routine which will mix and normalize
  * the interpolation filter and the pre-emphasis filter at runtime.
  * The routine then writes the result into the sample-specific
  * effective FIRs, used to calculate and emphasize the input signal.
@@ -993,13 +968,11 @@ void funcBody (void (* transferdef) (char *, char *)) {
   pushIndent ();
   commentln ("Wrapping code");
 
-  /*
-   * ================================================================
+  /* ***************************************************************************
    * We need to put in a for i -loop here as well, and duplicate the
    * transfer and output history code for both branches.
    * We also need to know which input sample to start with, x0 or x-1!
-   * ================================================================
-   */
+   * ***************************************************************************/
 
   sprintf (buf, "for (i = 0; i < %d; i++) {", R);
   codeln (buf);
@@ -1300,8 +1273,8 @@ void adapterPreamp (char * funcName) {
   codeln (buf);
   codeln ("pp->isClean = 1;");
 
-	///generatePreFilter
-  // generatePostFilter
+	/* generatePreFilter */
+  /* generatePostFilter */
 
 #ifdef OUTPUT_GAIN
   sprintf (buf, "pp->outputGain = %g;", OUTPUT_GAIN);
@@ -1389,7 +1362,7 @@ void legacyInit () {
 #endif /* POST_FILTER_TYPE */
 
 
-  /* ================================================================ */
+  /* ***************************************************************************/
 
 #ifdef TR_BIASED
   sprintf (buf, "useMIDIControlFunction (m, \"xov.ctl_biased\", ctl_biased, pa);");
@@ -1431,7 +1404,7 @@ void legacyInit () {
   ini_biased ();
 #endif /* TR_BIASED */
 
-  /* ================================================================ */
+  /* ***************************************************************************/
 
   sprintf (buf, "useMIDIControlFunction (m, \"overdrive.enable\", setCleanCC, pa);");
   codeln (buf);
@@ -1540,16 +1513,16 @@ void writeDocumentation () {
   codeln ("{\"xov.ctl_biased_gfb\", CFG_FLOAT, \"0.6214\", \"Global [negative] feedback control; range [0..1]\", INCOMPLETE_DOC},");
 #endif
 #ifdef CLEAN_MIX
-  codeln ("{\"xov...\", CFG_FLOAT, \"\", \"\", INCOMPLETE_DOC},"); // TODO - unused in overmakerdefs.h
+  codeln ("{\"xov...\", CFG_FLOAT, \"\", \"\", INCOMPLETE_DOC},"); /* TODO - unused in overmakerdefs.h */
 #endif
 #ifdef PRE_DC_OFFSET
-  codeln ("{\"xov...\", CFG_FLOAT, \"\", \"\", INCOMPLETE_DOC},"); // TODO - unused in overmakerdefs.h
+  codeln ("{\"xov...\", CFG_FLOAT, \"\", \"\", INCOMPLETE_DOC},"); /* TODO - unused in overmakerdefs.h */
 #endif
 #ifdef INPUT_COMPRESS
-  codeln ("{\"xov...\", CFG_FLOAT, \"\", \"\", INCOMPLETE_DOC},"); // TODO - unused in overmakerdefs.h
+  codeln ("{\"xov...\", CFG_FLOAT, \"\", \"\", INCOMPLETE_DOC},"); /* TODO - unused in overmakerdefs.h */
 #endif
 #ifdef PRE_FILTER_TYPE
-  codeln ("{\"xov...\", CFG_FLOAT, \"\", \"\", INCOMPLETE_DOC},"); // TODO - unused in overmakerdefs.h
+  codeln ("{\"xov...\", CFG_FLOAT, \"\", \"\", INCOMPLETE_DOC},"); /* TODO - unused in overmakerdefs.h */
 #endif
 
   codeln ("{\"overdrive.character\", CFG_FLOAT, \"-\", \"Abstraction to set xov.ctl_biased_fb and xov.ctl_biased_fb2\", INCOMPLETE_DOC},");
@@ -1656,7 +1629,7 @@ void postFilterDefine () {
   codeln ("}");
 }
 
-/* ================================================================
+/* ***************************************************************************
  * This function generates MIDI controller functions for the pre-filter.
  */
 #ifdef PRE_FILTER_TYPE
@@ -1712,7 +1685,7 @@ void preFilterControl () {
 }
 #endif /* PRE_FILTER_TYPE */
 
-/* ================================================================
+/* ***************************************************************************
  * This function generates MIDI controller functions for the post-filter.
  */
 #ifdef POST_FILTER_TYPE
@@ -1768,10 +1741,7 @@ void postFilterControl () {
 }
 #endif /* POST_FILTER_TYPE */
 
-/* ================================================================
- *
- */
-
+/* ***************************************************************************/
 
 #ifdef OUTPUT_GAIN
 void outputGainControl () {
@@ -1977,7 +1947,6 @@ void render (FILE * fp, char * funcName) {
   legacyInit ();
 
   writeDocumentation();
-
 }
 
 /*

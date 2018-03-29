@@ -20,14 +20,15 @@
  */
 
 #define _XOPEN_SOURCE 700
+/* clang-format off */
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <math.h>
 #include "eqcomp.h"
 
 #ifndef M_PI
-# define M_PI 3.14159265358979323846/* pi */
+# define M_PI 3.14159265358979323846
 #endif
 
 /* Computes biquad EQ filter settings.
@@ -66,7 +67,7 @@
  * coefficients. See each function for further information.
  */
 
-const char * filterTypeNames [10] = {
+const char* filterTypeNames[10] = {
 	"LPF low-pass",
 	"HPF high-pass",
 	"BF0 band-pass 0",
@@ -79,8 +80,10 @@ const char * filterTypeNames [10] = {
 	"???"
 };
 
-const char * eqGetTypeString (int t) {
-	return filterTypeNames [((0 <= t) && (t < 9)) ? t : 9];
+const char*
+eqGetTypeString (int t)
+{
+	return filterTypeNames[((0 <= t) && (t < 9)) ? t : 9];
 }
 
 /*
@@ -92,14 +95,15 @@ const char * eqGetTypeString (int t) {
  * @param dbG  Gain in dB (for certain types only, see below)
  * @param C    Array[6] of coefficients.
  */
-void eqCompute (int type,
-                double fqHz,
-                double Q,
-                double dbG,
-                double * C,
-                double SampleRateD)
+void
+eqCompute (int     type,
+           double  fqHz,
+           double  Q,
+           double  dbG,
+           double* C,
+           double  SampleRateD)
 {
-	double     A = pow (10.0, (dbG / 40.0));
+	double A     = pow (10.0, (dbG / 40.0));
 	double omega = (2.0 * M_PI * fqHz) / SampleRateD;
 	double sin_  = sin (omega);
 	double cos_  = cos (omega);

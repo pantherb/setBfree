@@ -37,7 +37,11 @@
 
 typedef float iir_t;
 
-typedef enum {a0, a1, a2, b0, b1, b2, z0, z1} filterCoeff;
+typedef enum {
+	a0, a1, a2,
+	b0, b1, b2,
+	z0, z1
+} filterCoeff;
 
 typedef struct _revcontrol {
   double hornTarget;
