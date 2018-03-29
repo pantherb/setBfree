@@ -345,4 +345,3 @@ int main (int argc, char**argv) {
   freePreamp(pa);
   return (0);
 }
-/* vi:set ts=8 sts=2 sw=2: */

@@ -1315,7 +1315,3 @@ static const ConfigDoc doc[] = {
 const ConfigDoc *pgmDoc () {
   return doc;
 }
-
-
-
-/* vi:set ts=8 sts=2 sw=2: */

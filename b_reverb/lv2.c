@@ -165,4 +165,3 @@ lv2_descriptor(uint32_t index)
 void useMIDIControlFunction (void *m, const char * cfname, void (* f) (void *d, unsigned char), void *d) { }
 int getConfigParameter_dr (const char * par, ConfigContext * cfg, double * dp, double lowInc, double highInc) { return 0; }
 int getConfigParameter_d (const char * par, ConfigContext * cfg, double * dp) { return 0; }
-/* vi:set ts=8 sts=2 sw=2: */

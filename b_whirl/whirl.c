@@ -1526,6 +1526,3 @@ static const ConfigDoc doc[] = {
 const ConfigDoc *whirlDoc () {
 	return doc;
 }
-
-
-/* vi:set ts=2 sts=2 sw=2: */

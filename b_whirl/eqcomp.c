@@ -197,5 +197,3 @@ void eqCompute (int type,
 	C[EQC_A2] /= C[EQC_A0];
 
 }
-
-/* vi:set ts=2 sts=2 sw=2: */

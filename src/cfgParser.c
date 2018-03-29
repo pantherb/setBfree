@@ -637,5 +637,3 @@ int main (int argc, char **argv) {
   return 0;
 }
 #endif /* CFG_MAIN */
-
-/* vi:set ts=8 sts=2 sw=2: */

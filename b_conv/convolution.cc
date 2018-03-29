@@ -341,5 +341,3 @@ void convolve (const float ** inbuf, float ** outbuf, size_t n_channels, size_t 
   }
 #endif
 }
-
-/* vi:set ts=8 sts=2 sw=2: */

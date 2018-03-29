@@ -988,5 +988,3 @@ int main (int argc, char * argv []) {
   fprintf(stderr, "bye\n");
   return 0;
 }
-
-/* vi:set ts=8 sts=2 sw=2: */

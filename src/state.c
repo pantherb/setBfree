@@ -257,6 +257,3 @@ void initRunningConfig(void *t, void *mcfg) {
   notifyControlChangeByName(mcfg, "swellpedal1", 127);
   notifyControlChangeByName(mcfg, "rotary.speed-select", 4*15);
 }
-
-
-/* vi:set ts=8 sts=2 sw=2: */

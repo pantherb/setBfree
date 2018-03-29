@@ -63,5 +63,3 @@ struct bmidi_event_t {
 void process_midi_event(void *inst, const struct bmidi_event_t *ev);
 
 #endif /* MIDI_TYPES_H */
-
-/* vi:set ts=8 sts=2 sw=2: */

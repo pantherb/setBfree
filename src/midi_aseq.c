@@ -143,4 +143,3 @@ void *aseq_run(void *arg) {
   return (NULL);
 }
 #endif
-/* vi:set ts=8 sts=2 sw=2: */

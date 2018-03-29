@@ -4915,5 +4915,3 @@ lv2ui_descriptor(uint32_t index)
     return NULL;
   }
 }
-
-/* vi:set ts=8 sts=2 sw=2: */

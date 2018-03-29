@@ -386,4 +386,3 @@ int loadProgrammeString (void *p, char * pdef) {
   return rv;
 }
 #endif
-/* vi:set ts=8 sts=2 sw=2: */
