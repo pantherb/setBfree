@@ -17,7 +17,7 @@ endif
 ifneq ($(MOD),)
   SUBDIRS = b_whirl b_synth
 else
-  SUBDIRS = b_overdrive b_whirl b_reverb b_conv src b_synth ui
+  SUBDIRS = b_overdrive b_whirl b_reverb b_conv b_chorato src b_synth ui
 endif
 
 default: all
