@@ -10,7 +10,7 @@ typedef struct {
 	/** Opaque host data */
 	LV2_Midnam_Handle handle;
 	/** Request from run() that the host should re-read the midnam */
-	void (*update)(LV2_Midnam_Handle handle);
+	void (*update) (LV2_Midnam_Handle handle);
 } LV2_Midnam;
 
 typedef struct {
@@ -22,16 +22,16 @@ typedef struct {
 	 * The midnam <Model> must be unique and
 	 * specific for the given plugin-instance.
 	 */
-	char* (*midnam)(LV2_Handle instance);
+	char* (*midnam) (LV2_Handle instance);
 
 	/** The unique model id used ith the midnam,
 	 * (or NULL).
 	 */
-	char* (*model)(LV2_Handle instance);
+	char* (*model) (LV2_Handle instance);
 
 	/** free allocated strings. The host
 	 * calls this for every value returned by
 	 * \ref midnam and \ref model.
 	 */
-	void (*free)(char*);
+	void (*free) (char*);
 } LV2_Midnam_Interface;

@@ -22,10 +22,10 @@
 #define _XOPEN_SOURCE 700
 /* clang-format off */
 
+#include "eqcomp.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "eqcomp.h"
 
 #ifndef M_PI
 # define M_PI 3.14159265358979323846

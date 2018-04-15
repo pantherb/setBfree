@@ -21,39 +21,38 @@
 #ifndef _OVERDRIVE_H_
 #define _OVERDRIVE_H_
 
-#include "../src/midi.h" // useMIDIControlFunction
 #include "../src/cfgParser.h"
-extern int ampConfig (void *pa, ConfigContext * cfg);
-extern const ConfigDoc *ampDoc ();
+#include "../src/midi.h" // useMIDIControlFunction
+extern int ampConfig (void* pa, ConfigContext* cfg);
+extern const ConfigDoc* ampDoc ();
 
-extern void initPreamp (void *pa, void *m);
-extern void setClean (void *pa, int useClean);
+extern void initPreamp (void* pa, void* m);
+extern void setClean (void* pa, int useClean);
 
-extern void *allocPreamp ();
-extern void freePreamp (void *pa);
+extern void* allocPreamp ();
+extern void freePreamp (void* pa);
 
-extern float * preamp (void *pa, float * inBuf, float * outBuf, size_t bufLengthSamples);
-extern float * overdrive (void *pa, const float * inBuf, float * outBuf, size_t buflen);
-
+extern float* preamp (void* pa, float* inBuf, float* outBuf, size_t bufLengthSamples);
+extern float* overdrive (void* pa, const float* inBuf, float* outBuf, size_t buflen);
 
 /* the following depend on compile time configutaion
  * and should be created by overmaker
  */
 
 /** Computes the constants for transfer curve */
-void fctl_biased (void *d, float u);
+void fctl_biased (void* d, float u);
 /** ovt_biased:Sets the positive feedback */
-void fctl_biased_fb (void *d, float u);
+void fctl_biased_fb (void* d, float u);
 /** ovt_biased: Sets sag impact */
-void fctl_sagtoBias (void *d, float u);
+void fctl_sagtoBias (void* d, float u);
 /** ovt_biased: Postdiff feedback control */
-void fctl_biased_fb2 (void *d, float u);
+void fctl_biased_fb2 (void* d, float u);
 /** ovt_biased: Global feedback control */
-void fctl_biased_gfb (void *d, float u);
+void fctl_biased_gfb (void* d, float u);
 /** ovt_biased: Fat control */
-void fctl_biased_fat (void *d, float u);
+void fctl_biased_fat (void* d, float u);
 
-void fsetInputGain (void *d, float u);
-void fsetOutputGain (void *d, float u);
+void fsetInputGain (void* d, float u);
+void fsetOutputGain (void* d, float u);
 
 #endif /* _OVERDRIVE_H_ */

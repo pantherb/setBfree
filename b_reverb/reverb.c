@@ -86,216 +86,232 @@
  */
 #ifndef CONFIGDOCONLY
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <ctype.h>
 #include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-#include "reverb.h"
 #include "../src/midi.h" // useMIDIControlFunction
+#include "reverb.h"
 
-struct b_reverb *allocReverb() {
-  struct b_reverb *r = (struct b_reverb*) calloc(1, sizeof(struct b_reverb));
+struct b_reverb*
+allocReverb ()
+{
+	struct b_reverb* r = (struct b_reverb*)calloc (1, sizeof (struct b_reverb));
 
-  if (!r) {
-    return NULL;
-    fprintf (stderr, "FATAL: memory allocation failed for reverb.\n");
-    exit(1);
-  }
+	if (!r) {
+		return NULL;
+		fprintf (stderr, "FATAL: memory allocation failed for reverb.\n");
+		exit (1);
+	}
 
-  r->inputGain = 0.1;	/* Input gain value */
-  r->fbk = -0.015;	/* Feedback gain */
-  r->wet = 0.1;		/* Output dry gain */
-  r->dry = 0.9;		/* Output wet gain */
+	r->inputGain = 0.1;    /* Input gain value */
+	r->fbk       = -0.015; /* Feedback gain */
+	r->wet       = 0.1;    /* Output dry gain */
+	r->dry       = 0.9;    /* Output wet gain */
 
-  /* These are all  1/sqrt(2) = 0.7071067811865475 */
-  r->gain[0] = sqrtf(0.5);	/* FBCF (feedback combfilter) */
-  r->gain[1] = sqrtf(0.5);	/* FBCF */
-  r->gain[2] = sqrtf(0.5);	/* FBCF */
-  r->gain[3] = sqrtf(0.5);	/* FBCF */
+	/* These are all  1/sqrt(2) = 0.7071067811865475 */
+	r->gain[0] = sqrtf (0.5); /* FBCF (feedback combfilter) */
+	r->gain[1] = sqrtf (0.5); /* FBCF */
+	r->gain[2] = sqrtf (0.5); /* FBCF */
+	r->gain[3] = sqrtf (0.5); /* FBCF */
 
-  r->gain[4] = sqrtf(0.5);	/* AP (all-pass filter) */
-  r->gain[5] = sqrtf(0.5);	/* AP */
-  r->gain[6] = sqrtf(0.5);	/* AP */
+	r->gain[4] = sqrtf (0.5); /* AP (all-pass filter) */
+	r->gain[5] = sqrtf (0.5); /* AP */
+	r->gain[6] = sqrtf (0.5); /* AP */
 
-  /* delay lines */
-  r->end[0] = 2999;
-  r->end[1] = 2331;
-  r->end[2] = 1893;
-  r->end[3] = 1097;
+	/* delay lines */
+	r->end[0] = 2999;
+	r->end[1] = 2331;
+	r->end[2] = 1893;
+	r->end[3] = 1097;
 
-  /* all pass filters */
-  r->end[4] = 1051;
-  r->end[5] = 337;
-  r->end[6] = 113;
+	/* all pass filters */
+	r->end[4] = 1051;
+	r->end[5] = 337;
+	r->end[6] = 113;
 
-  int i;
-  for (i=0; i< RV_NZ; ++i) {
-    r->delays[i]= NULL;
-  }
+	int i;
+	for (i = 0; i < RV_NZ; ++i) {
+		r->delays[i] = NULL;
+	}
 
-  r->yy1 = 0.0;
-  r->y_1 = 0.0;
+	r->yy1 = 0.0;
+	r->y_1 = 0.0;
 
-  return r;
+	return r;
 }
 
-void freeReverb(struct b_reverb *r) {
-  int i;
-  for (i = 0; i < RV_NZ; ++i) {
-    free(r->delays[i]);
-  }
-  free(r);
+void
+freeReverb (struct b_reverb* r)
+{
+	int i;
+	for (i = 0; i < RV_NZ; ++i) {
+		free (r->delays[i]);
+	}
+	free (r);
 }
 
 /* used during initialization, set array end pointers */
-static void setReverbPointers (struct b_reverb *r, int i) {
-  if ((0 <= i) && (i < RV_NZ)) {
-    int e = (r->end[i] * r->SampleRateD / 22050.0);
-    e = e | 1;
-    r->delays[i] = (float *) realloc((void *)r->delays[i], (e + 2) * sizeof(float));
-    if (!r->delays[i]) {
-      fprintf (stderr, "FATAL: memory allocation failed for reverb.\n");
-      exit(1);
-    } else {
-      memset(r->delays[i], 0 , (e + 2) * sizeof(float));
-    }
-    r->endp[i] = r->delays[i] + e + 1;
-    r->idx0[i] = r->idxp[i] = &(r->delays[i][0]);
-  }
+static void
+setReverbPointers (struct b_reverb* r, int i)
+{
+	if ((0 <= i) && (i < RV_NZ)) {
+		int e        = (r->end[i] * r->SampleRateD / 22050.0);
+		e            = e | 1;
+		r->delays[i] = (float*)realloc ((void*)r->delays[i], (e + 2) * sizeof (float));
+		if (!r->delays[i]) {
+			fprintf (stderr, "FATAL: memory allocation failed for reverb.\n");
+			exit (1);
+		} else {
+			memset (r->delays[i], 0, (e + 2) * sizeof (float));
+		}
+		r->endp[i] = r->delays[i] + e + 1;
+		r->idx0[i] = r->idxp[i] = &(r->delays[i][0]);
+	}
 }
 
-void setReverbInputGain (struct b_reverb *r, float g) {
-  r->inputGain = g;
+void
+setReverbInputGain (struct b_reverb* r, float g)
+{
+	r->inputGain = g;
 }
 
-void setReverbOutputGain (struct b_reverb *r, float g) {
-  float u = r->wet + r->dry;
-  r->wet = g * (r->wet / u);
-  r->dry = g * (r->dry / u);
+void
+setReverbOutputGain (struct b_reverb* r, float g)
+{
+	float u = r->wet + r->dry;
+	r->wet  = g * (r->wet / u);
+	r->dry  = g * (r->dry / u);
 }
 
 /*
  * @param g  0.0 Dry ... 1.0 wet
  */
-void setReverbMix (struct b_reverb *r, float g) {
-  float u = r->wet + r->dry;
-  r->wet = g * u;
-  r->dry = u - (g * u);
-}
-
-void setReverbMixFromMIDI (void *rev, unsigned char v) {
-  struct b_reverb *r = (struct b_reverb *) rev;
-  setReverbMix(r, (float)v/127.0);
-}
-
-int reverbConfig (struct b_reverb *r, ConfigContext * cfg) {
-  int ack = 1;
-  double d;
-  if (getConfigParameter_d ("reverb.wet", cfg, &d) == 1) {
-    r->wet = d;
-  }
-  else if (getConfigParameter_d ("reverb.dry", cfg, &d) == 1) {
-    r->dry = d;
-  }
-  else if (getConfigParameter_d ("reverb.inputgain", cfg, &d) == 1) {
-    setReverbInputGain (r, (float) d);
-  }
-  else if (getConfigParameter_d ("reverb.outputgain", cfg, &d) == 1) {
-    setReverbOutputGain (r, (float) d);
-  }
-  else if (getConfigParameter_dr ("reverb.mix", cfg, &d, 0, 1.0) == 1) {
-    setReverbMix (r, (float) d);
-  }
-  else {
-    ack=0;
-  }
-  return ack;
-}
-
-
-void initReverb (struct b_reverb *r, void *m, double rate) {
-  int i;
-  r->SampleRateD = rate;
-  for (i = 0; i < RV_NZ; i++) {
-    setReverbPointers (r, i);
-  }
-  setReverbInputGain (r, r->inputGain);
-  useMIDIControlFunction (m, "reverb.mix", setReverbMixFromMIDI, r);
-}
-
-float * reverb (struct b_reverb *r,
-		const float * inbuf,
-		float * outbuf,
-		size_t bufferLengthSamples)
+void
+setReverbMix (struct b_reverb* r, float g)
 {
-  float ** const idxp = r->idxp;
-  float * const * const endp = r->endp;
-  float * const * const idx0 = r->idx0;
-  const float * const gain = r->gain;
-  const float inputGain = r->inputGain;
-  const float fbk = r->fbk;
-  const float wet = r->wet;
-  const float dry = r->dry;
+	float u = r->wet + r->dry;
+	r->wet  = g * u;
+	r->dry  = u - (g * u);
+}
 
-  unsigned int i;
-  const float * xp =  inbuf;
-  float * yp =  outbuf;
+void
+setReverbMixFromMIDI (void* rev, unsigned char v)
+{
+	struct b_reverb* r = (struct b_reverb*)rev;
+	setReverbMix (r, (float)v / 127.0);
+}
 
-  float y_1 = r->y_1;
-  float yy1 = r->yy1;
+int
+reverbConfig (struct b_reverb* r, ConfigContext* cfg)
+{
+	int    ack = 1;
+	double d;
+	if (getConfigParameter_d ("reverb.wet", cfg, &d) == 1) {
+		r->wet = d;
+	} else if (getConfigParameter_d ("reverb.dry", cfg, &d) == 1) {
+		r->dry = d;
+	} else if (getConfigParameter_d ("reverb.inputgain", cfg, &d) == 1) {
+		setReverbInputGain (r, (float)d);
+	} else if (getConfigParameter_d ("reverb.outputgain", cfg, &d) == 1) {
+		setReverbOutputGain (r, (float)d);
+	} else if (getConfigParameter_dr ("reverb.mix", cfg, &d, 0, 1.0) == 1) {
+		setReverbMix (r, (float)d);
+	} else {
+		ack = 0;
+	}
+	return ack;
+}
 
-  for (i = 0; i < bufferLengthSamples; i++) {
-    int j;
-    float y;
-    const float xo = (*xp++);
-    const float x = y_1 + (inputGain * xo);
-    float xa = 0.0;
+void
+initReverb (struct b_reverb* r, void* m, double rate)
+{
+	int i;
+	r->SampleRateD = rate;
+	for (i = 0; i < RV_NZ; i++) {
+		setReverbPointers (r, i);
+	}
+	setReverbInputGain (r, r->inputGain);
+	useMIDIControlFunction (m, "reverb.mix", setReverbMixFromMIDI, r);
+}
+
+float*
+reverb (struct b_reverb* r,
+        const float*     inbuf,
+        float*           outbuf,
+        size_t           bufferLengthSamples)
+{
+	float** const       idxp      = r->idxp;
+	float* const* const endp      = r->endp;
+	float* const* const idx0      = r->idx0;
+	const float* const  gain      = r->gain;
+	const float         inputGain = r->inputGain;
+	const float         fbk       = r->fbk;
+	const float         wet       = r->wet;
+	const float         dry       = r->dry;
+
+	unsigned int i;
+	const float* xp = inbuf;
+	float*       yp = outbuf;
+
+	float y_1 = r->y_1;
+	float yy1 = r->yy1;
+
+	for (i = 0; i < bufferLengthSamples; i++) {
+		int         j;
+		float       y;
+		const float xo = (*xp++);
+		const float x  = y_1 + (inputGain * xo);
+		float       xa = 0.0;
 
 		/* First we do four feedback comb filters (ie parallel delay lines,
 		 * each with a single tap at the end that feeds back at the start) */
 
-    for (j = 0; j < 4; j++) {
-      y = (*idxp[j]);
-      *idxp[j] = x + (gain[j] * y);
-      if (endp[j] <= ++(idxp[j])) idxp[j] = idx0[j];
-      xa += y;
-    }
+		for (j = 0; j < 4; j++) {
+			y        = (*idxp[j]);
+			*idxp[j] = x + (gain[j] * y);
+			if (endp[j] <= ++(idxp[j]))
+				idxp[j] = idx0[j];
+			xa += y;
+		}
 
-    for (; j < 7; j++) {
-      y = (*idxp[j]);
-      *idxp[j] = gain[j] * (xa + y);
-      if (endp[j] <= ++(idxp[j])) idxp[j] = idx0[j];
-      xa = y - xa;
-    }
+		for (; j < 7; j++) {
+			y        = (*idxp[j]);
+			*idxp[j] = gain[j] * (xa + y);
+			if (endp[j] <= ++(idxp[j]))
+				idxp[j] = idx0[j];
+			xa              = y - xa;
+		}
 
-    y = 0.5 * (xa + yy1);
-    yy1 = y;
-    y_1 = fbk * xa;
+		y   = 0.5 * (xa + yy1);
+		yy1 = y;
+		y_1 = fbk * xa;
 
-    *yp++ = ((wet * y) + (dry * xo));
-  }
+		*yp++ = ((wet * y) + (dry * xo));
+	}
 
-  r->y_1 = y_1 + DENORMAL_HACK;
-  r->yy1 = yy1 + DENORMAL_HACK;
-  return outbuf;
+	r->y_1 = y_1 + DENORMAL_HACK;
+	r->yy1 = yy1 + DENORMAL_HACK;
+	return outbuf;
 }
 
-
 #else
-# include "cfgParser.h"
+#include "cfgParser.h"
 #endif // CONFIGDOCONLY
 
 static const ConfigDoc doc[] = {
-  {"reverb.wet", CFG_DOUBLE, "0.1", "Reverb Wet signal level; range [0..1]", INCOMPLETE_DOC},
-  {"reverb.dry", CFG_DOUBLE, "0.9", "Reverb Dry signal level; range [0..1]", INCOMPLETE_DOC},
-  {"reverb.inputgain", CFG_DOUBLE, "0.1", "Reverb Input Gain", "dB", 0.01, 0.5, 2.0},
-  {"reverb.outputgain", CFG_DOUBLE, "1.0", "Reverb Output Gain (modifies dry/wet)", INCOMPLETE_DOC},
-  {"reverb.mix", CFG_DOUBLE, "0.1", "Reverb Mix (modifies dry/wet).", INCOMPLETE_DOC},
-  DOC_SENTINEL
+	{ "reverb.wet", CFG_DOUBLE, "0.1", "Reverb Wet signal level; range [0..1]", INCOMPLETE_DOC },
+	{ "reverb.dry", CFG_DOUBLE, "0.9", "Reverb Dry signal level; range [0..1]", INCOMPLETE_DOC },
+	{ "reverb.inputgain", CFG_DOUBLE, "0.1", "Reverb Input Gain", "dB", 0.01, 0.5, 2.0 },
+	{ "reverb.outputgain", CFG_DOUBLE, "1.0", "Reverb Output Gain (modifies dry/wet)", INCOMPLETE_DOC },
+	{ "reverb.mix", CFG_DOUBLE, "0.1", "Reverb Mix (modifies dry/wet).", INCOMPLETE_DOC },
+	DOC_SENTINEL
 };
 
-const ConfigDoc *reverbDoc () {
-  return doc;
+const ConfigDoc*
+reverbDoc ()
+{
+	return doc;
 }

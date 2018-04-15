@@ -19,14 +19,14 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <math.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
 #include <assert.h>
+#include <math.h>
+#include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 
-#include "whirl.h"
 #include "eqcomp.h"
+#include "whirl.h"
 
 #include "lv2/lv2plug.in/ns/lv2core/lv2.h"
 
@@ -93,10 +93,10 @@ typedef enum {
 
 typedef struct {
 	float *type, *freq, *qual, *gain; // ports
-	iir_t *W[2]; /* pointers to coeffs, drum-filter x2 */
+	iir_t* W[2];                      /* pointers to coeffs, drum-filter x2 */
 	/* state */
 	float _f, _q, _g;
-	int _t;
+	int   _t;
 } Filter;
 
 typedef struct {
@@ -104,7 +104,7 @@ typedef struct {
 	float *input, *outL, *outR;
 
 	/* control ports */
-	float *rev_select; // speed select 0..8
+	float* rev_select; // speed select 0..8
 
 	float *horn_brake, *horn_accel, *horn_decel, *horn_slow, *horn_fast;
 	float *drum_brake, *drum_accel, *drum_decel, *drum_slow, *drum_fast;
@@ -115,8 +115,8 @@ typedef struct {
 	float *horn_radius, *drum_radius;
 	float *horn_xoff, *horn_zoff, *mic_dist, *mic_angle;
 
-	float *p_resend_trigger; // GUI retrigger
-	float *p_link_speed; // GUI setting
+	float* p_resend_trigger; // GUI retrigger
+	float* p_link_speed;     // GUI setting
 
 	/* output ports */
 	float *c_horm_rpm, *c_drum_rpm;
@@ -145,18 +145,17 @@ typedef struct {
 
 	// fade in/out for re-configuration
 	bool     fade_dir; // true: fade-out, false: fade-in
-	uint32_t fade; // fade counter 0..FADED
+	uint32_t fade;     // fade counter 0..FADED
 
 	/* actual effect instance, whirl.c */
-	struct b_whirl *whirl;
+	struct b_whirl* whirl;
 
 	/* misc */
-	double   rate, nyq;   // sample-rate, max EQ freq
-	float    lpf1, lpf2;  // Low-pass parameter
+	double   rate, nyq;  // sample-rate, max EQ freq
+	float    lpf1, lpf2; // Low-pass parameter
 	int      resend_trigger;
 	uint32_t resend_data_to_ui;
 } B3W;
-
 
 static LV2_Handle
 instantiate (const LV2_Descriptor*     descriptor,
@@ -165,7 +164,9 @@ instantiate (const LV2_Descriptor*     descriptor,
              const LV2_Feature* const* features)
 {
 	B3W* b3w = (B3W*)calloc (1, sizeof (B3W));
-	if (!b3w) { return NULL ;}
+	if (!b3w) {
+		return NULL;
+	}
 
 	if (!(b3w->whirl = allocWhirl ())) {
 		free (b3w);
@@ -198,21 +199,21 @@ instantiate (const LV2_Descriptor*     descriptor,
 
 	b3w->o_horn_radius = b3w->whirl->hornRadiusCm;
 	b3w->o_drum_radius = b3w->whirl->drumRadiusCm;
-	b3w->o_mic_dist = b3w->whirl->micDistCm;
-	b3w->o_horn_xoff = b3w->whirl->hornXOffsetCm;
-	b3w->o_horn_zoff = b3w->whirl->hornZOffsetCm;
-	b3w->o_horn_leak = b3w->whirl->leakLevel;
+	b3w->o_mic_dist    = b3w->whirl->micDistCm;
+	b3w->o_horn_xoff   = b3w->whirl->hornXOffsetCm;
+	b3w->o_horn_zoff   = b3w->whirl->hornZOffsetCm;
+	b3w->o_horn_leak   = b3w->whirl->leakLevel;
 
 	b3w->fade_dir = false;
-	b3w->fade = 0;
+	b3w->fade     = 0;
 
 	b3w->rate = rate;
 	b3w->nyq  = rate * 0.4998;
-	b3w->lpf1  = 2000.0 / rate;
-	b3w->lpf2  = 880.0 / rate;
+	b3w->lpf1 = 2000.0 / rate;
+	b3w->lpf2 = 880.0 / rate;
 
 	b3w->resend_data_to_ui = 0;
-	b3w->resend_trigger = 0;
+	b3w->resend_trigger    = 0;
 
 	// fade in levels
 	b3w->o_horn_level = 0.0;
@@ -232,100 +233,205 @@ instantiate (const LV2_Descriptor*     descriptor,
 
 static void
 connect_port (LV2_Handle instance,
-             uint32_t   port,
-             void*      data)
+              uint32_t   port,
+              void*      data)
 {
 	B3W* b3w = (B3W*)instance;
 
 	switch ((PortIndex)port) {
-		case B3W_INPUT:       b3w->input = (float*)data; break;
-		case B3W_OUTL:        b3w->outL = (float*)data; break;
-		case B3W_OUTR:        b3w->outR = (float*)data; break;
+		case B3W_INPUT:
+			b3w->input = (float*)data;
+			break;
+		case B3W_OUTL:
+			b3w->outL = (float*)data;
+			break;
+		case B3W_OUTR:
+			b3w->outR = (float*)data;
+			break;
 
-		case B3W_REVSELECT:   b3w->rev_select = (float*)data; break;
+		case B3W_REVSELECT:
+			b3w->rev_select = (float*)data;
+			break;
 
-		case B3W_FILTATYPE:   b3w->flt[0].type = (float*)data; break;
-		case B3W_FILTAFREQ:   b3w->flt[0].freq = (float*)data; break;
-		case B3W_FILTAQUAL:   b3w->flt[0].qual = (float*)data; break;
-		case B3W_FILTAGAIN:   b3w->flt[0].gain = (float*)data; break;
+		case B3W_FILTATYPE:
+			b3w->flt[0].type = (float*)data;
+			break;
+		case B3W_FILTAFREQ:
+			b3w->flt[0].freq = (float*)data;
+			break;
+		case B3W_FILTAQUAL:
+			b3w->flt[0].qual = (float*)data;
+			break;
+		case B3W_FILTAGAIN:
+			b3w->flt[0].gain = (float*)data;
+			break;
 
-		case B3W_FILTBTYPE:   b3w->flt[1].type = (float*)data; break;
-		case B3W_FILTBFREQ:   b3w->flt[1].freq = (float*)data; break;
-		case B3W_FILTBQUAL:   b3w->flt[1].qual = (float*)data; break;
-		case B3W_FILTBGAIN:   b3w->flt[1].gain = (float*)data; break;
+		case B3W_FILTBTYPE:
+			b3w->flt[1].type = (float*)data;
+			break;
+		case B3W_FILTBFREQ:
+			b3w->flt[1].freq = (float*)data;
+			break;
+		case B3W_FILTBQUAL:
+			b3w->flt[1].qual = (float*)data;
+			break;
+		case B3W_FILTBGAIN:
+			b3w->flt[1].gain = (float*)data;
+			break;
 
-		case B3W_FILTDTYPE:   b3w->flt[2].type = (float*)data; break;
-		case B3W_FILTDFREQ:   b3w->flt[2].freq = (float*)data; break;
-		case B3W_FILTDQUAL:   b3w->flt[2].qual = (float*)data; break;
-		case B3W_FILTDGAIN:   b3w->flt[2].gain = (float*)data; break;
+		case B3W_FILTDTYPE:
+			b3w->flt[2].type = (float*)data;
+			break;
+		case B3W_FILTDFREQ:
+			b3w->flt[2].freq = (float*)data;
+			break;
+		case B3W_FILTDQUAL:
+			b3w->flt[2].qual = (float*)data;
+			break;
+		case B3W_FILTDGAIN:
+			b3w->flt[2].gain = (float*)data;
+			break;
 
-		case B3W_HORNBRAKE:   b3w->horn_brake = (float*)data; break;
-		case B3W_HORNACCEL:   b3w->horn_accel = (float*)data; break;
-		case B3W_HORNDECEL:   b3w->horn_decel = (float*)data; break;
-		case B3W_HORNRPMSLOW: b3w->horn_slow = (float*)data; break;
-		case B3W_HORNRPMFAST: b3w->horn_fast = (float*)data; break;
+		case B3W_HORNBRAKE:
+			b3w->horn_brake = (float*)data;
+			break;
+		case B3W_HORNACCEL:
+			b3w->horn_accel = (float*)data;
+			break;
+		case B3W_HORNDECEL:
+			b3w->horn_decel = (float*)data;
+			break;
+		case B3W_HORNRPMSLOW:
+			b3w->horn_slow = (float*)data;
+			break;
+		case B3W_HORNRPMFAST:
+			b3w->horn_fast = (float*)data;
+			break;
 
-		case B3W_DRUMBRAKE:   b3w->drum_brake = (float*)data; break;
-		case B3W_DRUMACCEL:   b3w->drum_accel = (float*)data; break;
-		case B3W_DRUMDECEL:   b3w->drum_decel = (float*)data; break;
-		case B3W_DRUMRPMSLOW: b3w->drum_slow = (float*)data; break;
-		case B3W_DRUMRPMFAST: b3w->drum_fast = (float*)data; break;
+		case B3W_DRUMBRAKE:
+			b3w->drum_brake = (float*)data;
+			break;
+		case B3W_DRUMACCEL:
+			b3w->drum_accel = (float*)data;
+			break;
+		case B3W_DRUMDECEL:
+			b3w->drum_decel = (float*)data;
+			break;
+		case B3W_DRUMRPMSLOW:
+			b3w->drum_slow = (float*)data;
+			break;
+		case B3W_DRUMRPMFAST:
+			b3w->drum_fast = (float*)data;
+			break;
 
-		case B3W_HORNLVL:     b3w->horn_level = (float*)data; break;
-		case B3W_DRUMLVL:     b3w->drum_level = (float*)data; break;
-		case B3W_DRUMWIDTH:   b3w->drum_width = (float*)data; break;
-		case B3W_HORNWIDTH:   b3w->horn_width = (float*)data; break;
+		case B3W_HORNLVL:
+			b3w->horn_level = (float*)data;
+			break;
+		case B3W_DRUMLVL:
+			b3w->drum_level = (float*)data;
+			break;
+		case B3W_DRUMWIDTH:
+			b3w->drum_width = (float*)data;
+			break;
+		case B3W_HORNWIDTH:
+			b3w->horn_width = (float*)data;
+			break;
 
-		case B3W_HORNLEAK:    b3w->horn_leak = (float*)data; break;
-		case B3W_HORNRADIUS:  b3w->horn_radius = (float*)data; break;
-		case B3W_DRUMRADIUS:  b3w->drum_radius = (float*)data; break;
-		case B3W_HORNOFFX:    b3w->horn_xoff = (float*)data; break;
-		case B3W_HORNOFFZ:    b3w->horn_zoff = (float*)data; break;
-		case B3W_MICDIST:     b3w->mic_dist = (float*)data; break;
+		case B3W_HORNLEAK:
+			b3w->horn_leak = (float*)data;
+			break;
+		case B3W_HORNRADIUS:
+			b3w->horn_radius = (float*)data;
+			break;
+		case B3W_DRUMRADIUS:
+			b3w->drum_radius = (float*)data;
+			break;
+		case B3W_HORNOFFX:
+			b3w->horn_xoff = (float*)data;
+			break;
+		case B3W_HORNOFFZ:
+			b3w->horn_zoff = (float*)data;
+			break;
+		case B3W_MICDIST:
+			b3w->mic_dist = (float*)data;
+			break;
 
-		case B3W_HORNRPM:     b3w->c_horm_rpm = (float*)data; break;
-		case B3W_DRUMRPM:     b3w->c_drum_rpm = (float*)data; break;
-		case B3W_HORNANG:     b3w->c_horm_ang = (float*)data; break;
-		case B3W_DRUMANG:     b3w->c_drum_ang = (float*)data; break;
+		case B3W_HORNRPM:
+			b3w->c_horm_rpm = (float*)data;
+			break;
+		case B3W_DRUMRPM:
+			b3w->c_drum_rpm = (float*)data;
+			break;
+		case B3W_HORNANG:
+			b3w->c_horm_ang = (float*)data;
+			break;
+		case B3W_DRUMANG:
+			b3w->c_drum_ang = (float*)data;
+			break;
 
-		case B3W_GUINOTIFY:   b3w->p_resend_trigger = (float*)data; break;
-		case B3W_LINKSPEED:   b3w->p_link_speed = (float*)data; break;
-		case B3W_MICANGLE:    b3w->mic_angle = (float*)data; break;
-		default: break;
+		case B3W_GUINOTIFY:
+			b3w->p_resend_trigger = (float*)data;
+			break;
+		case B3W_LINKSPEED:
+			b3w->p_link_speed = (float*)data;
+			break;
+		case B3W_MICANGLE:
+			b3w->mic_angle = (float*)data;
+			break;
+		default:
+			break;
 	}
 }
 
-static inline float db_to_coefficient (const float d) {
+static inline float
+db_to_coefficient (const float d)
+{
 	return powf (10.0f, 0.05f * d);
 }
 
 #define SILENT 128 // cycles of 64
-#define FADED   96 // cycles of 64
+#define FADED 96   // cycles of 64
 
-static bool faded (B3W *b3w) {
+static bool
+faded (B3W* b3w)
+{
 	return b3w->fade >= FADED;
 }
 
-static int interpolate_filter (B3W *b3w,  Filter *flt) {
+static int
+interpolate_filter (B3W* b3w, Filter* flt)
+{
 	assert (flt->type && flt->freq && flt->qual && flt->gain);
 
-	int   t = (int) rintf (*flt->type);
+	int   t = (int)rintf (*flt->type);
 	float f = *flt->freq;
 	float q = *flt->qual;
 	float g = *flt->gain;
 
 	t = t % 9;
 
-	if  (t != flt->_t && !faded (b3w)) {
+	if (t != flt->_t && !faded (b3w)) {
 		return 1;
 	}
 
-	if (q < .01)      { q =  .01f; }
-	if (q > 6.0)      { q =  6.f; }
-	if (f < 20.0)     { f =  20.f; }
-	if (f > b3w->nyq) { f =  b3w->nyq;}
-	if (g < -80)      { g = -80.f; }
-	if (g >  80)      { g =  80.f; }
+	if (q < .01) {
+		q = .01f;
+	}
+	if (q > 6.0) {
+		q = 6.f;
+	}
+	if (f < 20.0) {
+		f = 20.f;
+	}
+	if (f > b3w->nyq) {
+		f = b3w->nyq;
+	}
+	if (g < -80) {
+		g = -80.f;
+	}
+	if (g > 80) {
+		g = 80.f;
+	}
 
 	if (flt->_f == f && flt->_g == g && flt->_q == q && flt->_t == t) {
 		return 0;
@@ -345,19 +451,35 @@ static int interpolate_filter (B3W *b3w,  Filter *flt) {
 		// limit large jumps per 64 samples
 		const float w0 = flt->_f / b3w->rate;
 		const float w1 = f / b3w->rate;
-		if (fabsf (w0 - w1) > .20) { return 1; } // unusual, whirl EQ range is 20Hz..8KHz
-		if ((w0 - w1) >  .02) { f = b3w->rate * (w0 - .02 * b3w->rate);}
-		if ((w0 - w1) < -.02) { f = b3w->rate * (w0 + .02 * b3w->rate);}
-		if ((flt->_g - g) >  10)   { g = flt->_g - 10; }
-		if ((flt->_g - g) < -10)   { g = flt->_g + 10; }
+		if (fabsf (w0 - w1) > .20) {
+			return 1;
+		} // unusual, whirl EQ range is 20Hz..8KHz
+		if ((w0 - w1) > .02) {
+			f = b3w->rate * (w0 - .02 * b3w->rate);
+		}
+		if ((w0 - w1) < -.02) {
+			f = b3w->rate * (w0 + .02 * b3w->rate);
+		}
+		if ((flt->_g - g) > 10) {
+			g = flt->_g - 10;
+		}
+		if ((flt->_g - g) < -10) {
+			g = flt->_g + 10;
+		}
 
 		flt->_f += _a * (f - flt->_f);
 		flt->_g += _a * (g - flt->_g);
 		flt->_q += _b * (q - flt->_q);
 
-		if (fabsf (flt->_g - g) < 1e-4) { flt->_g = g; }
-		if (fabsf (flt->_f - f) < 1e-2) { flt->_f = f; }
-		if (fabsf (flt->_q - q) < 1e-3) { flt->_q = q; }
+		if (fabsf (flt->_g - g) < 1e-4) {
+			flt->_g = g;
+		}
+		if (fabsf (flt->_f - f) < 1e-2) {
+			flt->_f = f;
+		}
+		if (fabsf (flt->_q - q) < 1e-3) {
+			flt->_q = q;
+		}
 	}
 
 	double C[6];
@@ -389,24 +511,31 @@ static int interpolate_filter (B3W *b3w,  Filter *flt) {
 	return 0;
 }
 
-#define SETVAR(PARAM, VAR, MIN, MAX, MOD) { \
-	const float val = *b3w->VAR; \
-	 b3w->o_ ## VAR = val; \
-	if (val >= MIN && val <= MAX) { b3w->whirl->PARAM = MOD val; } \
-}
+#define SETVAR(PARAM, VAR, MIN, MAX, MOD)            \
+	{                                            \
+		const float val = *b3w->VAR;         \
+		b3w->o_##VAR    = val;               \
+		if (val >= MIN && val <= MAX) {      \
+			b3w->whirl->PARAM = MOD val; \
+		}                                    \
+	}
 
-#define CHECKDIFF(VAR) \
-	if (b3w->VAR && *b3w->VAR != b3w->o_ ## VAR) { changed = 1; }
+#define CHECKDIFF(VAR)                               \
+	if (b3w->VAR && *b3w->VAR != b3w->o_##VAR) { \
+		changed = 1;                         \
+	}
 
-static int reconfigure (B3W* b3w) {
+static int
+reconfigure (B3W* b3w)
+{
 	int changed = 0;
 
-	CHECKDIFF(horn_radius);
-	CHECKDIFF(drum_radius);
-	CHECKDIFF(horn_xoff);
-	CHECKDIFF(horn_zoff);
-	CHECKDIFF(mic_dist);
-	CHECKDIFF(mic_angle);
+	CHECKDIFF (horn_radius);
+	CHECKDIFF (drum_radius);
+	CHECKDIFF (horn_xoff);
+	CHECKDIFF (horn_zoff);
+	CHECKDIFF (mic_dist);
+	CHECKDIFF (mic_angle);
 
 	if (!changed) {
 		return 0;
@@ -416,18 +545,20 @@ static int reconfigure (B3W* b3w) {
 		return 1;
 	}
 
-	SETVAR(hornRadiusCm, horn_radius, 9, 50,)
-	SETVAR(drumRadiusCm, drum_radius, 9, 50,)
-	SETVAR(micDistCm, mic_dist, 9, 300,)
-	SETVAR(hornXOffsetCm, horn_xoff, -20 , 20,)
-	SETVAR(hornZOffsetCm, horn_zoff, -20 , 20,)
-	SETVAR(micAngle, mic_angle, 0 , 180, 1.f - 1.f/180.f *)
+	SETVAR (hornRadiusCm, horn_radius, 9, 50, )
+	SETVAR (drumRadiusCm, drum_radius, 9, 50, )
+	SETVAR (micDistCm, mic_dist, 9, 300, )
+	SETVAR (hornXOffsetCm, horn_xoff, -20, 20, )
+	SETVAR (hornZOffsetCm, horn_zoff, -20, 20, )
+	SETVAR (micAngle, mic_angle, 0, 180, 1.f - 1.f / 180.f *)
 
 	computeOffsets (b3w->whirl);
 	return 0;
 }
 
-static void process (B3W* b3w, uint32_t n_samples, float const * const in, float *outL, float *outR) {
+static void
+process (B3W* b3w, uint32_t n_samples, float const* const in, float* outL, float* outR)
+{
 	uint32_t i;
 	assert (n_samples <= 64);
 	const float lpf = b3w->lpf1;
@@ -444,7 +575,7 @@ static void process (B3W* b3w, uint32_t n_samples, float const * const in, float
 	}
 
 	whirlProc2 (b3w->whirl, in, NULL, NULL,
-			horn_left, horn_right, drum_left, drum_right, n_samples);
+	            horn_left, horn_right, drum_left, drum_right, n_samples);
 
 	// mixdown
 	const float hl = db_to_coefficient (*b3w->horn_level);
@@ -463,24 +594,24 @@ static void process (B3W* b3w, uint32_t n_samples, float const * const in, float
 		b3w->x_drum_width = b3w->o_drum_width;
 
 		const float dwF = b3w->o_drum_width;
-		const float dwP = dwF > 0.f ? (dwF >  1.f ? 1.f :  dwF) : 0.f;
+		const float dwP = dwF > 0.f ? (dwF > 1.f ? 1.f : dwF) : 0.f;
 		const float dwN = dwF < 0.f ? (dwF < -1.f ? 1.f : -dwF) : 0.f;
-		b3w->x_dll = sqrtf (1.f - dwP);
-		b3w->x_dlr = sqrtf (0.f + dwP);
-		b3w->x_drl = sqrtf (0.f + dwN);
-		b3w->x_drr = sqrtf (1.f - dwN);
+		b3w->x_dll      = sqrtf (1.f - dwP);
+		b3w->x_dlr      = sqrtf (0.f + dwP);
+		b3w->x_drl      = sqrtf (0.f + dwN);
+		b3w->x_drr      = sqrtf (1.f - dwN);
 	}
 
 	if (fabsf (b3w->x_horn_width - b3w->o_horn_width) > 1e-8) {
 		b3w->x_horn_width = b3w->o_horn_width;
 
 		const float hwF = b3w->o_horn_width;
-		const float hwP = hwF > 0.f ? (hwF >  1.f ? 1.f :  hwF) : 0.f;
+		const float hwP = hwF > 0.f ? (hwF > 1.f ? 1.f : hwF) : 0.f;
 		const float hwN = hwF < 0.f ? (hwF < -1.f ? 1.f : -hwF) : 0.f;
-		b3w->x_hll = sqrtf (1.f - hwP);
-		b3w->x_hlr = sqrtf (0.f + hwP);
-		b3w->x_hrl = sqrtf (0.f + hwN);
-		b3w->x_hrr = sqrtf (1.f - hwN);
+		b3w->x_hll      = sqrtf (1.f - hwP);
+		b3w->x_hlr      = sqrtf (0.f + hwP);
+		b3w->x_hrl      = sqrtf (0.f + hwN);
+		b3w->x_hrr      = sqrtf (1.f - hwN);
 	}
 
 	// localize variable, small loop
@@ -495,12 +626,13 @@ static void process (B3W* b3w, uint32_t n_samples, float const * const in, float
 	const float hrr = b3w->o_horn_level * b3w->x_hrr;
 
 	for (i = 0; i < n_samples; ++i) {
-		outL [i] = horn_left[i] * hll + horn_right[i] * hlr + drum_left[i] * dll + drum_right[i] * dlr;
-		outR [i] = horn_left[i] * hrl + horn_right[i] * hrr + drum_left[i] * drl + drum_right[i] * drr;
+		outL[i] = horn_left[i] * hll + horn_right[i] * hlr + drum_left[i] * dll + drum_right[i] * dlr;
+		outR[i] = horn_left[i] * hrl + horn_right[i] * hrr + drum_left[i] * drl + drum_right[i] * drr;
 	}
 }
 
-static void set_speed (B3W* b3w)
+static void
+set_speed (B3W* b3w)
 {
 	if (b3w->o_rev_select == *b3w->rev_select) {
 		return;
@@ -508,51 +640,57 @@ static void set_speed (B3W* b3w)
 
 	if (b3w->flt[0].type && !b3w->horn_radius) {
 		// MOD version
-		const int v = (int) floorf (*b3w->rev_select);
+		const int v = (int)floorf (*b3w->rev_select);
 		useRevOption (b3w->whirl, v * 3 + v, 0);
 	} else {
 		const float l = b3w->p_link_speed ? (*b3w->p_link_speed) : 0;
-		const int v = (int) floorf (*b3w->rev_select);
-		int h = v / 3; // 0: stop, 1: slow, 2: fast
-		int d = v % 3; // 0: stop, 1: slow, 2: fast
-		if (l <= -.5) { h = d; }
-		if (l >= 0.5) { d = h; }
+		const int   v = (int)floorf (*b3w->rev_select);
+		int         h = v / 3; // 0: stop, 1: slow, 2: fast
+		int         d = v % 3; // 0: stop, 1: slow, 2: fast
+		if (l <= -.5) {
+			h = d;
+		}
+		if (l >= 0.5) {
+			d = h;
+		}
 		useRevOption (b3w->whirl, h * 3 + d, 0);
 	}
 
 	b3w->o_rev_select = *b3w->rev_select;
 }
 
-#define SETVALUE(VAR, NAME, PROC, FN) \
-  if (b3w->NAME) { \
-    if (b3w->o_##NAME != *(b3w->NAME)) { \
-      b3w->whirl->VAR = PROC (*(b3w->NAME)); \
-      b3w->o_##NAME = *(b3w->NAME); \
-      FN; \
-    } \
-  }
+#define SETVALUE(VAR, NAME, PROC, FN)                          \
+	if (b3w->NAME) {                                       \
+		if (b3w->o_##NAME != *(b3w->NAME)) {           \
+			b3w->whirl->VAR = PROC (*(b3w->NAME)); \
+			b3w->o_##NAME   = *(b3w->NAME);        \
+			FN;                                    \
+		}                                              \
+	}
 
-static void run (LV2_Handle instance, uint32_t n_samples) {
+static void
+run (LV2_Handle instance, uint32_t n_samples)
+{
 	B3W* b3w = (B3W*)instance;
 
-	SETVALUE(hnBrakePos, horn_brake, (double), );
-	SETVALUE(hornAcc, horn_accel, , );
-	SETVALUE(hornDec, horn_decel, , );
+	SETVALUE (hnBrakePos, horn_brake, (double), );
+	SETVALUE (hornAcc, horn_accel, , );
+	SETVALUE (hornDec, horn_decel, , );
 
-	SETVALUE(hornRPMslow, horn_slow, , computeRotationSpeeds (b3w->whirl); b3w->o_rev_select = -1;);
-	SETVALUE(hornRPMfast, horn_fast, , computeRotationSpeeds (b3w->whirl); b3w->o_rev_select = -1;);
-	SETVALUE(drumRPMslow, drum_slow, , computeRotationSpeeds (b3w->whirl); b3w->o_rev_select = -1;);
-	SETVALUE(drumRPMfast, drum_fast, , computeRotationSpeeds (b3w->whirl); b3w->o_rev_select = -1;);
+	SETVALUE (hornRPMslow, horn_slow, , computeRotationSpeeds (b3w->whirl); b3w->o_rev_select = -1;);
+	SETVALUE (hornRPMfast, horn_fast, , computeRotationSpeeds (b3w->whirl); b3w->o_rev_select = -1;);
+	SETVALUE (drumRPMslow, drum_slow, , computeRotationSpeeds (b3w->whirl); b3w->o_rev_select = -1;);
+	SETVALUE (drumRPMfast, drum_fast, , computeRotationSpeeds (b3w->whirl); b3w->o_rev_select = -1;);
 
-	SETVALUE(drBrakePos, drum_brake, (double), );
-	SETVALUE(drumAcc, drum_accel, , );
-	SETVALUE(drumDec, drum_decel, , );
+	SETVALUE (drBrakePos, drum_brake, (double), );
+	SETVALUE (drumAcc, drum_accel, , );
+	SETVALUE (drumDec, drum_decel, , );
 
 	set_speed (b3w);
 
 	float* input = b3w->input;
-	float* outL = b3w->outL;
-	float* outR = b3w->outR;
+	float* outL  = b3w->outL;
+	float* outR  = b3w->outR;
 
 	uint32_t k = n_samples;
 	while (k > 0) {
@@ -575,7 +713,8 @@ static void run (LV2_Handle instance, uint32_t n_samples) {
 			b3w->fade_dir = true;
 		}
 
-		float g0, g1; g0 = g1 = 1.0;
+		float g0, g1;
+		g0 = g1 = 1.0;
 
 		if (!b3w->fade_dir && b3w->fade > 0 && b3w->fade <= FADED) {
 			g0 = 1.0 - b3w->fade / (float)FADED;
@@ -598,9 +737,9 @@ static void run (LV2_Handle instance, uint32_t n_samples) {
 		}
 
 		if (g0 != g1) {
-			uint32_t i;
+			uint32_t    i;
 			const float d = (g1 - g0) / (float)n;
-			float g = g0;
+			float       g = g0;
 			for (i = 0; i < n; ++i) {
 				g += d;
 				outL[i] *= g;
@@ -609,7 +748,8 @@ static void run (LV2_Handle instance, uint32_t n_samples) {
 		}
 
 		input += n;
-		outL += n; outR += n;
+		outL += n;
+		outR += n;
 		k -= n;
 	}
 
@@ -623,7 +763,7 @@ static void run (LV2_Handle instance, uint32_t n_samples) {
 
 	if (b3w->resend_trigger != (int)(floorf (b3w->p_resend_trigger[0]))) {
 		b3w->resend_data_to_ui = ceilf (.5 * b3w->rate / n_samples);
-		b3w->resend_trigger = (int)(floorf (b3w->p_resend_trigger[0]));
+		b3w->resend_trigger    = (int)(floorf (b3w->p_resend_trigger[0]));
 	}
 
 	if (b3w->resend_data_to_ui > 0) {
@@ -691,9 +831,9 @@ static const LV2_Descriptor descriptorMOD = {
 // fix for -fvisibility=hidden
 #undef LV2_SYMBOL_EXPORT
 #ifdef _WIN32
-#    define LV2_SYMBOL_EXPORT __declspec(dllexport)
+#define LV2_SYMBOL_EXPORT __declspec(dllexport)
 #else
-#    define LV2_SYMBOL_EXPORT  __attribute__ ((visibility ("default")))
+#define LV2_SYMBOL_EXPORT __attribute__ ((visibility ("default")))
 #endif
 LV2_SYMBOL_EXPORT
 const LV2_Descriptor*
@@ -712,9 +852,31 @@ lv2_descriptor (uint32_t index)
 }
 
 // setBfree API - unused
-void useMIDIControlFunction (void *m, const char * cfname, void (* f) (void *d, unsigned char), void *d) { }
-int getConfigParameter_dr (const char * par, ConfigContext * cfg, double * dp, double lowInc, double highInc) { return 0; }
-int getConfigParameter_d (const char * par, ConfigContext * cfg, double * dp) { return 0; }
-int getConfigParameter_ir (const char * par, ConfigContext * cfg, int * ip, int lowInc, int highInc) { return 0; }
-int getConfigParameter_i (const char * par, ConfigContext * cfg, int * ip) { return 0; }
-void notifyControlChangeByName (void *mcfg, const char * cfname, unsigned char val) { }
+void
+useMIDIControlFunction (void* m, const char* cfname, void (*f) (void* d, unsigned char), void* d)
+{
+}
+int
+getConfigParameter_dr (const char* par, ConfigContext* cfg, double* dp, double lowInc, double highInc)
+{
+	return 0;
+}
+int
+getConfigParameter_d (const char* par, ConfigContext* cfg, double* dp)
+{
+	return 0;
+}
+int
+getConfigParameter_ir (const char* par, ConfigContext* cfg, int* ip, int lowInc, int highInc)
+{
+	return 0;
+}
+int
+getConfigParameter_i (const char* par, ConfigContext* cfg, int* ip)
+{
+	return 0;
+}
+void
+notifyControlChangeByName (void* mcfg, const char* cfname, unsigned char val)
+{
+}

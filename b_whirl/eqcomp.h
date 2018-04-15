@@ -46,13 +46,13 @@
 /* clang-format on */
 
 /* Function prototypes */
-extern const char * eqGetTypeString (int t);
+extern const char* eqGetTypeString (int t);
 
-extern void eqCompute (int type,
-                       double fqHz,
-                       double Q,
-                       double dbG,
-                       double * C,
-                       double SampleRateD);
+extern void eqCompute (int     type,
+                       double  fqHz,
+                       double  Q,
+                       double  dbG,
+                       double* C,
+                       double  SampleRateD);
 
 #endif /* EQCOMP_H */

@@ -21,8 +21,8 @@
 #ifndef SETBFREE_ASEQ_H_
 #define SETBFREE_ASEQ_H_
 
-extern void *aseq_run(void *arg);
-extern int aseq_open(char *port_name);
-extern void aseq_close(void);
+extern void* aseq_run (void* arg);
+extern int aseq_open (char* port_name);
+extern void aseq_close (void);
 
 #endif

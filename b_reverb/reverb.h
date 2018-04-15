@@ -21,52 +21,50 @@
 #ifndef REVERB_H
 #define REVERB_H
 
-
 #define RV_NZ 7
 struct b_reverb {
 	/* static buffers, pointers */
-	float *delays[RV_NZ]; /**< delay line buffer */
+	float* delays[RV_NZ]; /**< delay line buffer */
 
-	float * idx0[RV_NZ];	/**< Reset pointer ref delays[]*/
-	float * idxp[RV_NZ];	/**< Index pointer ref delays[]*/
-	float * endp[RV_NZ];	/**< End pointer   ref delays[]*/
+	float* idx0[RV_NZ]; /**< Reset pointer ref delays[]*/
+	float* idxp[RV_NZ]; /**< Index pointer ref delays[]*/
+	float* endp[RV_NZ]; /**< End pointer   ref delays[]*/
 
-	float gain[RV_NZ];    /**< feedback gains */
-	float yy1; /**< Previous output sample */
-	float y_1; /**< Feedback sample */
+	float gain[RV_NZ]; /**< feedback gains */
+	float yy1;         /**< Previous output sample */
+	float y_1;         /**< Feedback sample */
 
 	/* static config */
-	int end[RV_NZ];
+	int    end[RV_NZ];
 	double SampleRateD;
 
 	/* dynamic config */
-	float inputGain;	/**< Input gain value */
-	float fbk;	/**< Feedback gain */
-	float wet;	/**< Output dry gain */
-	float dry;	/**< Output wet gain */
-
+	float inputGain; /**< Input gain value */
+	float fbk;       /**< Feedback gain */
+	float wet;       /**< Output dry gain */
+	float dry;       /**< Output wet gain */
 };
 
 #include "../src/cfgParser.h"
-extern struct b_reverb *allocReverb();
-void freeReverb(struct b_reverb *r);
+extern struct b_reverb* allocReverb ();
+void freeReverb (struct b_reverb* r);
 
-extern int reverbConfig (struct b_reverb *r, ConfigContext * cfg);
+extern int reverbConfig (struct b_reverb* r, ConfigContext* cfg);
 
-extern const ConfigDoc *reverbDoc ();
+extern const ConfigDoc* reverbDoc ();
 
-extern void setReverbInputGain (struct b_reverb *r, float g);
+extern void setReverbInputGain (struct b_reverb* r, float g);
 
-extern void setReverbOutputGain (struct b_reverb *r, float g);
+extern void setReverbOutputGain (struct b_reverb* r, float g);
 
-extern void setReverbMix (struct b_reverb *r, float g);
+extern void setReverbMix (struct b_reverb* r, float g);
 
-extern void setReverbDry (struct b_reverb *r, float g);
+extern void setReverbDry (struct b_reverb* r, float g);
 
-extern void setReverbWet (struct b_reverb *r, float g);
+extern void setReverbWet (struct b_reverb* r, float g);
 
-extern void initReverb (struct b_reverb *r, void *m, double rate);
+extern void initReverb (struct b_reverb* r, void* m, double rate);
 
-extern float * reverb (struct b_reverb *r, const float * inbuf, float * outbuf, size_t bufferLengthSamples);
+extern float* reverb (struct b_reverb* r, const float* inbuf, float* outbuf, size_t bufferLengthSamples);
 
 #endif /* REVERB_H */

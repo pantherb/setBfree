@@ -24,7 +24,7 @@
 
 #include "memstream.h"
 
-extern int loadProgrammeFile (void *p, char * fileName);
-extern int loadProgrammeString (void *p, char * pdef);
+extern int loadProgrammeFile (void* p, char* fileName);
+extern int loadProgrammeString (void* p, char* pdef);
 
 #endif /* PGMPARSER_H */

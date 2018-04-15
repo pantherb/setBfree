@@ -42,21 +42,21 @@
 /* clang-format on */
 
 typedef struct mod_call_struct {
-  void (*fn)(int, void *);
-  void * handback;
+	void (*fn) (int, void*);
+	void* handback;
 } modCall;
 
 #define MOD_CONFIG 7
 #define MOD_DOC 1
 #define MODVECSZ 8
 
-extern void code (char * s);
-extern void codeln (char * s);
+extern void code (char* s);
+extern void codeln (char* s);
 extern void vspace (int ln);
-extern void comment (char * s);
-extern void commentln (char * s);
+extern void comment (char* s);
+extern void commentln (char* s);
 extern void pushIndent ();
 extern void popIndent ();
 
-void bindCallback (int i, void (*func)(int, void *), void * hbk);
+void bindCallback (int i, void (*func) (int, void*), void* hbk);
 #endif /* OVERMAKER_H */
