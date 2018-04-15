@@ -63,17 +63,17 @@ struct b_vibrato {
 	int effectEnabled;
 };
 
+extern void vibratoProc (struct b_vibrato* v, float const* inbuffer, float* outbuffer, size_t bufferLengthSamples);
+
+/* for standalone use */
+extern void reset_vibrato (struct b_vibrato* v);
+extern void init_vibrato (struct b_vibrato* v);
+
+/* tonegen integration */
 extern void resetVibrato (void* tonegen);
-
 extern void initVibrato (void* tonegen, void* m);
-
-extern void setVibrato (void* t, int select);
-
-extern void setScannerAdvance (int forward);
 
 extern int scannerConfig (void* t, ConfigContext* cfg);
 extern const ConfigDoc* scannerDoc ();
-
-extern float* vibratoProc (struct b_vibrato* v, float* inbuffer, float* outbuffer, size_t bufferLengthSamples);
 
 #endif /* SCANNER_H */

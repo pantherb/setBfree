@@ -741,7 +741,6 @@ installProgram (void* instance, unsigned char uc)
 			}
 
 			if (flags0 & FL_SCANNR) {
-				//setVibrato (inst->synth, PGM->scanner & 0x00FF);
 				assert ((PGM->scanner & 0xff) > 0);
 				int knob = ((PGM->scanner & 0xf) << 1) - ((PGM->scanner & CHO_) ? 1 : 2);
 				callMIDIControlFunction (inst->midicfg, "vibrato.knob", knob * 23);

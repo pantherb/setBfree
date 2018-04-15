@@ -98,11 +98,9 @@ setScannerFrequency (struct b_vibrato* v, double Hertz)
  * Controls the amount of vibrato to apply by selecting the proper lookup
  * table for the processing routine.
  */
-void
-setVibrato (void* t, int select)
+static void
+setVibrato (struct b_vibrato* v, int select)
 {
-	struct b_vibrato* v = &(((struct b_tonegen*)t)->inst_vibrato);
-
 	switch (select & 3) {
 		case 0: /* disable */
 			v->effectEnabled = FALSE;
@@ -133,24 +131,25 @@ setVibrato (void* t, int select)
 static void
 setVibratoFromMIDI (void* t, unsigned char u)
 {
+	struct b_vibrato* v = &(((struct b_tonegen*)t)->inst_vibrato);
 	switch (u / 23) {
 		case 0:
-			setVibrato (t, VIB1);
+			setVibrato (v, VIB1);
 			break;
 		case 1:
-			setVibrato (t, CHO1);
+			setVibrato (v, CHO1);
 			break;
 		case 2:
-			setVibrato (t, VIB2);
+			setVibrato (v, VIB2);
 			break;
 		case 3:
-			setVibrato (t, CHO2);
+			setVibrato (v, CHO2);
 			break;
 		case 4:
-			setVibrato (t, VIB3);
+			setVibrato (v, VIB3);
 			break;
 		case 5:
-			setVibrato (t, CHO3);
+			setVibrato (v, CHO3);
 			break;
 	}
 }
@@ -270,10 +269,8 @@ initIncrementTables (struct b_vibrato* v)
  * Initialises this module.
  */
 void
-resetVibrato (void* t)
+reset_vibrato (struct b_vibrato* v)
 {
-	struct b_vibrato* v = &(((struct b_tonegen*)t)->inst_vibrato);
-
 	v->offsetTable     = v->offset3Table;
 	v->stator          = 0;
 	v->statorIncrement = 0;
@@ -291,12 +288,26 @@ resetVibrato (void* t)
 }
 
 void
+resetVibrato (void* t)
+{
+	struct b_vibrato* v = &(((struct b_tonegen*)t)->inst_vibrato);
+	reset_vibrato (v);
+}
+
+
+void
+init_vibrato (struct b_vibrato* v)
+{
+	setScannerFrequency (v, v->vibFqHertz);
+	initIncrementTables (v);
+	setVibrato (v, 0);
+}
+
+void
 initVibrato (void* t, void* m)
 {
 	struct b_vibrato* v = &(((struct b_tonegen*)t)->inst_vibrato);
-	setScannerFrequency (v, v->vibFqHertz);
-	initIncrementTables (v);
-	setVibrato (t, 0);
+	init_vibrato (v);
 	useMIDIControlFunction (m, "vibrato.knob", setVibratoFromMIDI, t);
 	useMIDIControlFunction (m, "vibrato.routing", setVibratoRoutingFromMIDI, t);
 	useMIDIControlFunction (m, "vibrato.upper", setVibratoUpperFromMIDI, t);
@@ -338,13 +349,13 @@ scannerConfig (void* t, ConfigContext* cfg)
  * Since this is a variable delay, delayed samples take a rest in vibBuffer
  * between calls to this function.
  */
-float*
-vibratoProc (struct b_vibrato* v, float* inbuffer, float* outbuffer, size_t bufferLengthSamples)
+void
+vibratoProc (struct b_vibrato* v, float const* inbuffer, float* outbuffer, size_t bufferLengthSamples)
 {
 	const float  fnorm   = 1.0 / 65536.0;
 	const float  mixnorm = 0.7071067811865475; /* 1/sqrt(2) */
 	unsigned int i;
-	float*       xp = inbuffer;
+	float const* xp = inbuffer;
 	float*       yp = outbuffer;
 
 	for (i = 0; i < bufferLengthSamples; i++) {
@@ -380,8 +391,6 @@ vibratoProc (struct b_vibrato* v, float* inbuffer, float* outbuffer, size_t buff
 		/* Update the delay amount index. */
 		v->stator = (v->stator + v->statorIncrement) & INCTBL_MASK;
 	}
-
-	return outbuffer;
 }
 
 #else
