@@ -1,7 +1,7 @@
 /* setBfree - DSP tonewheel organ
  *
  * Copyright (C) 2003-2004 Fredrik Kilander <fk@dsv.su.se>
- * Copyright (C) 2008-2014 Robin Gareus <robin@gareus.org>
+ * Copyright (C) 2008-2018 Robin Gareus <robin@gareus.org>
  * Copyright (C) 2010 Ken Restivo <ken@restivo.org>
  * Copyright (C) 2012 Will Panther <pantherb@setbfree.org>
  *

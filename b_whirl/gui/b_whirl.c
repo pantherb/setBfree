@@ -1,6 +1,6 @@
 /* robtk b_whirl gui
  *
- * Copyright 2015 Robin Gareus <robin@gareus.org>
+ * Copyright (C) 2015-2018 Robin Gareus <robin@gareus.org>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

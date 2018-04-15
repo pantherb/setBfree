@@ -1,7 +1,7 @@
 /* setBfree - DSP tonewheel organ
  *
  * Copyright (C) 2003-2004 Fredrik Kilander <fk@dsv.su.se>
- * Copyright (C) 2008-2012 Robin Gareus <robin@gareus.org>
+ * Copyright (C) 2008-2018 Robin Gareus <robin@gareus.org>
  * Copyright (C) 2012 Will Panther <pantherb@setbfree.org>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -338,7 +338,7 @@ main (int argc, char** argv)
 				printf ("%s %s\n\n", "jboverdrive", VERSION);
 				printf (
 				    "Copyright (C) 2003-2004 Fredrik Kilander <fk@dsv.su.se>\n"
-				    "Copyright (C) 2012 Robin Gareus <robin@gareus.org>\n"
+				    "Copyright (C) 2012-2018 Robin Gareus <robin@gareus.org>\n"
 				    "\n"
 				    "This is free software; see the source for copying conditions.  There is NO\n"
 				    "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n");
