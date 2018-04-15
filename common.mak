@@ -3,6 +3,7 @@
 PREFIX ?= /usr/local
 OPTIMIZATIONS ?= -msse -msse2 -mfpmath=sse -ffast-math -fomit-frame-pointer -O3 -fno-finite-math-only
 ENABLE_CONVOLUTION ?= no
+INSTALL_EXTRA_LV2 ?= no
 FONTFILE?=/usr/share/fonts/truetype/ttf-bitstream-vera/VeraBd.ttf
 VERSION?=$(shell git describe --tags HEAD 2>/dev/null | sed 's/-g.*$$//;s/^v//' || true)
 OSXCOMPAT?=-mmacosx-version-min=10.5

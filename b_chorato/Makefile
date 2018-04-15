@@ -30,7 +30,7 @@ $(LV2NAME)$(LIB_EXT): lv2.c ../src/vibrato.c ../src/vibrato.h
 	  -shared $(LV2LDFLAGS) $(LDFLAGS)
 
 install: $(targets)
-ifeq ($(LV2AVAIL), yes)
+ifeq ($(LV2AVAIL)$(INSTALL_EXTRA_LV2), yesyes)
 	install -d $(DESTDIR)$(lv2dir)/$(LV2NAME)
 	install -m755 $(LV2NAME)$(LIB_EXT) $(DESTDIR)$(lv2dir)/$(LV2NAME)
 	install -m644 manifest.ttl $(LV2NAME).ttl $(DESTDIR)$(lv2dir)/$(LV2NAME)
