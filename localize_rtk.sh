@@ -15,7 +15,7 @@ popd
 mkdir -p robtk
 rsync -va \
 	$ROBTK/robtk/ui_gl.c $ROBTK/robtk/robtk.mk $ROBTK/robtk/widgets $ROBTK/robtk/gl \
-	$ROBTK/robtk/gpg_check.c $ROBTK/robtk/gpg_init.c \
+	$ROBTK/robtk/gpg_check.c $ROBTK/robtk/gpg_init.c $ROBTK/robtk/lv2_rgext.h \
 	$ROBTK/robtk/lv2uisyms $ROBTK/robtk/lv2syms $ROBTK/robtk/robtk.h $ROBTK/robtk/rtk \
 	$ROBTK/robtk/jackwrap.c $ROBTK/robtk/jackwrap.mm $ROBTK/robtk/weakjack $ROBTK/robtk/win_icon.rc \
 	robtk/
