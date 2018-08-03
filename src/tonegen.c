@@ -2053,7 +2053,7 @@ dumpOscToText (struct b_tonegen* t, char* fname)
 	         "Sampl",
 	         "Bytes",
 	         "Gain");
-	for (i = 0; i < 128; i++) {
+	for (i = 0; i < NOF_WHEELS; i++) {
 		fprintf (fp, "[%3d]:%7.2lf Hz:%5zu:%6zu:%5.2lf\n",
 		         i,
 		         t->oscillators[i].frequency,
