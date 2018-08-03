@@ -18,17 +18,6 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-/*
- * vibrato.c
- * Vibrato scanner simulator.
- * 25-oct-2004/FK Updated default settings.
- * 26-sep-2004/FK Comment management.
- * 15-aug-2004/FK Adapted from scanner.c for float samples. Disabled
- *                the effect of the effectEnabled flag. Control is now
- *                wielded by the caller (as it should be).
- * 04-apr-2004/FK This must be the oldest piece of code that remains.
- *                Added MIDI controller support and edited some comments.
- */
 #ifndef CONFIGDOCONLY
 
 #define _XOPEN_SOURCE 700
@@ -293,7 +282,6 @@ resetVibrato (void* t)
 	struct b_vibrato* v = &(((struct b_tonegen*)t)->inst_vibrato);
 	reset_vibrato (v);
 }
-
 
 void
 init_vibrato (struct b_vibrato* v)
