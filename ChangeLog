@@ -1,3 +1,12 @@
+2018-08-03 (0.8.6)  Robin Gareus <robin@gareus.org>
+* LV2: notfiy host when internal state changes
+* Leslie: add a 3-way (fast, stop, slow) MIDI-CC mode
+* Add support for higher SR and/or larger Leslie horn-spacing
+* Add MIDI out (notify) to command line version
+* Support notifications for equivalent messages
+* Expose chorus/vibrato as standalone plugin
+* Cleanup + format source-code
+
 2017-08-04 (0.8.5)  Robin Gareus <robin@gareus.org>
 * add MOD UIs for organ and leslie
 * fix ARM optimization (chorale speed may become be stuck)
