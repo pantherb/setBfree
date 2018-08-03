@@ -677,7 +677,12 @@ static void jack_freewheel_cb (int onoff, void *arg) {
 
 static int init_jack(const char *client_name) {
 	jack_status_t status;
-	j_client = jack_client_open (client_name, JackNoStartServer, &status);
+	char* cn = strdup (client_name);
+	if (strlen (cn) >= (unsigned int)jack_client_name_size () - 1) {
+		cn [jack_client_name_size () - 1] = '\0';
+	}
+	j_client = jack_client_open (cn, JackNoStartServer, &status);
+	free (cn);
 	if (j_client == NULL) {
 		fprintf (stderr, "jack_client_open() failed, status = 0x%2.0x\n", status);
 		if (status & JackServerFailed) {
@@ -1271,7 +1276,7 @@ static void print_usage (void) {
 	printf ("This is a standalone JACK application of a collection of LV2 plugins.\n"
 		"Use ID -1, -l or --list for a dedicated list of included plugins.\n"
 		"By default the first listed plugin (ID 0) is used.\n\n");
-	printf ("List if available plugins: (ID \"Name\" URI)\n");
+	printf ("List of available plugins: (ID \"Name\" URI)\n");
 	list_plugins();
 
 #else

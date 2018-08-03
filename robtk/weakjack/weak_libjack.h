@@ -55,8 +55,11 @@ int have_libjack(void);
 #define jack_frames_since_cycle_start       WJACK_frames_since_cycle_start
 #define jack_frame_time                     WJACK_frame_time
 #define jack_last_frame_time                WJACK_last_frame_time
+#define jack_get_time                       WJACK_get_time
 #define jack_cpu_load                       WJACK_cpu_load
 #define jack_is_realtime                    WJACK_is_realtime
+
+#define jack_client_name_size               WJACK_client_name_size
 
 #define jack_set_freewheel                  WJACK_set_freewheel
 #define jack_set_buffer_size                WJACK_set_buffer_size
@@ -73,6 +76,7 @@ int have_libjack(void);
 #define jack_set_xrun_callback              WJACK_set_xrun_callback
 #define jack_set_latency_callback           WJACK_set_latency_callback
 #define jack_set_error_function             WJACK_set_error_function
+#define jack_set_info_function             WJACK_set_info_function
 
 #define jack_activate                       WJACK_activate
 #define jack_deactivate                     WJACK_deactivate
@@ -87,6 +91,7 @@ int have_libjack(void);
 #define jack_port_monitoring_input          WJACK_port_monitoring_input
 
 #define jack_port_name                      WJACK_port_name
+#define jack_port_short_name                WJACK_port_short_name
 #define jack_port_flags                     WJACK_port_flags
 #define jack_get_ports                      WJACK_get_ports
 #define jack_port_name_size                 WJACK_port_name_size
@@ -95,6 +100,8 @@ int have_libjack(void);
 #define jack_port_by_name                   WJACK_port_by_name
 #define jack_port_by_id                     WJACK_port_by_id
 #define jack_port_set_name                  WJACK_port_set_name
+#define jack_port_get_aliases               WJACK_port_get_aliases
+#define jack_port_rename                    WJACK_port_rename
 #define jack_port_disconnect                WJACK_port_disconnect
 #define jack_port_register                  WJACK_port_register
 #define jack_port_unregister                WJACK_port_unregister
@@ -142,6 +149,9 @@ int have_libjack(void);
 #define jack_ringbuffer_read                WJACK_ringbuffer_read
 #define jack_ringbuffer_write               WJACK_ringbuffer_write
 #define jack_ringbuffer_mlock               WJACK_ringbuffer_mlock
+#define jack_ringbuffer_get_read_vector     WJACK_ringbuffer_get_read_vector
+#define jack_ringbuffer_get_write_vector    WJACK_ringbuffer_get_write_vector
+#define jack_ringbuffer_peek                WJACK_ringbuffer_peek
 
 /* <jack/thread.h> */
 #define jack_client_real_time_priority      WJACK_client_real_time_priority
@@ -151,10 +161,16 @@ int have_libjack(void);
 #define jack_drop_real_time_scheduling      WJACK_drop_real_time_scheduling
 #define jack_client_stop_thread             WJACK_client_stop_thread
 #define jack_client_kill_thread             WJACK_client_kill_thread
+#define jack_set_thread_creator             WJACK_set_thread_creator
 
 #define jack_client_open                    WJACK_client_client_openXXX
 
+#ifndef NO_JACK_METADATA
 /* <jack/metadata.h> */
+#define jack_get_uuid_for_client_name       WJACK_get_uuid_for_client_name
+#define jack_get_client_name_by_uuid        WJACK_get_client_name_by_uuid
+#define jack_port_uuid                      WJACK_port_uuid
+
 #define jack_set_property                   WJACK_set_property
 #define jack_get_property                   WJACK_get_property
 #define jack_free_description               WJACK_free_description
@@ -164,6 +180,12 @@ int have_libjack(void);
 #define jack_remove_properties              WJACK_remove_properties
 #define jack_remove_all_properties          WJACK_remove_all_properties
 #define jack_set_property_change_callback   WJACK_set_property_change_callback
+#endif
+
+/* <jack/statistics.h> */
+#define jack_get_max_delayed_usecs WJACK_get_max_delayed_usecs
+#define jack_get_xrun_delayed_usecs WJACK_get_xrun_delayed_usecs
+#define jack_reset_max_delayed_usecs WJACK_reset_max_delayed_usecs
 
 #endif // end USE_WEAK_JACK
 
@@ -173,7 +195,10 @@ int have_libjack(void);
 #include <jack/midiport.h>
 #include <jack/session.h>
 #include <jack/thread.h>
+
+#ifndef NO_JACK_METADATA
 #include <jack/metadata.h>
+#endif
 
 #ifdef USE_WEAK_JACK
 

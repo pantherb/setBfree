@@ -100,7 +100,9 @@
 #include "gl/posringbuf.h"
 #include "robtk.h"
 
-#include "gpg_init.c"
+#ifdef WITH_SIGNATURE
+# include "gpg_init.c"
+#endif
 
 static void opengl_init () {
 	glClearColor (0.0f, 0.0f, 0.0f, 0.0f);
@@ -217,7 +219,7 @@ typedef struct {
 	float                gpg_shade;
 #endif
 #ifdef INIT_PUGL_IN_THREAD
-	bool                 ui_initialized;
+	int                  ui_initialized;
 #endif
 	bool                 resize_in_progress;
 	bool                 resize_toplevel;
@@ -652,7 +654,7 @@ static void robwidget_layout(GLrobtkLV2UI * const self, bool setsize, bool init)
 		self->width = nox;
 		self->height = noy;
 	} else if (nox > self->width || noy > self->height) {
-		LVGLResize rsz = plugin_scale_mode(self->ui);
+		enum LVGLResize rsz = plugin_scale_mode(self->ui);
 		if (rsz == LVGL_ZOOM_TO_ASPECT || rsz == LVGL_LAYOUT_TO_FIT) {
 			puglUpdateGeometryConstraints(self->view, nox, noy, rsz == LVGL_ZOOM_TO_ASPECT);
 			return;
@@ -662,7 +664,7 @@ static void robwidget_layout(GLrobtkLV2UI * const self, bool setsize, bool init)
 		if (nox > self->width) self->width = nox;
 		if (noy > self->height) self->height = noy;
 	} else if (nox < self->width || noy < self->height) {
-		LVGLResize rsz = plugin_scale_mode(self->ui);
+		enum LVGLResize rsz = plugin_scale_mode(self->ui);
 		if (rsz == LVGL_ZOOM_TO_ASPECT || rsz == LVGL_LAYOUT_TO_FIT) {
 			puglUpdateGeometryConstraints(self->view, nox, noy, rsz == LVGL_ZOOM_TO_ASPECT);
 		}
@@ -708,9 +710,6 @@ static void resize_toplevel(RobWidget *rw, int w, int h) {
 	resize_self(rw);
 	self->resize_in_progress = TRUE;
 	self->resize_toplevel = TRUE;
-#ifdef TIMED_RESHAPE
-	self->queue_reshape = 1;
-#endif
 	puglPostResize(self->view);
 }
 
@@ -868,11 +867,10 @@ static void myusleep(uint32_t usec) {
 
 static void reallocate_canvas(GLrobtkLV2UI* self) {
 #ifdef DEBUG_RESIZE
-	printf("reallocate_canvas()\n");
+	printf("reallocate_canvas to %d x %d\n", self->width, self->height);
 #endif
 	self->queue_canvas_realloc = false;
 	if (self->cr) {
-		glDeleteTextures (1, &self->texture_id);
 		free (self->surf_data);
 #if __BIG_ENDIAN__
 		free (self->surf_data_be);
@@ -996,7 +994,7 @@ static void onResize(PuglView* view, int *width, int *height, int *set_hints) {
 	GLrobtkLV2UI* self = (GLrobtkLV2UI*)puglGetHandle(view);
 	assert(width && height);
 #ifdef DEBUG_RESIZE
-	printf("onResize()\n");
+	printf("onResize( %d x %d  -> %d x %d)\n", *width, *height, self->width, self->height);
 #endif
 
 	if (*width != self->width || *height != self->height) {
@@ -1246,7 +1244,7 @@ static void onScroll(PuglView* view, int x, int y, float dx, float dy) {
  * LV2 init/operation
  */
 
-static void pugl_init(GLrobtkLV2UI* self) {
+static int pugl_init(GLrobtkLV2UI* self) {
 	int dflw = self->width;
 	int dflh = self->height;
 
@@ -1257,7 +1255,7 @@ static void pugl_init(GLrobtkLV2UI* self) {
 	// Set up GL UI
 	self->view = puglCreate(
 			self->extui ? (PuglNativeWindow) NULL : self->parent,
-			self->extui ? self->extui->plugin_human_id : "robtk",
+			self->extui ? self->extui->plugin_human_id : RTK_URI,
 			self->width, self->height,
 			dflw, dflh,
 #ifdef LVGL_RESIZEABLE
@@ -1268,7 +1266,9 @@ static void pugl_init(GLrobtkLV2UI* self) {
 			, self->ontop
 			, self->transient_id
 	);
-	assert (self->view); // XXX TODO handle gracefully
+	if (!self->view) {
+		return -1;
+	}
 
 	puglSetHandle(self->view, self);
 	puglSetDisplayFunc(self->view, onDisplay);
@@ -1304,6 +1304,7 @@ static void pugl_init(GLrobtkLV2UI* self) {
 #ifndef USE_GUI_THREAD
 	ui_enable (self->ui);
 #endif
+	return 0;
 }
 
 static void pugl_cleanup(GLrobtkLV2UI* self) {
@@ -1365,8 +1366,10 @@ static void* ui_thread(void* handle) {
 	pthread_mutex_lock (&self->msg_thread_lock);
 #endif
 #ifdef INIT_PUGL_IN_THREAD
-	pugl_init(self);
-	self->ui_initialized = TRUE;
+	if (pugl_init(self)) {
+		self->ui_initialized = -1;
+	}
+	self->ui_initialized = 1;
 #endif
 
 	while (!self->exit) {
@@ -1480,9 +1483,8 @@ gl_instantiate(const LV2UI_Descriptor*   descriptor,
 
 #ifdef WITH_SIGNATURE
 	self->gpg_shade = 0;
-#endif
-
 # include "gpg_check.c"
+#endif
 
 	self->tl = NULL;
 	self->ui = instantiate(self,
@@ -1538,7 +1540,9 @@ gl_instantiate(const LV2UI_Descriptor*   descriptor,
 #endif
 
 #if (!defined USE_GUI_THREAD) || (!defined INIT_PUGL_IN_THREAD)
-	pugl_init(self);
+	if (pugl_init(self)) {
+		return NULL;
+	}
 #endif
 
 #ifdef USE_GUI_THREAD
@@ -1549,6 +1553,11 @@ gl_instantiate(const LV2UI_Descriptor*   descriptor,
 	while (!self->ui_initialized) {
 		myusleep(1000);
 		sched_yield();
+	}
+	if (self->ui_initialized < 0) {
+		self->exit = true;
+		pthread_join(self->thread, NULL);
+		return NULL;
 	}
 #endif
 #endif

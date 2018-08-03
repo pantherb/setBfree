@@ -1,3 +1,5 @@
+#ifndef RTK_STYLE_H
+#define RTK_STYLE_H
 
 /* colors */
 static const float c_trs[4] = {0.0, 0.0, 0.0, 0.0};
@@ -50,3 +52,4 @@ static const float c_scr[4] = {0.2, 0.2, 0.2, 0.8}; // screw mount
 	ISBRIGHT(COL) ? COL[1] / (X) : COL[1] * (X), \
 	ISBRIGHT(COL) ? COL[2] / (X) : COL[2] * (X)
 
+#endif

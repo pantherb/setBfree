@@ -47,6 +47,8 @@ struct PuglInternalsImpl {
 	HDC      hdc;
 	HGLRC    hglrc;
 	WNDCLASS wc;
+	bool     keep_aspect;
+	int      win_flags;
 };
 
 LRESULT CALLBACK
@@ -74,47 +76,62 @@ puglCreate(PuglNativeWindow parent,
 	view->height = height;
 	view->ontop  = ontop;
 	view->user_resizable = resizable && !parent;
+	view->impl->keep_aspect = min_width != width;
 
 	// FIXME: This is nasty, and pugl should not have static anything.
 	// Should class be a parameter?  Does this make sense on other platforms?
 	static int wc_count = 0;
+	int retry = 99;
 	char classNameBuf[256];
-	_snprintf(classNameBuf, sizeof(classNameBuf), "x%d%s", wc_count++, title);
-	classNameBuf[sizeof(classNameBuf)-1] = '\0';
+	while (true) {
+		_snprintf(classNameBuf, sizeof(classNameBuf), "x%d%s", wc_count++, title);
+		classNameBuf[sizeof(classNameBuf)-1] = '\0';
 
-	impl->wc.style         = CS_OWNDC;
-	impl->wc.lpfnWndProc   = wndProc;
-	impl->wc.cbClsExtra    = 0;
-	impl->wc.cbWndExtra    = 0;
-	impl->wc.hInstance     = 0;
-	impl->wc.hIcon         = LoadIcon(NULL, IDI_APPLICATION);
-	impl->wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
-	impl->wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
-	impl->wc.lpszMenuName  = NULL;
-	impl->wc.lpszClassName = strdup(classNameBuf);
+		impl->wc.style         = CS_OWNDC;
+		impl->wc.lpfnWndProc   = wndProc;
+		impl->wc.cbClsExtra    = 0;
+		impl->wc.cbWndExtra    = 0;
+		impl->wc.hInstance     = 0;
+		impl->wc.hIcon         = LoadIcon(NULL, IDI_APPLICATION);
+		impl->wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
+		impl->wc.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
+		impl->wc.lpszMenuName  = NULL;
+		impl->wc.lpszClassName = strdup(classNameBuf);
 
-	if (!RegisterClass(&impl->wc)) {
+		if (RegisterClass(&impl->wc)) {
+			break;
+		}
+		if (--retry > 0) {
+			free((void*)impl->wc.lpszClassName);
+			continue;
+		}
+		/* fail */
 		free((void*)impl->wc.lpszClassName);
 		free(impl);
 		free(view);
 		return NULL;
 	}
 
+	if (parent) {
+		view->impl->win_flags = WS_CHILD;
+	} else {
+		view->impl->win_flags = WS_POPUPWINDOW | WS_CAPTION | (view->user_resizable ? WS_SIZEBOX : 0);
+	}
+
 	// Adjust the overall window size to accomodate our requested client size
-	int winFlags = WS_POPUPWINDOW | WS_CAPTION | (view->user_resizable ? WS_SIZEBOX : 0);
 	RECT wr = { 0, 0, width, height };
-	AdjustWindowRectEx(&wr, winFlags, FALSE, WS_EX_TOPMOST);
+	AdjustWindowRectEx(&wr, view->impl->win_flags, FALSE, WS_EX_TOPMOST);
 
 	RECT mr = { 0, 0, min_width, min_height };
-	AdjustWindowRectEx(&mr, winFlags, FALSE, WS_EX_TOPMOST);
-	view->min_width  = mr.right-mr.left;
-	view->min_height = wr.bottom-mr.top;
+	AdjustWindowRectEx(&mr, view->impl->win_flags, FALSE, WS_EX_TOPMOST);
+	view->min_width  = mr.right - mr.left;
+	view->min_height = mr.bottom - mr.top;
 
-	impl->hwnd = CreateWindowEx(
+	impl->hwnd = CreateWindowEx (
 		WS_EX_TOPMOST,
 		classNameBuf, title, (view->user_resizable ? WS_SIZEBOX : 0) |
 		(parent ? (WS_CHILD | WS_VISIBLE) : (WS_POPUPWINDOW | WS_CAPTION)),
-		0, 0, wr.right-wr.left, wr.bottom-wr.top,
+		0, 0, wr.right - wr.left, wr.bottom - wr.top,
 		(HWND)parent, NULL, NULL, NULL);
 
 	if (!impl->hwnd) {
@@ -127,7 +144,7 @@ puglCreate(PuglNativeWindow parent,
 	SetWindowLongPtr(impl->hwnd, GWL_USERDATA, (LONG_PTR)view);
 
 	SetWindowPos (impl->hwnd,
-			ontop ? HWND_TOPMOST : HWND_NOTOPMOST,
+			ontop ? HWND_TOPMOST : HWND_TOP,
 			0, 0, 0, 0, (ontop ? 0 : SWP_NOACTIVATE) | SWP_ASYNCWINDOWPOS | SWP_NOMOVE | SWP_NOSIZE);
 
 	impl->hdc = GetDC(impl->hwnd);
@@ -238,17 +255,24 @@ puglResize(PuglView* view)
 	/* ask the plugin about the new size */
 	view->resizeFunc(view, &view->width, &view->height, &set_hints);
 
-	int winFlags = WS_POPUPWINDOW | WS_CAPTION | (view->user_resizable ? WS_SIZEBOX : 0);
-	RECT wr = { 0, 0, (long)view->width, (long)view->height };
+	HWND parent = GetParent (view->impl->hwnd);
+	if (parent) {
+		puglReshape(view, view->width, view->height);
+		SetWindowPos (view->impl->hwnd, HWND_TOP,
+				0, 0, view->width, view->height,
+				SWP_NOZORDER | SWP_NOMOVE);
+		return;
+	}
 
-	AdjustWindowRectEx(&wr, winFlags, FALSE, WS_EX_TOPMOST);
+	RECT wr = { 0, 0, (long)view->width, (long)view->height };
+	AdjustWindowRectEx(&wr, view->impl->win_flags, FALSE, WS_EX_TOPMOST);
 	SetWindowPos (view->impl->hwnd,
 			view->ontop ? HWND_TOPMOST : HWND_NOTOPMOST,
 			0, 0, wr.right-wr.left, wr.bottom-wr.top,
 			SWP_NOACTIVATE|SWP_NOMOVE|SWP_NOOWNERZORDER /*|SWP_NOZORDER*/);
 	UpdateWindow(view->impl->hwnd);
 
-	/* and call Reshape in GlX context */
+	/* and call Reshape in GL context */
 	puglReshape(view, view->width, view->height);
 }
 
@@ -290,6 +314,11 @@ static void
 processMouseEvent(PuglView* view, int button, bool press, LPARAM lParam)
 {
 	view->event_timestamp_ms = GetMessageTime();
+	if (GetFocus() != view->impl->hwnd) {
+		// focus is needed to receive mouse-wheel events
+		SetFocus (view->impl->hwnd);
+	}
+
 	if (press) {
 		SetCapture(view->impl->hwnd);
 	} else {
@@ -325,11 +354,36 @@ handleMessage(PuglView* view, UINT message, WPARAM wParam, LPARAM lParam)
 	case WM_CREATE:
 	case WM_SHOWWINDOW:
 	case WM_SIZE:
-		RECT rect;
-		GetClientRect(view->impl->hwnd, &rect);
-		puglReshape(view, rect.right, rect.bottom);
-		view->width = rect.right;
-		view->height = rect.bottom;
+		{
+			RECT rect;
+			GetClientRect(view->impl->hwnd, &rect);
+			puglReshape(view, rect.right, rect.bottom);
+			view->width = rect.right;
+			view->height = rect.bottom;
+		}
+		break;
+	case WM_SIZING:
+		if (view->impl->keep_aspect) {
+			float aspect = view->min_width / (float)view->min_height;
+			RECT* rect = (RECT*)lParam;
+			switch ((int)wParam) {
+				case WMSZ_LEFT:
+				case WMSZ_RIGHT:
+				case WMSZ_BOTTOMLEFT:
+				case WMSZ_BOTTOMRIGHT:
+					rect->bottom = rect->top + (rect->right - rect->left) / aspect;
+					break;
+				case WMSZ_TOP:
+				case WMSZ_BOTTOM:
+				case WMSZ_TOPRIGHT:
+					rect->right = rect->left + (rect->bottom - rect->top) * aspect;
+					break;
+				case WMSZ_TOPLEFT:
+					rect->left = rect->right - (rect->bottom - rect->top) * aspect;
+					break;
+			}
+			return TRUE;
+		}
 		break;
 	case WM_GETMINMAXINFO:
 		{

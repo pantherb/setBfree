@@ -466,7 +466,10 @@ puglDestroy(PuglView* view)
 PuglStatus
 puglProcessEvents(PuglView* view)
 {
-	//[view->impl->glview setNeedsDisplay: YES];
+	if (view->redisplay) {
+		view->redisplay = false;
+		[view->impl->glview setNeedsDisplay: YES];
+	}
 
 	return PUGL_SUCCESS;
 }
@@ -511,7 +514,7 @@ puglHideWindow(PuglView* view)
 void
 puglPostRedisplay(PuglView* view)
 {
-	//view->redisplay = true; // unused
+	view->redisplay = true;
 	[view->impl->glview setNeedsDisplay: YES];
 }
 
