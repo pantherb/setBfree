@@ -1,3 +1,6 @@
+2018-08-03 (0.8.7)  Robin Gareus <robin@gareus.org>
+* fix robtk-update (hotfix 0.8.6 release)
+
 2018-08-03 (0.8.6)  Robin Gareus <robin@gareus.org>
 * LV2: notfiy host when internal state changes
 * Leslie: add a 3-way (fast, stop, slow) MIDI-CC mode
