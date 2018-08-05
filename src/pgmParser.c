@@ -45,9 +45,9 @@
 
 /* Buffer sizes */
 
-#define STRINGBUFFERSZ 256
-#define SYMBOLSIZE STRINGBUFFERSZ
-#define VALUESIZE STRINGBUFFERSZ
+#define STRINGBUFFERSZ 280
+#define SYMBOLSIZE 256
+#define VALUESIZE 256
 
 typedef int B3TokenType;
 typedef int ParseReturnCode;
