@@ -15,13 +15,13 @@ fi
 echo "commit pending changes.."
 git commit -a 
 
-echo "Update version number -- edit 3 files: Makefile ChangeLog debian/changelog"
+echo "Update version number -- edit two files: Makefile ChangeLog"
 echo -n "launch editor ? [Y/n]"
 read -n1 a
 echo
 
 if test "$a" != "n" -a "$a" != "N"; then
-	${EDITOR} Makefile debian/changelog ChangeLog
+	${EDITOR} Makefile ChangeLog
 fi
 
 eval `grep "EXPORTED_VERSION=" Makefile`
@@ -42,7 +42,7 @@ make doc
 make dist
 
 echo "creating git-commit of updated doc & version number"
-git commit -m "finalize changelog v${EXPORTED_VERSION}" Makefile ChangeLog debian/changelog doc/*.1
+git commit -m "finalize changelog v${EXPORTED_VERSION}" Makefile ChangeLog doc/*.1
 
 git tag "v${EXPORTED_VERSION}" || (echo -n "version tagging failed. - press Enter to continue, CTRL-C to stop."; read; ) 
 
