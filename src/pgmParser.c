@@ -279,12 +279,12 @@ parseAssignmentList (ParserState* ps, const int pgmNr)
 		}
 
 		if ((R = parseToken (ps, '=')) == P_ERROR) {
-			sprintf (msg, "'=' expected after '%s'", symbol);
+			snprintf (msg, sizeof(msg), "'=' expected after '%s'", symbol);
 			return stateMessage (ps, R, msg);
 		}
 
 		if ((R = parseExpression (ps, value)) == P_ERROR) {
-			sprintf (msg, "bad expression after '%s='", symbol);
+			snprintf (msg, sizeof(msg), "bad expression after '%s='", symbol);
 			return stateMessage (ps, R, msg);
 		}
 
