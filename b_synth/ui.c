@@ -2819,7 +2819,7 @@ helpscreentext (PuglView* view)
 	render_gl_text (view, "<Shift>P", SCOORD (xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
 	render_gl_text (view, "Store MIDI Program:", SCOORD (xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0);
 	yto += .10;
-	yto += .13;
+	yto += .06;
 	render_gl_text (view, "M", SCOORD (xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
 	render_gl_text (view, "Display CC-map:", SCOORD (xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0);
 	yto += .10;
@@ -2828,12 +2828,15 @@ helpscreentext (PuglView* view)
 	yto += .10;
 	render_gl_text (view, "(hold <Shift> to invert mapped value)", SCOORD (xm0 - .06, yto), mat_w, TA_CENTER_BOTTOM, FS_SMALL, 0);
 	yto += .10;
-	yto += .08;
+	yto += .07;
 
+	render_gl_text (view, "<Shift><Space>", SCOORD (xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
+	render_gl_text (view, "Config Animation:", SCOORD (xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0);
+	yto += .10;
 	render_gl_text (view, "~", SCOORD (xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
 	render_gl_text (view, "Config Editor:", SCOORD (xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0);
 	yto += .10;
-	yto += .08;
+	yto += .07;
 
 	render_gl_text (view, "<Shift>L", SCOORD (xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
 	render_gl_text (view, "Load .pgm/.cfg:", SCOORD (xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0);
@@ -2844,7 +2847,7 @@ helpscreentext (PuglView* view)
 	render_gl_text (view, "<Shift>V", SCOORD (xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
 	render_gl_text (view, "Export .pgm file:", SCOORD (xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0);
 	yto += .10;
-	yto += .08;
+	yto += .07;
 
 	render_gl_text (view, "<Tab>", SCOORD (xm0, yto), mat_r, TA_LEFT_BOTTOM, FS_MEDIUM, 0);
 	render_gl_text (view, "Toggle Key Control:", SCOORD (xm0 - .01, yto), mat_w, TA_RIGHT_BOTTOM, FS_MEDIUM, 0);
@@ -4021,29 +4024,31 @@ onKeyboard (PuglView* view, bool press, uint32_t key)
 				puglPostRedisplay (view);
 				break;
 			case ' ':
-				if (ui->displaymode == 0 ANDNOANIM) {
+				if (puglGetModifiers (view) & PUGL_MOD_SHIFT) {
+					if (ui->displaymode == 0 ANDNOANIM) {
 #ifdef ANIMSTEPS
-					ui->animdirection = 1;
-					ui->openanim      = 1;
+						ui->animdirection = 1;
+						ui->openanim      = 1;
 #else
-					ui->displaymode = 7;
+						ui->displaymode = 7;
 #endif
-					reset_state (view);
-				} else if (ui->displaymode == 7
+						reset_state (view);
+					} else if (ui->displaymode == 7
 #ifdef ANIMSTEPS
-				           && ui->openanim == ANIMSTEPS
+							&& ui->openanim == ANIMSTEPS
 #endif
-				           ) {
+							) {
 #ifdef ANIMSTEPS
-					ui->animdirection = 0;
-					ui->openanim      = ANIMSTEPS - 1;
+						ui->animdirection = 0;
+						ui->openanim      = ANIMSTEPS - 1;
 #else
-					ui->displaymode = 0;
+						ui->displaymode = 0;
 #endif
+						reset_state (view);
+					}
+					queue_reshape = 1;
 					reset_state (view);
 				}
-				queue_reshape = 1;
-				reset_state (view);
 				break;
 			case 'L':
 				if (ui->displaymode == 0 ANDNOANIM) {
