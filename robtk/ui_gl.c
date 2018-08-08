@@ -1192,7 +1192,7 @@ static void onMouse(PuglView* view, int button, bool press, int x, int y) {
 			else if (self->gpg_shade < .5) self->gpg_shade += .05;
 			puglPostRedisplay(self->view);
 		} else {
-			rtk_open_url ("http://x42-plugins.com");
+			rtk_open_url (RTK_URI);
 		}
 		return;
 	}
