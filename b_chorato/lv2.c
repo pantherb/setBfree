@@ -180,17 +180,17 @@ lv2_descriptor (uint32_t index)
 #include <assert.h>
 
 void
-setVibratoLower (void* t, int isEnabled)
+setVibratoLower (struct b_tonegen* t, int isEnabled)
 {
 	assert (0);
 }
 void
-setVibratoUpper (void* t, int isEnabled)
+setVibratoUpper (struct b_tonegen* t, int isEnabled)
 {
 	assert (0);
 }
 int
-getVibratoRouting (void* t)
+getVibratoRouting (struct b_tonegen* t)
 {
 	assert (0);
 	return 0;
