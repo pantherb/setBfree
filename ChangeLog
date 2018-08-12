@@ -1,3 +1,9 @@
+2018-08-13 (0.8.8)  Robin Gareus <robin@gareus.org>
+* Add x42 identifier to LV2 name
+* Use Shift+Space for GUI config animation (instead of space)
+*	Fix plugins when compiling using a C++ compiler
+* Fix some compiler warnings (overflow, sprintf)
+
 2018-08-03 (0.8.7)  Robin Gareus <robin@gareus.org>
 * fix robtk-update (hotfix 0.8.6 release)
 
