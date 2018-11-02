@@ -38,8 +38,8 @@ typedef struct {
 	bool sensitive;
 	char prec_fmt[8];
 
-	bool (*cb) (RobWidget* w, gpointer handle);
-	gpointer handle;
+	bool (*cb) (RobWidget* w, void* handle);
+	void* handle;
 	int lbl;
 	pthread_mutex_t _mutex;
 } RobTkSpin;
@@ -63,7 +63,7 @@ static bool robtk_spin_render(RobTkSpin *d){
  * child callbacks
  */
 
-static bool robtk_spin_callback(RobWidget *w, gpointer handle) {
+static bool robtk_spin_callback(RobWidget *w, void* handle) {
 	RobTkSpin *d = (RobTkSpin *) handle;
 	robtk_spin_render(d);
 	if (d->cb) d->cb(robtk_dial_widget(d->dial), d->handle);
@@ -168,7 +168,7 @@ static RobWidget * robtk_spin_widget(RobTkSpin *d) {
 	return d->rw;
 }
 
-static void robtk_spin_set_callback(RobTkSpin *d, bool (*cb) (RobWidget* w, gpointer handle), gpointer handle) {
+static void robtk_spin_set_callback(RobTkSpin *d, bool (*cb) (RobWidget* w, void* handle), void* handle) {
 	d->cb = cb;
 	d->handle = handle;
 }

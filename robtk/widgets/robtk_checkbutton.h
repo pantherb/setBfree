@@ -43,6 +43,10 @@ typedef struct {
 	bool (*cb) (RobWidget* w, void* handle);
 	void* handle;
 
+	void (*touch_cb) (void*, uint32_t, bool);
+	void*    touch_hd;
+	uint32_t touch_id;
+
 	cairo_pattern_t* btn_enabled;
 	cairo_pattern_t* btn_inactive;
 	cairo_pattern_t* btn_led;
@@ -268,6 +272,9 @@ static RobWidget* robtk_cbtn_mousedown(RobWidget *handle, RobTkBtnEvent *event) 
 	if (!d->sensitive) { return NULL; }
 	if (!d->prelight) { return NULL; }
 	if (d->radiomode && d->enabled) { return NULL; }
+	if (d->touch_cb && event->button == 1) {
+		d->touch_cb (d->touch_hd, d->touch_id, true);
+	}
 	if (   ((d->temporary_mode & 1) && event->button == 3)
 	    || ((d->temporary_mode & 2) && event->state & ROBTK_MOD_SHIFT)
 	    || ((d->temporary_mode & 4) && event->state & ROBTK_MOD_CTRL)
@@ -281,10 +288,14 @@ static RobWidget* robtk_cbtn_mousedown(RobWidget *handle, RobTkBtnEvent *event) 
 static RobWidget* robtk_cbtn_mouseup(RobWidget *handle, RobTkBtnEvent *event) {
 	RobTkCBtn * d = (RobTkCBtn *)GET_HANDLE(handle);
 	if (!d->sensitive) { return NULL; }
-	if (!d->prelight) { return NULL; }
 	if (d->radiomode && d->enabled) { return NULL; }
 	if (event->button !=1 && !((d->temporary_mode & 1) && event->button == 3)) { return NULL; }
-	robtk_cbtn_update_enabled(d, ! d->enabled);
+	if (d->prelight) {
+		robtk_cbtn_update_enabled(d, ! d->enabled);
+	}
+	if (d->touch_cb && event->button == 1) {
+		d->touch_cb (d->touch_hd, d->touch_id, false);
+	}
 	return NULL;
 }
 
@@ -343,6 +354,9 @@ static RobTkCBtn * robtk_cbtn_new(const char* txt, enum GedLedMode led, bool fla
 	d->show_led = led;
 	d->cb = NULL;
 	d->handle = NULL;
+	d->touch_cb = NULL;
+	d->touch_hd = NULL;
+	d->touch_id = 0;
 	d->sensitive = TRUE;
 	d->radiomode = FALSE;
 	d->temporary_mode = 0;
@@ -414,6 +428,12 @@ static RobWidget * robtk_cbtn_widget(RobTkCBtn *d) {
 static void robtk_cbtn_set_callback(RobTkCBtn *d, bool (*cb) (RobWidget* w, void* handle), void* handle) {
 	d->cb = cb;
 	d->handle = handle;
+}
+
+static void robtk_cbtn_set_touch(RobTkCBtn *d, void (*cb) (void*, uint32_t, bool), void* handle, uint32_t id) {
+	d->touch_cb = cb;
+	d->touch_hd = handle;
+	d->touch_id = id;
 }
 
 static void robtk_cbtn_set_active(RobTkCBtn *d, bool v) {

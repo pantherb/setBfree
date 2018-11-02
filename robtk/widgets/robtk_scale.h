@@ -42,6 +42,11 @@ typedef struct {
 	bool (*cb) (RobWidget* w, void* handle);
 	void* handle;
 
+	void (*touch_cb) (void*, uint32_t, bool);
+	void*    touch_hd;
+	uint32_t touch_id;
+	bool     touching;
+
 	cairo_pattern_t* dpat;
 	cairo_pattern_t* fpat;
 	cairo_surface_t* bg;
@@ -123,6 +128,9 @@ static void robtk_scale_update_value(RobTkScale * d, float val) {
 static RobWidget* robtk_scale_mousedown(RobWidget *handle, RobTkBtnEvent *event) {
 	RobTkScale * d = (RobTkScale *)GET_HANDLE(handle);
 	if (!d->sensitive) { return NULL; }
+	if (d->touch_cb) {
+		d->touch_cb (d->touch_hd, d->touch_id, true);
+	}
 	if (event->state & ROBTK_MOD_SHIFT) {
 		robtk_scale_update_value(d, d->dfl);
 	} else {
@@ -138,6 +146,9 @@ static RobWidget* robtk_scale_mouseup(RobWidget *handle, RobTkBtnEvent *event) {
 	RobTkScale * d = (RobTkScale *)GET_HANDLE(handle);
 	if (!d->sensitive) { return NULL; }
 	d->drag_x = d->drag_y = -1;
+	if (d->touch_cb) {
+		d->touch_cb (d->touch_hd, d->touch_id, false);
+	}
 	queue_draw(d->rw);
 	return NULL;
 }
@@ -188,6 +199,10 @@ static void robtk_scale_enter_notify(RobWidget *handle) {
 
 static void robtk_scale_leave_notify(RobWidget *handle) {
 	RobTkScale * d = (RobTkScale *)GET_HANDLE(handle);
+	if (d->touch_cb && d->touching) {
+		d->touch_cb (d->touch_hd, d->touch_id, false);
+		d->touching = FALSE;
+	}
 	if (d->prelight) {
 		d->prelight = FALSE;
 		queue_draw(d->rw);
@@ -253,6 +268,12 @@ static RobWidget* robtk_scale_scroll(RobWidget *handle, RobTkBtnEvent *ev) {
 		default:
 			break;
 	}
+
+	if (d->touch_cb && !d->touching) {
+		d->touch_cb (d->touch_hd, d->touch_id, true);
+		d->touching = TRUE;
+	}
+
 	robtk_scale_update_value(d, val);
 	return NULL;
 }
@@ -470,6 +491,10 @@ static RobTkScale * robtk_scale_new_with_size(float min, float max, float step,
 	d->mark_expose = FALSE;
 	d->cb = NULL;
 	d->handle = NULL;
+	d->touch_cb = NULL;
+	d->touch_hd = NULL;
+	d->touch_id = 0;
+	d->touching = FALSE;
 	d->min = min;
 	d->max = max;
 	d->acc = step;
@@ -524,6 +549,12 @@ static RobWidget * robtk_scale_widget(RobTkScale *d) {
 static void robtk_scale_set_callback(RobTkScale *d, bool (*cb) (RobWidget* w, void* handle), void* handle) {
 	d->cb = cb;
 	d->handle = handle;
+}
+
+static void robtk_scale_set_touch(RobTkScale *d, void (*cb) (void*, uint32_t, bool), void* handle, uint32_t id) {
+	d->touch_cb = cb;
+	d->touch_hd = handle;
+	d->touch_id = id;
 }
 
 static void robtk_scale_set_value(RobTkScale *d, float v) {
