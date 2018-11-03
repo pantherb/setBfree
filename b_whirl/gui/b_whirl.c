@@ -165,6 +165,7 @@ static float param_to_dial (const Parameter *d, float val) {
 typedef struct {
 	LV2UI_Write_Function write;
 	LV2UI_Controller controller;
+	LV2UI_Touch*     touch;
 
 	bool disable_signals;
 	RobWidget *rw; // top-level container
@@ -248,6 +249,7 @@ typedef struct {
 
 	int eq_dragging;
 	int eq_hover;
+	int eq_touching;
 	struct { float x0, y0; } eq_ctrl [3];
 
 	bool last_used_horn_lever;
@@ -522,6 +524,32 @@ static void update_eq (WhirlUI *ui, int i) {
 }
 
 static void
+m0_filter_touch (WhirlUI *ui, int f, bool touch) {
+	if (!ui->touch) return;
+	if (f < 0 || f > 2) return;
+
+	switch (f) {
+		case 0:
+			ui->touch->touch (ui->touch->handle, B3W_FILTAFREQ, touch);
+			ui->touch->touch (ui->touch->handle, B3W_FILTAQUAL, touch);
+			ui->touch->touch (ui->touch->handle, B3W_FILTAGAIN, touch);
+			break;
+		case 1:
+			ui->touch->touch (ui->touch->handle, B3W_FILTBFREQ, touch);
+			ui->touch->touch (ui->touch->handle, B3W_FILTBQUAL, touch);
+			ui->touch->touch (ui->touch->handle, B3W_FILTBGAIN, touch);
+			break;
+		case 2:
+			ui->touch->touch (ui->touch->handle, B3W_FILTDFREQ, touch);
+			ui->touch->touch (ui->touch->handle, B3W_FILTDQUAL, touch);
+			ui->touch->touch (ui->touch->handle, B3W_FILTDGAIN, touch);
+			break;
+		default:
+			break;
+	}
+}
+
+static void
 m0_size_allocate (RobWidget* rw, int w, int h) {
 	WhirlUI* ui = (WhirlUI*)GET_HANDLE(rw);
 	robwidget_set_size (rw, w, h);
@@ -544,6 +572,11 @@ static RobWidget* m0_mouse_move (RobWidget* rw, RobTkBtnEvent *ev) {
 	}
 	if (check_control_point (ui, f, ev->x, ev->y)) {
 		hv = f;
+	}
+	if (ui->eq_touching >=0 && ui->eq_touching != hv) {
+		assert (ui->eq_dragging == -1);
+		m0_filter_touch (ui, ui->eq_touching, false);
+		ui->eq_touching = -1;
 	}
 	if (hv != ui->eq_hover) {
 		ui->eq_hover = hv;
@@ -587,6 +620,8 @@ static RobWidget* m0_mouse_up (RobWidget* rw, RobTkBtnEvent *ev) {
 	WhirlUI* ui = (WhirlUI*)GET_HANDLE(rw);
 	if (ui->eq_dragging >= 0) {
 		update_eq (ui, ui->eq_dragging);
+		ui->eq_touching = -1;
+		m0_filter_touch (ui, ui->eq_dragging, false);
 	}
 	ui->eq_dragging = -1;
 	return NULL;
@@ -605,11 +640,19 @@ static RobWidget* m0_mouse_scroll (RobWidget* rw, RobTkBtnEvent *ev) {
 	switch (ev->direction) {
 		case ROBTK_SCROLL_RIGHT:
 		case ROBTK_SCROLL_UP:
+			if (ui->eq_touching < 0) {
+				ui->eq_touching = f;
+				m0_filter_touch (ui, ui->eq_touching, true);
+			}
 			v += delta;
 			robtk_dial_set_value (bwctl, v);
 			break;
 		case ROBTK_SCROLL_LEFT:
 		case ROBTK_SCROLL_DOWN:
+			if (ui->eq_touching < 0) {
+				ui->eq_touching = f;
+				m0_filter_touch (ui, ui->eq_touching, true);
+			}
 			v -= delta;
 			robtk_dial_set_value (bwctl, v);
 			break;
@@ -627,11 +670,13 @@ static RobWidget* m0_mouse_down (RobWidget* rw, RobTkBtnEvent *ev) {
 	if (f < 0 || f > 2) return NULL;
 	if (!check_control_point (ui, f, ev->x, ev->y)) return NULL;
 
+	m0_filter_touch (ui, f, true);
 	if (ev->state & ROBTK_MOD_SHIFT) {
 		robtk_dial_set_value (ui->s_ffreq[f], param_to_dial (&filter[f][0], filter[f][0].dflt));
 		robtk_dial_set_value (ui->s_fqual[f], param_to_dial (&filter[f][1], filter[f][1].dflt));
 		robtk_dial_set_value (ui->s_fgain[f], filter[f][2].dflt);
 		update_eq (ui, f);
+		m0_filter_touch (ui, f, false);
 		return NULL;
 	}
 
@@ -1203,7 +1248,6 @@ static bool cb_dial_brk1 (RobWidget *w, void* handle) {
 	ui->write (ui->controller, B3W_DRUMBRAKE, sizeof (float), 0, (const void*) &val);
 	return TRUE;
 }
-
 
 static void handle_lever (WhirlUI* ui, int vh, int vd) {
 	if (ui->disable_signals) return;
@@ -2554,6 +2598,45 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 	robtk_dial_set_callback (ui->s_xzmpos[2], cb_dial_micd, ui);
 	robtk_dial_set_callback (ui->s_xzmpos[3], cb_dial_mica, ui);
 
+	if (ui->touch) {
+		robtk_dial_set_touch (ui->s_drumwidth,   ui->touch->touch, ui->touch->handle, B3W_DRUMWIDTH);
+		robtk_dial_set_touch (ui->s_hornwidth,   ui->touch->touch, ui->touch->handle, B3W_HORNWIDTH);
+		robtk_dial_set_touch (ui->s_leak,        ui->touch->touch, ui->touch->handle, B3W_HORNLEAK);
+		robtk_cbtn_set_touch (ui->btn_link,      ui->touch->touch, ui->touch->handle, B3W_LINKSPEED);
+
+		robtk_dial_set_touch (ui->s_level[0],    ui->touch->touch, ui->touch->handle, B3W_HORNLVL);
+		robtk_dial_set_touch (ui->s_brakepos[0], ui->touch->touch, ui->touch->handle, B3W_HORNBRAKE);
+		robtk_dial_set_touch (ui->s_rpm_slow[0], ui->touch->touch, ui->touch->handle, B3W_HORNRPMSLOW);
+		robtk_dial_set_touch (ui->s_rpm_fast[0], ui->touch->touch, ui->touch->handle, B3W_HORNRPMFAST);
+		robtk_dial_set_touch (ui->s_accel[0]   , ui->touch->touch, ui->touch->handle, B3W_HORNACCEL);
+		robtk_dial_set_touch (ui->s_decel[0]   , ui->touch->touch, ui->touch->handle, B3W_HORNDECEL);
+
+		robtk_dial_set_touch (ui->s_level[1],    ui->touch->touch, ui->touch->handle, B3W_DRUMLVL);
+		robtk_dial_set_touch (ui->s_brakepos[1], ui->touch->touch, ui->touch->handle, B3W_DRUMBRAKE);
+		robtk_dial_set_touch (ui->s_rpm_slow[1], ui->touch->touch, ui->touch->handle, B3W_DRUMRPMSLOW);
+		robtk_dial_set_touch (ui->s_rpm_fast[1], ui->touch->touch, ui->touch->handle, B3W_DRUMRPMFAST);
+		robtk_dial_set_touch (ui->s_accel[1]   , ui->touch->touch, ui->touch->handle, B3W_DRUMACCEL);
+		robtk_dial_set_touch (ui->s_decel[1]   , ui->touch->touch, ui->touch->handle, B3W_DRUMDECEL);
+
+		robtk_select_set_touch (ui->sel_fil[0] , ui->touch->touch, ui->touch->handle, B3W_FILTATYPE);
+		robtk_dial_set_touch (ui->s_ffreq[0]   , ui->touch->touch, ui->touch->handle, B3W_FILTAFREQ);
+		robtk_dial_set_touch (ui->s_fqual[0]   , ui->touch->touch, ui->touch->handle, B3W_FILTAQUAL);
+		robtk_dial_set_touch (ui->s_fgain[0]   , ui->touch->touch, ui->touch->handle, B3W_FILTAGAIN);
+
+		robtk_select_set_touch (ui->sel_fil[1] , ui->touch->touch, ui->touch->handle, B3W_FILTBTYPE);
+		robtk_dial_set_touch (ui->s_ffreq[1]   , ui->touch->touch, ui->touch->handle, B3W_FILTBFREQ);
+		robtk_dial_set_touch (ui->s_fqual[1]   , ui->touch->touch, ui->touch->handle, B3W_FILTBQUAL);
+		robtk_dial_set_touch (ui->s_fgain[1]   , ui->touch->touch, ui->touch->handle, B3W_FILTBGAIN);
+
+		robtk_select_set_touch (ui->sel_fil[2] , ui->touch->touch, ui->touch->handle, B3W_FILTDTYPE);
+		robtk_dial_set_touch (ui->s_ffreq[2]   , ui->touch->touch, ui->touch->handle, B3W_FILTDFREQ);
+		robtk_dial_set_touch (ui->s_fqual[2]   , ui->touch->touch, ui->touch->handle, B3W_FILTDQUAL);
+		robtk_dial_set_touch (ui->s_fgain[2]   , ui->touch->touch, ui->touch->handle, B3W_FILTDGAIN);
+
+		robtk_lever_set_touch (ui->lever[0]    , ui->touch->touch, ui->touch->handle, B3W_REVSELECT);
+		robtk_lever_set_touch (ui->lever[1]    , ui->touch->touch, ui->touch->handle, B3W_REVSELECT);
+	}
+
 	for (int i = 0; i < 3; ++i) {
 		ui->sep_v[i] = robtk_sep_new (FALSE);
 		ui->sep_h[i] = robtk_sep_new (TRUE);
@@ -2742,6 +2825,12 @@ instantiate (
 	WhirlUI* ui = (WhirlUI*) calloc (1, sizeof (WhirlUI));
 	if (!ui) { return NULL; }
 
+	for (int i = 0; features[i]; ++i) {
+		if (!strcmp(features[i]->URI, LV2_UI__touch)) {
+			ui->touch = (LV2UI_Touch*)features[i]->data;
+		}
+	}
+
 	ui->nfo = robtk_info (ui_toplevel);
 	ui->write      = write_function;
 	ui->controller = controller;
@@ -2750,6 +2839,7 @@ instantiate (
 	ui->set_last_used = true;
 	ui->eq_dragging = -1;
 	ui->eq_hover = -1;
+	ui->eq_touching = -1;
 
 	for (int i = 0; i < 2; ++i) {
 		ui->cur_rpm[i] = -1;

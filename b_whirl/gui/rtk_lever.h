@@ -42,6 +42,11 @@ typedef struct {
 	bool (*cb) (RobWidget* w, void* handle);
 	void* handle;
 
+	void (*touch_cb) (void*, uint32_t, bool);
+	void*    touch_hd;
+	uint32_t touch_id;
+	bool     touching;
+
 	cairo_surface_t* bg;
 
 	bool recreate_patterns;
@@ -87,6 +92,9 @@ static void robtk_lever_update_value (RobTkLever * d, float val) {
 static RobWidget* robtk_lever_mousedown (RobWidget *handle, RobTkBtnEvent *event) {
 	RobTkLever * d = (RobTkLever *)GET_HANDLE(handle);
 	if (!d->sensitive) { return NULL; }
+	if (d->touch_cb) {
+		d->touch_cb (d->touch_hd, d->touch_id, true);
+	}
 	if (event->state & ROBTK_MOD_SHIFT) {
 		robtk_lever_update_value (d, d->dfl);
 	} else {
@@ -101,6 +109,9 @@ static RobWidget* robtk_lever_mousedown (RobWidget *handle, RobTkBtnEvent *event
 static RobWidget* robtk_lever_mouseup (RobWidget *handle, RobTkBtnEvent *event) {
 	RobTkLever * d = (RobTkLever *)GET_HANDLE(handle);
 	if (!d->sensitive) { return NULL; }
+	if (d->touch_cb) {
+		d->touch_cb (d->touch_hd, d->touch_id, false);
+	}
 	d->drag_x = d->drag_y = -1;
 	queue_draw (d->rw);
 	return NULL;
@@ -141,6 +152,10 @@ static void robtk_lever_enter_notify (RobWidget *handle) {
 
 static void robtk_lever_leave_notify (RobWidget *handle) {
 	RobTkLever * d = (RobTkLever *)GET_HANDLE(handle);
+	if (d->touch_cb && d->touching) {
+		d->touch_cb (d->touch_hd, d->touch_id, false);
+		d->touching = FALSE;
+	}
 	if (d->prelight) {
 		d->prelight = FALSE;
 		queue_draw (d->rw);
@@ -197,6 +212,12 @@ static RobWidget* robtk_lever_scroll (RobWidget *handle, RobTkBtnEvent *ev) {
 		default:
 			break;
 	}
+
+	if (d->touch_cb && !d->touching) {
+		d->touch_cb (d->touch_hd, d->touch_id, true);
+		d->touching = TRUE;
+	}
+
 	robtk_lever_update_value (d, val);
 	return NULL;
 }
@@ -490,6 +511,10 @@ static RobTkLever * robtk_lever_new (float min, float max, float step,
 
 	d->cb = NULL;
 	d->handle = NULL;
+	d->touch_cb = NULL;
+	d->touch_hd = NULL;
+	d->touch_id = 0;
+	d->touching = FALSE;
 	d->min = min;
 	d->max = max;
 	d->acc = step;
@@ -549,6 +574,12 @@ static RobWidget * robtk_lever_widget (RobTkLever *d) {
 static void robtk_lever_set_callback (RobTkLever *d, bool (*cb) (RobWidget* w, void* handle), void* handle) {
 	d->cb = cb;
 	d->handle = handle;
+}
+
+static void robtk_lever_set_touch (RobTkLever *d, void (*cb) (void*, uint32_t, bool), void* handle, uint32_t id) {
+	d->touch_cb = cb;
+	d->touch_hd = handle;
+	d->touch_id = id;
 }
 
 static void robtk_lever_set_value (RobTkLever *d, float v) {
