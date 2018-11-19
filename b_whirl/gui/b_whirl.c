@@ -2478,7 +2478,7 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 
 	ui->btn_adv = robtk_cbtn_new ("Unlock", GBT_LED_LEFT, false);
 
-	ui->lbl_adv[0] = robtk_lbl_new ("<markup><b>Advanced</b>\nChanging these\nparameters\nre-reinitializes\nthe DSP.\nAudio will fade\nduring reset.</markup>");
+	ui->lbl_adv[0] = robtk_lbl_new ("<markup><b>Advanced</b>\nChanging these\nparameters\nre-initializes\nthe DSP.\nAudio will fade\nduring reset.</markup>");
 	ui->lbl_adv[1] = robtk_lbl_new ("Mic \nDistance:");
 	ui->lbl_adv[2] = robtk_lbl_new ("Horn\nMic Angle:");
 	ui->lbl_adv[3] = robtk_lbl_new ("Horn\nRadius:");
