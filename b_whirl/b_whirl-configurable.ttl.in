@@ -21,6 +21,7 @@
 	doap:license <http://usefulinc.com/doap/licenses/gpl> ;
 	@VERSION@
 	lv2:optionalFeature lv2:hardRTCapable ;
+	lv2:optionalFeature <http://harrisonconsoles.com/lv2/routing#connectAllOutputs> ;
 	lv2:port
 	[
 		a lv2:AudioPort ,
