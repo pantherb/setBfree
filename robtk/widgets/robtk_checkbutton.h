@@ -47,6 +47,9 @@ typedef struct {
 	void*    touch_hd;
 	uint32_t touch_id;
 
+	void (*ttip) (RobWidget* rw, bool on, void* handle);
+	void* ttip_handle;
+
 	cairo_pattern_t* btn_enabled;
 	cairo_pattern_t* btn_inactive;
 	cairo_pattern_t* btn_led;
@@ -275,6 +278,9 @@ static RobWidget* robtk_cbtn_mousedown(RobWidget *handle, RobTkBtnEvent *event) 
 	if (d->touch_cb && event->button == 1) {
 		d->touch_cb (d->touch_hd, d->touch_id, true);
 	}
+	if (d->ttip) {
+		d->ttip (d->rw, false, d->ttip_handle);
+	}
 	if (   ((d->temporary_mode & 1) && event->button == 3)
 	    || ((d->temporary_mode & 2) && event->state & ROBTK_MOD_SHIFT)
 	    || ((d->temporary_mode & 4) && event->state & ROBTK_MOD_CTRL)
@@ -305,6 +311,9 @@ static void robtk_cbtn_enter_notify(RobWidget *handle) {
 		d->prelight = TRUE;
 		queue_draw(d->rw);
 	}
+	if (d->ttip) {
+		d->ttip (d->rw, true, d->ttip_handle);
+	}
 }
 
 static void robtk_cbtn_leave_notify(RobWidget *handle) {
@@ -312,6 +321,9 @@ static void robtk_cbtn_leave_notify(RobWidget *handle) {
 	if (d->prelight) {
 		d->prelight = FALSE;
 		queue_draw(d->rw);
+	}
+	if (d->ttip) {
+		d->ttip (d->rw, false, d->ttip_handle);
 	}
 }
 
@@ -357,6 +369,8 @@ static RobTkCBtn * robtk_cbtn_new(const char* txt, enum GedLedMode led, bool fla
 	d->touch_cb = NULL;
 	d->touch_hd = NULL;
 	d->touch_id = 0;
+	d->ttip = NULL;
+	d->ttip_handle = NULL;
 	d->sensitive = TRUE;
 	d->radiomode = FALSE;
 	d->temporary_mode = 0;
@@ -434,6 +448,11 @@ static void robtk_cbtn_set_touch(RobTkCBtn *d, void (*cb) (void*, uint32_t, bool
 	d->touch_cb = cb;
 	d->touch_hd = handle;
 	d->touch_id = id;
+}
+
+static void robtk_cbtn_annotation_callback(RobTkCBtn *d, void (*cb) (RobWidget* w, bool, void* handle), void* handle) {
+	d->ttip = cb;
+	d->ttip_handle = handle;
 }
 
 static void robtk_cbtn_set_active(RobTkCBtn *d, bool v) {

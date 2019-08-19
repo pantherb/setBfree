@@ -36,7 +36,7 @@ typedef struct _RobTkLbl {
 	pthread_mutex_t _mutex;
 	float scale;
 
-	void (*ttip) (struct _RobTkLbl* d, bool on, void* handle);
+	void (*ttip) (RobWidget* rw, bool on, void* handle);
 	void* ttip_handle;
 
 } RobTkLbl;
@@ -220,18 +220,18 @@ static void robtk_lbl_set_sensitive(RobTkLbl *d, bool s) {
 static void robtk_lbl_ttip_show (RobWidget *handle) {
 	RobTkLbl* d = (RobTkLbl *)GET_HANDLE(handle);
 	if (d->ttip) {
-		d->ttip (d, true, d->ttip_handle);
+		d->ttip (d->rw, true, d->ttip_handle);
 	}
 }
 
 static void robtk_lbl_ttip_hide (RobWidget *handle) {
 	RobTkLbl* d = (RobTkLbl *)GET_HANDLE(handle);
 	if (d->ttip) {
-		d->ttip (d, false, d->ttip_handle);
+		d->ttip (d->rw, false, d->ttip_handle);
 	}
 }
 
-static void robtk_lbl_annotation_callback(RobTkLbl *d, void (*cb) (RobTkLbl* d, bool, void* handle), void* handle) {
+static void robtk_lbl_annotation_callback(RobTkLbl *d, void (*cb) (RobWidget* w, bool, void* handle), void* handle) {
 	d->ttip = cb;
 	d->ttip_handle = handle;
 	if (d->ttip) {

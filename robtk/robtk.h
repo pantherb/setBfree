@@ -32,6 +32,9 @@
 #include <pango/pangocairo.h>
 
 #include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
+#include "lv2/lv2plug.in/ns/ext/options/options.h"
+#include "lv2/lv2plug.in/ns/ext/urid/urid.h"
+#include "lv2/lv2plug.in/ns/ext/atom/atom.h"
 
 #ifdef __APPLE__
 #include <mach/clock.h>

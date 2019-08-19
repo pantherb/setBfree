@@ -878,6 +878,10 @@ static void reallocate_canvas(GLrobtkLV2UI* self) {
 		cairo_destroy (self->cr);
 	}
 	opengl_reallocate_texture(self->width, self->height, &self->texture_id);
+	if (self->surface) {
+		cairo_surface_destroy (self->surface);
+		self->surface = NULL;
+	}
 	self->cr = opengl_create_cairo_t(self->width, self->height, &self->surface, &self->surf_data);
 
 #if __BIG_ENDIAN__
@@ -1451,11 +1455,18 @@ gl_instantiate(const LV2UI_Descriptor*   descriptor,
 	pthread_cond_init(&self->data_ready, NULL);
 #endif
 
+	const LV2_Options_Option* options = NULL;
+	LV2_URID_Map*             map     = NULL;
+
 	for (int i = 0; features && features[i]; ++i) {
 		if (!strcmp(features[i]->URI, LV2_UI__parent)) {
 			self->parent = (PuglNativeWindow)features[i]->data;
 		} else if (!strcmp(features[i]->URI, LV2_UI__resize)) {
 			self->resize = (LV2UI_Resize*)features[i]->data;
+		} else if (!strcmp(features[i]->URI, LV2_URID__map)) {
+			map = (LV2_URID_Map*)features[i]->data;
+		} else if (!strcmp(features[i]->URI, LV2_OPTIONS__options)) {
+			options = (LV2_Options_Option*)features[i]->data;
 		}
 #ifdef XTERNAL_UI
 		else if (!strcmp(features[i]->URI, LV2_EXTERNAL_UI_URI) && !self->extui) {
@@ -1469,6 +1480,25 @@ gl_instantiate(const LV2UI_Descriptor*   descriptor,
 #endif
 		}
 #endif
+	}
+
+	if (options && map) {
+		LV2_URID atom_Long = map->map(map->handle, LV2_ATOM__Long);
+		LV2_URID transient_for = map->map (map->handle, "http://kxstudio.sf.net/ns/lv2ext/props#TransientWindowId");
+
+		for (const LV2_Options_Option* o = options; o->key; ++o) {
+			if (o->context == LV2_OPTIONS_INSTANCE && o->key == transient_for && o->type == atom_Long) {
+				self->transient_id = *(const unsigned long*)o->value;
+			}
+		}
+	}
+
+	if (self->transient_id != 0) {
+		self->ontop = false;
+	}
+
+	if (getenv("X42_ON_TOP")) {
+		self->ontop = 0 != atoi (getenv("X42_ON_TOP"));
 	}
 
 	if (!self->parent && !self->extui) {
@@ -1507,7 +1537,7 @@ gl_instantiate(const LV2UI_Descriptor*   descriptor,
 	assert(self->width > 0 && self->height > 0);
 
 	self->cr = NULL;
-	self->surface= NULL; // not really needed, but hey
+	self->surface= NULL;
 	self->surf_data = NULL; // ditto
 #if __BIG_ENDIAN__
 	self->surf_data_be = NULL;
@@ -1598,6 +1628,10 @@ static void gl_cleanup(LV2UI_Handle handle) {
 	pthread_mutex_destroy(&self->msg_thread_lock);
 	pthread_cond_destroy(&self->data_ready);
 #endif
+	if (self->surface) {
+		cairo_surface_destroy (self->surface);
+		self->surface = NULL;
+	}
 	cleanup(self->ui);
 	posrb_free(self->rb);
 	free(self);
