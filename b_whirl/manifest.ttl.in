@@ -24,3 +24,10 @@ bwhirl:mainOut
 	pg:source bwhirl:mainIn ;
 	lv2:name "Output" ;
 	lv2:symbol "out" .
+
+<http://harrisonconsoles.com/lv2/routing#connectAllOutputs>
+	a lv2:Feature ;
+	rdfs:label "connect all outputs" ;
+	lv2:documentation """
+<p>Provide a strong hint that the host should always connect all audio output-ports.</p>
+ """ .
