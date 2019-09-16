@@ -2806,7 +2806,7 @@ helpscreentext (PuglView* view)
 	yto += .10;
 
 	yto += .02;
-	render_gl_text (view, "http://setbfree.org/", SCOORD (xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_SMALL, 0);
+	render_gl_text (view, "Version " VERSION " - setbfree.org", SCOORD (xm0, yto), mat_w, TA_LEFT_BOTTOM, FS_SMALL, 0);
 
 	//
 	render_gl_text (view, "Keyboard Shortcuts", SCOORD (.22, -.82), mat_w, TA_CENTER_BOTTOM, FS_MEDIUM, 0);
