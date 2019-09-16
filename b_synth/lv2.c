@@ -870,7 +870,8 @@ iowork (B3S* b3s, const LV2_Atom_Object* obj, int cmd)
 		w.cmd    = cmd;
 		w.status = -1;
 		;
-		strncpy (w.msg, (char*)LV2_ATOM_BODY (name), 1024);
+		strncpy (w.msg, (char*)LV2_ATOM_BODY (name), 1023);
+		w.msg[1023] = '\0';
 		b3s->schedule->schedule_work (b3s->schedule->handle, sizeof (struct worknfo), &w);
 	}
 }
@@ -891,7 +892,8 @@ advanced_config_set (B3S* b3s, const LV2_Atom_Object* obj)
 			w.cmd = CMD_SETCFG;
 		}
 		w.status = -1;
-		strncpy (w.msg, msg, 1024);
+		strncpy (w.msg, msg, 1023);
+		w.msg[1023] = '\0';
 		b3s->schedule->schedule_work (b3s->schedule->handle, sizeof (struct worknfo), &w);
 	}
 }

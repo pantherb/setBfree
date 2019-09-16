@@ -603,7 +603,8 @@ dirlist (PuglView* view, const char* dir)
 			}
 			filelist              = (char**)realloc (filelist, (filelistlen + 1) * sizeof (char*));
 			filelist[filelistlen] = (char*)malloc (1024 * sizeof (char));
-			strncpy (filelist[filelistlen], dd->d_name, 1024);
+			strncpy (filelist[filelistlen], dd->d_name, 1023);
+			filelist[filelistlen][1023] = '\0';
 			filelistlen++;
 			free (rfn);
 			continue;
@@ -1713,7 +1714,8 @@ txtentry_start (PuglView* view, const char* title, const char* defaulttext)
 	if (!defaulttext) {
 		ui->textentry_text[0] = '\0';
 	} else {
-		strncpy (ui->textentry_text, defaulttext, 1024);
+		strncpy (ui->textentry_text, defaulttext, 1023);
+		ui->textentry_text[1023] = '\0';
 	}
 	sprintf (ui->textentry_title, "%s", title);
 	ui->textentry_active = 1;
@@ -2321,7 +2323,8 @@ cfg_parse_config (B3ui* ui, const char* key, const char* value)
 	int relevant = 0;
 	int i;
 	if (!strcmp ("lv2.info", key)) {
-		strncpy (ui->lv2nfo, value, 128);
+		strncpy (ui->lv2nfo, value, 127);
+		ui->lv2nfo[127] = '\0';
 		return;
 	}
 	for (i = 0; i < MAXCFG; ++i) {
@@ -5313,8 +5316,8 @@ port_event (LV2UI_Handle handle,
 		}
 		puglPostRedisplay (ui->view);
 	} else if (!get_pgm_midi_mapping (&ui->uris, obj, &v, &fn, &dsc)) {
-		strncpy (ui->midipgm[v], fn, 32);
-		strncpy (ui->mididsc[v], dsc, 256);
+		strncpy (ui->midipgm[v], fn, 31);
+		strncpy (ui->mididsc[v], dsc, 255);
 		ui->midipgm[v][31]  = '\0';
 		ui->mididsc[v][255] = '\0';
 		puglPostRedisplay (ui->view);

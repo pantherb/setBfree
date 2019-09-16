@@ -212,7 +212,7 @@ parseIdentifier (ParserState* ps, char* identifier)
 		return P_ERROR;
 	} else {
 		/* Should be a setter function */
-		strncpy (identifier, ps->stringBuffer, SYMBOLSIZE);
+		strncpy (identifier, ps->stringBuffer, SYMBOLSIZE - 1);
 		identifier[SYMBOLSIZE - 1] = '\0';
 	}
 	(void)getNextToken (ps);
