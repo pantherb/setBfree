@@ -9,6 +9,7 @@ UNAME?=$(shell uname)
 
 JACKEXTRA=
 OSXJACKWRAP=
+PTHREADCFLAGS=
 
 ifeq ($(UNAME),Darwin)
   OSXJACKWRAP=$(RW)jackwrap.mm
@@ -24,7 +25,7 @@ ifneq ($(XWIN),)
     JACKEXTRA+=win_icon.rc.o
   endif
 else
-  JACKCFLAGS+=-pthread
+  PTHREADCFLAGS=-pthread
 endif
 
 ifeq ($(USEWEAKJACK),1)
@@ -59,7 +60,7 @@ ROBGTK = $(RW)robtk.mk $(UITOOLKIT) $(RW)ui_gtk.c \
 
 %UI_gtk.so %UI_gtk.dylib:: $(ROBGTK)
 	@mkdir -p $(@D)
-	$(CXX) $(CPPFLAGS) $(CFLAGS) $(GTKUICFLAGS) \
+	$(CXX) $(CPPFLAGS) $(CFLAGS) $(GTKUICFLAGS) $(PTHREADCFLAGS) \
 	  -DPLUGIN_SOURCE="\"gui/$(*F).c\"" \
 	  -o $@ $(RW)ui_gtk.c \
 	  $(value $(*F)_UISRC) \
@@ -68,7 +69,7 @@ ROBGTK = $(RW)robtk.mk $(UITOOLKIT) $(RW)ui_gtk.c \
 
 %UI_gl.o:: $(ROBGL)
 	@mkdir -p $(@D)
-	$(CXX) -c $(CPPFLAGS) $(CFLAGS) $(GLUICFLAGS) \
+	$(CXX) -c $(CPPFLAGS) $(CFLAGS) $(GLUICFLAGS) $(PTHREADCFLAGS) \
 	  -DUINQHACK="$(shell date +%s$$$$)" \
 	  -DPLUGIN_SOURCE="\"gui/$(*F).c\"" \
 	  -DRTK_DESCRIPTOR="$(value gl_$(subst -,_,$(*F))_LV2DESC)" \
@@ -82,7 +83,7 @@ ROBGTK = $(RW)robtk.mk $(UITOOLKIT) $(RW)ui_gtk.c \
 
 %_glui.so %_glui.dylib %_glui.dll::
 	@mkdir -p $(@D)
-	$(CXX) $(CPPFLAGS) $(CFLAGS) $(GLUICFLAGS) \
+	$(CXX) $(CPPFLAGS) $(CFLAGS) $(GLUICFLAGS) $(PTHREADCFLAGS) \
 	  -o $@ gui/$(*F).c \
 	  $(GLGUIOBJ) \
 	  $(value $(*F)_UISRC) \
@@ -92,7 +93,7 @@ ROBGTK = $(RW)robtk.mk $(UITOOLKIT) $(RW)ui_gtk.c \
 
 %UI_gl.so %UI_gl.dylib %UI_gl.dll:: $(ROBGL)
 	@mkdir -p $(@D)
-	$(CXX) $(CPPFLAGS) $(CFLAGS) $(GLUICFLAGS) \
+	$(CXX) $(CPPFLAGS) $(CFLAGS) $(GLUICFLAGS) $(PTHREADCFLAGS) \
 	  -DUINQHACK="$(shell date +%s$$$$)" \
 	  -DPLUGIN_SOURCE="\"gui/$(*F).c\"" \
 	  -o $@ $(RW)ui_gl.c \
@@ -112,7 +113,7 @@ win_icon.rc.o: $(RW)win_icon.rc img/x42.ico
 
 x42-%.o:: $(ROBGL)
 	@mkdir -p $(@D)
-	$(CXX) $(CPPFLAGS) $(JACKCFLAGS) \
+	$(CXX) $(CPPFLAGS) $(JACKCFLAGS) $(PTHREADCFLAGS) \
 	  -DXTERNAL_UI -DHAVE_IDLE_IFACE -DDEFAULT_NOT_ONTOP \
 	  -DRTK_DESCRIPTOR="$(value x42_$(subst -,_,$(*F))_JACKDESC)" \
 	  -DPLUGIN_SOURCE="\"$(value x42_$(subst -,_,$(*F))_JACKGUI)\"" \
@@ -121,7 +122,7 @@ x42-%.o:: $(ROBGL)
 
 x42-%-collection x42-%-collection.exe:: $(ROBGL) $(RW)jackwrap.c $(OSXJACKWRAP) $(RW)weakjack/weak_libjack.def $(RW)weakjack/weak_libjack.h $(JACKEXTRA)
 	@mkdir -p $(@D)
-	$(CXX) $(CPPFLAGS) $(JACKCFLAGS) -DDEFAULT_NOT_ONTOP \
+	$(CXX) $(CPPFLAGS) $(JACKCFLAGS) $(PTHREADCFLAGS) -DDEFAULT_NOT_ONTOP \
 	  -DXTERNAL_UI -DHAVE_IDLE_IFACE \
 	  -DJACK_DESCRIPT="\"$(value x42_$(subst -,_,$(*F))_collection_LV2HTTL)\"" \
 	  -DAPPNAME="\"$(*F)\"" \
@@ -133,7 +134,7 @@ x42-%-collection x42-%-collection.exe:: $(ROBGL) $(RW)jackwrap.c $(OSXJACKWRAP) 
 
 x42-% x42-%.exe:: $(ROBGL) $(RW)jackwrap.c $(OSXJACKWRAP) $(RW)weakjack/weak_libjack.def $(RW)weakjack/weak_libjack.h $(JACKEXTRA)
 	@mkdir -p $(@D)
-	$(CXX) $(CPPFLAGS) $(JACKCFLAGS) -DDEFAULT_NOT_ONTOP \
+	$(CXX) $(CPPFLAGS) $(JACKCFLAGS) $(PTHREADCFLAGS) -DDEFAULT_NOT_ONTOP \
 	  -DXTERNAL_UI -DHAVE_IDLE_IFACE \
 	  -DRTK_DESCRIPTOR="$(value x42_$(subst -,_,$(*F))_JACKDESC)" \
 	  -DPLUGIN_SOURCE="\"$(value x42_$(subst -,_,$(*F))_JACKGUI)\"" \

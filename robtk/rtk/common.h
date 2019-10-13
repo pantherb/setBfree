@@ -1,5 +1,4 @@
-/* robTK - gtk2 & GL cairo-wrapper
- *
+/*
  * Copyright (C) 2013 Robin Gareus <robin@gareus.org>
  *
  * This program is free software; you can redistribute it and/or modify
@@ -20,8 +19,178 @@
 #ifndef RTK_CAIRO_H
 #define RTK_CAIRO_H
 
+#include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <math.h>
+
+static float rtk_hue2rgb(const float p, const float q, float t) {
+	if(t < 0.f) t += 1.f;
+	if(t > 1.f) t -= 1.f;
+	if(t < 1.f/6.f) return p + (q - p) * 6.f * t;
+	if(t < 1.f/2.f) return q;
+	if(t < 2.f/3.f) return p + (q - p) * (2.f/3.f - t) * 6.f;
+	return p;
+}
+
+static void rgba_to_hsva (float* hsva, float const* rgba) {
+	float r = rgba[0];
+	float g = rgba[1];
+	float b = rgba[2];
+	hsva[3] = rgba[3];
+
+	float cmax = fmaxf (r, fmaxf (g, b));
+	float cmin = fminf (r, fminf (g, b));
+
+	hsva[2] = cmax; // v
+
+	if (cmax == 0) {
+		// r = g = b == 0 ... v is undefined, s = 0
+		hsva[0] = 0; // h
+		hsva[1] = 0; // s
+		return;
+	}
+
+	float delta = cmax - cmin;
+	if (delta != 0.0) {
+		if (cmax == r) {
+			hsva[0] = fmodf ((g - b) / delta, 6.0);
+		} else if (cmax == g) {
+			hsva[0] = ((b - r) / delta) + 2;
+		} else {
+			hsva[0] = ((r - g) / delta) + 4;
+		}
+
+		hsva[0] *= 60.0;
+		if (hsva[0] < 0.0) {
+			/* negative values are legal but confusing, because
+				 they alias positive values.
+				 */
+			hsva[0] = 360 + hsva[0];
+		}
+	}
+
+	if (delta == 0 || cmax == 0) {
+		hsva[1] = 0;
+	} else {
+		hsva[1] = delta / cmax;
+	}
+}
+
+static void hsva_to_rgba (float* rgba, float* hsva) {
+	float h = hsva[0];
+	float s = hsva[1];
+	float v = hsva[2];
+	rgba[3] = hsva[3];
+
+	s = fminf (1.f, fmaxf (0.f, s));
+	v = fminf (1.f, fmaxf (0.f, v));
+	h = fmodf (h + 360.f, 360.f);
+
+	if (s == 0) {
+		rgba[0] = rgba[1] = rgba[2] = v;
+		return;
+	}
+	float c = v * s;
+	float x = c * (1.f - fabsf (fmodf (h / 60.f, 2) - 1.0));
+	float m = v - c;
+#define SETRGBA(R, G, B) rgba[0] = R; rgba[1] = G; rgba[2] = B;
+	if (h >= 0.0 && h < 60.0) {
+		SETRGBA (c + m, x + m, m);
+	} else if (h >= 60.0 && h < 120.0) {
+		SETRGBA (x + m, c + m, m);
+	} else if (h >= 120.0 && h < 180.0) {
+		SETRGBA (m, c + m, x + m);
+	} else if (h >= 180.0 && h < 240.0) {
+		SETRGBA (m, x + m, c + m);
+	} else if (h >= 240.0 && h < 300.0) {
+		SETRGBA (x + m, m, c + m);
+	} else if (h >= 300.0 && h < 360.0) {
+		SETRGBA (c + m, m, x + m);
+	} else {
+		SETRGBA (m, m, m);
+	}
+#undef SETRGBA
+}
+
+static void interpolate_hue (float* c, const float* c1, const float* c2, float f) {
+	assert (f >= 0.f && f <= 1.f);
+	float h1[4];
+	float h2[4];
+	rgba_to_hsva (h1, c1);
+	rgba_to_hsva (h2, c2);
+
+	float d = h2[0] - h1[0];
+	if (d > 180) {
+		d -= 360;
+	} else if (d < -180) {
+		d += 360;
+	}
+
+	assert (fabsf(d) <= 180);
+
+	h1[0] = fmodf (360 + h1[0] + f * d, 360);
+	h1[1] += f * (h2[1] - h1[1]);
+	h1[2] += f * (h2[2] - h1[2]);
+	h1[3] += f * (h2[3] - h1[3]);
+
+	hsva_to_rgba (c, h1);
+}
+
+static void interpolate_rgb (float* c, const float* c1, const float* c2, float f) {
+	assert (f >= 0.f && f <= 1.f);
+	c[0] = c1[0] + f * (c2[0] - c1[0]);
+	c[1] = c1[1] + f * (c2[1] - c1[1]);
+	c[2] = c1[2] + f * (c2[2] - c1[2]);
+	c[3] = fmax (c1[3], c2[3]);
+}
+
+static void interpolate_fg_bg (float* c, float fract) {
+	float c_bg[4];
+	float c_fg[4];
+	get_color_from_theme (0, c_fg);
+	get_color_from_theme (1, c_bg);
+	interpolate_hue (c, c_fg, c_bg, fract);
+}
+
+static uint32_t rgba_to_hex (float *c)
+{
+	float r = fminf (1.f, fmaxf (0.f, c[0]));
+	float g = fminf (1.f, fmaxf (0.f, c[1]));
+	float b = fminf (1.f, fmaxf (0.f, c[2]));
+	float a = fminf (1.f, fmaxf (0.f, c[3]));
+
+	uint32_t rc, gc, bc, ac;
+	rc = rint (r * 255.0);
+	gc = rint (g * 255.0);
+	bc = rint (b * 255.0);
+	ac = rint (a * 255.0);
+	return (rc << 24) | (gc << 16) | (bc << 8) | ac;
+}
+
+static float inv_gamma_srgb (const float v) {
+	if (v <= 0.04045) {
+		return v / 12.92;
+	} else {
+		return pow(((v + 0.055) / (1.055)), 2.4);
+	}
+}
+
+static float gamma_srgb (float v) {
+	if (v <= 0.0031308) {
+		v *= 12.92;
+	} else {
+		v = 1.055 * powf (v, 1.0 / 2.4) - 0.055;
+	}
+	return v;
+}
+
+static float luminance_rgb (float const* c) {
+	const float rY = 0.212655;
+	const float gY = 0.715158;
+	const float bY = 0.072187;
+	return gamma_srgb (rY * inv_gamma_srgb (c[0]) + gY * inv_gamma_srgb(c[1]) + bY * inv_gamma_srgb (c[2]));
+}
 
 static void rounded_rectangle (cairo_t* cr, double x, double y, double w, double h, double r)
 {
@@ -215,6 +384,5 @@ static void rtk_open_url (const char *url) {
 	(void) system (tmp);
 #endif
 }
-
 
 #endif

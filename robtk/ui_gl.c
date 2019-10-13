@@ -27,8 +27,7 @@
 #endif
 #endif
 
-#define TIMED_RESHAPE // resize view when idle
-
+//#define TIMED_RESHAPE // resize view when idle
 //#define DEBUG_RESIZE
 //#define DEBUG_EXPOSURE
 //#define VISIBLE_EXPOSE
@@ -1485,11 +1484,24 @@ gl_instantiate(const LV2UI_Descriptor*   descriptor,
 	if (options && map) {
 		LV2_URID atom_Long = map->map(map->handle, LV2_ATOM__Long);
 		LV2_URID transient_for = map->map (map->handle, "http://kxstudio.sf.net/ns/lv2ext/props#TransientWindowId");
+#ifdef RTK_USE_HOST_COLORS
+		LV2_URID atom_Int = map->map(map->handle, LV2_ATOM__Int);
+		LV2_URID color_fg = map->map (map->handle, "http://lv2plug.in/ns/extensions/ui#foregroundColor");
+		LV2_URID color_bg = map->map (map->handle, "http://lv2plug.in/ns/extensions/ui#backgroundColor");
+#endif
 
 		for (const LV2_Options_Option* o = options; o->key; ++o) {
 			if (o->context == LV2_OPTIONS_INSTANCE && o->key == transient_for && o->type == atom_Long) {
 				self->transient_id = *(const unsigned long*)o->value;
 			}
+#ifdef RTK_USE_HOST_COLORS
+			// TODO: consider adding a host bg colored border when the plugin does not use RTK_USE_HOST_COLORS
+			else if (o->context == LV2_OPTIONS_INSTANCE && o->key == color_fg && o->type == atom_Int) {
+				set_host_color (0, *(const uint32_t*)o->value);
+			} else if (o->context == LV2_OPTIONS_INSTANCE && o->key == color_bg && o->type == atom_Int) {
+				set_host_color (1, *(const uint32_t*)o->value);
+			}
+#endif
 		}
 	}
 

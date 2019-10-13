@@ -116,7 +116,27 @@ static void create_cbtn_text_surface (RobTkCBtn* d) {
 			floor (d->rw->widget_scale * (d->l_height / 2.0)) + 1,
 			d->txt, font, c_col, d->rw->widget_scale);
 
-	get_color_from_theme(2, c_col);
+	/* sf_txt_enabled, is used with btn_enabled surface, see create_cbtn_pattern() */
+	bool bright_text;
+	if (d->show_led == GBT_LED_OFF) {
+		/*btn_enabled c_ck is shaded by .5 .. 1.0 */
+		bright_text = luminance_rgb (d->c_ck) < .6;
+	} else {
+		/*btn_enabled c_bg is brighted by .95 .. 2.4*/
+		get_color_from_theme(1, c_col);
+		bright_text = luminance_rgb (c_col) < .21;
+	}
+	if (bright_text) {
+		c_col[0] = 1.f;
+		c_col[1] = 1.f;
+		c_col[2] = 1.f;
+		c_col[3] = 1.f;
+	} else {
+		c_col[0] = 0;
+		c_col[1] = 0;
+		c_col[2] = 0;
+		c_col[3] = 1.f;
+	}
 
 	create_text_surface3 (&d->sf_txt_enabled,
 			ceil(d->l_width * d->rw->widget_scale),
@@ -207,7 +227,6 @@ static bool robtk_cbtn_expose_event(RobWidget* handle, cairo_t* cr, cairo_rectan
 
 	cairo_scale (cr, 1.0 / d->rw->widget_scale, 1.0 / d->rw->widget_scale);
 	if (d->flat_button && !d->sensitive) {
-		//cairo_set_operator (cr, CAIRO_OPERATOR_XOR); // check
 		cairo_set_operator (cr, CAIRO_OPERATOR_EXCLUSION);
 		cairo_set_source_surface(cr, d->sf_txt_normal, xalign, yalign);
 	} else if (!d->flat_button && d->enabled) {

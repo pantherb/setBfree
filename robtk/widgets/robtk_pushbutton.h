@@ -93,7 +93,7 @@ static bool robtk_pbtn_expose_event(RobWidget* handle, cairo_t* cr, cairo_rectan
 	cairo_stroke(cr);
 
 	if (d->enabled) {
-		cairo_set_operator (cr, CAIRO_OPERATOR_XOR);
+		cairo_set_operator (cr, CAIRO_OPERATOR_EXCLUSION);
 	} else {
 		cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	}

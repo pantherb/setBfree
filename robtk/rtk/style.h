@@ -43,10 +43,26 @@ static const float c_hlt[4] = {1.0, 1.0, 1.0, 0.3}; // dpm highlight
 static const float c_xfb[4] = {0.0, 0.0, 0.0, 0.8}; // dpm ann bg
 static const float c_scr[4] = {0.2, 0.2, 0.2, 0.8}; // screw mount
 
+#ifdef RTK_INLINE_STYLE
+static void get_color_from_theme (int which, float *col) {
+	switch(which) {
+		default: // fg
+			col[0] = col[1] = col[2] = .9;
+			col[3] = 1.0;
+			break;
+		case 1: // bg
+			col[0] = col[1] = col[2] = 61/255.0;
+			col[3] = 1.0;
+			break;
+	}
+}
+#endif
+
 #define CairoSetSouerceRGBA(COL) \
 	cairo_set_source_rgba (cr, (COL)[0], (COL)[1], (COL)[2], (COL)[3])
 
-#define ISBRIGHT(COL) (COL[0] + COL[1] + COL[2] > 1.5)
+#define ISBRIGHT(COL) (luminance_rgb (COL) >= 0.5)
+
 #define SHADE_RGB(COL, X) \
 	ISBRIGHT(COL) ? COL[0] / (X) : COL[0] * (X), \
 	ISBRIGHT(COL) ? COL[1] / (X) : COL[1] * (X), \
