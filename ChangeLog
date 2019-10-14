@@ -1,3 +1,16 @@
+2019-10-13 (0.8.10)  Robin Gareus <robin@gareus.org>
+* Define LV2 port-groups for whirl
+  (explicitly associate in/out ports)
+* Fix lv2-validation for strict-i/o override
+* setBfreeUI: Show version at bottom of help screen
+* add explicit -pthread for compiling UI
+
+2019-08-20 (0.8.9)  Robin Gareus <robin@gareus.org>
+* Implement GUI touch-events for for leslie ctrls
+* Add "popular" presets from dcoredump's setBfreak
+* Flag whirl.lv2 to override ardour/mixbus strict-i/o
+  (Ardour/Mixbus mono-to-stereo)
+
 2018-08-13 (0.8.8)  Robin Gareus <robin@gareus.org>
 * Add x42 identifier to LV2 name
 * Use Shift+Space for GUI config animation (instead of space)
