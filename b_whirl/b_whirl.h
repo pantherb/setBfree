@@ -9,12 +9,13 @@ static const RtkLv2Description _plugin = {
 	&lv2ui_descriptor
 	, 1 // uint32_t dsp_descriptor_id
 	, 0 // uint32_t gui_descriptor_id
-	, "setBfree Whirl Speaker" // const char *plugin_human_id
-	, (const struct LV2Port[43])
+	, "x42 Whirl - Rotary Speaker" // const char *plugin_human_id
+	, (const struct LV2Port[44])
 	{
 		{ "in", AUDIO_IN, nan, nan, nan, "Input"},
 		{ "left", AUDIO_OUT, nan, nan, nan, "Left Output"},
 		{ "right", AUDIO_OUT, nan, nan, nan, "Right Output"},
+		{ "enable", CONTROL_IN, 1.000000, 0.000000, 1.000000, "Enable"},
 		{ "rt_speed", CONTROL_IN, 4.000000, 0.000000, 8.000000, "Motor control"},
 		{ "hornlvl", CONTROL_IN, 0.000000, -20.000000, 20.000000, "Horn wet-signal volume"},
 		{ "drumlvl", CONTROL_IN, 0.000000, -20.000000, 20.000000, "Drum wet-signal level"},
@@ -56,15 +57,15 @@ static const RtkLv2Description _plugin = {
 		{ "micangle", CONTROL_IN, 180.000000, 0.000000, 180.000000, "Microphone Angle"},
 		{ "hornwidth", CONTROL_IN, 1.000000, 0.000000, 2.000000, "Microphone angle/setup for the horn"},
 	}
-	, 43 // uint32_t nports_total
+	, 44 // uint32_t nports_total
 	, 1 // uint32_t nports_audio_in
 	, 2 // uint32_t nports_audio_out
 	, 0 // uint32_t nports_midi_in
 	, 0 // uint32_t nports_midi_out
 	, 0 // uint32_t nports_atom_in
 	, 0 // uint32_t nports_atom_out
-	, 40 // uint32_t nports_ctrl
-	, 36 // uint32_t nports_ctrl_in
+	, 41 // uint32_t nports_ctrl
+	, 37 // uint32_t nports_ctrl_in
 	, 4 // uint32_t nports_ctrl_out
 	, 8192 // uint32_t min_atom_bufsiz
 	, false // bool send_time_info

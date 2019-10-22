@@ -39,54 +39,55 @@ typedef enum {
 	B3W_OUTL,
 	B3W_OUTR,
 
-	B3W_REVSELECT, // 3
+	B3W_ENABLE, // 3
+	B3W_REVSELECT,
 
 	B3W_HORNLVL,
 	B3W_DRUMLVL,
 	B3W_DRUMWIDTH,
 
-	B3W_HORNRPMSLOW, // 7
+	B3W_HORNRPMSLOW, // 8
 	B3W_HORNRPMFAST,
 	B3W_HORNACCEL,
 	B3W_HORNDECEL,
 	B3W_HORNBRAKE,
 
-	B3W_FILTATYPE, // 12
+	B3W_FILTATYPE, // 13
 	B3W_FILTAFREQ,
 	B3W_FILTAQUAL,
 	B3W_FILTAGAIN,
 
-	B3W_FILTBTYPE, // 16
+	B3W_FILTBTYPE, // 17
 	B3W_FILTBFREQ,
 	B3W_FILTBQUAL,
 	B3W_FILTBGAIN,
 
-	B3W_DRUMRPMSLOW, // 20
+	B3W_DRUMRPMSLOW, // 21
 	B3W_DRUMRPMFAST,
 	B3W_DRUMACCEL,
 	B3W_DRUMDECEL,
 	B3W_DRUMBRAKE,
 
-	B3W_FILTDTYPE, // 25
+	B3W_FILTDTYPE, // 26
 	B3W_FILTDFREQ,
 	B3W_FILTDQUAL,
 	B3W_FILTDGAIN,
 
-	B3W_HORNLEAK, // 29
+	B3W_HORNLEAK, // 30
 	B3W_HORNRADIUS,
 	B3W_DRUMRADIUS,
 	B3W_HORNOFFX,
 	B3W_HORNOFFZ,
 	B3W_MICDIST,
 
-	B3W_HORNRPM, // 35
+	B3W_HORNRPM, // 36
 	B3W_DRUMRPM,
 
 	B3W_HORNANG,
 	B3W_DRUMANG,
 
-	B3W_GUINOTIFY,
-	B3W_LINKSPEED, // 40
+	B3W_GUINOTIFY, // 40
+	B3W_LINKSPEED,
 	B3W_MICANGLE,
 	B3W_HORNWIDTH,
 } PortIndex;
@@ -101,9 +102,11 @@ typedef struct {
 
 typedef struct {
 	/* audio ports */
-	float *input, *outL, *outR;
+	float const* input;
+	float *outL, *outR;
 
 	/* control ports */
+	float* enable; // 0: bypass, 1: enable
 	float* rev_select; // speed select 0..8
 
 	float *horn_brake, *horn_accel, *horn_decel, *horn_slow, *horn_fast;
@@ -240,13 +243,17 @@ connect_port (LV2_Handle instance,
 
 	switch ((PortIndex)port) {
 		case B3W_INPUT:
-			b3w->input = (float*)data;
+			b3w->input = (float const *)data;
 			break;
 		case B3W_OUTL:
 			b3w->outL = (float*)data;
 			break;
 		case B3W_OUTR:
 			b3w->outR = (float*)data;
+			break;
+
+		case B3W_ENABLE:
+			b3w->enable = (float*)data;
 			break;
 
 		case B3W_REVSELECT:
@@ -688,7 +695,7 @@ run (LV2_Handle instance, uint32_t n_samples)
 
 	set_speed (b3w);
 
-	float* input = b3w->input;
+	float const* input = b3w->input;
 	float* outL  = b3w->outL;
 	float* outR  = b3w->outR;
 

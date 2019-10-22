@@ -50,6 +50,18 @@
 		a lv2:InputPort ,
 			lv2:ControlPort ;
 		lv2:index 3 ;
+		lv2:symbol "enable" ;
+		lv2:name "Enable";
+		lv2:default 1 ;
+		lv2:minimum 0 ;
+		lv2:maximum 1 ;
+		lv2:portProperty lv2:integer, lv2:toggled;
+		lv2:designation lv2:enabled;
+	],
+	[
+		a lv2:InputPort ,
+			lv2:ControlPort ;
+		lv2:index 4 ;
 		lv2:symbol "rt_speed" ;
 		lv2:name "Motor";
 		lv2:default 1 ;
@@ -64,7 +76,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 4 ;
+		lv2:index 5 ;
 		lv2:symbol "hornlvl" ;
 		lv2:name "Horn Level";
 		lv2:default 0.0 ;
@@ -76,7 +88,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 5 ;
+		lv2:index 6 ;
 		lv2:symbol "drumlvl" ;
 		lv2:name "Drum Level";
 		lv2:default 0.0 ;
@@ -88,7 +100,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 6 ;
+		lv2:index 7 ;
 		lv2:symbol "drumwidth" ;
 		lv2:name "Drum Stereo Width";
 		lv2:default 1.0 ;
@@ -109,7 +121,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 7 ;
+		lv2:index 8 ;
 		lv2:symbol "hornrpmslow" ;
 		lv2:name "Horn Speed Slow";
 		lv2:default 40.32;
@@ -121,7 +133,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 8 ;
+		lv2:index 9 ;
 		lv2:symbol "hornrpmfast" ;
 		lv2:name "Horn Speed Fast";
 		lv2:default 423.36;
@@ -133,7 +145,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 9 ;
+		lv2:index 10 ;
 		lv2:symbol "hornaccel" ;
 		lv2:name "Horn Acceleration";
 		lv2:default 0.161 ;
@@ -145,7 +157,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 10 ;
+		lv2:index 11 ;
 		lv2:symbol "horndecel" ;
 		lv2:name "Horn Deceleration";
 		lv2:default 0.321 ;
@@ -157,7 +169,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 11 ;
+		lv2:index 12 ;
 		lv2:symbol "hornbrakepos" ;
 		lv2:name "Horn Brake Position";
 		lv2:default 1.0 ;
@@ -185,7 +197,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 12 ;
+		lv2:index 13 ;
 		lv2:symbol "filtatype" ;
 		lv2:name "Horn Flt-1 Type";
 		lv2:default 0;
@@ -207,7 +219,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 13 ;
+		lv2:index 14 ;
 		lv2:symbol "filtafreq" ;
 		lv2:name "Horn Flt-1 Frequency";
 		lv2:default 4500.0 ;
@@ -219,7 +231,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 14 ;
+		lv2:index 15 ;
 		lv2:symbol "filtaq" ;
 		lv2:name "Horn Flt-1 Quality";
 		lv2:default 2.7456 ;
@@ -230,7 +242,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 15 ;
+		lv2:index 16 ;
 		lv2:symbol "filtagain" ;
 		lv2:name "Horn Flt-1 Gain";
 		lv2:default -30.0 ;
@@ -241,7 +253,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 16 ;
+		lv2:index 17 ;
 		lv2:symbol "filtbtype" ;
 		lv2:name "Horn Flt-2 Type";
 		lv2:default 7;
@@ -263,7 +275,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 17 ;
+		lv2:index 18 ;
 		lv2:symbol "filtbfreq" ;
 		lv2:name "Horn Flt-2 Frequency";
 		lv2:default 300.0 ;
@@ -275,7 +287,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 18 ;
+		lv2:index 19 ;
 		lv2:symbol "filtbq" ;
 		lv2:name "Horn Flt-2 Quality";
 		lv2:default 1.0 ;
@@ -286,7 +298,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 19 ;
+		lv2:index 20 ;
 		lv2:symbol "filtbgain" ;
 		lv2:name "Horn Flt-2 Gain";
 		lv2:default -30.0 ;
@@ -298,7 +310,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 20 ;
+		lv2:index 21 ;
 		lv2:symbol "drumrpmslow" ;
 		lv2:name "Drum Speed Slow";
 		lv2:default 36.0 ;
@@ -310,7 +322,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 21 ;
+		lv2:index 22 ;
 		lv2:symbol "drumrpmfast" ;
 		lv2:name "Drum Speed Fast";
 		lv2:default 357.3;
@@ -322,7 +334,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 22 ;
+		lv2:index 23 ;
 		lv2:symbol "drumaccel" ;
 		lv2:name "Drum Acceleration";
 		lv2:default 4.127 ;
@@ -335,7 +347,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 23 ;
+		lv2:index 24 ;
 		lv2:symbol "drumdecel" ;
 		lv2:name "Drum Deceleration";
 		lv2:default 1.371 ;
@@ -347,7 +359,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 24 ;
+		lv2:index 25 ;
 		lv2:symbol "drumbrake" ;
 		lv2:name "Drum Brake Position";
 		lv2:default 1.0 ;
@@ -375,7 +387,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 25 ;
+		lv2:index 26 ;
 		lv2:symbol "filtdtype" ;
 		lv2:name "Drum Filter Type";
 		lv2:default 8;
@@ -397,7 +409,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 26;
+		lv2:index 27;
 		lv2:symbol "filtdfreq" ;
 		lv2:name "Drum Filter Frequency";
 		lv2:default 811.9695 ;
@@ -409,7 +421,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 27 ;
+		lv2:index 28 ;
 		lv2:symbol "filtdq" ;
 		lv2:name "Drum Filter Quality";
 		lv2:minimum 0.01 ;
@@ -420,7 +432,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 28 ;
+		lv2:index 29 ;
 		lv2:symbol "filtdgain" ;
 		lv2:name "Drum Filter Gain";
 		lv2:default -38.9291;
@@ -431,7 +443,7 @@
 	[
 		a lv2:InputPort ,
 			lv2:ControlPort ;
-		lv2:index 29 ;
+		lv2:index 30 ;
 		lv2:symbol "hornleak" ;
 		lv2:name "Horn Signal Leakage";
 		lv2:default -16.47;
