@@ -699,11 +699,13 @@ run (LV2_Handle instance, uint32_t n_samples)
 	float* outL  = b3w->outL;
 	float* outR  = b3w->outR;
 
+	bool enabled = *b3w->enable > 0;
+
 	uint32_t k = n_samples;
 	while (k > 0) {
 		const uint32_t n = k > 64 ? 64 : k;
 
-		int need_fade = 0;
+		int need_fade = enabled ? 0 : 1;
 
 		if (b3w->flt[0].type) { // extended and MOD variant
 			need_fade |= interpolate_filter (b3w, &b3w->flt[0]);
@@ -714,24 +716,35 @@ run (LV2_Handle instance, uint32_t n_samples)
 			need_fade |= reconfigure (b3w);
 		}
 
+		/* in case of in-place processing, copy input buffer for fade/bypass */
+		float original_input_signal[64];
+		float const* inbuf = original_input_signal;
+		if (need_fade || b3w->fade > 0) {
+			if (input == outL || input == outR) {
+				memcpy (original_input_signal, input, n * sizeof(float));
+			} else {
+				inbuf = input;
+			}
+		}
+
 		process (b3w, n, input, outL, outR);
 
 		if (need_fade) {
 			b3w->fade_dir = true;
 		}
 
-		float g0, g1;
-		g0 = g1 = 1.0;
+		float tg = 1.0;
 
 		if (!b3w->fade_dir && b3w->fade > 0 && b3w->fade <= FADED) {
-			g0 = 1.0 - b3w->fade / (float)FADED;
+			/* fade back in */
 			--b3w->fade;
-			g1 = 1.0 - b3w->fade / (float)FADED;
+			tg = 1.0 - b3w->fade / (float)FADED;
 		} else if (b3w->fade_dir && b3w->fade < FADED) {
-			g0 = 1.0 - b3w->fade / (float)FADED;
+			/* fade out */
 			++b3w->fade;
-			g1 = 1.0 - b3w->fade / (float)FADED;
+			tg = 1.0 - b3w->fade / (float)FADED;
 		} else if (b3w->fade >= FADED) {
+			/* faded out, deadzone */
 			if (!b3w->fade_dir) {
 				--b3w->fade;
 			} else if (b3w->fade < SILENT) {
@@ -739,18 +752,19 @@ run (LV2_Handle instance, uint32_t n_samples)
 			} else if (!need_fade) {
 				b3w->fade_dir = false;
 			}
-			memset (outL, 0, sizeof (float) * n);
-			memset (outR, 0, sizeof (float) * n);
+			tg = 0;
 		}
 
-		if (g0 != g1) {
-			uint32_t    i;
-			const float d = (g1 - g0) / (float)n;
-			float       g = g0;
-			for (i = 0; i < n; ++i) {
-				g += d;
-				outL[i] *= g;
-				outR[i] *= g;
+		if (tg == 0.f) {
+			for (uint32_t i = 0; i < n; ++i) {
+				outL[i] = outR[i] = inbuf[i] * .7071f;
+			}
+		} else if (tg != 1.f) {
+			const float ig = .7071f * (1.f - tg);
+			for (uint32_t i = 0; i < n; ++i) {
+				const float in = inbuf[i] * ig;
+				outL[i] = outL[i] * tg + in;
+				outR[i] = outR[i] * tg + in;
 			}
 		}
 
