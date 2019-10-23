@@ -756,12 +756,14 @@ run (LV2_Handle instance, uint32_t n_samples)
 		}
 
 		if (tg == 0.f) {
-			for (uint32_t i = 0; i < n; ++i) {
+			uint32_t i;
+			for (i = 0; i < n; ++i) {
 				outL[i] = outR[i] = inbuf[i] * .7071f;
 			}
 		} else if (tg != 1.f) {
+			uint32_t i;
 			const float ig = .7071f * (1.f - tg);
-			for (uint32_t i = 0; i < n; ++i) {
+			for (i = 0; i < n; ++i) {
 				const float in = inbuf[i] * ig;
 				outL[i] = outL[i] * tg + in;
 				outR[i] = outR[i] * tg + in;
