@@ -18,6 +18,9 @@
 	foaf:mbox <mailto:robin@gareus.org> ;
 	foaf:homepage <http://gareus.org/> .
 
+<http://ardour.org/lv2/midnam#interface> a lv2:ExtensionData .
+<http://ardour.org/lv2/midnam#update> a lv2:Feature .
+
 <http://gareus.org/oss/lv2/b_synth>
 	a lv2:Plugin, lv2:InstrumentPlugin, doap:Project;
 	doap:maintainer <http://gareus.org/rgareus#me> ;
@@ -25,8 +28,10 @@
 	doap:license <http://usefulinc.com/doap/licenses/gpl> ;
 	@VERSION@
 	lv2:optionalFeature lv2:hardRTCapable ;
+	lv2:optionalFeature <http://ardour.org/lv2/midnam#update>;
 	lv2:requiredFeature urid:map , work:schedule ;
 	lv2:extensionData state:interface , work:interface ;
+	lv2:extensionData <http://ardour.org/lv2/midnam#interface>;
 	lv2:port
 	[
 		a atom:AtomPort ,
