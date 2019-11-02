@@ -50,7 +50,7 @@
 		lv2:designation lv2:control ;
 		lv2:index 1 ;
 		lv2:symbol "notify" ;
-		rsz:minimumSize 65536;
+		rsz:minimumSize 262144;
 		lv2:name "MIDI Out";
 	],
 	[
