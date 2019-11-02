@@ -53,7 +53,7 @@ endif
 all: $(targets)
 
 setBfreeUI$(EXE_EXT): $(RW)jackwrap.c $(LV2OBJ) $(OSXJACKWRAP) $(RW)weakjack/weak_libjack.def $(RW)weakjack/weak_libjack.h $(JACKEXTRA) \
-	../b_synth/lv2.c ../b_synth/uris.h \
+	../b_synth/lv2.c ../b_synth/uris.h desc.h \
 	../b_synth/ui.c $(UIDEPS) \
 	../src/cfgParser.h ../src/midi.h
 	$(MAKE) -C ../b_synth $(FONTFILE)
