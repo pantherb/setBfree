@@ -1267,7 +1267,7 @@ mn_file (LV2_Handle instance)
 {
 	B3S* b3s = (B3S*)instance;
 	char model[21];
-	snprintf (model, 20, "setBfree-%p", b3s);
+	snprintf (model, 21, "setBfree:%p", b3s);
 	model[20]  = 0;
 	char*  buf = NULL;
 	size_t siz = 0;
@@ -1310,7 +1310,7 @@ mn_model (LV2_Handle instance)
 {
 	B3S*  b3s = (B3S*)instance;
 	char* rv  = (char*)malloc (21 * sizeof (char));
-	snprintf (rv, 20, "setBfree-%p", b3s);
+	snprintf (rv, 21, "setBfree:%p", b3s);
 	rv[20] = 0;
 	return rv;
 }
