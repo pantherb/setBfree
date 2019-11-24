@@ -1259,7 +1259,7 @@ process_midi_event (void* instp, const struct bmidi_event_t* ev)
 					if (ev->channel == m->rcvChA) {
 						ctrlUse = m->ctrlUseA;
 					} else if (ev->channel == m->rcvChB) {
-						ctrlUse = m->ctrlUseA;
+						ctrlUse = m->ctrlUseB;
 					} else if (ev->channel == m->rcvChC) {
 						ctrlUse = m->ctrlUseC;
 					} else {
