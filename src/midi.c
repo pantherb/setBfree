@@ -58,7 +58,7 @@
  * mapped to MIDI controllers. The ctrlUse* tables are filled in on two
  * occasions. The first, that always take place, is the function
  *   midiPrimeControllerMapping()
- * which simplay provides the default initialization.
+ * which simply provides the default initialization.
  * The second, which MAY happen, is the configuration processing where the
  * user can provide config options on the format:
  *   midi.controller.{upper,lower,pedals}.<cc>=<name>
