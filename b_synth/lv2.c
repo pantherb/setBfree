@@ -352,7 +352,7 @@ mcc_cb (const char* fnname, const unsigned char chn, const unsigned char cc, con
 {
 	B3S* b3s = (B3S*)arg;
 	char mmv[20];
-	sprintf (mmv, "%d|%d ", chn, cc);
+	sprintf (mmv, "%d|%d ", chn + 1, cc);
 
 	LV2_Atom_Forge_Frame frame;
 	lv2_atom_forge_frame_time (&b3s->forge, 0);
