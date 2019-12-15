@@ -1,3 +1,12 @@
+2019-12-15 (0.8.11)  Robin Gareus <robin@gareus.org>
+* LV2 bypass/enable for leslie plugin (equal power distribute
+  mono to stereo)
+* Declare optional LV2 features
+* tweak MIDNAM model name (colon separate name, unique id)
+* Overflow protection for older LV2 (1.16.0) forge.
+* Fix MIDI learn using the lower-manual's MIDI channel
+* Display CC mapped MIDI channel as 1..16
+
 2019-10-13 (0.8.10)  Robin Gareus <robin@gareus.org>
 * Define LV2 port-groups for whirl
   (explicitly associate in/out ports)
