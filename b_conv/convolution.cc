@@ -182,7 +182,9 @@ initConvolution (
 
 	convproc = new Convproc;
 	convproc->set_options (options);
+#if ZITA_CONVOLVER_MAJOR_VERSION == 3
 	convproc->set_density (dens);
+#endif
 
 	if (convproc->configure (
 	        /*in*/ channels,
@@ -191,7 +193,10 @@ initConvolution (
 	        /*fragm*/ buffersize,
 	        /*min-part*/ buffersize,
 	        /*max-part*/ buffersize /*Convproc::MAXPART*/
-	        )) {
+#if ZITA_CONVOLVER_MAJOR_VERSION == 4
+					, dens /*density*/
+#endif
+	   )) {
 		fprintf (stderr, "\nConvolution: Cannot initialize convolution engine.\n");
 		exit (1);
 	}
