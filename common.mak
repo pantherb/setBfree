@@ -81,7 +81,7 @@ else
     override LDFLAGS += -static-libgcc -static-libstdc++ -DPTW32_STATIC_LIB
   else
     override CFLAGS+= -DHAVE_MEMSTREAM
-    LV2LDFLAGS=-Wl,-Bstatic -Wl,-Bdynamic
+    LV2LDFLAGS=-Wl,-Bstatic -Wl,-Bdynamic -Wl,--as-needed
     LIB_EXT=.so
     PKG_GL_LIBS=glu gl
     GLUICFLAGS+=-pthread
