@@ -108,7 +108,7 @@ save_midname (void* instp, FILE* f, char* model)
 	         "      <ChannelNameSetAssignments>\n"
 	         "        <ChannelNameSetAssign Channel=\"%d\" NameSet=\"Upper Manual\"/>\n"
 	         "        <ChannelNameSetAssign Channel=\"%d\" NameSet=\"Lower Manual\"/>\n"
-	         "        <ChannelNameSetAssign Channel=\"%d\" NameSet=\"Upper Manual\"/>\n"
+	         "        <ChannelNameSetAssign Channel=\"%d\" NameSet=\"Pedals\"/>\n"
 	         "      </ChannelNameSetAssignments>\n"
 	         "    </CustomDeviceMode>\n",
 	         u + 1, l + 1, p + 1);
