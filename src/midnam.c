@@ -39,6 +39,10 @@ midnam_print_pgm_cb (int num, int pc, const char* name, void* arg)
 {
 	FILE* fp = (FILE*)arg;
 
+	if (strlen (name) == 0) {
+		return;
+	}
+
 	int         ent = 0;
 	char*       escaped;
 	const char* tmp = name;
@@ -62,8 +66,8 @@ midnam_print_pgm_cb (int num, int pc, const char* name, void* arg)
 		strncat (escaped, t1, strlen (name) - (t1 - name));
 	}
 
-	fprintf (fp, "      <Patch Number=\"%d\" Name=\"%s\" ProgramChange=\"%d\"/>\n",
-	         num, escaped, pc);
+	fprintf (fp, "      <Patch Number=\"%03d\" Name=\"%s\" ProgramChange=\"%d\"/>\n",
+	         num - 1, escaped, pc - 1);
 	free (escaped);
 }
 
