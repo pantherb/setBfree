@@ -1,0 +1,5 @@
+Basic summary is that the layers of the os are providing different methods for organizing sound.
+
+The kernel level is OSS, Jack is already program level, and ALSA is the window manager's method of connecting the ports, and interfacing programs into each other
+
+much like MAX for OSX, which is non-comprehensible
