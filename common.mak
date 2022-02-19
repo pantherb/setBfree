@@ -168,7 +168,7 @@ ifeq ($(LV2AVAIL)$(HAVE_UI)$(HAVE_IDLE), yesyesyes)
         UILIBS+=`pkg-config --variable=libdir ftgl`/libftgl.a `pkg-config --variable=libdir ftgl`/libfreetype.a
         UILIBS+=`pkg-config --libs zlib`
       else
-        UILIBS+=`pkg-config --libs glu ftgl`
+        UILIBS+=`pkg-config --libs glu gl ftgl`
       endif
       UICFLAGS+=-DFONTFILE=\"$(FONTFILE)\"
     endif
