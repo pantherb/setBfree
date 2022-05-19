@@ -1441,7 +1441,7 @@ static const ConfigDoc doc[] = {
 	{ "midi.lower.channel", CFG_INT, "2", "The MIDI channel to use for the lower manual. range: [1..16]", INCOMPLETE_DOC },
 	{ "midi.pedals.channel", CFG_INT, "3", "The MIDI channel to use for the pedals. range: [1..16]", INCOMPLETE_DOC },
 	{ "midi.controller.reset", CFG_INT, "\"-\"", "Clear existing CC mapping for all controllers (if non-zero argument is given). See also -D option.", INCOMPLETE_DOC },
-	{ "midi.controller.upper.<cc>", CFG_TEXT, "\"-\"", "Speficy a function-name to bind to the given MIDI control-command. <cc> is an integer 0..127. Defaults are in midiPrimeControllerMapping() and can be listed using the '-d' commandline option. See general information.", INCOMPLETE_DOC },
+	{ "midi.controller.upper.<cc>", CFG_TEXT, "\"-\"", "Specify a function-name to bind to the given MIDI control-command. <cc> is an integer 0..127. Defaults are in midiPrimeControllerMapping() and can be listed using the '-d' commandline option. See general information.", INCOMPLETE_DOC },
 	{ "midi.controller.lower.<cc>", CFG_TEXT, "\"-\"", "see midi.controller.upper", INCOMPLETE_DOC },
 	{ "midi.controller.pedals.<cc>", CFG_TEXT, "\"-\"", "see midi.controller.upper", INCOMPLETE_DOC },
 	{ "midi.transpose", CFG_INT, "0", "Global transpose (noteshift) in semitones.", "semitones", -127, 127, 1 },

@@ -3573,7 +3573,7 @@ static const ConfigDoc doc[] = {
 	{ "osc.eq.r4y", CFG_DOUBLE, "0.0", "EQ spline parameter", INCOMPLETE_DOC },
 	{ "osc.eqv.ceiling", CFG_DOUBLE, "1.0", "Normalize EQ parameters.", INCOMPLETE_DOC },
 	{ "osc.eqv.<oscnum>", CFG_DOUBLE, "-", "oscnum=[0..127], value: [0..osc.eqv.ceiling]; default values are calculated depending on selected osc.eq.macro and tone-generator-model.", INCOMPLETE_DOC },
-	{ "osc.harmonic.<h>", CFG_DOUBLE, "-", "speficy level of given harmonic number.", INCOMPLETE_DOC },
+	{ "osc.harmonic.<h>", CFG_DOUBLE, "-", "specify level of given harmonic number.", INCOMPLETE_DOC },
 	{ "osc.harmonic.w<w>.f<h>", CFG_DOUBLE, "-", "w: number of wheel [0..91], h: harmonic number", INCOMPLETE_DOC },
 	{ "osc.terminal.t<t>.w<w>", CFG_DOUBLE, "-", "t,w: wheel-number [0..91]", INCOMPLETE_DOC },
 	{ "osc.taper.k<key>.b<bus>.t<wheel>", CFG_DOUBLE, "-", "customize tapering model. Specify level of [key, drawbar, tonewheel].", INCOMPLETE_DOC },
