@@ -337,6 +337,13 @@ typedef struct {
 
 #ifdef WITH_SIGNATURE
 static void lc_expose (GLrobtkLV2UI * self) {
+#ifdef ROBTK_UPSCALE
+#if __BIG_ENDIAN__
+	float hw_scale = 1.0;
+#else
+	float hw_scale = puglGetHWSurfaceScale(self->view);
+#endif
+#endif
 	assert (self->tl);
 	if (!self->tl) { return; }
 	cairo_rectangle_t expose_area;
@@ -346,6 +353,9 @@ static void lc_expose (GLrobtkLV2UI * self) {
 	expose_area.width = self->width;
 	expose_area.height = self->height;
 	cairo_save(self->cr);
+#ifdef ROBTK_UPSCALE
+	cairo_scale(self->cr, hw_scale, hw_scale);
+#endif
 	self->tl->resized = TRUE; // full re-expose
 	self->tl->expose_event(self->tl, self->cr, &expose_area);
 	cairo_restore(self->cr);
@@ -355,6 +365,10 @@ static void lc_expose (GLrobtkLV2UI * self) {
 	expose_area.height = self->height;
 
 	PangoFontDescription *xfont = pango_font_description_from_string("Sans 16px");
+	cairo_save(self->cr);
+#ifdef ROBTK_UPSCALE
+	cairo_scale(self->cr, hw_scale, hw_scale);
+#endif
 	cairo_rectangle (self->cr, 0, 0, self->width, self->height);
 	cairo_set_operator (self->cr, CAIRO_OPERATOR_OVER);
 	cairo_set_source_rgba(self->cr, 0, 0, 0, .15 + self->gpg_shade);
@@ -364,13 +378,20 @@ static void lc_expose (GLrobtkLV2UI * self) {
 			xfont, self->width * .5, self->height * .5,
 			self->width < 200 ? M_PI * -.5 : 0, -2, c_wht);
 	pango_font_description_free(xfont);
+	cairo_restore(self->cr);
 
 	cairo_surface_mark_dirty(self->surface);
 }
 #endif
 
 static void cairo_expose(GLrobtkLV2UI * self) {
-
+#ifdef ROBTK_UPSCALE
+#if __BIG_ENDIAN__
+	float hw_scale = 1.0;
+#else
+	float hw_scale = puglGetHWSurfaceScale(self->view);
+#endif
+#endif
 	if (self->expose_overlay) {
 		cairo_rectangle_t expose_area;
 		posrb_read_clear(self->rb); // no fast-track
@@ -380,10 +401,16 @@ static void cairo_expose(GLrobtkLV2UI * self) {
 		expose_area.height = self->height;
 
 		cairo_save(self->cr);
+#ifdef ROBTK_UPSCALE
+		cairo_scale(self->cr, hw_scale, hw_scale);
+#endif
 		self->tl->expose_event(self->tl, self->cr, &expose_area);
 		cairo_restore(self->cr);
 
 		cairo_save(self->cr);
+#ifdef ROBTK_UPSCALE
+		cairo_scale(self->cr, hw_scale, hw_scale);
+#endif
 		self->expose_overlay (self->tl, self->cr, &expose_area);
 		cairo_restore(self->cr);
 		return;
@@ -416,6 +443,9 @@ static void cairo_expose(GLrobtkLV2UI * self) {
 			}
 		}
 		cairo_save(self->cr);
+#ifdef ROBTK_UPSCALE
+		cairo_scale(self->cr, hw_scale, hw_scale);
+#endif
 		cairo_translate(self->cr, a.rw->trel.x, a.rw->trel.y);
 		a.rw->expose_event(a.rw, self->cr, &a.a);
 
@@ -506,6 +536,9 @@ static void cairo_expose(GLrobtkLV2UI * self) {
 #endif
 
 	cairo_save(self->cr);
+#ifdef ROBTK_UPSCALE
+	cairo_scale(self->cr, hw_scale, hw_scale);
+#endif
 	self->tl->expose_event(self->tl, self->cr, &expose_area);
 	cairo_restore(self->cr);
 
@@ -865,6 +898,11 @@ static void myusleep(uint32_t usec) {
 /*****************************************************************************/
 
 static void reallocate_canvas(GLrobtkLV2UI* self) {
+#if __BIG_ENDIAN__
+	float hw_scale = 1.0;
+#else
+	float hw_scale = puglGetHWSurfaceScale(self->view);
+#endif
 #ifdef DEBUG_RESIZE
 	printf("reallocate_canvas to %d x %d\n", self->width, self->height);
 #endif
@@ -876,12 +914,12 @@ static void reallocate_canvas(GLrobtkLV2UI* self) {
 #endif
 		cairo_destroy (self->cr);
 	}
-	opengl_reallocate_texture(self->width, self->height, &self->texture_id);
+	opengl_reallocate_texture(hw_scale * self->width,  hw_scale * self->height, &self->texture_id);
 	if (self->surface) {
 		cairo_surface_destroy (self->surface);
 		self->surface = NULL;
 	}
-	self->cr = opengl_create_cairo_t(self->width, self->height, &self->surface, &self->surf_data);
+	self->cr = opengl_create_cairo_t(hw_scale * self->width, hw_scale * self->height, &self->surface, &self->surf_data);
 
 #if __BIG_ENDIAN__
 	self->surf_data_be = (unsigned char*) calloc (4 * self->width * self->height, sizeof (unsigned char));
@@ -891,7 +929,7 @@ static void reallocate_canvas(GLrobtkLV2UI* self) {
 	cairo_save(self->cr);
 	cairo_set_source_rgba (self->cr, .0, .0, .0, 1.0);
 	cairo_set_operator (self->cr, CAIRO_OPERATOR_SOURCE);
-	cairo_rectangle (self->cr, 0, 0, self->width, self->height);
+	cairo_rectangle (self->cr, 0, 0, hw_scale * self->width, hw_scale * self->height);
 	cairo_fill (self->cr);
 	cairo_restore(self->cr);
 }
@@ -1053,6 +1091,15 @@ static void onFileSelected(PuglView* view, const char *filename) {
 #endif
 }
 
+static void onFocusChanged(PuglView* view, bool enter) {
+	GLrobtkLV2UI* self = (GLrobtkLV2UI*)puglGetHandle(view);
+	if (self->tl->enter_notify && enter) {
+		self->tl->enter_notify (self->tl);
+	} else if (self->tl->leave_notify && !enter) {
+		self->tl->leave_notify (self->tl);
+	}
+}
+
 static void onReshape(PuglView* view, int width, int height) {
 	GLrobtkLV2UI* self = (GLrobtkLV2UI*)puglGetHandle(view);
 	if (!self->gl_initialized) {
@@ -1136,7 +1183,8 @@ static void onDisplay(PuglView* view) {
 	}
 	opengl_draw(self->width, self->height, self->surf_data_be, self->texture_id);
 #else
-	opengl_draw(self->width, self->height, self->surf_data, self->texture_id);
+	float hw_scale = puglGetHWSurfaceScale(self->view);
+	opengl_draw(hw_scale * self->width, hw_scale * self->height, self->surf_data, self->texture_id);
 #endif
 
 }
@@ -1278,6 +1326,10 @@ static int pugl_init(GLrobtkLV2UI* self) {
 	puglSetReshapeFunc(self->view, onReshape);
 	puglSetResizeFunc(self->view, onResize);
 	puglSetFileSelectedFunc(self->view, onFileSelected);
+
+	if (self->tl->enter_notify || self->tl->leave_notify) {
+		puglSetFocusFunc(self->view, onFocusChanged);
+	}
 
 	if (self->extui) {
 		puglSetCloseFunc(self->view, onClose);

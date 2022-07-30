@@ -124,6 +124,7 @@ puglCreate(PuglNativeWindow parent,
 	view->width  = width;
 	view->height = height;
 	view->ontop  = ontop;
+	view->ui_scale  = 1.0;
 	view->set_window_hints = true;
 	view->user_resizable = resizable;
 
@@ -153,6 +154,13 @@ puglCreate(PuglNativeWindow parent,
 #endif
 	}
 
+	if (!vi) {
+		XCloseDisplay (impl->display);
+		free(view);
+		free(impl);
+		return 0;
+	}
+
 	int glxMajor, glxMinor;
 	glXQueryVersion(impl->display, &glxMajor, &glxMinor);
 #ifdef VERBOSE_PUGL
@@ -162,6 +170,7 @@ puglCreate(PuglNativeWindow parent,
 	impl->ctx = glXCreateContext(impl->display, vi, 0, GL_TRUE);
 
 	if (!impl->ctx) {
+		XCloseDisplay (impl->display);
 		free(view);
 		free(impl);
 		return 0;
@@ -181,9 +190,7 @@ puglCreate(PuglNativeWindow parent,
 
 	attr.event_mask = ExposureMask | KeyPressMask | KeyReleaseMask
 		| ButtonPressMask | ButtonReleaseMask
-#ifdef XKEYFOCUSGRAB
-		| EnterWindowMask
-#endif
+		| EnterWindowMask | LeaveWindowMask
 		| PointerMotionMask | StructureNotifyMask;
 
 	impl->win = XCreateWindow(
@@ -197,8 +204,12 @@ puglCreate(PuglNativeWindow parent,
 		return 0;
 	}
 
-	puglUpdateGeometryConstraints(view, min_width, min_height, min_width != width);
+	XFlush(view->impl->display);
 	XResizeWindow(view->impl->display, view->impl->win, width, height);
+	if (min_width != width) {
+		/* only call if aspect ration is to be set */
+		puglUpdateGeometryConstraints(view, min_width, min_height, min_width != width);
+	}
 
 	if (title) {
 		XStoreName(impl->display, impl->win, title);
@@ -322,6 +333,9 @@ puglResize(PuglView* view)
 	hints->flags = PMaxSize | PMinSize;
 
 	if (set_hints) {
+#ifdef VERBOSE_PUGL
+		printf ("puGL: set hints. min-size %d x %d\n", hints->min_width, hints->min_height);
+#endif
 		XSetWMNormalHints(view->impl->display, view->impl->win, hints);
 	}
 	XResizeWindow(view->impl->display, view->impl->win, view->width, view->height);
@@ -535,11 +549,19 @@ puglProcessEvents(PuglView* view)
 			}
 			XFree(type);
 		} break;
-#ifdef XKEYFOCUSGRAB
 		case EnterNotify:
+#ifdef XKEYFOCUSGRAB
 			XSetInputFocus(view->impl->display, view->impl->win, RevertToPointerRoot, CurrentTime);
-			break;
 #endif
+			if (view->focusFunc) {
+				view->focusFunc(view, true);
+			}
+			break;
+		case LeaveNotify:
+			if (view->focusFunc) {
+				view->focusFunc(view, false);
+			}
+			break;
 		default:
 			break;
 		}
@@ -598,6 +620,9 @@ puglUpdateGeometryConstraints(PuglView* view, int min_width, int min_height, boo
 	if (!view->set_window_hints) {
 		return -1;
 	}
+#ifdef VERBOSE_PUGL
+	printf ("puGL UpdateGeometryConstraints %d x %d aspect:%d\n", min_width, min_height, aspect);
+#endif
 	XSizeHints sizeHints;
 	memset(&sizeHints, 0, sizeof(sizeHints));
 	sizeHints.flags      = PMinSize|PMaxSize;
@@ -612,6 +637,7 @@ puglUpdateGeometryConstraints(PuglView* view, int min_width, int min_height, boo
 		sizeHints.max_aspect.x=min_width;
 		sizeHints.max_aspect.y=min_height;
 	}
-	XSetNormalHints(view->impl->display, view->impl->win, &sizeHints);
+	XSetWMNormalHints(view->impl->display, view->impl->win, &sizeHints);
+	XFlush(view->impl->display);
 	return 0;
 }

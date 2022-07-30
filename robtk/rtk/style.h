@@ -6,10 +6,12 @@ static const float c_trs[4] = {0.0, 0.0, 0.0, 0.0};
 static const float c_blk[4] = {0.0, 0.0, 0.0, 1.0};
 static const float c_wht[4] = {1.0, 1.0, 1.0, 1.0};
 
-static const float c_gry[4] = {0.5, 0.5, 0.5, 1.0};
 static const float c_g90[4] = {0.9, 0.9, 0.9, 1.0};
 static const float c_g80[4] = {0.8, 0.8, 0.8, 1.0}; // dbm gain lines
+static const float c_g70[4] = {0.7, 0.7, 0.7, 1.0};
 static const float c_g60[4] = {0.6, 0.6, 0.6, 1.0}; // dpm border
+static const float c_gry[4] = {0.5, 0.5, 0.5, 1.0};
+static const float c_g40[4] = {0.4, 0.4, 0.4, 1.0};
 static const float c_g30[4] = {0.3, 0.3, 0.3, 1.0};
 static const float c_g20[4] = {0.2, 0.2, 0.2, 1.0};
 static const float c_g10[4] = {0.1, 0.1, 0.1, 1.0};
@@ -60,6 +62,15 @@ static void get_color_from_theme (int which, float *col) {
 
 #define CairoSetSouerceRGBA(COL) \
 	cairo_set_source_rgba (cr, (COL)[0], (COL)[1], (COL)[2], (COL)[3])
+
+#define CairoSetSouerceRGBADarkLight(COLD, COLL)                              \
+	do {                                                                        \
+    if  (is_light_theme()) {                                                  \
+      cairo_set_source_rgba (cr, (COLL)[0], (COLL)[1], (COLL)[2], (COLL)[3]); \
+    } else {                                                                  \
+      cairo_set_source_rgba (cr, (COLD)[0], (COLD)[1], (COLD)[2], (COLD)[3]); \
+    }                                                                         \
+  } while (0)
 
 #define ISBRIGHT(COL) (luminance_rgb (COL) >= 0.5)
 

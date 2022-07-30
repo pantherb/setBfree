@@ -68,6 +68,10 @@ static void rgba_to_hsva (float* hsva, float const* rgba) {
 				 */
 			hsva[0] = 360 + hsva[0];
 		}
+	} else {
+		hsva[0] = 0; // h
+		hsva[1] = 0; // s
+		return;
 	}
 
 	if (delta == 0 || cmax == 0) {
@@ -92,7 +96,7 @@ static void hsva_to_rgba (float* rgba, float* hsva) {
 		return;
 	}
 	float c = v * s;
-	float x = c * (1.f - fabsf (fmodf (h / 60.f, 2) - 1.0));
+	float x = c * (1.f - fabsf (fmodf (h / 60.f, 2) - 1.f));
 	float m = v - c;
 #define SETRGBA(R, G, B) rgba[0] = R; rgba[1] = G; rgba[2] = B;
 	if (h >= 0.0 && h < 60.0) {

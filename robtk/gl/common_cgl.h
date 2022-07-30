@@ -33,6 +33,7 @@ static PangoFontDescription * get_font_from_theme () {
 
 static float host_fg_color[4] = { .9, .9, .9, 1.0 };
 static float host_bg_color[4] = { .24, .24, .24, 1.0 };
+static bool  rtk_light_theme = false;
 
 static void set_host_color (int which, uint32_t color) {
 	switch(which) {
@@ -41,6 +42,7 @@ static void set_host_color (int which, uint32_t color) {
 			host_fg_color[1] = ((color >> 16) & 0xff) / 255.0;
 			host_fg_color[2] = ((color >>  8) & 0xff) / 255.0;
 			host_fg_color[3] = ((color >>  0) & 0xff) / 255.0;
+			rtk_light_theme = luminance_rgb (host_fg_color) < 0.5;
 			break;
 		case 1:
 			host_bg_color[0] = ((color >> 24) & 0xff) / 255.0;
@@ -62,5 +64,9 @@ static void get_color_from_theme (int which, float *col) {
 			memcpy (col, host_bg_color, 4 * sizeof (float));
 			break;
 	}
+}
+
+static bool is_light_theme () {
+	return rtk_light_theme;
 }
 #endif

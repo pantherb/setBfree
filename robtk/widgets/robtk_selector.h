@@ -42,6 +42,9 @@ typedef struct {
 	bool (*cb) (RobWidget* w, void* handle);
 	void* handle;
 
+	void (*ttip) (RobWidget* rw, bool on, void* handle);
+	void* ttip_handle;
+
 	void (*touch_cb) (void*, uint32_t, bool);
 	void*    touch_hd;
 	uint32_t touch_id;
@@ -165,6 +168,7 @@ static void robtk_select_set_active_item(RobTkSelect *d, int i) {
 	if (i == d->active_item) return;
 	d->active_item = i;
 	if (d->cb) d->cb(d->rw, d->handle);
+	if (d->ttip) d->ttip (d->rw, false, d->ttip_handle);
 	queue_draw(d->rw);
 }
 
@@ -226,6 +230,11 @@ static RobWidget* robtk_select_mousemove(RobWidget* handle, RobTkBtnEvent *ev) {
 		if (d->wraparound || d->active_item != d->item_count -1) pla = 1;
 	}
 	if (pla != d->lightarr) {
+		if (pla == 0 && d->ttip) {
+			d->ttip (d->rw, true, d->ttip_handle);
+		} else if (d->ttip) {
+			d->ttip (d->rw, false, d->ttip_handle);
+		}
 		d->lightarr = pla;
 		queue_draw(d->rw);
 	}
@@ -272,6 +281,9 @@ static void robtk_select_enter_notify(RobWidget *handle) {
 		d->prelight = TRUE;
 		queue_draw(d->rw);
 	}
+	if (d->ttip) {
+		d->ttip (d->rw, true, d->ttip_handle);
+	}
 }
 
 static void robtk_select_leave_notify(RobWidget *handle) {
@@ -283,6 +295,9 @@ static void robtk_select_leave_notify(RobWidget *handle) {
 	if (d->prelight) {
 		d->prelight = FALSE;
 		queue_draw(d->rw);
+	}
+	if (d->ttip) {
+		d->ttip (d->rw, false, d->ttip_handle);
 	}
 }
 
@@ -322,6 +337,8 @@ static RobTkSelect * robtk_select_new() {
 	d->lightarr = 0;
 	d->cb = NULL;
 	d->handle = NULL;
+	d->ttip = NULL;
+	d->ttip_handle = NULL;
 	d->touch_cb = NULL;
 	d->touch_hd = NULL;
 	d->touch_id = 0;
@@ -388,6 +405,12 @@ static void robtk_select_set_callback(RobTkSelect *d, bool (*cb) (RobWidget* w, 
 	d->cb = cb;
 	d->handle = handle;
 }
+
+static void robtk_select_annotation_callback(RobTkSelect *d, void (*cb) (RobWidget* w, bool, void* handle), void* handle) {
+	d->ttip = cb;
+	d->ttip_handle = handle;
+}
+
 
 static void robtk_select_set_touch(RobTkSelect *d, void (*cb) (void*, uint32_t, bool), void* handle, uint32_t id) {
 	d->touch_cb = cb;

@@ -63,7 +63,7 @@ ifeq ($(UNAME),Darwin)
   GLUILIBS=-framework Cocoa -framework OpenGL -framework CoreFoundation
   STRIPFLAGS=-u -r -arch all -s $(RW)lv2syms
   UI_TYPE=CocoaUI
-  PUGL_SRC=../pugl/pugl_osx.m
+  PUGL_SRC=../pugl/pugl_osx.mm
   EXTENDED_RE=-E
 else
   ifneq ($(XWIN),)
@@ -146,8 +146,8 @@ ifeq ($(LV2AVAIL)$(HAVE_UI)$(HAVE_IDLE), yesyesyes)
   UIDEPS+=$(TX)uim_background.c $(TX)uim_cable1.c $(TX)uim_cable2.c $(TX)uim_caps.c
   UIDEPS+=$(TX)uim_tube1.c $(TX)uim_tube2.c
   ifeq ($(IS_OSX), yes)
-    UIDEPS+=../pugl/pugl_osx.m
-    UILIBS=../pugl/pugl_osx.m -framework Cocoa -framework OpenGL
+    UIDEPS+=../pugl/pugl_osx.mm
+    UILIBS=../pugl/pugl_osx.mm -framework Cocoa -framework OpenGL
     UILIBS+=`pkg-config --variable=libdir ftgl`/libftgl.a `pkg-config --variable=libdir ftgl`/libfreetype.a
     UILIBS+=`pkg-config --libs zlib`
     UILIBS+=-lm $(OSXCOMPAT)

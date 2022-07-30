@@ -75,6 +75,7 @@ puglCreate(PuglNativeWindow parent,
 	view->width  = width;
 	view->height = height;
 	view->ontop  = ontop;
+	view->ui_scale  = 1.0;
 	view->user_resizable = resizable && !parent;
 	view->impl->keep_aspect = min_width != width;
 
@@ -461,6 +462,16 @@ handleMessage(PuglView* view, UINT message, WPARAM wParam, LPARAM lParam)
 			}
 		}
 		break;
+	case WM_SETFOCUS:
+		if (view->focusFunc) {
+			view->focusFunc(view, TRUE);
+		}
+		return DefWindowProc(view->impl->hwnd, message, wParam, lParam);
+	case WM_KILLFOCUS:
+		if (view->focusFunc) {
+			view->focusFunc(view, FALSE);
+		}
+		return DefWindowProc(view->impl->hwnd, message, wParam, lParam);
 	case WM_QUIT:
 	case LOCAL_CLOSE_MSG:
 		if (view->closeFunc) {

@@ -221,6 +221,14 @@ typedef void (*PuglSpecialFunc)(PuglView* view, bool press, PuglKey key);
 */
 typedef void (*PuglFileSelectedFunc)(PuglView* view, const char* filename);
 
+/**
+   A function called when a the main window's focus changed
+
+   @param view The view the event occured in.
+   @param enter True when focus is recevied, false when focus is lost
+*/
+typedef void (*PuglFocusFunc)(PuglView* view, bool enter);
+
 
 /**
    Create a new GL window.
@@ -264,6 +272,12 @@ puglGetHandle(PuglView* view);
 */
 PUGL_API uint32_t
 puglGetEventTimestamp(PuglView* view);
+
+/**
+   Return the hardware backing scale
+*/
+PUGL_API float
+puglGetHWSurfaceScale(PuglView* view);
 
 /**
    Get the currently active modifiers (PuglMod flags).
@@ -332,6 +346,12 @@ puglSetReshapeFunc(PuglView* view, PuglReshapeFunc reshapeFunc);
 */
 PUGL_API void
 puglSetFileSelectedFunc(PuglView* view, PuglFileSelectedFunc fileSelectedFunc);
+
+/**
+   Set the function to call on when windows focus changes
+*/
+PUGL_API void
+puglSetFocusFunc(PuglView* view, PuglFocusFunc focusFunc);
 
 PUGL_API int
 puglUpdateGeometryConstraints(PuglView* view, int min_width, int min_height, bool aspect);

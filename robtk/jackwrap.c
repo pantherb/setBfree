@@ -268,7 +268,7 @@ static uint32_t* portmap_ctrl;
 static uint32_t  portmap_atom_to_ui   = -1;
 static uint32_t  portmap_atom_from_ui = -1;
 
-static uint32_t uri_to_id (LV2_URI_Map_Callback_Data callback_data, const char* uri);
+static uint32_t uri_to_id (LV2_URID_Map_Handle handle, const char* uri);
 
 static jack_ringbuffer_t*    worker_requests  = NULL;
 static jack_ringbuffer_t*    worker_responses = NULL;
@@ -818,7 +818,7 @@ jack_portconnect (int which)
  */
 
 static uint32_t
-uri_to_id (LV2_URI_Map_Callback_Data callback_data, const char* uri)
+uri_to_id (LV2_URID_Map_Handle handle, const char* uri)
 {
 	for (uint32_t i = 0; i < urimap_len; ++i) {
 		if (!strcmp (urimap[i], uri)) {
