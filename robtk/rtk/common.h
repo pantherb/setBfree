@@ -364,14 +364,8 @@ static void create_text_surface2(cairo_surface_t ** sf,
 #  include <windows.h>
 #  include <shellapi.h>
 #elif defined __APPLE__
-#ifdef __cplusplus
-extern "C" {
-#endif
-	// defined in pugl/pugl_osx.m
-	extern bool rtk_osx_open_url (const char* url);
-#ifdef __cplusplus
-}
-#endif
+// defined in pugl/pugl_osx.mm
+extern bool rtk_osx_open_url (const char* url);
 #else
 #  include <stdlib.h>
 #endif
