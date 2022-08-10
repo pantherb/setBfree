@@ -581,7 +581,9 @@ void
 puglPostRedisplay(PuglView* view)
 {
 	view->redisplay = true;
-	//[view->impl->glview setNeedsDisplay: YES];
+#ifdef USE_GUI_THREAD
+	[view->impl->glview setNeedsDisplay: YES];
+#endif
 }
 
 PuglNativeWindow
