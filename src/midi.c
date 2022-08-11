@@ -722,44 +722,65 @@ static void
 loadKeyTableA (struct b_midicfg* m)
 {
 	int left = 0;
-	int first_MIDI_Note;
 
 	clearKeyTable (m->keyTableA);
 
 	if (0 < m->splitA_PL) {
+		int firstkey        = 128;
+		int trnp            = m->transpose + m->nshA_PL;
+		int first_MIDI_Note = 24 - trnp;
+		if (first_MIDI_Note < 0) {
+			firstkey -= first_MIDI_Note;
+			first_MIDI_Note = 0;
+		}
 		loadKeyTableRegion (m->keyTableA,
-		                    24, m->splitA_PL - 1,
-		                    128, 159,
-		                    m->transpose + m->nshA_PL,
-		                    0);
+		                    first_MIDI_Note, m->splitA_PL - 1,
+		                    firstkey, 159,
+		                    0, 0);
 		left = m->splitA_PL;
 	}
 
 	if (left < m->splitA_UL) {
-		first_MIDI_Note = (36 < left) ? left : 36;
+		int firstkey        = 64;
+		int trnp            = m->transpose + m->nshA_UL;
+		int first_MIDI_Note = 36 - trnp;
+
+		if (left > first_MIDI_Note) {
+			firstkey += (left - first_MIDI_Note);
+			first_MIDI_Note = left;
+		}
+
+		if (first_MIDI_Note < 0) {
+			firstkey -= first_MIDI_Note;
+			first_MIDI_Note = 0;
+		}
+
 		loadKeyTableRegion (m->keyTableA,
 		                    first_MIDI_Note, m->splitA_UL - 1,
-		                    64 + (first_MIDI_Note % 12), 124,
-		                    m->transpose + m->nshA_UL,
-		                    0);
+		                    firstkey, 124,
+		                    0, 0);
 		left = m->splitA_UL;
 	}
 
-	first_MIDI_Note = (36 < left) ? left : 36;
+	{
+		int firstkey        = 0;
+		int trnp            = m->transpose + ((0 < left) ? m->nshA_U : m->nshA);
+		int first_MIDI_Note = 36 - trnp;
 
-	/*
-   * Here we allow the upper MIDI
-   * parameter to extend up to 127 (maximum). That way a liberal use of
-   * nshA_U (noteshift for upper manual in split mode) can exploit a
-   * wide controller (e.g. 88 keys).
-   */
+		if (left > first_MIDI_Note) {
+			firstkey += (left - first_MIDI_Note);
+			first_MIDI_Note = left;
+		}
+		if (first_MIDI_Note < 0) {
+			firstkey -= first_MIDI_Note;
+			first_MIDI_Note = 0;
+		}
 
-	loadKeyTableRegion (m->keyTableA,
-	                    first_MIDI_Note, 127,
-	                    0 + (first_MIDI_Note - 36), 60,
-	                    m->transpose + ((0 < left) ? m->nshA_U : m->nshA),
-	                    0);
-
+		loadKeyTableRegion (m->keyTableA,
+		                    first_MIDI_Note, 127,
+		                    firstkey, 60,
+		                    0, 0);
+	}
 } /* loadKeyTableA */
 
 /*
