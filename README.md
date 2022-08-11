@@ -107,7 +107,7 @@ Internal Signal Flow
 	     |        +--------------------------*-----> Audio-Out Right
 	     \--------/ Drum L/R
 
-Render diagram with http://ditaa.org/
+Render diagram with http://ditaa.sourceforge.net/
 A pre-rendered image is available in the doc/ folder.
 
 Each of the stages - except the synth-engine itself - can be bypassed. The
