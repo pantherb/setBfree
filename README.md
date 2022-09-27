@@ -14,9 +14,9 @@ Hammond and Don Leslie.
 Download
 --------
 
-Binaries for Intel platform, GNU/Linux, OSX and Windows are available from
+Binaries for GNU/Linux, OSX and Windows are available from
 
-*   https://github.com/pantherb/setBfree/releases/latest
+*   http://x42-plugins.com/x42/setBfree
 
 setBfree is also available on most Linux distributions.
 
