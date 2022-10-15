@@ -7,7 +7,7 @@ ifneq ($(MOD),)
 endif
 
 LOADLIBES = -lm
-override CFLAGS+=`pkg-config --cflags lv2` -fvisibility=hidden
+override CFLAGS+=`$(PKG_CONFIG) --cflags lv2` -fvisibility=hidden
 
 targets=whirl.o eqcomp.o
 
@@ -25,7 +25,7 @@ ifeq ($(LV2AVAIL), yes)
       $(warning This plugin GUI needs https://github.com/x42/robtk)
       $(info set the RW environment variale to the location of the robtk headers)
     else
-      HAVE_RTK = $(shell pkg-config --exists pango cairo $(PKG_GL_LIBS) && echo yes)
+      HAVE_RTK = $(shell $(PKG_CONFIG) --exists pango cairo $(PKG_GL_LIBS) && echo yes)
     endif
 
     ifeq ($(HAVE_RTK), yes)
@@ -79,7 +79,7 @@ $(LV2NAME)$(LIB_EXT): $(DSP_SRC) $(DSP_DEPS) Makefile
 		-shared $(LV2LDFLAGS) $(LDFLAGS)
 
 JACKCFLAGS=$(CFLAGS) $(GLUICFLAGS) $(LIC_CFLAGS) -Wno-unused-function
-JACKCFLAGS+=`pkg-config --cflags jack lv2 pango pangocairo $(PKG_GL_LIBS)`
+JACKCFLAGS+=`$(PKG_CONFIG) --cflags jack lv2 pango pangocairo $(PKG_GL_LIBS)`
 JACKLIBS=-lm $(GLUILIBS) $(LIC_LOADLIBES)
 
 $(eval x42_whirl_JACKSRC = lv2.c whirl.c)

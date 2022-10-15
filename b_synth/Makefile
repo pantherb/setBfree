@@ -4,7 +4,7 @@ include ../git2lv2.mk
 
 LOADLIBES = -lm
 override CFLAGS+= -I../src -I../b_overdrive -I../b_reverb -I../b_whirl
-override CFLAGS+=`pkg-config --cflags lv2` -DLV2SYNTH -fvisibility=hidden
+override CFLAGS+=`$(PKG_CONFIG) --cflags lv2` -DLV2SYNTH -fvisibility=hidden
 targets=
 
 LV2NAME=b_synth

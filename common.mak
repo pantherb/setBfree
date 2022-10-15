@@ -28,7 +28,8 @@ override CFLAGS += -fPIC
 endif
 override CFLAGS += -DVERSION="\"$(VERSION)\""
 
-STRIP    ?= strip
+STRIP      ?= strip
+PKG_CONFIG ?= pkg-config
 
 CXXFLAGS ?= $(OPTIMIZATIONS) -Wall
 GLUICFLAGS=-I. -I.. -Wno-unused-function

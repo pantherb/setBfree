@@ -44,31 +44,31 @@ HEADERS = \
 	../b_overdrive/overdrive.h
 
 
-ifeq ($(shell pkg-config --exists jack || echo no), no)
+ifeq ($(shell $(PKG_CONFIG) --exists jack || echo no), no)
   $(error "JACK is required - install libjack-dev or libjack-jackd2-dev")
 endif
 
-ifeq ($(shell pkg-config --exists alsa && echo yes)$(ENABLE_ALSA), yesyes)
-  override CFLAGS+=-DHAVE_ASEQ `pkg-config --cflags alsa`
-  LOADLIBES+=`pkg-config --libs alsa`
+ifeq ($(shell $(PKG_CONFIG) --exists alsa && echo yes)$(ENABLE_ALSA), yesyes)
+  override CFLAGS+=-DHAVE_ASEQ `$(PKG_CONFIG) --cflags alsa`
+  LOADLIBES+=`$(PKG_CONFIG) --libs alsa`
 endif
 
 
-override CFLAGS+=`pkg-config --cflags jack`
+override CFLAGS+=`$(PKG_CONFIG) --cflags jack`
 
 ifeq ($(USEWEAKJACK),1)
   override CFLAGS+=-DUSE_WEAK_JACK -I$(RW)
   LOADLIBES+=-ldl
   WEAKJACK=$(RW)weakjack/weak_libjack.c
 else
-  LOADLIBES+=`pkg-config --libs jack`
+  LOADLIBES+=`$(PKG_CONFIG) --libs jack`
 endif
 
-ifeq ($(shell pkg-config --exists sndfile \
+ifeq ($(shell $(PKG_CONFIG) --exists sndfile \
 	&& test -f /usr/include/zita-convolver.h -o -f /usr/local/include/zita-convolver.h \
 	&& echo yes), $(ENABLE_CONVOLUTION))
-  override CFLAGS+= -DHAVE_ZITACONVOLVE `pkg-config --cflags sndfile`
-  LOADLIBES+=-lzita-convolver `pkg-config --libs sndfile`
+  override CFLAGS+= -DHAVE_ZITACONVOLVE `$(PKG_CONFIG) --cflags sndfile`
+  LOADLIBES+=-lzita-convolver `$(PKG_CONFIG) --libs sndfile`
   OBJS+=../b_conv/convolution.o
   HEADERS+=../b_conv/convolution.h
   BXCC=$(CXX)

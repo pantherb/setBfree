@@ -12,16 +12,16 @@ ifeq ($(LV2AVAIL), yes)
   targets+=lv2
 endif
 
-ifeq ($(shell pkg-config --exists liblo && echo yes), yes)
-  override CFLAGS+=-DHAVE_LIBLO `pkg-config --cflags liblo`
-  LOADLIBES+=`pkg-config --libs liblo`
+ifeq ($(shell $(PKG_CONFIG) --exists liblo && echo yes), yes)
+  override CFLAGS+=-DHAVE_LIBLO `$(PKG_CONFIG) --cflags liblo`
+  LOADLIBES+=`$(PKG_CONFIG) --libs liblo`
 endif
 
-ifeq ($(shell pkg-config --exists jack && echo yes)$(OVERDRIVEJACK), yesyes)
+ifeq ($(shell $(PKG_CONFIG) --exists jack && echo yes)$(OVERDRIVEJACK), yesyes)
   targets+=jboverdrive
   binaries+=jboverdrive
-  override CFLAGS+=-DHAVE_JACK `pkg-config --cflags jack`
-  LOADLIBES+=`pkg-config --libs jack`
+  override CFLAGS+=-DHAVE_JACK `$(PKG_CONFIG) --cflags jack`
+  LOADLIBES+=`$(PKG_CONFIG) --libs jack`
 endif
 
 OVMSRC=\

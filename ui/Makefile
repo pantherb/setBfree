@@ -3,7 +3,7 @@ TX=../b_synth/textures/
 WINDRES=$(XWIN)-windres
 
 override CFLAGS+= -I../src -I../b_overdrive -I../b_reverb -I../b_whirl -I../b_synth/
-override CFLAGS+=`pkg-config --cflags lv2` -DLV2SYNTH -DREQUIRE_UI
+override CFLAGS+=`$(PKG_CONFIG) --cflags lv2` -DLV2SYNTH -DREQUIRE_UI
 
 JACKEXTRA=
 OSXJACKWRAP=
@@ -32,12 +32,12 @@ ifeq ($(USEWEAKJACK),1)
   UICFLAGS+=-DUSE_WEAK_JACK
   JACKEXTRA+=$(RW)weakjack/weak_libjack.c
 else
-  UILIBS+=`pkg-config --libs jack`
+  UILIBS+=`$(PKG_CONFIG) --libs jack`
 endif
 
-ifeq ($(shell pkg-config --exists liblo && echo yes), yes)
-  UICFLAGS+=`pkg-config $(PKG_UI_FLAGS) --cflags liblo` -DHAVE_LIBLO
-  UILIBS+=`pkg-config $(PKG_UI_FLAGS) --libs liblo`
+ifeq ($(shell $(PKG_CONFIG) --exists liblo && echo yes), yes)
+  UICFLAGS+=`$(PKG_CONFIG) $(PKG_UI_FLAGS) --cflags liblo` -DHAVE_LIBLO
+  UILIBS+=`$(PKG_CONFIG) $(PKG_UI_FLAGS) --libs liblo`
 endif
 
 targets=
