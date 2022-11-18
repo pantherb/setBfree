@@ -380,6 +380,9 @@ allocSynth (struct b_instance* inst)
 #if 1
 	midiPrimeControllerMapping (inst->midicfg);
 #endif
+#if 0
+	copyCCToUser (inst);
+#endif
 }
 
 /* LV2 -- state */

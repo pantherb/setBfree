@@ -1453,6 +1453,24 @@ listCCAssignments2 (void* mcfg, FILE* fp)
 	midi_loopCCAssignment (mcfg, 7, midi_print_cc_cb, fp);
 }
 
+void
+copyCCToUser (void* instp)
+{
+	struct b_instance* inst = (struct b_instance*)instp;
+	struct b_midicfg* m = (struct b_midicfg*)inst->midicfg;
+	for (int i = 0; i < 127; ++i) {
+		if (m->ctrlUseA[i] != 255) {
+			remember_dynamic_CC_change (inst, m->rcvChA, m->ctrlUseA[i], i, 0);
+		}
+		if (m->ctrlUseB[i] != 255) {
+			remember_dynamic_CC_change (inst, m->rcvChB, m->ctrlUseB[i], i, 0);
+		}
+		if (m->ctrlUseC[i] != 255) {
+			remember_dynamic_CC_change (inst, m->rcvChC, m->ctrlUseC[i], i, 0);
+		}
+	}
+}
+
 #else
 #include "cfgParser.h"
 #endif // CONFIGDOCONLY

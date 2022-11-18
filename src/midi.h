@@ -78,6 +78,7 @@ extern void aseq_close (void);
 
 extern void parse_raw_midi_data (void* inst, uint8_t* buffer, size_t size);
 extern void midi_panic (void* inst);
+extern void copyCCToUser (void* inst);
 
 typedef struct _midicc {
 	struct _midicc* next;
