@@ -1458,7 +1458,8 @@ copyCCToUser (void* instp)
 {
 	struct b_instance* inst = (struct b_instance*)instp;
 	struct b_midicfg* m = (struct b_midicfg*)inst->midicfg;
-	for (int i = 0; i < 127; ++i) {
+	int i;
+	for (i = 0; i < 127; ++i) {
 		if (m->ctrlUseA[i] != 255) {
 			remember_dynamic_CC_change (inst, m->rcvChA, m->ctrlUseA[i], i, 0);
 		}
