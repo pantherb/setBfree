@@ -189,7 +189,7 @@ robtk_lever_size_allocate(RobWidget* handle, int w, int h) {
 	RobTkLever * d = (RobTkLever *)GET_HANDLE(handle);
 	d->w_width = w / d->rw->widget_scale;
 	d->w_height = h / d->rw->widget_scale;
-	robwidget_set_size (handle, w, w);
+	robwidget_set_size (handle, w, h);
 	d->recreate_patterns = true;
 }
 
@@ -285,8 +285,9 @@ static void _robtk_lever_create_patterns (RobTkLever *d) {
 	}
 #endif
 	if (d->label_cnt > 0) {
-		d->bg = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, d->w_width, d->w_height);
+		d->bg = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 2 * d->w_width, 2 * d->w_height);
 		cairo_t *cr = cairo_create (d->bg);
+		cairo_scale (cr, 2.0, 2.0);
 		cairo_set_operator (cr, CAIRO_OPERATOR_CLEAR);
 		cairo_paint (cr);
 		cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
@@ -354,6 +355,8 @@ static bool robtk_lever_expose_event (RobWidget* handle, cairo_t* cr, cairo_rect
 	}
 
 	if (d->bg) {
+		cairo_save (cr);
+		cairo_scale (cr, 0.5, 0.5);
 		if (!d->sensitive) {
 			//cairo_set_operator (cr, CAIRO_OPERATOR_OVERLAY);
 			cairo_set_operator (cr, CAIRO_OPERATOR_SOFT_LIGHT);
@@ -362,6 +365,7 @@ static bool robtk_lever_expose_event (RobWidget* handle, cairo_t* cr, cairo_rect
 		}
 		cairo_set_source_surface (cr, d->bg, 0, 0);
 		cairo_paint (cr);
+		cairo_restore (cr);
 	}
 
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);

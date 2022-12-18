@@ -1433,8 +1433,9 @@ static void prepare_faceplates (WhirlUI* ui) {
 	float xlp, ylp, ang;
 
 #define INIT_DIAL_SF_CLR(VAR, W, H, CLR) \
-	VAR = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, W, H); \
+	VAR = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, 2 * (W), 2 * (H)); \
 	cr = cairo_create (VAR); \
+	cairo_scale (cr, 2.0, 2.0); \
 	CairoSetSouerceRGBA (CLR); \
 	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE); \
 	cairo_rectangle (cr, 0, 0, W, H); \
@@ -2197,7 +2198,7 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 	robtk_dial_set_detent_default (ui->s_drumwidth, true);
 	robtk_dial_set_scroll_mult (ui->s_drumwidth, 5.f);
 	robtk_dial_annotation_callback (ui->s_drumwidth, dial_annotation_stereo, ui);
-	robtk_dial_set_surface (ui->s_drumwidth, ui->dial_bg[14]);
+	robtk_dial_set_scaled_surface_scale (ui->s_drumwidth, ui->dial_bg[14], 2.0);
 
 	ui->s_hornwidth = robtk_dial_new_with_size (0, 2, .05,
 			GED_WIDTH + 12, GED_HEIGHT + 20, GED_CX + 6, GED_CY + 15, GED_RADIUS);
@@ -2205,14 +2206,14 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 	robtk_dial_set_detent_default (ui->s_hornwidth, true);
 	robtk_dial_set_scroll_mult (ui->s_hornwidth, 5.f);
 	robtk_dial_annotation_callback (ui->s_hornwidth, dial_annotation_stereo, ui);
-	robtk_dial_set_surface (ui->s_hornwidth, ui->dial_bg[14]);
+	robtk_dial_set_scaled_surface_scale (ui->s_hornwidth, ui->dial_bg[14], 2.0);
 
 	ui->s_leak = robtk_dial_new_with_size (-63, -3, .02,
 			GED_WIDTH + 12, GED_HEIGHT + 20, GED_CX + 6, GED_CY + 15, GED_RADIUS);
 	robtk_dial_set_default (ui->s_leak, -16.47);
 	robtk_dial_set_scroll_mult (ui->s_leak, 5.f);
 	robtk_dial_annotation_callback (ui->s_leak, dial_annotation, NULL);
-	robtk_dial_set_surface (ui->s_leak, ui->dial_bg[16]);
+	robtk_dial_set_scaled_surface_scale (ui->s_leak, ui->dial_bg[16], 2.0);
 
 	ui->lbl_drumwidth  = robtk_lbl_new ("Stereo");
 	ui->lbl_hornwidth  = robtk_lbl_new ("Stereo");
@@ -2293,9 +2294,9 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 		robtk_dial_annotation_callback (ui->s_fqual[i], dial_annotation, (void*)&filter[i][1]);
 		robtk_dial_annotation_callback (ui->s_fgain[i], dial_annotation, NULL);
 
-		robtk_dial_set_surface (ui->s_ffreq[i], ui->dial_bg[3 + i]);
-		robtk_dial_set_surface (ui->s_fqual[i], ui->dial_bg[2]);
-		robtk_dial_set_surface (ui->s_fgain[i], ui->dial_bg[1]);
+		robtk_dial_set_scaled_surface_scale (ui->s_ffreq[i], ui->dial_bg[3 + i], 2.0);
+		robtk_dial_set_scaled_surface_scale (ui->s_fqual[i], ui->dial_bg[2], 2.0);
+		robtk_dial_set_scaled_surface_scale (ui->s_fgain[i], ui->dial_bg[1], 2.0);
 
 		ui->lbl_flt[i][1]  = robtk_lbl_new ("Type:"); // unused
 		ui->lbl_flt[i][2]  = robtk_lbl_new ("Freq");
@@ -2414,12 +2415,12 @@ static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 		robtk_dial_annotation_callback (ui->s_accel[i], dial_annotation, (void*)&acceleration[i]);
 		robtk_dial_annotation_callback (ui->s_decel[i], dial_annotation, (void*)&deceleration[i]);
 
-		robtk_dial_set_surface (ui->s_level[i], ui->dial_bg[0]);
-		robtk_dial_set_surface (ui->s_rpm_slow[i], ui->dial_bg[6 + i]);
-		robtk_dial_set_surface (ui->s_rpm_fast[i], ui->dial_bg[8 + i]);
-		robtk_dial_set_surface (ui->s_accel[i], ui->dial_bg[10 + i]);
-		robtk_dial_set_surface (ui->s_decel[i], ui->dial_bg[12 + i]);
-		robtk_dial_set_surface (ui->s_brakepos[i], ui->dial_bg[15]);
+		robtk_dial_set_scaled_surface_scale (ui->s_level[i], ui->dial_bg[0], 2.0);
+		robtk_dial_set_scaled_surface_scale (ui->s_rpm_slow[i], ui->dial_bg[6 + i], 2.0);
+		robtk_dial_set_scaled_surface_scale (ui->s_rpm_fast[i], ui->dial_bg[8 + i], 2.0);
+		robtk_dial_set_scaled_surface_scale (ui->s_accel[i], ui->dial_bg[10 + i], 2.0);
+		robtk_dial_set_scaled_surface_scale (ui->s_decel[i], ui->dial_bg[12 + i], 2.0);
+		robtk_dial_set_scaled_surface_scale (ui->s_brakepos[i], ui->dial_bg[15], 2.0);
 		// TODO set radius surface + add label
 
 		static const float bpos[4] = {.25, .5, .75, 1.0};
