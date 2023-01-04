@@ -211,11 +211,6 @@ __attribute__ ((visibility ("hidden")))
 
 		puglview->width  = width;
 		puglview->height = height;
-
-		[self removeTrackingArea:trackingArea];
-		[trackingArea release];
-		trackingArea = nil;
-		[self updateTrackingAreas];
 	}
 }
 
@@ -246,7 +241,6 @@ getModifiers(PuglView* view, NSEvent* ev)
 -(void)updateTrackingAreas
 {
 	if (trackingArea != nil) {
-		return;
 		[self removeTrackingArea:trackingArea];
 		[trackingArea release];
 	}
@@ -259,11 +253,11 @@ getModifiers(PuglView* view, NSEvent* ev)
 	                                               owner:self
 	                                            userInfo:nil];
 	[self addTrackingArea:trackingArea];
+	[super updateTrackingAreas];
 }
 
 - (void)mouseEntered:(NSEvent*)theEvent
 {
-	[self updateTrackingAreas];
 	if (puglview->focusFunc) {
 		puglview->focusFunc(puglview, true);
 	}
@@ -318,7 +312,6 @@ getModifiers(PuglView* view, NSEvent* ev)
 		puglview->mods = getModifiers(puglview, event);
 		puglview->mouseFunc(puglview, 1, false, loc.x, puglview->height - loc.y);
 	}
-	[self updateTrackingAreas];
 }
 
 - (void) rightMouseDown:(NSEvent*)event
@@ -364,7 +357,6 @@ getModifiers(PuglView* view, NSEvent* ev)
 		puglview->mods = getModifiers(puglview, event);
 		puglview->scrollFunc(puglview, loc.x, puglview->height - loc.y, [event deltaX], [event deltaY]);
 	}
-	[self updateTrackingAreas];
 }
 
 - (void) keyDown:(NSEvent*)event
