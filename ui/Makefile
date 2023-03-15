@@ -32,6 +32,9 @@ ifeq ($(USEWEAKJACK),1)
   UICFLAGS+=-DUSE_WEAK_JACK
   JACKEXTRA+=$(RW)weakjack/weak_libjack.c
 else
+  ifeq ($(shell $(PKG_CONFIG) --exists jack || echo no), no)
+    $(error "JACK is required - install libjack-dev or libjack-jackd2-dev")
+  endif
   UILIBS+=`$(PKG_CONFIG) --libs jack`
 endif
 
