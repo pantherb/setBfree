@@ -1,3 +1,10 @@
+2023-03-15 (0.8.12)  Robin Gareus <robin@gareus.org>
+* Fix upper manual key-split
+* Fix MIDNAM (pedal CC, PC)
+* Add UI scaling for leslie plugin
+* Add compatibility with zita-convolver v4
+* Minor build-system tweaks
+
 2019-12-15 (0.8.11)  Robin Gareus <robin@gareus.org>
 * LV2 bypass/enable for leslie plugin (equal power distribute
   mono to stereo)
