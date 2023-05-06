@@ -2829,9 +2829,16 @@ instantiate (
 	WhirlUI* ui = (WhirlUI*) calloc (1, sizeof (WhirlUI));
 	if (!ui) { return NULL; }
 
+	const LV2_Options_Option* options = NULL;
+	LV2_URID_Map*             map     = NULL;
+
 	for (int i = 0; features[i]; ++i) {
 		if (!strcmp(features[i]->URI, LV2_UI__touch)) {
 			ui->touch = (LV2UI_Touch*)features[i]->data;
+		} else if (!strcmp (features[i]->URI, LV2_URID__map)) {
+			map = (LV2_URID_Map*)features[i]->data;
+		} else if (!strcmp(features[i]->URI, LV2_OPTIONS__options)) {
+			options = (LV2_Options_Option*)features[i]->data;
 		}
 	}
 
@@ -2851,6 +2858,19 @@ instantiate (
 	}
 
 	*widget = toplevel (ui, ui_toplevel);
+
+	if (map && options) {
+		LV2_URID atom_Float = map->map (map->handle, LV2_ATOM__Float);
+		LV2_URID ui_scale   = map->map (map->handle, "http://lv2plug.in/ns/extensions/ui#scaleFactor");
+		for (const LV2_Options_Option* o = options; o->key; ++o) {
+			if (o->context == LV2_OPTIONS_INSTANCE && o->key == ui_scale && o->type == atom_Float) {
+				float ui_scale = *(const float*)o->value;
+				if (ui_scale < 1.0) { ui_scale = 1.0; }
+				if (ui_scale > 2.0) { ui_scale = 2.0; }
+				robtk_queue_scale_change (ui->rw, ui_scale);
+			}
+		}
+	}
 
 	return ui;
 }
