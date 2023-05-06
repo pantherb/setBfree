@@ -218,7 +218,7 @@ static void queue_draw(RobWidget *);
 static void queue_draw_area(RobWidget *, int, int, int, int);
 static void queue_tiny_area(RobWidget *rw, float x, float y, float w, float h);
 
-static void robwidget_toplevel_enable_scaling (RobWidget* rw);
+static void robwidget_toplevel_enable_scaling (RobWidget* rw, void (*cb) (RobWidget* w, void* h), void* handle);
 static void robtk_queue_scale_change (RobWidget *rw, const float ws);
 
 static RobWidget * robwidget_new(void *);

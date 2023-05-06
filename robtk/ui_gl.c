@@ -269,7 +269,9 @@ typedef struct {
 #endif
 
 	void (* expose_overlay)(RobWidget* toplevel, cairo_t* cr, cairo_rectangle_t *ev);
+	void (* scale_change_cb)(RobWidget* toplevel, void* handle);
 	float queue_widget_scale;
+	void* scale_change_handle;
 
 } GLrobtkLV2UI;
 
@@ -862,10 +864,14 @@ static RobWidget* robtk_tl_mousedown (RobWidget* rw, RobTkBtnEvent *ev) {
 	return NULL;
 }
 
-static void robwidget_toplevel_enable_scaling (RobWidget* rw) {
+static void robwidget_toplevel_enable_scaling (RobWidget* rw, void (*cb) (RobWidget* w, void* handle), void* handle) {
 	assert (rw->parent == rw);
 	assert (rw->mousedown == &rcontainer_mousedown);
 	robwidget_set_mousedown (rw, robtk_tl_mousedown);
+
+	GLrobtkLV2UI * const self = (GLrobtkLV2UI*) robwidget_get_toplevel_handle(rw);
+	self->scale_change_cb     = cb;
+	self->scale_change_handle = handle;
 }
 
 
@@ -1142,13 +1148,14 @@ static void onDisplay(PuglView* view) {
 	}
 #endif
 
-#if 1
 	if (self->tl && self->queue_widget_scale != self->tl->widget_scale) {
 		self->tl->widget_scale = self->queue_widget_scale;
+		if (self->scale_change_cb) {
+			self->scale_change_cb (self->tl, self->scale_change_handle);
+		}
 		resize_self (self->tl);
 		robwidget_resize_toplevel (self->tl, self->tl->area.width, self->tl->area.height);
 	}
-#endif
 
 	if (self->resize_in_progress) { return; }
 	if (!self->cr) return; // XXX exit failure
