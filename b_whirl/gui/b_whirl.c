@@ -2172,7 +2172,7 @@ static bool noop_expose_event (RobWidget* rw, cairo_t* cr, cairo_rectangle_t *ev
 static RobWidget * toplevel (WhirlUI* ui, void * const top) {
 	ui->rw = rob_table_new (/*rows*/ 9, /*cols*/ 9, FALSE);
 	robwidget_make_toplevel (ui->rw, top);
-	robwidget_toplevel_enable_scaling (ui->rw);
+	robwidget_toplevel_enable_scaling (ui->rw, NULL, NULL);
 
 	ui->font[0] = pango_font_description_from_string ("Mono 9px");
 	ui->font[1] = pango_font_description_from_string ("Sans 12px");
