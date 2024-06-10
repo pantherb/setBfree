@@ -51,12 +51,10 @@ static void create_pbtn_text_surface (RobTkPBtn* d) {
 	PangoFontDescription *font = get_font_from_theme();
 	pthread_mutex_lock (&d->_mutex);
 	d->scale = d->rw->widget_scale;
-	create_text_surface3 (&d->sf_txt,
-			ceil (d->l_width * d->rw->widget_scale),
-			ceil (d->l_height * d->rw->widget_scale),
-			floor (d->rw->widget_scale * (d->l_width / 2.0)) + 1,
-			floor (d->rw->widget_scale * (d->l_height / 2.0)) + 1,
-			d->txt, font, d->fg, d->rw->widget_scale);
+	create_text_surface3s (&d->sf_txt,
+			d->l_width, d->l_height,
+			d->l_width / 2.0, d->l_height / 2.0,
+			d->txt, font, d->fg, d->rw->widget_scale * RTK_SCALE_MUL);
 	pthread_mutex_unlock (&d->_mutex);
 	pango_font_description_free(font);
 }
@@ -100,7 +98,7 @@ static bool robtk_pbtn_expose_event(RobWidget* handle, cairo_t* cr, cairo_rectan
 	const float xalign = rint((d->w_width - d->l_width) * d->rw->xalign * d->scale);
 	const float yalign = rint((d->w_height - d->l_height) * d->rw->yalign * d->scale);
 	cairo_save (cr);
-	cairo_scale (cr, 1.0 / d->rw->widget_scale, 1.0 / d->rw->widget_scale);
+	cairo_scale (cr, RTK_SCALE_DIV / d->rw->widget_scale, RTK_SCALE_DIV / d->rw->widget_scale);
 	cairo_set_source_surface(cr, d->sf_txt, xalign, yalign);
 	cairo_paint (cr);
 	cairo_restore (cr);

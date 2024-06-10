@@ -31,10 +31,17 @@
 #include <pango/pango.h>
 #include <pango/pangocairo.h>
 
-#include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
-#include "lv2/lv2plug.in/ns/ext/options/options.h"
-#include "lv2/lv2plug.in/ns/ext/urid/urid.h"
-#include "lv2/lv2plug.in/ns/ext/atom/atom.h"
+#ifdef HAVE_LV2_1_18_6
+#include <lv2/atom/atom.h>
+#include <lv2/urid/urid.h>
+#include <lv2/options/options.h>
+#include <lv2/ui/ui.h>
+#else
+#include <lv2/lv2plug.in/ns/extensions/ui/ui.h>
+#include <lv2/lv2plug.in/ns/ext/options/options.h>
+#include <lv2/lv2plug.in/ns/ext/urid/urid.h>
+#include <lv2/lv2plug.in/ns/ext/atom/atom.h>
+#endif
 
 #ifdef __APPLE__
 #include <mach/clock.h>
@@ -313,6 +320,15 @@ static void get_color_from_theme (int which, float *col);
 #include "gl/robwidget_gl.h"
 #include "gl/layout.h"
 
+#endif
+
+// TODO ideally use cached max of puglGetHWSurfaceScale
+#ifdef ROBTK_UPSCALE
+#define RTK_SCALE_MUL 2.0
+#define RTK_SCALE_DIV 0.5
+#else
+#define RTK_SCALE_MUL 1.0
+#define RTK_SCALE_DIV 1.0
 #endif
 
 #define C_RAD 5

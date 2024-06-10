@@ -302,6 +302,32 @@ static void write_text_full(
 	cairo_new_path (cr);
 }
 
+static void create_text_surface3s(cairo_surface_t ** sf,
+		const float w, const float h,
+		float x, float y,
+		const char * txt, PangoFontDescription *font,
+		const float * const c_col, const float scale) {
+	assert(sf);
+
+	if (*sf) {
+		cairo_surface_destroy(*sf);
+	}
+	*sf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ceilf(w * scale), ceilf(h * scale));
+	cairo_t *cr = cairo_create (*sf);
+	cairo_set_source_rgba (cr, .0, .0, .0, 0);
+	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
+	cairo_rectangle (cr, 0, 0, ceil(w * scale), ceil(h * scale));
+	cairo_fill (cr);
+	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
+
+	cairo_scale (cr, scale, scale);
+	x = floor (scale * x) + 1;
+	y = floor (scale * y) + 1;
+	write_text_full(cr, txt, font, ceil(x / scale), ceil(y / scale), 0, 2, c_col);
+	cairo_surface_flush(*sf);
+	cairo_destroy (cr);
+}
+
 static void create_text_surface3(cairo_surface_t ** sf,
 		const float w, const float h,
 		const float x, const float y,

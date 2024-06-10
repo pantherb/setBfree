@@ -110,7 +110,7 @@ static bool robtk_dial_expose_event (RobWidget* handle, cairo_t* cr, cairo_recta
 			cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 		}
 		cairo_save (cr);
-		cairo_scale (cr, 1.0 / d->bg_scale, 1.0 / d->bg_scale);
+		cairo_scale (cr, d->bg_scale, d->bg_scale);
 		cairo_set_source_surface(cr, d->bg, 0, 0);
 		cairo_paint (cr);
 		cairo_restore (cr);
@@ -740,7 +740,7 @@ static void robtk_dial_set_constained(RobTkDial *d, bool v) {
 
 static void robtk_dial_set_scaled_surface_scale(RobTkDial* d, cairo_surface_t* b, const float s) {
 	d->bg = b;
-	d->bg_scale = s;
+	d->bg_scale = 1.0 / s;
 }
 
 static void robtk_dial_set_surface(RobTkDial *d, cairo_surface_t *s) {

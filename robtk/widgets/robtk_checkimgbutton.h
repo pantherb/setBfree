@@ -41,6 +41,7 @@ typedef struct {
 	cairo_surface_t* sf_img_enabled;
 
 	float w_width, w_height, i_width, i_height;
+	float scale;
 } RobTkIBtn;
 
 /******************************************************************************
@@ -106,6 +107,8 @@ static bool robtk_ibtn_expose_event(RobWidget* handle, cairo_t* cr, cairo_rectan
 	const float xalign = 5 + rint((d->w_width - 9 - d->i_width) * d->rw->xalign);
 	const float yalign = 5 + rint((d->w_height - 9 - d->i_height) * d->rw->yalign);
 
+	cairo_save (cr);
+	cairo_scale (cr, d->scale, d->scale);
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	if (d->enabled) {
 		cairo_set_source_surface(cr, d->sf_img_enabled, xalign, yalign);
@@ -113,6 +116,7 @@ static bool robtk_ibtn_expose_event(RobWidget* handle, cairo_t* cr, cairo_rectan
 		cairo_set_source_surface(cr, d->sf_img_normal, xalign, yalign);
 	}
 	cairo_paint (cr);
+	cairo_restore (cr);
 
 	if (d->sensitive && d->prelight) {
 		cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
@@ -209,7 +213,7 @@ priv_ibtn_size_allocate(RobWidget* handle, int w, int h) {
  * public functions
  */
 
-static RobTkIBtn * robtk_ibtn_new(cairo_surface_t *n, cairo_surface_t *e) {
+static RobTkIBtn * robtk_ibtn_new(cairo_surface_t *n, cairo_surface_t *e, float scale) {
 	RobTkIBtn *d = (RobTkIBtn *) malloc(sizeof(RobTkIBtn));
 
 	d->cb = NULL;
@@ -225,6 +229,7 @@ static RobTkIBtn * robtk_ibtn_new(cairo_surface_t *n, cairo_surface_t *e) {
 	d->sensitive = TRUE;
 	d->prelight = FALSE;
 	d->enabled = FALSE;
+	d->scale = 1.0 / scale;
 
 	d->i_width = cairo_image_surface_get_width(n);
 	d->i_height = cairo_image_surface_get_height(n);

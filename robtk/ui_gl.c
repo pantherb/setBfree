@@ -1508,6 +1508,20 @@ gl_instantiate(const LV2UI_Descriptor*   descriptor,
 	self->queue_widget_scale = 1.0;
 	self->queue_canvas_realloc = false;
 
+	if (getenv("X42_WIDGET_SCALE")) {
+		static const float scales[8] = { 1.0, 1.1, 1.15, 1.20, 1.25, 1.50, 1.75, 2.0 };
+		float want = atof (getenv("X42_WIDGET_SCALE"));
+		float diff = -1;
+		float best = 1.0;
+		for (int i = 0; i < 8; ++i) {
+			if (diff == -1 || fabsf (want - scales[i]) < diff) {
+				diff = fabsf (want - scales[i]);
+				best =  scales[i];
+			}
+		}
+		self->queue_widget_scale = best;
+	}
+
 #if (defined USE_GUI_THREAD && defined THREADSYNC)
 	pthread_mutex_init(&self->msg_thread_lock, NULL);
 	pthread_cond_init(&self->data_ready, NULL);

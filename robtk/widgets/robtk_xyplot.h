@@ -24,6 +24,7 @@ typedef struct {
 	RobWidget *rw;
 	float w_width, w_height;
 	cairo_surface_t* bg;
+	float bg_scale;
 
 	void (*clip_cb) (cairo_t *cr, void* handle);
 	void* handle;
@@ -65,9 +66,12 @@ static inline void robtk_xydraw_expose_common(RobTkXYp* d, cairo_t* cr, cairo_re
 	cairo_clip (cr);
 
 	if (d->bg) {
+		cairo_save (cr);
+		cairo_scale (cr, d->bg_scale, d->bg_scale);
 		cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 		cairo_set_source_surface(cr, d->bg, 0, 0);
 		cairo_paint (cr);
+		cairo_restore (cr);
 	} else {
 		cairo_rectangle (cr, 0, 0, d->w_width, d->w_height);
 		cairo_set_source_rgba(cr, 0, 0, 0, 1);
@@ -250,6 +254,7 @@ static RobTkXYp * robtk_xydraw_new(int w, int h) {
 	d->handle = NULL;
 
 	d->bg = NULL;
+	d->bg_scale = 1.0;
 	d->n_points = 0;
 	d->n_alloc = 0;
 	d->points_x = NULL;
@@ -351,8 +356,14 @@ static void robtk_xydraw_set_points(RobTkXYp *d, const uint32_t np, const float 
 	queue_draw(d->rw);
 }
 
+static void robtk_xydraw_set_scaled_surface(RobTkXYp *d, cairo_surface_t *s, const float sc) {
+	d->bg = s;
+	d->bg_scale = 1.0 / sc;
+}
+
 static void robtk_xydraw_set_surface(RobTkXYp *d, cairo_surface_t *s) {
 	d->bg = s;
+	d->bg_scale = 1.0;
 }
 
 static RobWidget * robtk_xydraw_widget(RobTkXYp *d) {

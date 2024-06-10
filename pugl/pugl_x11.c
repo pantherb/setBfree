@@ -246,6 +246,7 @@ puglCreate(PuglNativeWindow parent,
 #endif
 	}
 
+	XFlush(view->impl->display);
 	XFree(vi);
 	return view;
 }

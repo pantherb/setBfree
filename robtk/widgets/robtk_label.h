@@ -77,11 +77,11 @@ static void priv_lbl_prepare_text(RobTkLbl *d, const char *txt) {
 	robwidget_show(d->rw, true);
 #endif
 
-	create_text_surface3(&d->sf_txt,
-			d->w_width, d->w_height,
-			ceil (d->w_width / 2.0) + 1,
-			ceil (d->w_height / 2.0) + 1,
-			txt, fd, d->fg, d->rw->widget_scale);
+	create_text_surface3 (&d->sf_txt,
+			RTK_SCALE_MUL * d->w_width, RTK_SCALE_MUL * d->w_height,
+			ceil (RTK_SCALE_MUL * d->w_width / 2.0) + 1,
+			ceil (RTK_SCALE_MUL * d->w_height / 2.0) + 1,
+			txt, fd, d->fg, d->rw->widget_scale * RTK_SCALE_MUL);
 
 	pango_font_description_free(fd);
 
@@ -122,8 +122,11 @@ static bool robtk_lbl_expose_event(RobWidget* handle, cairo_t* cr, cairo_rectang
 	} else {
 		cairo_set_operator (cr, CAIRO_OPERATOR_EXCLUSION);
 	}
+	cairo_save (cr);
+	cairo_scale (cr, RTK_SCALE_DIV, RTK_SCALE_DIV);
 	cairo_set_source_surface(cr, d->sf_txt, 0, 0);
 	cairo_paint (cr);
+	cairo_restore (cr);
 
 	pthread_mutex_unlock (&d->_mutex);
 	return TRUE;

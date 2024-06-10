@@ -306,36 +306,38 @@ static void robtk_scale_render_metrics(RobTkScale* d) {
 	if (d->bg) {
 		cairo_surface_destroy(d->bg);
 	}
-	d->bg = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, d->w_width, d->w_height);
+	const float wscale =  d->rw->widget_scale * RTK_SCALE_MUL;
+	d->bg = cairo_image_surface_create (CAIRO_FORMAT_ARGB32, d->w_width * RTK_SCALE_MUL, d->w_height * RTK_SCALE_MUL);
 	cairo_t *cr = cairo_create (d->bg);
 	cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
 	cairo_set_source_rgba (cr, .0, .0, .0, 0);
-	cairo_rectangle (cr, 0, 0, d->w_width, d->w_height);
+	cairo_rectangle (cr, 0, 0, d->w_width * RTK_SCALE_MUL, d->w_height * RTK_SCALE_MUL);
 	cairo_fill (cr);
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 	cairo_set_source_rgba (cr, .7, .7, .7, 1.0);
-	cairo_set_line_width (cr, 1.0);
+	cairo_set_line_width (cr, RTK_SCALE_MUL);
 
 	for (int i = 0; i < d->mark_cnt; ++i) {
 		float v = 4.0 + robtk_scale_round_length(d, d->mark_val[i]);
+		v *= RTK_SCALE_MUL;
 		if (d->horiz) {
 			if (d->mark_txt[i]) {
 				cairo_save (cr);
-				cairo_scale (cr, d->rw->widget_scale, d->rw->widget_scale);
-				write_text_full(cr, d->mark_txt[i], d->mark_font, v / d->rw->widget_scale, d->rw->widget_scale, -M_PI/2, 1, d->c_txt);
+				cairo_scale (cr, wscale, wscale);
+				write_text_full(cr, d->mark_txt[i], d->mark_font, v / wscale, 1, -M_PI/2, 1, d->c_txt);
 				cairo_restore (cr);
 			}
-			cairo_move_to(cr, v+.5, SXX_T(1.5));
-			cairo_line_to(cr, v+.5, SXX_T(0) + SXX_H(-.5));
+			cairo_move_to(cr, v+.5 * RTK_SCALE_MUL, RTK_SCALE_MUL * SXX_T(1.5));
+			cairo_line_to(cr, v+.5 * RTK_SCALE_MUL, RTK_SCALE_MUL * (SXX_T(0) + SXX_H(-.5)));
 		} else {
 			if (d->mark_txt[i]) {
 				cairo_save (cr);
-				cairo_scale (cr, d->rw->widget_scale, d->rw->widget_scale);
-				write_text_full(cr, d->mark_txt[i], d->mark_font, (d->w_width -2) / d->rw->widget_scale, v / d->rw->widget_scale, 0, 1, d->c_txt);
+				cairo_scale (cr, wscale, wscale);
+				write_text_full(cr, d->mark_txt[i], d->mark_font, (d->w_width - 2), v / wscale, 0, 1, d->c_txt);
 				cairo_restore (cr);
 			}
-			cairo_move_to(cr, 1.5, v+.5);
-			cairo_line_to(cr, SXX_W(-.5) , v+.5);
+			cairo_move_to(cr, 1.5 * RTK_SCALE_MUL, v+.5 * RTK_SCALE_MUL);
+			cairo_line_to(cr, SXX_W(-.5) * RTK_SCALE_MUL , v+.5 * RTK_SCALE_MUL);
 		}
 		cairo_stroke(cr);
 	}
@@ -370,8 +372,11 @@ static bool robtk_scale_expose_event (RobWidget* handle, cairo_t* cr, cairo_rect
 		} else {
 			cairo_set_operator (cr, CAIRO_OPERATOR_OVER);
 		}
+		cairo_save (cr);
+		cairo_scale (cr, RTK_SCALE_DIV, RTK_SCALE_DIV);
 		cairo_set_source_surface(cr, d->bg, 0, 0);
 		cairo_paint (cr);
+		cairo_restore (cr);
 	}
 
 	cairo_set_operator (cr, CAIRO_OPERATOR_OVER);

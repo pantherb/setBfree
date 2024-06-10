@@ -109,12 +109,10 @@ static void create_cbtn_text_surface (RobTkCBtn* d) {
 	PangoFontDescription *font = get_font_from_theme();
 	d->scale = d->rw->widget_scale;
 
-	create_text_surface3 (&d->sf_txt_normal,
-			ceil(d->l_width * d->rw->widget_scale),
-			ceil(d->l_height * d->rw->widget_scale),
-			floor (d->rw->widget_scale * (d->l_width / 2.0)) + 1,
-			floor (d->rw->widget_scale * (d->l_height / 2.0)) + 1,
-			d->txt, font, c_col, d->rw->widget_scale);
+	create_text_surface3s (&d->sf_txt_normal,
+			d->l_width, d->l_height,
+			d->l_width / 2.0, d->l_height / 2.0,
+			d->txt, font, c_col, d->rw->widget_scale * RTK_SCALE_MUL);
 
 	/* sf_txt_enabled, is used with btn_enabled surface, see create_cbtn_pattern() */
 	bool bright_text;
@@ -138,12 +136,10 @@ static void create_cbtn_text_surface (RobTkCBtn* d) {
 		c_col[3] = 1.f;
 	}
 
-	create_text_surface3 (&d->sf_txt_enabled,
-			ceil(d->l_width * d->rw->widget_scale),
-			ceil(d->l_height * d->rw->widget_scale),
-			floor (d->rw->widget_scale * (d->l_width / 2.0)) + 1,
-			floor (d->rw->widget_scale * (d->l_height / 2.0)) + 1,
-			d->txt, font, c_col, d->rw->widget_scale);
+	create_text_surface3s (&d->sf_txt_enabled,
+			d->l_width, d->l_height,
+			d->l_width / 2.0, d->l_height / 2.0,
+			d->txt, font, c_col, d->rw->widget_scale * RTK_SCALE_MUL);
 	pango_font_description_free(font);
 	pthread_mutex_unlock (&d->_mutex);
 }
@@ -225,7 +221,7 @@ static bool robtk_cbtn_expose_event(RobWidget* handle, cairo_t* cr, cairo_rectan
 
 	cairo_save (cr);
 
-	cairo_scale (cr, 1.0 / d->rw->widget_scale, 1.0 / d->rw->widget_scale);
+	cairo_scale (cr, RTK_SCALE_DIV / d->rw->widget_scale, RTK_SCALE_DIV / d->rw->widget_scale);
 	if (d->flat_button && !d->sensitive) {
 		cairo_set_operator (cr, CAIRO_OPERATOR_EXCLUSION);
 		cairo_set_source_surface(cr, d->sf_txt_normal, xalign, yalign);

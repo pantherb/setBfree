@@ -86,15 +86,27 @@ extern void rtk_osx_api_err (const char* msg);
 #endif
 #undef pthread_t
 
-#include "lv2/lv2plug.in/ns/ext/atom/atom.h"
-#include "lv2/lv2plug.in/ns/ext/atom/forge.h"
-#include "lv2/lv2plug.in/ns/ext/midi/midi.h"
-#include "lv2/lv2plug.in/ns/ext/time/time.h"
-#include "lv2/lv2plug.in/ns/ext/uri-map/uri-map.h"
-#include "lv2/lv2plug.in/ns/ext/urid/urid.h"
-#include "lv2/lv2plug.in/ns/ext/worker/worker.h"
-#include "lv2/lv2plug.in/ns/extensions/ui/ui.h"
-#include "lv2/lv2plug.in/ns/lv2core/lv2.h"
+#ifdef HAVE_LV2_1_18_6
+#include <lv2/atom/atom.h>
+#include <lv2/atom/forge.h>
+#include <lv2/core/lv2.h>
+#include <lv2/midi/midi.h>
+#include <lv2/time/time.h>
+#include <lv2/uri-map/uri-map.h>
+#include <lv2/urid/urid.h>
+#include <lv2/ui/ui.h>
+#include <lv2/worker/worker.h>
+#else
+#include <lv2/lv2plug.in/ns/ext/atom/atom.h>
+#include <lv2/lv2plug.in/ns/ext/atom/forge.h>
+#include <lv2/lv2plug.in/ns/ext/midi/midi.h>
+#include <lv2/lv2plug.in/ns/ext/time/time.h>
+#include <lv2/lv2plug.in/ns/ext/uri-map/uri-map.h>
+#include <lv2/lv2plug.in/ns/ext/urid/urid.h>
+#include <lv2/lv2plug.in/ns/ext/worker/worker.h>
+#include <lv2/lv2plug.in/ns/extensions/ui/ui.h>
+#include <lv2/lv2plug.in/ns/lv2core/lv2.h>
+#endif
 
 #include "./gl/xternalui.h"
 
