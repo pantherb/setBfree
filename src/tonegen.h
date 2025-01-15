@@ -525,7 +525,10 @@ struct b_tonegen {
 	float          vibYBuffr[BUFFER_SIZE_SAMPLES];
 	float          prcBuffer[BUFFER_SIZE_SAMPLES];
 
-	float outputGain;
+	/* output level */
+	float targetGain;
+	float currentGain;
+	float gainTimeConstant;
 
 #ifdef HIPASS_PERCUSSION
 	float pz;
