@@ -11,10 +11,8 @@ OSXJACKWRAP=
 ifeq ($(IS_OSX), yes)
   OSXJACKWRAP=$(RW)jackwrap.mm
   USEWEAKJACK=1
-  CC=$(CXX)
 else
   ifeq ($(IS_WIN), yes)
-    CC=$(CXX)
     UIDEPS+=win_icon.rc.o
     JACKEXTRA+=win_icon.rc.o
     USEWEAKJACK=1
@@ -60,7 +58,7 @@ setBfreeUI$(EXE_EXT): $(RW)jackwrap.c $(LV2OBJ) $(OSXJACKWRAP) $(RW)weakjack/wea
 	../b_synth/ui.c $(UIDEPS) \
 	../src/cfgParser.h ../src/midi.h
 	$(MAKE) -C ../b_synth $(FONTFILE)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(UICFLAGS) $(LIC_CFLAGS) \
+	$(CXX) $(CPPFLAGS) $(CFLAGS) $(UICFLAGS) $(LIC_CFLAGS) \
 		-pthread \
 		-DXTERNAL_UI -DJACK_AUTOCONNECT=15 \
 		-DAPPNAME="\"setBfree\"" \
