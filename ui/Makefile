@@ -60,7 +60,7 @@ setBfreeUI$(EXE_EXT): $(RW)jackwrap.c $(LV2OBJ) $(OSXJACKWRAP) $(RW)weakjack/wea
 	$(MAKE) -C ../b_synth $(FONTFILE)
 	$(CXX) $(CPPFLAGS) $(CFLAGS) $(UICFLAGS) $(LIC_CFLAGS) \
 		-pthread \
-		-DXTERNAL_UI -DJACK_AUTOCONNECT=15 \
+		-DXTERNAL_UI \
 		-DAPPNAME="\"setBfree\"" \
 		-DJACK_DESCRIPT=\"$(DESC)\" \
 		-o setBfreeUI$(EXE_EXT) \
