@@ -541,6 +541,23 @@ struct b_tonegen {
 	struct b_vibrato inst_vibrato;
 
 	void* midi_cfg_ptr;
+
+	/* Generator leakage and tone aging (vintage character) */
+	float leakageGain;                    /* 0.0=clean, max 0.02 */
+	float agingFactor;                    /* 0.0=new, 1.0=heavily aged */
+	float oscAgingGain[NOF_WHEELS + 1];   /* per-wheel HF roll-off multiplier */
+
+	/* Serial contact switching (velocity-dependent staggered bus activation) */
+#define MAX_PENDING_KEYS 64
+	unsigned char keyVelocity[MAX_KEYS];
+	struct {
+		int keyNumber;
+		int busDelay[9]; /* remaining samples per bus, -1 = done */
+	} pendingContacts[MAX_PENDING_KEYS];
+	int    pendingContactCount;
+	double contactStaggerSlowMs;
+	double contactStaggerFastMs;
+	int    serialContactEnabled;
 };
 
 extern void setToneGeneratorModel (struct b_tonegen* t, int variant);
@@ -568,7 +585,7 @@ extern void initToneGenerator (struct b_tonegen* t, void* m);
 extern void freeToneGenerator (struct b_tonegen* t);
 
 extern void oscKeyOff (struct b_tonegen* t, unsigned char midiNote, unsigned char realKey);
-extern void oscKeyOn (struct b_tonegen* t, unsigned char midiNote, unsigned char realKey);
+extern void oscKeyOn (struct b_tonegen* t, unsigned char midiNote, unsigned char realKey, unsigned char velocity);
 extern void setDrawBars (void* inst, unsigned int manual, unsigned int setting[]);
 extern void oscGenerateFragment (struct b_tonegen* t, float* buf, size_t lengthSamples);
 

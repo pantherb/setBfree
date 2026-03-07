@@ -233,6 +233,11 @@ static short const terminalStrip[] = {
 /* clang-format on */
 /* ****************************************************************/
 
+/* Forward declarations for serial contact switching */
+static void cancelPendingContacts (struct b_tonegen* t, int keyNumber);
+static void processPendingContacts (struct b_tonegen* t);
+static void activateBusForKey (struct b_tonegen* t, int keyNumber, int targetBus);
+
 static void
 initValues (struct b_tonegen* t)
 {
@@ -328,6 +333,20 @@ initValues (struct b_tonegen* t)
 #ifdef KEYCOMPRESSION
 	t->keyCompLevel = KEYCOMP_ZERO_LEVEL;
 #endif
+
+	t->leakageGain = 0.0f;
+	t->agingFactor = 0.0f;
+	{
+		int j;
+		for (j = 0; j <= NOF_WHEELS; j++)
+			t->oscAgingGain[j] = 1.0f;
+	}
+
+	t->pendingContactCount  = 0;
+	t->contactStaggerSlowMs = 30.0;
+	t->contactStaggerFastMs = 0.5;
+	t->serialContactEnabled = 0;
+	memset (t->keyVelocity, 127, sizeof (t->keyVelocity));
 }
 
 /**
@@ -1829,6 +1848,62 @@ setEnvReleaseClickLevel (struct b_tonegen* t, double u)
 	t->envReleaseClickLevel = u;
 }
 
+/* Forward declaration (defined below, before initToneGenerator) */
+static void initEnvelopes (struct b_tonegen* t);
+
+/**
+ * MIDI CC handler: set key-click level from CC value 0-127.
+ * Updates both attack and release click levels and regenerates envelopes.
+ */
+static void
+setClickFromMIDI (void* d, unsigned char v)
+{
+	struct b_tonegen* t = (struct b_tonegen*)d;
+	float norm = (float)v / 127.0f;
+	t->envAttackClickLevel  = norm;
+	t->envReleaseClickLevel = norm * 0.53f;
+	initEnvelopes (t);
+}
+
+/**
+ * MIDI CC handler: set generator leakage from CC value 0-127.
+ * Maps 0 = clean, 127 = max leakage (0.02 gain).
+ */
+static void
+setLeakageFromMIDI (void* d, unsigned char v)
+{
+	struct b_tonegen* t = (struct b_tonegen*)d;
+	t->leakageGain = ((float)v / 127.0f) * 0.02f;
+}
+
+/**
+ * MIDI CC handler: set tone aging from CC value 0-127.
+ * Recalculates per-wheel HF roll-off: -12dB * aging * (freq_ratio)^2
+ */
+static void
+setAgingFromMIDI (void* d, unsigned char v)
+{
+	struct b_tonegen* t = (struct b_tonegen*)d;
+	int w;
+	float aging = (float)v / 127.0f;
+	t->agingFactor = aging;
+
+	/* Recompute per-wheel aging gain */
+	double maxFreq = t->oscillators[NOF_WHEELS].frequency;
+	if (maxFreq < 1.0)
+		maxFreq = 5000.0; /* fallback */
+
+	for (w = 1; w <= NOF_WHEELS; w++) {
+		double freq_ratio = t->oscillators[w].frequency / maxFreq;
+		/* -12dB * aging * freq_ratio^2, converted to linear gain */
+		double atten_dB = -12.0 * aging * freq_ratio * freq_ratio;
+		t->oscAgingGain[w] = (float)pow (10.0, atten_dB / 20.0);
+	}
+
+	/* Force drawbar gain recomputation */
+	t->drawBarChange = 1;
+}
+
 #ifdef KEYCOMPRESSION
 
 /**
@@ -2343,6 +2418,13 @@ oscConfig (struct b_tonegen* t, ConfigContext* cfg)
 		} else if (!strcasecmp (getConfigValue (cfg), "shelf")) {
 			setEnvAttackModel (t, ENV_SHELF);
 		}
+	} else if ((ack = getConfigParameter_ir ("osc.contact.serial",
+	                                         cfg, &ival, 0, 1)) == 1) {
+		t->serialContactEnabled = ival;
+	} else if ((ack = getConfigParameter_d ("osc.contact.stagger.slow", cfg, &d)) == 1) {
+		t->contactStaggerSlowMs = d;
+	} else if ((ack = getConfigParameter_d ("osc.contact.stagger.fast", cfg, &d)) == 1) {
+		t->contactStaggerFastMs = d;
 	}
 	return ack;
 }
@@ -2907,6 +2989,10 @@ initToneGenerator (struct b_tonegen* t, void* m)
 	useMIDIControlFunction (m, "percussion.harmonic", setPercHarmonicFromMIDI, t);
 	useMIDIControlFunction (m, "percussion.volume", setPercVolumeFromMIDI, t);
 
+	useMIDIControlFunction (m, "osc.click.level", setClickFromMIDI, t);
+	useMIDIControlFunction (m, "osc.leakage", setLeakageFromMIDI, t);
+	useMIDIControlFunction (m, "osc.tone.aging", setAgingFromMIDI, t);
+
 #if DEBUG_TONEGEN_OSC
 	dumpOscToText (t, "osc.txt");
 #endif
@@ -2947,6 +3033,10 @@ oscKeyOff (struct b_tonegen* t, unsigned char keyNumber, unsigned char realKey)
 		return;
 	/* The key must be marked as on */
 	if (t->activeKeys[keyNumber] != 0) {
+		/* Cancel any pending serial contacts for this key */
+		if (t->serialContactEnabled) {
+			cancelPendingContacts (t, keyNumber);
+		}
 		/* Flag the key as inactive */
 		t->activeKeys[keyNumber] = 0;
 		if (realKey != 255) {
@@ -2976,7 +3066,7 @@ oscKeyOff (struct b_tonegen* t, unsigned char keyNumber, unsigned char realKey)
  * a NOTE ON message on a channel and note number mapped to a playing key.
  */
 void
-oscKeyOn (struct b_tonegen* t, unsigned char keyNumber, unsigned char realKey)
+oscKeyOn (struct b_tonegen* t, unsigned char keyNumber, unsigned char realKey, unsigned char velocity)
 {
 	if (MAX_KEYS <= keyNumber)
 		return;
@@ -2984,6 +3074,8 @@ oscKeyOn (struct b_tonegen* t, unsigned char keyNumber, unsigned char realKey)
 	if (t->activeKeys[keyNumber] != 0) {
 		oscKeyOff (t, keyNumber, realKey);
 	}
+	/* Store velocity */
+	t->keyVelocity[keyNumber] = velocity;
 	/* Mark the key as active */
 	t->activeKeys[keyNumber] = 1;
 	if (realKey != 255) {
@@ -2996,14 +3088,123 @@ oscKeyOn (struct b_tonegen* t, unsigned char keyNumber, unsigned char realKey)
 #ifdef KEYCOMPRESSION
 	t->keyDownCount++;
 #endif /* KEYCOMPRESSION */
-	/* Write message */
-	*t->msgQueueWriter++ = MSG_KEY_ON (keyNumber);
-	/* Check for wrap on message queue */
-	if (t->msgQueueWriter == t->msgQueueEnd) {
-		t->msgQueueWriter = t->msgQueue;
-	}
 
-	// printf ("\rON :%3d", keyNumber); fflush (stdout);
+	if (t->serialContactEnabled && velocity < 127) {
+		/* Serial contact: bus 0 immediate, bus 1-8 delayed */
+		double slowSmp = t->contactStaggerSlowMs * 0.001 * SampleRateD;
+		double fastSmp = t->contactStaggerFastMs * 0.001 * SampleRateD;
+		double totalStagger = fastSmp + (slowSmp - fastSmp) * (double)(127 - velocity) / 126.0;
+
+		/* Activate bus 0 immediately via normal message queue */
+		if (t->pendingContactCount < MAX_PENDING_KEYS) {
+			int idx = t->pendingContactCount++;
+			t->pendingContacts[idx].keyNumber = keyNumber;
+			t->pendingContacts[idx].busDelay[0] = 0; /* bus 0: immediate */
+			int k;
+			for (k = 1; k < 9; k++) {
+				t->pendingContacts[idx].busDelay[k] =
+				    (int)(((double)k / 8.0) * totalStagger + 0.5);
+			}
+		} else {
+			/* Fallback: activate all at once */
+			*t->msgQueueWriter++ = MSG_KEY_ON (keyNumber);
+			if (t->msgQueueWriter == t->msgQueueEnd) {
+				t->msgQueueWriter = t->msgQueue;
+			}
+		}
+	} else {
+		/* Normal: all buses at once */
+		*t->msgQueueWriter++ = MSG_KEY_ON (keyNumber);
+		if (t->msgQueueWriter == t->msgQueueEnd) {
+			t->msgQueueWriter = t->msgQueue;
+		}
+	}
+}
+
+/**
+ * Activate a single bus for a given key (serial contact switching).
+ * Only processes keyContrib entries where bus % 9 == targetBus.
+ */
+static void
+activateBusForKey (struct b_tonegen* t, int keyNumber, int targetBus)
+{
+	ListElement* lep;
+	for (lep = t->keyContrib[keyNumber]; lep != NULL; lep = lep->next) {
+		int busNumber = LE_BUSNUMBER_OF (lep);
+		if ((busNumber % 9) != targetBus)
+			continue;
+
+		int                wheelNumber = LE_WHEEL_NUMBER_OF (lep);
+		struct _oscillator* osp        = &(t->oscillators[wheelNumber]);
+
+		if (t->aot[wheelNumber].refCount == 0) {
+			osp->rflags = OR_ADD;
+			if (osp->aclPos == -1) {
+				osp->aclPos                          = t->activeOscLEnd;
+				t->activeOscList[t->activeOscLEnd++] = wheelNumber;
+			}
+		} else {
+			osp->rflags |= ORF_MODIFIED;
+		}
+
+		t->aot[wheelNumber].busLevel[busNumber] += LE_LEVEL_OF (lep);
+		t->aot[wheelNumber].keyCount[busNumber] += 1;
+		t->aot[wheelNumber].refCount += 1;
+	}
+}
+
+/**
+ * Process pending serial contacts: decrement delays, activate buses when ready.
+ */
+static void
+processPendingContacts (struct b_tonegen* t)
+{
+	int i = 0;
+	while (i < t->pendingContactCount) {
+		int allDone = 1;
+		int k;
+		for (k = 0; k < 9; k++) {
+			if (t->pendingContacts[i].busDelay[k] < 0)
+				continue; /* already activated */
+			t->pendingContacts[i].busDelay[k] -= BUFFER_SIZE_SAMPLES;
+			if (t->pendingContacts[i].busDelay[k] <= 0) {
+				activateBusForKey (t, t->pendingContacts[i].keyNumber, k);
+				t->pendingContacts[i].busDelay[k] = -1;
+			} else {
+				allDone = 0;
+			}
+		}
+		if (allDone) {
+			/* Remove entry by swapping with last */
+			t->pendingContacts[i] = t->pendingContacts[--t->pendingContactCount];
+		} else {
+			i++;
+		}
+	}
+}
+
+/**
+ * Cancel pending contacts for a key (called on key off).
+ * Must activate all remaining pending buses first so that the
+ * subsequent MSG_KEY_OFF correctly decrements all refCounts.
+ */
+static void
+cancelPendingContacts (struct b_tonegen* t, int keyNumber)
+{
+	int i = 0;
+	while (i < t->pendingContactCount) {
+		if (t->pendingContacts[i].keyNumber == keyNumber) {
+			int k;
+			for (k = 0; k < 9; k++) {
+				if (t->pendingContacts[i].busDelay[k] >= 0) {
+					activateBusForKey (t, keyNumber, k);
+				}
+			}
+			t->pendingContacts[i] = t->pendingContacts[--t->pendingContactCount];
+		} else {
+			i++;
+		}
+	}
 }
 
 /* ----------------------------------------------------------------
@@ -3091,6 +3292,11 @@ oscGenerateFragment (struct b_tonegen* t, float* buf, size_t lengthSamples)
 
 	/* Reset the core program */
 	t->coreWriter = t->coreReader = t->corePgm;
+
+	/* Process serial contact pending activations */
+	if (t->serialContactEnabled && t->pendingContactCount > 0) {
+		processPendingContacts (t);
+	}
 
 	/* ****************************************************************
 	 *     M E S S S A G E   Q U E U E
@@ -3255,6 +3461,15 @@ oscGenerateFragment (struct b_tonegen* t, float* buf, size_t lengthSamples)
 					sum += aop->busLevel[d] * t->drawBarGain[d];
 				}
 				aop->sumPedal = sum;
+
+				/* Apply tone aging (HF roll-off per wheel) */
+				if (t->agingFactor > 0.0f) {
+					float ag = t->oscAgingGain[oscNumber];
+					aop->sumUpper *= ag;
+					aop->sumLower *= ag;
+					aop->sumPedal *= ag;
+				}
+
 				reroute       = 1;
 			}
 
@@ -3455,6 +3670,30 @@ oscGenerateFragment (struct b_tonegen* t, float* buf, size_t lengthSamples)
 	} /* while there are core instructions */
 
 	/* ****************************************************************
+	 *      G E N E R A T O R   L E A K A G E
+	 * ****************************************************************/
+
+	if (t->leakageGain > 0.0f) {
+		int w;
+		const float lg = t->leakageGain;
+		for (w = 1; w <= NOF_WHEELS; w++) {
+			if (t->aot[w].refCount > 0)
+				continue; /* skip active oscillators */
+			struct _oscillator* o = &(t->oscillators[w]);
+			if (o->wave == NULL || o->lengthSamples == 0)
+				continue;
+			size_t pos = o->pos;
+			int    s;
+			for (s = 0; s < BUFFER_SIZE_SAMPLES; s++) {
+				swlBuffer[s] += o->wave[pos] * lg;
+				if (++pos >= o->lengthSamples)
+					pos = 0;
+			}
+			o->pos = pos;
+		}
+	}
+
+	/* ****************************************************************
 	 *      M I X D O W N
 	 * ****************************************************************/
 
@@ -3601,6 +3840,9 @@ static const ConfigDoc doc[] = {
 	{ "osc.release.click.level", CFG_DOUBLE, "0.25", "Amount of random attenuation applied to an opening bus-oscillator", "%", 0, 1, 0.02 },
 	{ "osc.release.model", CFG_TEXT, "\"linear\"", "Model applied during key-release, one of \"click\", \"cosine\", \"linear\", \"shelf\" ", "", 0, 3, 1 },
 	{ "osc.attack.model", CFG_TEXT, "\"click\"", "Model applied during key-attack; one of \"click\", \"cosine\", \"linear\", \"shelf\" ", "", 0, 3, 1 },
+	{ "osc.contact.serial", CFG_INT, "0", "Enable serial contact switching (velocity-dependent staggered bus activation)", "", 0, 1, 1 },
+	{ "osc.contact.stagger.slow", CFG_DOUBLE, "30.0", "Maximum stagger time for lowest velocity", "ms", 0, 100.0, 0.5 },
+	{ "osc.contact.stagger.fast", CFG_DOUBLE, "0.5", "Minimum stagger time for highest velocity", "ms", 0, 10.0, 0.1 },
 	DOC_SENTINEL
 };
 

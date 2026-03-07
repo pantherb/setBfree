@@ -161,6 +161,10 @@ static const char* ccFuncNames[] = {
 
 	"convolution.mix",
 
+	"osc.click.level",
+	"osc.leakage",
+	"osc.tone.aging",
+
 	NULL
 };
 
@@ -1000,6 +1004,10 @@ midiPrimeControllerMapping (void* mcfg)
   loadCCMap (m, "overdrive.inputgain", 21, m->ctrlUseA, NULL, NULL);
   loadCCMap (m, "overdrive.outputgain",22, m->ctrlUseA, NULL, NULL);
 #endif
+
+	loadCCMap (m, "osc.click.level", 21, m->ctrlUseA, NULL, NULL);
+	loadCCMap (m, "osc.leakage",     22, m->ctrlUseA, NULL, NULL);
+	loadCCMap (m, "osc.tone.aging",  23, m->ctrlUseA, NULL, NULL);
 }
 
 /*
@@ -1211,7 +1219,8 @@ process_midi_event (void* instp, const struct bmidi_event_t* ev)
 			if (m->keyTable[ev->channel] && m->keyTable[ev->channel][ev->d.tone.note] != 255) {
 				if (ev->d.tone.velocity > 0) {
 					oscKeyOn (inst->synth, m->keyTable[ev->channel][ev->d.tone.note],
-					          map_to_real_key (m, ev->channel, ev->d.tone.note));
+					          map_to_real_key (m, ev->channel, ev->d.tone.note),
+					          ev->d.tone.velocity);
 				} else {
 					oscKeyOff (inst->synth, m->keyTable[ev->channel][ev->d.tone.note],
 					           map_to_real_key (m, ev->channel, ev->d.tone.note));
