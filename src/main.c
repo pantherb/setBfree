@@ -98,7 +98,7 @@ static char* jack_ports = NULL;
 static char* jack_port[AUDIO_CHANNELS];
 
 static const char* portnames[AUDIO_CHANNELS] = {
-	"out_left", "out_right"
+	"out_left", "out_right", "out_direct"
 };
 
 static const char* jack_client_name = "setBfree";
@@ -271,7 +271,7 @@ jack_audio_callback (jack_nframes_t nframes, void* arg)
 			float*       out[3]  = { bufJ[0], bufJ[1], bufC };
 
 			convolve (horn, out, 2, BUFFER_SIZE_SAMPLES);
-			mixdown (out, drum, AUDIO_CHANNELS, BUFFER_SIZE_SAMPLES);
+			mixdown (out, drum, 2, BUFFER_SIZE_SAMPLES);
 #else
 			whirlProc (inst.whirl, bufC, bufJ[0], bufJ[1], BUFFER_SIZE_SAMPLES);
 #endif
@@ -279,9 +279,10 @@ jack_audio_callback (jack_nframes_t nframes, void* arg)
 
 		int nread = MIN (nremain, (BUFFER_SIZE_SAMPLES - boffset));
 
-		for (i = 0; i < AUDIO_CHANNELS; i++) {
+		for (i = 0; i < 2; i++) {
 			memcpy (&out[i][written], &bufJ[i][boffset], nread * sizeof (float));
 		}
+		memcpy (&out[CHN_DIRECT][written], &bufC[boffset], nread * sizeof (float));
 		written += nread;
 		boffset += nread;
 	}
@@ -315,10 +316,17 @@ static int
 open_jack (void)
 {
 	int i;
-	j_client = jack_client_open (jack_client_name, JackNullOption, NULL);
+	jack_status_t status;
+	j_client = jack_client_open (jack_client_name, JackNoStartServer, &status);
 
 	if (!j_client) {
-		fprintf (stderr, "could not connect to jack.\n");
+		fprintf (stderr, "could not connect to jack. status=0x%x\n", status);
+		if (status & JackServerFailed) {
+			fprintf (stderr, "Unable to connect to JACK server\n");
+		}
+		if (status & JackServerError) {
+			fprintf (stderr, "JACK server error\n");
+		}
 		return (1);
 	}
 
