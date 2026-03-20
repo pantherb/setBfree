@@ -83,9 +83,10 @@ static const char* templateProgrammeFile = SHAREDIR "/pgm/default.pgm";
 static char* defaultConfigFile    = NULL;
 static char* defaultProgrammeFile = NULL;
 
-#define AUDIO_CHANNELS (2)
+#define AUDIO_CHANNELS (3)
 #define CHN_LEFT (0)
 #define CHN_RIGHT (1)
+#define CHN_DIRECT (2)
 
 #ifdef HAVE_ASEQ
 int aseq_stop = 0;
@@ -267,7 +268,7 @@ jack_audio_callback (jack_nframes_t nframes, void* arg)
 
 			const float* horn[2] = { bufH[0], bufH[1] };
 			const float* drum[2] = { bufD[0], bufD[1] };
-			float*       out[2]  = { bufJ[0], bufJ[1] };
+			float*       out[3]  = { bufJ[0], bufJ[1], bufC };
 
 			convolve (horn, out, 2, BUFFER_SIZE_SAMPLES);
 			mixdown (out, drum, AUDIO_CHANNELS, BUFFER_SIZE_SAMPLES);
@@ -640,6 +641,7 @@ static const ConfigDoc doc[] = {
 	{ "jack.connect", CFG_TEXT, "\"system:playback_\"", "Auto connect both audio-ports to a given regular-expression. This setting is ignored if either of jack.out.{left|right} is specified.", INCOMPLETE_DOC },
 	{ "jack.out.left", CFG_TEXT, "\"\"", "Connect left-output to this jack-port (exact name)", INCOMPLETE_DOC },
 	{ "jack.out.right", CFG_TEXT, "\"\"", "Connect right-output to this jack-port (exact name)", INCOMPLETE_DOC },
+	{ "jack.out.direct", CFG_TEXT, "\"\"", "Connect direct-output (no whirl) to this jack-port (exact name)", INCOMPLETE_DOC },
 	DOC_SENTINEL
 };
 
@@ -673,6 +675,10 @@ mainConfig (ConfigContext* cfg)
 		ack++;
 		free (jack_port[CHN_RIGHT]);
 		jack_port[CHN_RIGHT] = strdup (cfg->value);
+	} else if (strcasecmp (cfg->name, "jack.out.direct") == 0) {
+		ack++;
+		free (jack_port[CHN_DIRECT]);
+		jack_port[CHN_DIRECT] = strdup (cfg->value);
 	}
 	return ack;
 }
