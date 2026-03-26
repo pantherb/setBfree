@@ -2549,17 +2549,22 @@ setDrawBars (void* inst, unsigned int manual, unsigned int setting[])
 /*
  * Note that the drawbar controllers are inverted so that fader-like
  * controllers work in reverse, like real drawbars. This means that
- * a MIDI controller value of 0 is max and 127 is min. The controller
- * values are scaled into 0, ... 8 but are not quantized to correspond
- * to the nine discrete positions of the original drawbar system.
+ * a MIDI controller value of 0 is max and 127 is min. Also note that
+ * the controller values are quantized into 0, ... 8 to correspond to
+ * the nine discrete positions of the original drawbar system,
+ * unless MIDI_CONTINUOUS_DRAWBARS is defined.
  *
  */
 
 static void
 setMIDIDrawBar (struct b_tonegen* t, int bus, unsigned char v)
 {
-	int val = 127 - v;
-	setDrawBar (t, bus, val * 8.0 / 127.0);
+	float setting = (127 - v) * 8.0 / 127.0;
+#ifdef MIDI_CONTINUOUS_DRAWBARS
+	setDrawBar (t, bus, setting);
+#else
+	setDrawBar (t, bus, rint (setting));
+#endif /* MIDI_CONTINUOUS_DRAWBARS */
 }
 
 static void
