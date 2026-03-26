@@ -2785,7 +2785,6 @@ initToneGenerator (struct b_tonegen* t, void* m)
 	t->percIsSoft = t->percIsFast = 0;
 	t->percEnvGain                = 0;
 	for (i = 0; i < NOF_BUSES; ++i) {
-		int j;
 		t->drawBarGain[i] = 0;
 	}
 	for (i                   = 0; i < MAX_KEYS; ++i)
