@@ -1385,6 +1385,9 @@ print_usage (void)
 " -h, --help                Display this help and exit\n"
 " -j, --jack-name <name>    Set the JACK client name\n"
 "                           (defaults to plugin-name)\n"
+#if JACK_AUTOCONNECT > 0
+" -C, --no-autoconnect      Do not auto-connect JACK ports.\n"
+#endif
 #ifndef REQUIRE_UI
 " -G, --nogui               run headless, useful for OSC remote ctrl.\n"
 #endif
@@ -1451,6 +1454,7 @@ main (int argc, char** argv)
 	int            rv               = 0;
 	int            osc_port         = 0;
 	bool           dump_ports       = false;
+	bool           autoconnect      = true;
 	bool           headless         = false;
 	uint32_t       c_ain            = 0;
 	uint32_t       c_aout           = 0;
@@ -1460,18 +1464,19 @@ main (int argc, char** argv)
 	char*          jack_client_name = NULL;
 
 	const struct option long_options[] = {
-		{ "help",      no_argument,       0, 'h' },
-		{ "jack-name", required_argument, 0, 'j' },
-		{ "list",      no_argument,       0, 'l' },
-		{ "nogui",     no_argument,       0, 'G' },
-		{ "osc",       required_argument, 0, 'O' },
-		{ "osc-doc",   no_argument,       0, 0x100 },
-		{ "port",      required_argument, 0, 'p' },
-		{ "portlist",  no_argument,       0, 'P' },
-		{ "version",   no_argument,       0, 'V' },
+		{ "help",           no_argument,       0, 'h' },
+		{ "jack-name",      required_argument, 0, 'j' },
+		{ "list",           no_argument,       0, 'l' },
+		{ "nogui",          no_argument,       0, 'G' },
+		{ "no-autoconnect", no_argument,       0, 'C' },
+		{ "osc",            required_argument, 0, 'O' },
+		{ "osc-doc",        no_argument,       0, 0x100 },
+		{ "port",           required_argument, 0, 'p' },
+		{ "portlist",       no_argument,       0, 'P' },
+		{ "version",        no_argument,       0, 'V' },
 	};
 
-	const char* optstring = "Ghj:lO:p:PV1";
+	const char* optstring = "CGhj:lO:p:PV1";
 
 	if (optind < argc && !strncmp (argv[optind], "-psn_0", 6)) {
 		++optind;
@@ -1480,6 +1485,9 @@ main (int argc, char** argv)
 	while ((c = getopt_long (argc, argv, optstring, long_options, NULL)) != -1) {
 		char* tmp;
 		switch (c) {
+			case 'C':
+				autoconnect = false;
+				break;
 			case 'h':
 				print_usage ();
 				return 0;
@@ -1538,8 +1546,6 @@ main (int argc, char** argv)
 				break;
 		}
 	}
-
-	// TODO autoconnect option.
 
 #ifdef X42_MULTIPLUGIN
 	inst = NULL;
@@ -1836,7 +1842,9 @@ main (int argc, char** argv)
 		goto out;
 	}
 
-	jack_portconnect (JACK_AUTOCONNECT);
+	if (autoconnect) {
+		jack_portconnect (JACK_AUTOCONNECT);
+	}
 
 #ifdef HAVE_LIBLO
 	if (osc_port > 0) {
