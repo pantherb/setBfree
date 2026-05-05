@@ -2,4 +2,4 @@
 bwhirl:ui_gl
 	a ui:@UI_TYPE@;
 	ui:binary <@LV2GUI@@LIB_EXT@> ;
-	rdfs:seeAlso <@LV2NAME@.ttl> .
+	rdfs:seeAlso <b_whirl-configurable.ttl> .
