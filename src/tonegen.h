@@ -304,13 +304,6 @@ struct b_tonegen {
 	float drawBarGain[NOF_BUSES];
 
 	/**
- * The drawBarLevel table holds the possible drawbar amplification values
- * for all drawbars and settings. When a drawbar change is applied, the
- * appropriate value is copied from the table and installed in drawBarGain[].
- */
-	float drawBarLevel[NOF_BUSES][9];
-
-	/**
  * The drawBarChange flag is set by the routine that effectuates a drawbar
  * change. The oscGenerateFragment routine then checks the flag, computes
  * new composed gain values, and resets the flag.
@@ -334,7 +327,7 @@ struct b_tonegen {
  * holds the drawbar setting to restore to the trigger bus once
  * percussion is disabled.
  */
-	int percTrigRestore;
+	float percTrigRestore;
 
 	int percIsSoft; /**< Runtime toggle */
 	int percIsFast; /**< Runtime toggle */
