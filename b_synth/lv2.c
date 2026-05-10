@@ -75,7 +75,8 @@ typedef enum {
 	B3S_MIDIIN = 0,
 	B3S_MIDIOUT,
 	B3S_OUTL,
-	B3S_OUTR
+	B3S_OUTR,
+	B3S_OUTD
 } PortIndex;
 
 typedef struct {
@@ -88,6 +89,7 @@ typedef struct {
 	LV2_Atom_Sequence*       midiout;
 	float*                   outL;
 	float*                   outR;
+	float*                   outD;
 
 	LV2_URID_Map* map;
 	setBfreeURIs  uris;
@@ -155,6 +157,8 @@ mainConfig (ConfigContext* cfg)
 	} else if (strcasecmp (cfg->name, "jack.out.left") == 0) {
 		return 1;
 	} else if (strcasecmp (cfg->name, "jack.out.right") == 0) {
+		return 1;
+	} else if (strcasecmp (cfg->name, "jack.out.direct") == 0) {
 		return 1;
 	}
 	return 0;
@@ -276,6 +280,7 @@ synthSound (B3S* instance, uint32_t written, uint32_t nframes, float** out)
 
 		memcpy (&out[0][written], &b3s->bufL[0][b3s->boffset], nread * sizeof (float));
 		memcpy (&out[1][written], &b3s->bufL[1][b3s->boffset], nread * sizeof (float));
+		memcpy (&b3s->outD[written], &b3s->bufC[b3s->boffset], nread * sizeof (float));
 
 		written += nread;
 		b3s->boffset += nread;
@@ -1102,6 +1107,9 @@ connect_port (LV2_Handle instance,
 			break;
 		case B3S_OUTR:
 			b3s->outR = (float*)data;
+			break;
+		case B3S_OUTD:
+			b3s->outD = (float*)data;
 			break;
 	}
 }
