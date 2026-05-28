@@ -593,7 +593,6 @@ void initPreamp (void *pa, void *m) {
   useMIDIControlFunction (m, "xov.ctl_sagtobias", ctl_sagtoBias, pa);
   useMIDIControlFunction (m, "overdrive.character", ctl_biased_fat, pa);
   cfg_biased (pa, 0.5347);
-  pp->adwFb = 0.5821;
   useMIDIControlFunction (m, "overdrive.enable", setCleanCC, pa);
   useMIDIControlFunction (m, "overdrive.inputgain", setInputGain, pa);
   useMIDIControlFunction (m, "overdrive.outputgain", setOutputGain, pa);
