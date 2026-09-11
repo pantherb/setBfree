@@ -319,7 +319,7 @@ static const char* obj_control[] = {
 	"overdrive.enable", // 26
 	"overdrive.character",
 	"vibrato.knob", // 28
-	"swellpedal1",
+	"swellpedal2",
 	"reverb.mix",          // 30
 	"rotary.speed-select", // SPECIAL leslie horn  // rotary.speed-select 2^3
 	"rotary.speed-preset"  // SPECIAL leslie baffle
