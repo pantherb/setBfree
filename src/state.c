@@ -278,4 +278,12 @@ initRunningConfig (void* t, void* mcfg)
 	notifyControlChangeByName (mcfg, "reverb.mix", 127 * .1);
 	notifyControlChangeByName (mcfg, "swellpedal1", 127);
 	notifyControlChangeByName (mcfg, "rotary.speed-select", 4 * 15);
+
+	notifyControlChangeByName (mcfg, "rotary.speed-preset", 21);
+	notifyControlChangeByName (mcfg, "whirl.horn.brakepos", 0);
+	notifyControlChangeByName (mcfg, "whirl.drum.brakepos", 0);
+	notifyControlChangeByName (mcfg, "whirl.horn.acceleration", 12);
+	notifyControlChangeByName (mcfg, "whirl.horn.deceleration", 25);
+	notifyControlChangeByName (mcfg, "whirl.drum.acceleration", 58);
+	notifyControlChangeByName (mcfg, "whirl.drum.deceleration", 19);
 }
