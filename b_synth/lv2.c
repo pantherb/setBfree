@@ -453,8 +453,9 @@ save (LV2_Handle                instance,
 	fseek (x, 0, SEEK_END);
 	long int rsize = ftell (x);
 	rewind (x);
-	out = (char*)malloc (rsize);
-	fread (out, sizeof (char), rsize, x);
+	out = (char*)malloc (rsize + 1);
+	rsize = fread (out, sizeof (char), rsize, x);
+	out[rsize] = '\0';
 	fclose (x);
 	unlink (filename);
 #endif
