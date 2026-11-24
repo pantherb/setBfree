@@ -83,9 +83,10 @@ static const char* templateProgrammeFile = SHAREDIR "/pgm/default.pgm";
 static char* defaultConfigFile    = NULL;
 static char* defaultProgrammeFile = NULL;
 
-#define AUDIO_CHANNELS (2)
+#define AUDIO_CHANNELS (3)
 #define CHN_LEFT (0)
 #define CHN_RIGHT (1)
+#define CHN_DIRECT (2)
 
 #ifdef HAVE_ASEQ
 int aseq_stop = 0;
@@ -97,7 +98,7 @@ static char* jack_ports = NULL;
 static char* jack_port[AUDIO_CHANNELS];
 
 static const char* portnames[AUDIO_CHANNELS] = {
-	"out_left", "out_right"
+	"out_left", "out_right", "out_direct"
 };
 
 static const char* jack_client_name = "setBfree";
@@ -267,10 +268,10 @@ jack_audio_callback (jack_nframes_t nframes, void* arg)
 
 			const float* horn[2] = { bufH[0], bufH[1] };
 			const float* drum[2] = { bufD[0], bufD[1] };
-			float*       out[2]  = { bufJ[0], bufJ[1] };
+			float*       out[3]  = { bufJ[0], bufJ[1], bufC };
 
 			convolve (horn, out, 2, BUFFER_SIZE_SAMPLES);
-			mixdown (out, drum, AUDIO_CHANNELS, BUFFER_SIZE_SAMPLES);
+			mixdown (out, drum, 2, BUFFER_SIZE_SAMPLES);
 #else
 			whirlProc (inst.whirl, bufC, bufJ[0], bufJ[1], BUFFER_SIZE_SAMPLES);
 #endif
@@ -278,9 +279,10 @@ jack_audio_callback (jack_nframes_t nframes, void* arg)
 
 		int nread = MIN (nremain, (BUFFER_SIZE_SAMPLES - boffset));
 
-		for (i = 0; i < AUDIO_CHANNELS; i++) {
+		for (i = 0; i < 2; i++) {
 			memcpy (&out[i][written], &bufJ[i][boffset], nread * sizeof (float));
 		}
+		memcpy (&out[CHN_DIRECT][written], &bufC[boffset], nread * sizeof (float));
 		written += nread;
 		boffset += nread;
 	}
@@ -314,10 +316,17 @@ static int
 open_jack (void)
 {
 	int i;
-	j_client = jack_client_open (jack_client_name, JackNullOption, NULL);
+	jack_status_t status;
+	j_client = jack_client_open (jack_client_name, JackNoStartServer, &status);
 
 	if (!j_client) {
-		fprintf (stderr, "could not connect to jack.\n");
+		fprintf (stderr, "could not connect to jack. status=0x%x\n", status);
+		if (status & JackServerFailed) {
+			fprintf (stderr, "Unable to connect to JACK server\n");
+		}
+		if (status & JackServerError) {
+			fprintf (stderr, "JACK server error\n");
+		}
 		return (1);
 	}
 
@@ -640,6 +649,7 @@ static const ConfigDoc doc[] = {
 	{ "jack.connect", CFG_TEXT, "\"system:playback_\"", "Auto connect both audio-ports to a given regular-expression. This setting is ignored if either of jack.out.{left|right} is specified.", INCOMPLETE_DOC },
 	{ "jack.out.left", CFG_TEXT, "\"\"", "Connect left-output to this jack-port (exact name)", INCOMPLETE_DOC },
 	{ "jack.out.right", CFG_TEXT, "\"\"", "Connect right-output to this jack-port (exact name)", INCOMPLETE_DOC },
+	{ "jack.out.direct", CFG_TEXT, "\"\"", "Connect direct-output (no whirl) to this jack-port (exact name)", INCOMPLETE_DOC },
 	DOC_SENTINEL
 };
 
@@ -673,6 +683,10 @@ mainConfig (ConfigContext* cfg)
 		ack++;
 		free (jack_port[CHN_RIGHT]);
 		jack_port[CHN_RIGHT] = strdup (cfg->value);
+	} else if (strcasecmp (cfg->name, "jack.out.direct") == 0) {
+		ack++;
+		free (jack_port[CHN_DIRECT]);
+		jack_port[CHN_DIRECT] = strdup (cfg->value);
 	}
 	return ack;
 }

@@ -70,6 +70,12 @@
 		lv2:name "Right Output" ;
 		pg:group pg:StereoGroup;
 		lv2:designation pg:right
+	], [
+		a lv2:AudioPort ,
+			lv2:OutputPort ;
+		lv2:index 4 ;
+		lv2:symbol "outD" ;
+		lv2:name "Direct Output" ;
 	];
 	@MODBRAND@
 	@MODLABEL@
