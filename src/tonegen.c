@@ -2751,19 +2751,10 @@ setPercVolumeFromMIDI (void* d, unsigned char u)
  * This routine controls the swell pedal from a MIDI controller.
  */
 static void
-setSwellPedal1FromMIDI (void* d, unsigned char u)
-{
-	struct b_tonegen* t = (struct b_tonegen*)d;
-	t->swellPedalGain   = (t->outputLevelTrim * ((double)u)) / 127.0;
-	notifyControlChangeByName (t->midi_cfg_ptr, "swellpedal2", u);
-}
-
-static void
 setSwellPedal2FromMIDI (void* d, unsigned char u)
 {
 	struct b_tonegen* t = (struct b_tonegen*)d;
 	t->swellPedalGain   = (t->outputLevelTrim * ((double)u)) / 127.0;
-	notifyControlChangeByName (t->midi_cfg_ptr, "swellpedal1", u);
 }
 
 /**
@@ -2869,7 +2860,6 @@ initToneGenerator (struct b_tonegen* t, void* m)
 	setPercussionFast (t, TRUE);
 	setPercussionEnabled (t, FALSE);
 
-	useMIDIControlFunction (m, "swellpedal1", setSwellPedal1FromMIDI, t);
 	useMIDIControlFunction (m, "swellpedal2", setSwellPedal2FromMIDI, t);
 
 	useMIDIControlFunction (m, "upper.drawbar16", setDrawbar0, t);

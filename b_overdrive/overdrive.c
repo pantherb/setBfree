@@ -6,6 +6,7 @@
 #include <string.h>
 #include <math.h>
 #include "overdrive.h"
+#include "../src/main.h"
 
 
 /* Decimation filter definition */
@@ -126,6 +127,9 @@ struct b_preamp {
   /* Clean/overdrive switch */
   int isClean;
   float outputGain;
+  float targetMaster;
+  float currentMaster;
+  float masterTimeConstant;
   
   /* Input gain */
   float inputGain;
@@ -375,6 +379,12 @@ float * preamp (void * pa,
   else {
     overdrive (pa, inBuf, outBuf, bufLengthSamples);
   }
+
+  for (size_t i = 0; i < bufLengthSamples; i ++) {
+		float a = pp->masterTimeConstant;
+		pp->currentMaster += a * (pp->targetMaster - pp->currentMaster) + 1e-12;
+		outBuf[i] *= pp->currentMaster;
+  }
   
   return outBuf;
 }
@@ -393,6 +403,8 @@ void * allocPreamp () {
   pp->aalFilterLength = 33;
   pp->isClean = 1;
   pp->outputGain = 0.8795;
+  pp->targetMaster = 1.000;
+  pp->currentMaster = 1.000;
   pp->inputGain = 3.5675;
   
   
@@ -481,8 +493,6 @@ void ctl_biased (void *d, unsigned char uc) {
 void fctl_biased_fb (void *pa, float u) {
   struct b_preamp *pp = (struct b_preamp *) pa;
   pp->adwFb = 0.999 * u;
-  printf ("\rFbk=%10.4f", pp->adwFb);
-  fflush (stdout);
 }
 
 void ctl_biased_fb (void *d, unsigned char uc) {
@@ -495,8 +505,6 @@ void ctl_biased_fb (void *d, unsigned char uc) {
 void fctl_sagtoBias (void *pa, float u) {
   struct b_preamp *pp = (struct b_preamp *) pa;
   pp->sagZgb = 0 + ((0.05 - 0) * u);
-  printf ("\rpp->ZGB=%10.4f", pp->sagZgb);
-  fflush (stdout);
 }
 
 void ctl_sagtoBias (void *d, unsigned char uc) {
@@ -509,8 +517,6 @@ void ctl_sagtoBias (void *d, unsigned char uc) {
 void fctl_biased_fb2 (void *pa, float u) {
   struct b_preamp *pp = (struct b_preamp *) pa;
   pp->adwFb2 = 0.999 * u;
-  printf ("\rFb2=%10.4f", pp->adwFb2);
-  fflush (stdout);
 }
 
 void ctl_biased_fb2 (void *d, unsigned char uc) {
@@ -523,8 +529,6 @@ void ctl_biased_fb2 (void *d, unsigned char uc) {
 void fctl_biased_gfb (void *pa, float u) {
   struct b_preamp *pp = (struct b_preamp *) pa;
   pp->adwGfb = -0.999 * u;
-  printf ("\rGfb=%10.4f", pp->adwGfb);
-  fflush (stdout);
 }
 
 void ctl_biased_gfb (void *d, unsigned char uc) {
@@ -559,8 +563,6 @@ void fctl_biased_fat (void *d, float f) {
 void setInputGain (void *pa, unsigned char uc) {
   struct b_preamp *pp = (struct b_preamp *) pa;
   pp->inputGain = 0.001 + ((10 - 0.001) * (((float) uc) / 127.0));
-  printf ("\rINP:%10.4lf", pp->inputGain);
-  fflush (stdout);
 }
 
 void fsetInputGain (void *d, float f) {
@@ -572,14 +574,21 @@ void fsetInputGain (void *d, float f) {
 void setOutputGain (void *pa, unsigned char uc) {
   struct b_preamp *pp = (struct b_preamp *) pa;
   pp->outputGain = 0.1 + ((10 - 0.1) * (((float) uc) / 127.0));
-  printf ("\rOUT:%10.4lf", pp->outputGain);
-  fflush (stdout);
 }
 
 void fsetOutputGain (void *d, float f) {
   setOutputGain (d, (unsigned char)(f*127.0));
 }
 
+/**
+ * This routine controls the swell pedal from a MIDI controller.
+ */
+static void
+setSwellPedal1FromMIDI (void* d, unsigned char u)
+{
+	struct b_preamp *pp = (struct b_preamp *)d;
+	pp->targetMaster = ((double)u) / 127.0;
+}
 
 
 /* Legacy function */
@@ -596,6 +605,9 @@ void initPreamp (void *pa, void *m) {
   useMIDIControlFunction (m, "overdrive.enable", setCleanCC, pa);
   useMIDIControlFunction (m, "overdrive.inputgain", setInputGain, pa);
   useMIDIControlFunction (m, "overdrive.outputgain", setOutputGain, pa);
+	useMIDIControlFunction (m, "swellpedal1", setSwellPedal1FromMIDI, pa);
+
+  pp->masterTimeConstant =  156.825f / SampleRateD; // ~ 25Hz LPF
 }
 #else // no CONFIGDOCONLY
 # include "cfgParser.h"
