@@ -64,6 +64,10 @@ else
   LOADLIBES+=`$(PKG_CONFIG) --libs jack`
 endif
 
+ifeq ($(MIDI_CONTINUOUS_DRAWBARS),1)
+  override CFLAGS+=-DMIDI_CONTINUOUS_DRAWBARS
+endif
+
 ifeq ($(shell $(PKG_CONFIG) --exists sndfile \
 	&& test -f /usr/include/zita-convolver.h -o -f /usr/local/include/zita-convolver.h \
 	&& echo yes), $(ENABLE_CONVOLUTION))

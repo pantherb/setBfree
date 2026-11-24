@@ -276,7 +276,7 @@ initValues (struct b_tonegen* t)
 	t->percEnabled   = FALSE;
 
 	t->percTriggerBus  = 8;
-	t->percTrigRestore = 0;
+	t->percTrigRestore = 0.0;
 
 	t->percFastDecaySeconds = 1.0;
 	t->percSlowDecaySeconds = 4.0;
@@ -1571,7 +1571,7 @@ setPercussionEnabled (struct b_tonegen* t, int isEnabled)
 		t->newRouting &= ~RT_PERC;
 		if (-1 < t->percTriggerBus) {
 			t->drawBarGain[t->percTriggerBus] =
-			    t->drawBarLevel[t->percTriggerBus][t->percTrigRestore];
+			    t->percTrigRestore / 8.0;
 			t->drawBarChange = 1;
 		}
 	}
@@ -2492,25 +2492,23 @@ initEnvelopes (struct b_tonegen* t)
 }
 
 /**
- * Installs the setting for the drawbar on the given bus. The gain value is
- * fetched from the drawBarLevel table where the bus is the row index and the
- * setting is the column index.
+ * Installs the setting for the drawbar on the given bus.
  *
  * @param bus      The bus (0--26) for which the drawbar is set.
  * @param setting  The position setting (0--8) of the drawbar.
  */
 static void
-setDrawBar (struct b_tonegen* t, int bus, unsigned int setting)
+setDrawBar (struct b_tonegen* t, int bus, float setting)
 {
 	assert ((0 <= bus) && (bus < NOF_BUSES));
-	assert ((0 <= setting) && (setting < 9));
+	assert ((0.0 <= setting) && (setting <= 8.0));
 	t->drawBarChange = 1;
 	if (bus == t->percTriggerBus) {
 		t->percTrigRestore = setting;
 		if (t->percEnabled)
 			return;
 	}
-	t->drawBarGain[bus] = t->drawBarLevel[bus][setting];
+	t->drawBarGain[bus] = setting / 8.0;
 }
 
 /**
@@ -2553,15 +2551,20 @@ setDrawBars (void* inst, unsigned int manual, unsigned int setting[])
  * controllers work in reverse, like real drawbars. This means that
  * a MIDI controller value of 0 is max and 127 is min. Also note that
  * the controller values are quantized into 0, ... 8 to correspond to
- * the nine discrete positions of the original drawbar system.
+ * the nine discrete positions of the original drawbar system,
+ * unless MIDI_CONTINUOUS_DRAWBARS is defined.
  *
  */
 
 static void
 setMIDIDrawBar (struct b_tonegen* t, int bus, unsigned char v)
 {
-	int val = 127 - v;
-	setDrawBar (t, bus, rint (val * 8.0 / 127.0));
+	float setting = (127 - v) * 8.0 / 127.0;
+#ifdef MIDI_CONTINUOUS_DRAWBARS
+	setDrawBar (t, bus, setting);
+#else
+	setDrawBar (t, bus, rint (setting));
+#endif /* MIDI_CONTINUOUS_DRAWBARS */
 }
 
 static void
@@ -2782,11 +2785,7 @@ initToneGenerator (struct b_tonegen* t, void* m)
 	t->percIsSoft = t->percIsFast = 0;
 	t->percEnvGain                = 0;
 	for (i = 0; i < NOF_BUSES; ++i) {
-		int j;
 		t->drawBarGain[i] = 0;
-		for (j = 0; j < 9; ++j) {
-			t->drawBarLevel[i][j] = 0;
-		}
 	}
 	for (i                   = 0; i < MAX_KEYS; ++i)
 		t->activeKeys[i] = 0;
@@ -2839,16 +2838,6 @@ initToneGenerator (struct b_tonegen* t, void* m)
 #endif /* KEYCOMPRESSION */
 
 	initEnvelopes (t);
-
-	/* Initialise drawbar gain values */
-
-	for (i = 0; i < NOF_BUSES; i++) {
-		int setting;
-		for (setting = 0; setting < 9; setting++) {
-			float u                     = (float)setting;
-			t->drawBarLevel[i][setting] = u / 8.0;
-		}
-	}
 
 #if 1
 	/* Gives the drawbars a temporary initial value */
